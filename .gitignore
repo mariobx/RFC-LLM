@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# RFC text archives & Pipeline artifacts
+all_RFCs/
+**/all_RFCs/
+*.log
+

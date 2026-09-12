@@ -1,0 +1,8 @@
+# Core Dependencies for CPSA / RFC-LLM Pipeline
+dspy>=3.3.0
+pymupdf>=1.28.0
+pydantic>=2.10.0
+backoff>=2.2.1
+python-dotenv>=1.0.0
+litellm>=1.100.0
+requests>=2.31.0
