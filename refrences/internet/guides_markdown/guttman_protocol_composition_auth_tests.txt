@@ -1,0 +1,1278 @@
+           Cryptographic Protocol Composition
+              via the Authentication Tests?
+
+                                 Joshua D. Guttman
+
+                               The MITRE Corporation
+
+
+
+        Abstract. Although cryptographic protocols are typically analyzed in
+        isolation, they are used in combinations. If a protocol was analyzed alone
+        and shown to meet some security goals, will it still meet those goals when
+        executed together with a second protocol? While not every choice of a
+        second protocol can preserve the goals, there are syntactic criteria for
+        the second protocol that ensure they will be preserved. Our main result
+        strengthens previously known criteria.
+           Our method has three main elements. First, a language L(Π) in classi-
+        cal logic describes executions of a protocol Π, and expresses its security
+        goals. Strand spaces provide the models for L(Π).
+           Second, the strand space “authentication test” principles suggest our
+        syntactic criterion for security goals to be preserved.
+           Third, certain homomorphisms among models for L(Π) preserve the
+        truth of formulas of the syntactic form that security goals take. This
+        provides a way to extract—from a counterexample to a goal that uses
+        both protocols—a counterexample using only the first protocol.
+
+
+1     Introduction
+Protocol analysis focuses largely on understanding the secrecy and authentica-
+tion properties of individual, finished protocols. There is a good reason for this:
+Each security goal then definitely either holds or does not hold. However, an
+analysis is more reusable and of higher value, if we know which of its results will
+remain true after combination with other protocols, and perhaps other kinds of
+extensions to the protocol.
+    In practice, every protocol is used in combination with other protocols, of-
+ten with the same long-term keys. Also, many protocols contain messages with
+“blank slots.” Higher level protocols piggyback on them, filling the blank spots
+with their own messages. We want to find out when the goals that hold of a
+protocol on its own are preserved under combination with other protocols, and
+when these blanks are filled in.
+Two results on composition. Two existing results, both within the Dolev-
+Yao model [13], are particularly relevant. We showed [17] that if two protocols
+manipulate disjoint sets of ciphertexts, then combining the protocols cannot
+undermine their security goals. We called this the disjoint encryption property.
+?
+    Supported by MITRE-Sponsored Research, 08-1441. Email: guttman@mitre.org.
+2                                                                   October 6, 2008
+
+A careful, asymmetric formulation of “disjoint encryption” allowed us to show
+that one protocol Π1 may produce ciphertexts—in a broad sense including digital
+certificates as well as Kerberos-style tickets—consumed by another protocol Π2 ,
+without Π2 undermining any security goal of Π1 . The relation is asymmetric
+because faulty production of these ciphertexts by Π1 may certainly undermine
+goals of Π2 .
+    Our result concerned only protocols that completely parse the messages they
+receive to atomic values, and do not handle messages containing unstructured
+blank slots. A second limitation was that it covered only protocols using atomic
+keys, not keys produced (e.g.) by hashing compound messages. A recent result
+by Cortier, Delaitre and Delaune [9] lifts these two limitations, but only in
+the symmetric case, where neither protocol produces ciphertexts that may be
+consumed by the other.
+    One stimulus for the present paper was to combine these two results.
+
+Our approach. We view protocol executions—more specifically, the parts car-
+ried out by the rule-abiding, regular participants, but not the adversary—as
+forming objects we call skeletons [12]. A skeleton containing enough protocol
+behavior to have occurred, when combined with some adversary behavior, is
+called a realized skeleton. If more information about regular behavior is required
+to obtain a possible execution, then the skeleton is unrealized.
+    In this paper, we introduce a first order language L(Π) to describe skeletons
+of each protocol Π. The skeletons containing regular behaviors of Π provide a
+semantics, a set of models, for formulas of L(Π). Security goals are formulas G,
+of specific forms, belonging to L(Π). A skeleton A is a counterexample to a goal
+G when it is realized, but it satisfies G’s negation, A |= ¬G.
+    When we try to show that a protocol Π2 does not undermine any security
+goal of a protocol Π1 , we are interested in two languages, namely L(Π1 ) and
+L(Π1 ∪ Π2 ). L(Π1 ) is a sublanguage of L(Π1 ∪ Π2 ), so that the security goals
+G1 of L(Π1 ) are some of the security goals of the larger language L(Π1 ∪ Π2 ).
+Likewise, the skeletons of Π1 are some of the skeletons of Π1 ∪ Π2 , namely those
+in which no Π2 activity occurs.
+    Suppose that G1 is a goal in L(Π1 ), and A |= ¬G1 is a counterexample using
+behavior of Π1 ∪ Π2 . We are seeking a syntactic condition on Π1 , Π2 such that
+we can always extract, from this Π1 ∪ Π2 -counterexample, a skeleton containing
+only Π1 activity which is already a counterexample. So Π2 behavior was not
+needed to build the counterexample; Π1 alone already undermined the goal G1 .
+    In this paper, we define a syntactic relationship called strong disjointness
+between protocols Π1 , Π2 . When two protocols are strongly disjoint, then Π2
+does not undermine any goals G1 achieved by Π1 in isolation. The authentication
+test principles suggest both the definition of strong disjointness, and also the
+operations on skeletons that allow us to extract a suitable Π1 -counterexample
+A1 given a Π1 ∪ Π2 -counterexample A.
+    In particular, there are two steps to extracting A1 . One is simply a restriction
+that omits non-Π1 behavior. The other is a step of generalization or removal,
+in which we insert blank slots in place of all encrypted units that do not belong
+October 6, 2008                                                                    3
+
+specifically to Π1 . Each of these operations preserves satisfaction for negated
+security goals. Together, they yield a realized Π1 skeleton from any realized
+Π1 ∪ Π2 skeleton, hence together they preserve counterexamples.
+    This approach, which is possibly of interest in itself, is essentially model-
+theoretic. Model theory characteristically combines two elements. The first con-
+sists of algebraic relations (embeddings and restrictions, automorphisms, homo-
+morphisms, etc.) among the structures interpreting a logic. The second is the
+syntactic formulas, often focusing on formulas of particular logical forms. The
+expressive power of a set of formulas is limited when those formulas do not
+distinguish among certain models, i.e. the models satisfy the same formulas in
+this set. Typical model-theoretic results combine these two ingredients; a simple
+example is the fact that a homomorphism between two structures for first order
+logic preserves satisfaction of atomic formulas.
+    A second stimulus for the current paper was to illustrate the power of this
+model-theoretic approach to security protocols.
+
+Structure of this paper. In Section 2, we provide an example. It is intended to
+illustrate the importance of the asymmetric relation between protocols Π1 , Π2 .
+It also illustrates the authentication tests and the intuitive disjointness property.
+Section 3 provides background on messages, strands, protocols, and homomor-
+phisms. It is adapted from [12, 11]. One fine point distinguishing those two papers
+is that [12] worked in a framework without blank slots in protocols, while [11]
+established its completeness result for a stronger framework that includes blank
+slots. Section 4 summarizes the authentication tests, and the completeness result
+of [11], although in a far more compact and abstract form. This reformulation is
+another small contribution of the present paper. Section 5 formalizes the “mul-
+tiprotocols” that we have informally written in the form Π1 ∪ Π2 , and proves
+some useful facts about the removal or generalization operator on skeletons.
+    In Section 6 we define the strong disjointness property. We prove a key result
+about realized skeletons A for a multiprotocol Π1 ∪ Π2 with strong disjointness.
+Namely, restricting A to Π1 , and then generalizing by removing all encryptions
+that belong to Π2 , yields a realized skeleton A1 as its extracted result. Section 7
+presents the languages L(Π) for expressing security goals G, and their skeleton-
+based semantics. We show that when A |= ¬G, then for the extracted result A1 ,
+A1 |= ¬G, which is the main result of the paper.
+    Section 8 discusses some additional related work, particularly the Protocol
+Composition Logic of [10], and mentions future work on more general forms of
+protocol elaboration.
+
+
+2   Example: Anonymous identities in trusted computing
+
+We consider as an example a certificate distribution protocol for Trusted Plat-
+form Modules (TPMs). It allows a machine with a TPM to retrieve a certificate
+for a newly generated public key K, binding K to a made-up identity I, but
+ensuring that the corresponding private key K −1 is resident within a TPM. A
+4                                                                      October 6, 2008
+
+zero-knowledge protocol would be desirable for this purpose, and although such
+a protocol exists [6], called Direct Anonymous Attestation, it is neither simple
+nor indeed perfectly correct [3].
+    The earlier protocol that we describe is a conventional, certificate-based pro-
+tocol [5], in which a certifying authority called a Privacy Certificate Authority
+(PCA) binds I, K, allowing K to be used as an “anonymous identity key” (AIK).
+If the public part of an AIK is properly certified, then its corresponding private
+part should be securely stored within some TPM. Thus, it can be used only in
+accordance with certain rules, and with less risk of compromise. Second, one
+should be unable to link any AIK with a particular TPM without the assistance
+of the TPM itself or the certifying PCA. Thus, the AIK provides the owner of
+the computer containing the TPM a guarantee of privacy or anonymity, while
+providing the consumer of statements signed with it the assurance that they
+were prepared within some genuine TPM.
+    Before creating this anonymous identity credential (AIC), the issuing PCA
+checks an “Endorsement Credential” signed by the TPM manufacturer. The EC
+asserts—about a public encryption key EK—that its inverse EK−1 is a TPM-
+resident private key. Since the AIC is transmitted encrypted with EK, the AIC
+can only be decrypted and freed within that TPM. The TPM is designed to
+verify that K −1 is available within this TPM, and is a suitable type of key,
+before releasing the AIC. A modified version of the protocol is shown in Fig. 1.
+We have omitted some details, and added a parameter x, which may be used to
+
+
+
+        x-
+             TPM
+              ­
+                  {|I ˆK ˆxˆek cred|}pubk(P )     {|I ˆK ˆxˆek cred|}pubk(P )
+              •                           -                               - P CA
+              ­                                                                 ­
+                           {|aic|}EK                       {|aic|}EK
+              •                                                               •
+              w
+              ­
+     aic     •
+
+                         ek cred = [[ ekctag MFGˆEK ]]sk(MFG)
+                            aic = [[ aictag I ˆK ˆx ]]sk(PCA)
+
+               Fig. 1. TCG Anonymous Identity Protocol (modified)
+
+
+
+restrict the use of the resulting AIC, for instance determining when it expires,
+or limiting it to specific later protocols. In this protocol, {|m|}pubk(A) refers to m
+encrypted with a public key for which A holds the decryption key, and [[ m ]]sk(A)
+refers to m accompanied by a digitally signed hash, prepared using a signature
+key held by A. The tags ekctag and aictag are distinguishing bitpatterns that
+make an EC and an AIC distinguishable from other cryptographically prepared
+values.
+October 6, 2008                                                                  5
+
+Security Goals of AIP. There are two main goals for the protocol, which
+should hold whenever an AIC is observed, bearing the signature of an uncom-
+promised PCA. The first is that there should have been a run of the PCA role
+that produced this certificate, and transmitted it encrypted with some key EK.
+The second is that there should have been a run of the TPM role, which received
+the AIC encrypted with this same EK, and retransmitted the AIC in the clear.
+These two goals are authentication goals, since they assert that uncompromised
+(regular) principals executed certain actions.
+    This protocol does not have confidentiality goals, since none of the values
+it transmits is a secret. The EC is transmitted only under encryption, to pro-
+vide some protection, but nothing in the protocol depends on this public key
+certificate remaining undisclosed.
+
+AIP and other protocols. This protocol is useful only if the resulting AIC
+can be used. Thus, the AIC must be consumed in other protocols, in which the
+keys K, K −1 are used.
+    As an example, suppose that the owner of K would like to use it for writing
+electronic checks against an account he holds with a bank B. He would like a
+protocol to prove possession of K −1 to B, thereby obtaining a check-writing
+certificate for K certified by B. This check-writing certificate would in turn
+be used in a protocol to prepare individual checks for particular purchases. A
+merchant would be able to associate a check with a particular individual only
+with B’s collusion. It would be able to associate the check with a particular
+TPM only with the collusion of both B and the PCA.
+    A protocol, of the kind we have described, to retrieve a check-writing certifi-
+cate has two crucial characteristics:
+
+ 1. the protocol must consume an AIC, to ensure that the signature key K −1 is
+    a genuine TPM-resident key;
+ 2. the protocol cannot create new AICs, so that every AIC must still be gen-
+    erated as a result of a run of the original AIP.
+
+The first condition implies that the Cortier-Delaitre-Delaune criterion [9] can-
+not apply to the AIP and our check-writing protocol. Moreover, it provides no
+guidance as to how to design successive stages in a protocol suite so as not to
+undermine the guarantees achieved by their predecessors.
+    The second condition tells us something crucial about how to achieve pro-
+tocol independence. The AIC is transformed twice in this protocol: once, it is
+transformed from a state of non-existence into existence, but transmitted only
+in the special form {|aic|}EK . This transformation is carried out by the PCA. Sec-
+ond, the client TPM transforms the AIC by extracting it from its encryption; it
+checks for the presence of K −1 before emitting aic. In order to respect condition
+2, a secondary protocol must avoid exactly these transformations. It must never
+create an AIC; and it must never extract an AIC from an encrypted form.
+    Unfortunately, the Guttman-Thayer criterion [17] does not apply because of
+the unstructured blank slot x in the protocol.
+6                                                                   October 6, 2008
+
+    There are two benefits of a systematic way to ensure that multiple protocols
+will not interfere. One benefit is that it simplifies protocol verification. The pri-
+mary protocol is verified once in isolation. A second protocol that consumes its
+cryptographic outputs must be verified in combination with it; but the verifica-
+tion is independent of future protocols to be added later. In particular, state-
+space exploration methods for protocol verification (e.g. [18, 2]) have a smaller
+job, and invariant-based proof methods (e.g. [19]) have smaller case splits.
+    However, a second larger benefit, in our opinion, is that a protocol com-
+position criterion provides a guide for designing supplementary protocols. The
+secondary protocol has specific rules it must “play by” in consuming values pro-
+duced in the primary protocol, and in using keys embedded within those values.
+
+How not to interfere with AIP. AIP depends on two central transforma-
+tions. The first creates an aic, but only in the encrypted form {|aic|}EK , and only
+after the endorsement credential has been checked. The second transformation
+extracts aic from its encrypted form, and does so only if the private part K −1
+of the certified key is actually resident in the TPM performing the decryption.
+Thus, even if an adversary capturing an endorsement credential, he cannot trick
+the TPM containing EK−1 into freeing aics.
+    If AIP were supplemented with a protocol executing either of these trans-
+formations, then AIP’s guarantees might fail. For instance, if any run of a sup-
+plementary protocol created any message that is also an instance of the form
+aic, then a consumer of these credentials could be misled. Or suppose that any
+run of a supplementary protocol—having received anything of the form aic only
+within an instance of {|aic|}EK —could emit it outside this encryption. Then an
+aic might become available without a TPM having checked that K −1 is resident.
+    Hence, to avoid interference, the secondary protocol should never transform
+any of the “critical values” on which the primary protocol depends. This check
+is syntactic in nature: unification can identify locations where a critical value
+of the primary protocol might be created in a secondary protocol, or where a
+critical value, having been received by a run of a secondary protocol, might be
+retransmitted in any new form.
+
+Crucial intuition. Thus, to ensure that a secondary protocol does not un-
+dermine security goals of a primary protocol, we must design it not to trans-
+form units belonging to the primary protocol. A primary unit may be an en-
+cryption e with an ingredient t1 v e which some transformation will extract
+from e. This was the case with the transformation carried out by the TPM
+in the AIP protocol; i.e. e is {|aic|}EK and t1 is aic. Alternatively, a primary
+unit may be an encryption e where the relevant transformation is to create a
+value of the form e. This was the case with the transformation carried out by
+the Privacy Certificate Authority when it first created the cryptographic value
+aic = [[ aictag I ˆK ˆx ]]sk(PCA) , although in this example e happens to be created
+inside an encryption {|aic|}EK .
+    In order to formalize this idea, we will define the key strand space ideas,
+including the authentication test principle.
+October 6, 2008                                                                        7
+
+3     Strands and other preliminaries
+
+We represent the messages as an algebra A, freely generated by the two oper-
+ations of tagged concatenation tagname t0 ˆt1 and encryption {|t0 |}t1 . Concate-
+nations nil t0 ˆt1 with the distinguished tag nil are written t0 ˆt1 without the
+tag. The operations generate A starting from from a set of atoms and from
+indeterminates.
+     The indeterminates represent blank slots, and they may be replaced by any
+message in A, like unsorted variables. The atoms are partitioned into sorts atomic
+key, nonce, text, name, etc. The operators sk(a) and pubk(a) map names to
+signature keys and public encryption keys respectively, and K −1 which maps an
+asymmetric atomic key to its inverse, and a symmetric key to itself. Non-atomic
+messages can also be used as keys, in which case they act as symmetric keys.
+     One message t0 may be an ingredient in another t, written t0 v t, where v
+is the smallest reflexive, transitive relation on messages such that t0 v t0 ˆt1 ,
+t1 v t0 ˆt1 , and t0 v {|t0 |}t1 . The key used in an encryption is not an ingredient,
+but an aspect of how the ciphertext was prepared.1 Observe also that a 6v sk(a).
+     We view each message in A as an abstract syntax tree where the vertices are
+of four kinds, namely atoms, indeterminates, encryptions, and concatenations.
+Atoms and indeterminates are vertices that are always leaves of the tree, and
+these vertices are labeled with the particular atom or indeterminate involved.
+The internal vertices—concatenations and encryptions—each have two children.
+In an encryption vertex, the edge leading to the first child is the plaintext edge
+and the edge leading to the second child is the key edge. In a concatenation
+vertex, the vertex is labeled with a tag tagname.
+     A path as a sequence of choices {`, r}. A path leading to a node, starting
+from t1 , is defined in the usual inductive way. We write @p (t1 ) for the node to
+which p leads, starting from t1 . When p does not lead to any node starting from
+t1 , then we write @p (t1 ) ↑. This is the case when p is too long, because a proper
+subpath of p has reached a leaf.
+     The ingredient relation t0 v t means that, for some p, @p (t1 ) = t0 , and p
+does not traverse any key edge.
+
+Definition 1. Let S be a set of encryptions. A message t0 is found only within
+S in t1 , written t0 S t1 , iff for every path p such that @p (t1 ) = t0 , either (1) p
+traverses a key edge or else (2) p has a proper subpath p1 such that @p1 (t1 ) ∈ S.
+   Message t0 is found outside S in t1 , written t0 †S t1 , iff it is not the case
+that t0 S t1 .                                                                       t
+                                                                                     u
+
+Thus, t0 †S t1 iff there exists a path p where @p (t1 ) = t0 , and (1) p traverses no
+key edge, and (2) p traverses no member of S before reaching t0 . If t0 6v t1 , then
+t0 S t1 for all sets of encryptions S. Indeed, t0 6v t1 iff t0 ∅ t1 .
+     We formalize “transformation” using this notion. A role transforms a value t0
+if it transmits a message t1 where t0 †S t1 , when until this transmission, the role
+1
+    v, long called the subterm relation in the strand space literature, frequently caused
+    terminological confusion. Possibly the word “ingredient” will be better.
+8                                                                   October 6, 2008
+
+had sent and received t0 in messages where t0 S t1 . We express two apparently
+different things using the same terminology here.
+
+    – When S 6= ∅, the encryptions in S describe envelopes protecting t0 . When a
+      message t is sent in which t0 †S t, the sender has transformed t0 by removing
+      it from these enveloping forms. We also sometimes speak of transforming a
+      member of S by removing an ingredient t0 from it.
+    – When S = ∅, if t0 ∅ t1 for all the previous messages t1 , and if a subsequent
+      message t is sent in which t0 †∅ t, then the sender has created the value t0 .
+
+Homomorphisms. A homomorphism α on A is a function that maps atoms
+to atoms of the same sort, and indeterminates to any message in A, where α
+commutes with the operators sk(a), pubk(a), K −1 , tagname t0 ˆt1 , and {|t0 |}t1 .
+So
+                         α({|t0 |}t1 ) = {|α(t0 )|}α(t1 )
+                  α(tagname t0 ˆt1 ) = tagname α(t0 )ˆα(t1 ).
+
+A homomorphism is determined by its action on atoms and indeterminates. In
+the tree model of messages, to apply a homomorphism means to walk through,
+copying the tree, but inserting α(a) every time an atom a is encountered, and
+inserting α(x) every time that an indeterminate x is encountered.
+    If t1 = α(t0 ), then each path p within t1 is of one of two forms. If p is a path
+within t0 , and @p (t0 ) = t, then @p (t0 ) = α(t). Otherwise p is too long. In this
+case, p = p0 _ p1 , where @p (t0 ) = x leads to an indeterminate x within t0 , and
+p1 is a path within α(x). Then @p1 (α(x)) = @p (t1 ).
+    We use homomorphisms for many purposes, e.g. to represent unifiers. We lift
+their action to larger objects that contain messages, including the local sessions
+of principals, which we represent as strands, and global executions, which we
+formalize as realized skeletons.
+
+Strands and origination. We represent the behavior of a single principal in
+a single run of a protocol as a strand, i.e. as a finite sequence of nodes, each of
+which either transmits or receives some message. We regard transmission nodes
+as positive and reception nodes as negative. For instance, in Fig. 1, the two
+vertical columns of nodes connected by double arrows ⇒ are strands.
+    A message t0 originates at a node n1 if (1) n1 is a transmission node; (2)
+t0 v msg(n1 ); and (3) whenever n0 ⇒+ n1 , t0 6v msg(n0 ). Thus, t0 was transmit-
+ted without having been either received or transmitted previously on the same
+strand. Values assumed to originate only on one node in an execution—“uniquely
+originating” values—formalize the idea of freshly chosen, unguessable values.
+    A looser relation than the ingredient relation v between terms and their
+parts is also useful. The appears in relation  between messages is the smallest
+reflexive, transitive relation on messages such that t0  t0 ˆt1 , t1  t0 ˆt1 , and
+both t0  {|t0 |}t1 and t1  {|t0 |}t1 . Viewing the terms as abstract syntax trees,
+t0  t means that there is a path through the tree representing t that reaches a
+vertex representing t0 . It is permitted to traverse key edges.
+October 6, 2008                                                                   9
+
+Protocols. A protocol Π is a finite set of strands, representing the roles of
+the protocol. Two of the roles of the AIP are the strands shown in Fig. 1. The
+executions of a role ρ ∈ Π are obtained by replacing values appearing in ρ
+by suitable values. For example, in Fig. 1, we may replace I, K, etc., by any
+name, asymmetric key, etc., and we may replace x by any (possibly compound)
+message. Thus, the instances of the roles ρ ∈ Π are their images α(ρ) under
+homomorphisms α of the algebra A.
+   We impose a condition on how roles use indeterminates, which represent
+the “blank slots” in which a protocol participant manipulates a value without
+parsing it to atomic components. The indeterminates represent values received
+from protocol peers, or passed down from higher-level protocols as parameters.
+Thus, we stipulate:
+
+If n1 lies on ρ ∈ Π, and for some indeterminate x, x  msg(n1 ),
+then there is a negative node n0 ⇒∗ n1 such that x v msg(n0 ).
+
+This ensures that an indeterminate is received as an ingredient in an incoming
+message before being sent as an ingredient in an outgoing message. The initial
+node on the TPM AIC role in Fig. 1 represents the indeterminate x being received
+from the higher level protocol that has invoked the TPM activity.
+    We assume that every protocol contains a special role, called the listener role
+Lsn[y] which has a single reception node in which y is received. The instances of
+this role are all strands containing a single reception event, for any message; they
+are used to document the fact that this value is available without any crypto-
+graphic protection. For instance, the instance Lsn[K] documents that the key K
+is compromised, since it is available (hence also available to the adversary) with-
+out being protected by any encryption. The three roles of AIP are the listener
+role together with the two shown in Fig. 1.
+    A principal executing a role such as the PCA’s role in AIP may be partway
+through its run; for instance, it may have executed the first receive event without
+“yet” having executed its second event, the transmission node.
+
+Skeletons. A skeleton A consists of any number of (possibly partially executed)
+role instances, which we represent as a finite set of nodes, nodes(A), annotated
+with three additional kinds of information:
+
+ 1. A partial ordering A on nodes(A);
+ 2. A finite set uniqueA of nonces and atomic keys assumed uniquely originating
+    in A;
+ 3. A finite set nonA of atomic keys assumed non-compromised in A.
+
+We stipulate that nodes(A) is compatible with the strand behavior, and the
+ordering, in the sense that n1 ∈ nodes(A) and n0 ⇒ n1 implies n0 ∈ nodes(A) and
+n0 A n1 . We also stipulate that if a ∈ uniqueA , then a originates at most once
+in nodes(A). If a ∈ nonA , then we assume that a originates nowhere in nodes(A),
+though it or its inverse may have been used to prepare some cryptographic value
+appearing in nodes(A).
+10                                                                  October 6, 2008
+
+   A skeleton is realized if the behavior it describes can occur without any
+additional activity of the regular participants. In particular, A is realized if, for
+every reception node n, the adversary can construct msg(n) using as inputs:
+ 1. all messages msg(m) where m ≺A n and m is a transmission node;
+ 2. any atomic values a such that a 6∈ (nonA ∪ uniqueA ), or such that a ∈ uniqueA
+    but a originates nowhere in A
+using the adversary strands given in Definition 2.
+Definition 2. A penetrator strand has trace of one of the following forms:
+Ma : h+ai where a is atomic        Mg : h+gi where g is an indeterminate
+Cg,h : h−g, −h, +g ˆhi                              Sg,h : h−g ˆh, +g, +hi
+Eh,K : h−K, −h, +{|h|}K i                    Dh,K : h−K −1 , −{|h|}K , +hi
+A skeleton A is a skeleton over a particular protocol Π if every strand with
+nodes in nodes(A) is an instance of some role of Π.
+    If α is a homomorphism on A, we can sometimes regard it as a function on
+skeletons by applying α to the messages on all nodes of A, as well as to the sets
+uniqueA and nonA . Naturally, α must respect the clauses for uniqueA and nonA
+in the definition of skeleton; i.e. α cannot identify K ∈ nonA with any atom that
+originates in A, or identify a ∈ uniqueA with another atom if this would give α(a)
+two originating nodes in the resulting skeleton. We write α(A) for the resulting
+skeleton, when this is defined, and regard α as a homomorphism on skeletons.
+In [12] we use a compatible although more inclusive notion of homomorphism.
+
+
+4    Authentication tests
+The authentication test idea is that when certain transformations have been
+observed, they represent a kind of test that can be explained or “solved” in only
+a few ways.
+
+Definition 3. A cut in a skeleton A is a partition of nodes(A) into two sets L, U
+such that (1) U is non-empty, and (2) if m ∈ L and n ∈ U , then n 6A m.        t
+                                                                                u
+
+Suppose either c = {|t0 |}t1 is an encrypted message, or c = a is an atom where
+c ∈ uniqueA originates uniquely on some regular node, and suppose that S is a
+set of encrypted messages such that c †S msg(n) for some n ∈ nodes(A). Letting
+
+               U = {n ∈ nodes(A) : ∃m . m A n ∧ c †S msg(m)},
+
+and L = nodes(A) \ U , it follows that L, U is a cut in A. This cut separates all
+the nodes where c has never previously been found outside S from those nodes
+in which this is no longer true.
+    The authentication test principle states that there are only three ways that
+this can happen, i.e. that in a realized skeleton, one of three kinds of action
+must account for c “escaping” from the protection afforded to it by the set of
+encryptions S:
+October 6, 2008                                                                     11
+
+ 1. some regular transmission node sends c outside S; or
+ 2. c = {|t0 |}t1 and the encryption key t1 to construct c from t0 was compromised
+    prior to c’s escape, as may be documented with a listener node; or else
+ 3. a decryption key K −1 was compromised prior to c’s escape—as may like-
+    wise be documented in a listener node that receives K −1 —and it allows the
+    adversary to extract c from some member {|t|}K of S.
+
+In fact, all the protocol analysis possible within this simple Dolev-Yao model is
+a systematic exploration of these cases [11].
+
+Definition 4. Let A be a skeleton. A critical value for A is either an encrypted
+message c = {|t0 |}t1 , or else an atom c ∈ uniqueA where c originates on some
+regular node n0 ∈ nodes(A). Let S be a set of encrypted messages.
+    Cut(c, S, A), the test cut for c, S in A, is the cut L, U (if one exists) such that
+c is a critical value and
+
+                U = {n ∈ nodes(A) : ∃m . m A n ∧ c †S msg(m)}.
+
+S is the escape set of Cut(c, S, A).                                                 t
+                                                                                     u
+
+Lemma 5. If c is a critical value for A, and ∃n ∈ nodes(A) . c †S msg(n), then:
+
+1. (L, U ) = Cut(c, S, A) is defined;
+2. U has A -minimal nodes; and
+3. If n1 is A -minimal in U , then c †S msg(n1 ), but for all m ≺A n1 , c           S
+
+   msg(m).
+
+A test cut is solved when there is an explanation for how c escaped from S:
+
+Definition 6. L, U = Cut(c, S, A) is solved iff, for every A -minimal member
+n1 of U , either:
+
+ 1. n1 is a transmission node; or
+ 2. there is a listener node m = Lsn[t] with m ≺A n1 , and either
+    (a) c = {|t0 |}t , or else
+    (b) for some {|t0 |}t1 ∈ S, t is the corresponding decryption key t = t−1
+                                                                           1 .
+
+The solutions for Cut(c, S, A) are the A -minimal transmission nodes in U
+together with the listeners satisfying the conditions for m. A is saturated if
+Cut(c, S, A) is solved whenever defined, for every c, S.                    t
+                                                                            u
+
+We summarize the two main facts about saturated skeletons:
+
+Theorem 1. 1. Every realized A has a realized saturated extension A0 , where:
+   (a) nodes(A) ⊆ nodes(A0 ), and every m ∈ (nodes(A0 )\nodes(A)) is a listener
+       node;
+   (b) A = A0 ∩(nodes(A) × nodes(A));
+   (c) uniqueA = uniqueA0 and nonA = nonA0 .
+2. If A is saturated, then A is realized.
+12                                                                   October 6, 2008
+
+Clause 1 expresses the soundness of the authentication tests [11, Props. 2,3], and
+clause 2 expresses the completeness of the authentication tests [11, Prop. 5]. We
+call A0 a saturated extension of A if it satisfies the properties given in clause 1.
+    A useful fact, for our present purposes, is that the escape set S may be
+restricted to “relevant” encryptions, where encryptions are relevant if they are
+ingredients in the skeleton:
+
+Lemma 7. Suppose S 0 includes all encryptions that are ingredients of messages
+in A, i.e. for all encryptions e and all n ∈ nodes(A), e v msg(n) implies e ∈ S 0 .
+Then:
+
+1. Cut(c, S, A) = Cut(c, S ∩ S 0 , A), or else both are undefined, and
+2. A is saturated iff all well-defined cuts of the form Cut(c, S ∩ S 0 , A) are solved.
+
+
+5    Multiprotocols
+
+In our context, we are interested in an initially given protocol, the primary
+protocol Π1 , as well as a protocol Π which includes it. We have written Π in
+the form Π1 ∪ Π2 , but this is slightly misleading. We really want to distinguish
+the behaviors of Π1 from those behaviors of Π that are definitely not behaviors
+of Π1 .
+
+Definition 8. 1. (Π, Π1 ) is a multiprotocol if Π, Π1 are protocols, and every
+   role of Π1 is a role of Π.
+2. A node nj is primary if the strand segment n0 ⇒ . . . ⇒ nj leading to nj
+   is identical with an initial segment of some α(ρ1 ) for ρ1 ∈ Π1 . That is, the
+   directed term ±ti on ni has the same direction as the ith node mi of ρ1 , and
+   ti = α(msg(mi )), for each i ≤ j. A node n2 is secondary if it lies on some
+   instance of some ρ ∈ Π, but it is not primary.
+3. E(Π1 ) is the set of primary encryptions:
+
+         E(Π1 ) = {α(e1 ) : ∃n1 , ρ1 . e1 v msg(n1 ) ∧ n1 lies on ρ1 ∧ ρ1 ∈ Π1 },
+
+     i.e. instances α(e1 ) of an ingredient of a node lying on a ρ1 ∈ Π1 . Any non-
+     primary encryption e2 6∈ E(Π1 ) is a secondary encryption.                  t
+                                                                                 u
+
+E(Π1 ) 6= {e : ∃n1 , ρ1 , α . e v msg(n1 ) ∧ n1 lies on α(ρ1 ) ∧ ρ1 ∈ Π1 }, since the
+latter will contain all encryptions, at least if Π1 has any role with an indetermi-
+nate as ingredient. This is the naı̈ve generalization of the definition used in [17],
+and the crucial change to make the definition useful for protocols with indeter-
+minates (blank slots) is to use E(Π1 ) instead. E(Π1 ) contains the instances of
+encryptions that are syntactically present as ingredients in the roles of Π1 . Al-
+though changing the definition is not hard, proving that this provides a correct
+definition requires work.
+    We sometimes refer to the secondary nodes of (Π, Π1 ) as a secondary protocol
+Π2 , but this is not really correct. For instance, Π1 contains the listener role, so
+October 6, 2008                                                                    13
+
+listener nodes are primary, not secondary, and Π2 , which has no listener nodes,
+does not satisfy our definition of protocols.
+     When analyzing (Π, Π1 ), we want to know whether all realized skeletons of Π
+satisfy the goals achieved by all realized skeletons of Π1 . Naturally, the analysis
+may be iterated: An enclosing protocol Π may be a subprotocol of some new
+Π 0 ; thus, (Π 0 , Π) is a multiprotocol that should not undermine the goals of Π.
+     Secondary encryptions never originate on primary nodes, and that is why, in
+the definition of protocol, we required each indeterminate to be received on a
+role ρ ∈ Π before any other appearance:
+Lemma 9. Let e2 be a secondary encryption, such that e2  msg(n), where
+n = α(n1 ) for some n1 lying on ρ1 ∈ Π1 . For some negative m, m ⇒∗ n and
+e2 v msg(m), so e2 does not originate on n.
+
+Proof. Let t1 = msg(n1 ) and t = msg(n) = α(t1 ). By the definition of applying
+a homomorphism, for every path p to any encryption e in t, either @p (t1 ) is also
+an encryption e1 , or else p = p1 _ p2 , where @p1 (t1 ) = x is an indeterminate, and
+@p2 (t1 ) leads to e within α(x). In the first case, e = α(e1 ), so this case does not
+apply to the secondary encryption e2 . Thus, each location at which e2 appears
+is of the form p = p1 _ p2 where @p1 (t1 ) = x is an indeterminate.
+    Since n1 is positive, then there is a negative n0 such that n0 ⇒+ n1 and
+x v msg(n0 ). Since:
+
+                        e2 v α(msg(n0 )) and α(n0 ) ⇒+ n,
+
+we may take m = α(n0 ).                                                             t
+                                                                                    u
+
+In constructing a Π1 -skeleton from a Π-skeleton that is a counterexample A, we
+will use two operations:
+ 1. Restricting A by discarding its secondary nodes, and
+ 2. Removing encryptions that do not belong to Π1 , by undoing homomor-
+    phisms, so to speak.
+We turn now to removals, the second of these, and will return to restrictions in
+the next section.
+Removing eliminable encryptions. An encryption e is ineliminable if e ∈
+
+             {α(e1 ) : ∃e1 , n1 , ρ . e1  msg(n1 ) ∧ n1 lies on ρ1 ∈ Π1 },
+
+that is, when e is an instance of some encryption that appears syntactically
+within any role of Π1 . An eliminable encryption e is an encryption that is not
+ineliminable. Thus, the eliminable encryptions are those that are not an instance
+of any encryption syntactically appearing in a primary role. Eliminable encryp-
+tions do not overlap primary encryptions, although there may also be encryptions
+that are neither eliminable nor primary. The ineliminable but non-primary en-
+cryptions are used as compound keys in creating primary encryptions, or perhaps
+are nested within these compound keys.
+14                                                                      October 6, 2008
+
+    When eliminable encryptions appear in A|`Π1 , we would like to remove them,
+in the sense of considering a preimage of A |`Π1 under a homomorphism, such
+that eliminable encryptions no longer appear in this preimage. That is, we would
+like to remove the eliminable encryptions by moving from A |`Π1 = α(A0 ) to A0 ,
+which may be properly chosen to contain no eliminable encryptions.
+    Suppose that a homomorphism α = [xi 7→ ei ]i∈I maps the indeterminates
+xi to encryptions ei and leaves every other indeterminate y and every atom a
+unchanged. We regard α as a recipe for removing appearances of the ei from t1 ,
+obtaining some result t0 where the following conditions hold:
+ 1. t1 = α(t0 );
+ 2. no xi appear in t1 , i.e. xi 6 t1 ; and
+ 3. no ei appears in t0 , i.e. ei 6 t0 .
+Given t1 , for every choice of {ei }i∈I , we may select new indeterminates {xi }i∈I
+such that this can succeed. However, when some of the ei s may appear within
+others, there may be more than one result t0 compatible with the conditions.
+For instance, if ei  ej , one may choose whether to remove an occurrence of ej
+from t1 , or whether instead to remove an embedded occurrence of ei . In either
+case, this may eliminate both ei and ej from the result.
+     We stipulate that the removal should always opt to excise the larger message,
+i.e. ej in the example given. Let us say that p is a distinguishing path for t0 , t1 if
+the topmost vertices of @p (t0 ) and @p (t1 ) do not have the same type and label,
+but for each proper subpath p0 of p, the topmost vertices of @p0 (t0 ) and @p0 (t1 )
+do have the same type and label. Let Dist(t0 , t1 ) be the set of all distinguishing
+paths for t0 , t1 .
+
+Definition 10. Let the set I be finite, let {xi }i∈I be an I-indexed family of inde-
+terminates, and let {ei }i∈I be an I-indexed family of encryptions, both without
+repetitions. Let α = [xi 7→ ei ]i∈I be the homomorphism that is the identity for
+all indeterminates y 6∈ {xi }i∈I , and for all atoms, while mapping each x1 to ei .
+Then α is a removal for a message t1 if, for all i ∈ I, xi 6 t1 .
+    The result of the removal α for t1 is the term t0 such that:
+ 1. ∀i ∈ I . ei 6 t0 ; and
+ 2. ∀p ∈ Dist(t0 , t1 ), ∃i ∈ I . @p (t1 ) = ei , and @p (t0 ) = xi .
+α is an eliminative removal if each ei is eliminable.                                t
+                                                                                     u
+
+Algorithmically, to determine t0 given t1 , {ei }i∈I and {xi }i∈I , where the xi s do
+not appear in t1 , we walk the abstract syntax tree for t1 . We copy structure,
+except that as soon as we encounter any subtree equal to any ei , we insert xi
+instead.
+    In favorable cases, the relations and † are preserved by message removal:
+Lemma 11. Let α = [xi 7→ ei ]i∈I be a removal for t1 with result t0 :
+1.   c S t0 implies α(c) α(S) α(t0 ),          when ∀i ∈ I, α(c) α(S) ei .
+2.   c †S t0 implies α(c) †α(S) α(t0 ),        when ∀i ∈ I, ∀t ∈ S, ei 6 t.
+October 6, 2008                                                                  15
+
+Proof. 1. Suppose that p ∈ [`, r]∗ is a path in α(t0 ) leading to α(c) without
+    traversing a key edge. By the definition of homomorphism, p is of one of two
+    forms:
+    (a) p is a path within t0 . Since c S t0 , p traverses some t ∈ S within t0 .
+         Thus, p traverses α(t) within α(t0 ).
+    (b) p = p1 _ p2 where p1 leads within t0 to x, and p2 leads within e to α(c).
+         Then since α(c) α(S) e, p2 traverses some member of α(S).
+ 2. Let p be a path within t0 leading to c without traversing either a key edge
+    or a member of S before its end. Suppose that p = p1 _ p2 , where p1 leads
+    within t0 to some value t 6∈ S; is it possible that α(t) ∈ α(S)? Equivalently,
+    is there some t0 ∈ S, such that α(t0 ) = α(t)?
+    If so, then t and t0 differ only for paths that in one lead to xi and in the
+    other lead to ei . By the definition of removal, we know that ei 6 t. Likewise,
+    by the assumption that ei does not appear in any member of S, we know
+    that ei 6 t0 . Thus, t0 = t 6∈ S, contradicting the choice of t0 .           t
+                                                                                  u
+
+We may lift removals to strands and to Π1 -skeletons; α is a (skeleton) removal
+for A1 if it is a (message) removal for msg(n) for each node n ∈ nodes(A). If the
+ei are eliminable encryptions, then we call this an eliminative removal. If A were
+a Π-skeleton but not a Π1 -skeleton, then the result of the eliminative removal
+α might include strands that are not instances of any role.
+Lemma 12. The result of an eliminative removal on a primary node is a pri-
+mary node for the same role. I.e. let nj be a primary node, and let α be an
+eliminative removal for the messages lying on n0 ⇒ . . . ⇒ nj , an instance of
+some role ρ. Then the result of the removal m0 ⇒ . . . ⇒ mj consists of primary
+nodes for an instance of ρ.
+    In particular, if c1 is a primary encryption c1 = α(e1 ), then the result of the
+removal c0 is a primary encryption of the form c0 = α0 (e1 ).
+
+Proof. By induction on the j-tuple of sets
+
+                          h Dist(msg(mi ), msg(ni )) ii≤j
+
+of minimal-length paths at which corresponding nodes mi and ni differ. We
+order these tuples pointwise, using the inclusion partial order on the sets of
+distinguishing paths.
+    Fix m0 ⇒ . . . ⇒ mj , and assume that the lemma holds for all n00 ⇒ . . . ⇒ n0j
+that differ from m0 ⇒ . . . ⇒ mj with smaller distinguishing tuple. In particular,
+h Dist(msg(mi ), msg(ni )) ii≤j = h∅, . . . , ∅i, then n0 ⇒ . . . ⇒ nj is primary by
+assumption.
+    Since mj is primary, there is a β and ρ1 ∈ Π1 such that the mi are the
+successive nodes of an initial segment of β(ρ1 ). We assume that the xi do not
+appear in ρ1 , perhaps because they are chosen distinct from all indeterminates
+appearing in all roles of Π.
+    If p is a path to some secondary e2 in msg(ni ), then p = p1 _ p2 , where
+p1 reaches some indeterminate y within ρ1 ↓ i, and p2 reaches e2 within β(y).
+16                                                                   October 6, 2008
+
+Choosing z not appearing in the nodes hni ii , hmi ii , or roles of Π, [z 7→ e2 ] is
+a removal for β(y). Let β 0 differ from β only in that β 0 (y) is the result of the
+removal [z 7→ e2 ] for β(y). Then β 0 (ρ1 ↓ i) is a primary node by definition.
+Moreover, β 0 (ρ1 ↓ i) differs from mi at a smaller set of paths than does ni . u t
+Skeletons being finite structures containing messages of finite size, for every
+skeleton, there is a finite set of eliminable encryptions appearing anywhere in
+it. Hence, there are full eliminative removals that remove all of them. For a full
+eliminative removal for a skeleton A, we take the finite set
+          {ei }i∈I = {e : ∃n ∈ nodes(A) . e  msg(n) ∧ e is eliminable}.
+Primary cuts are those created by the behavior of the primary protocol:
+Definition 13. Cut(c, S, A) is a primary cut if
+ 1. Cut(c, S, A) is well-defined;
+ 2. if c is an atom, then c originates on a primary node;
+ 3. if c is an encryption, then c ∈ E(Π1 ); and
+ 4. S ⊆ E(Π1 ).                                                                     t
+                                                                                    u
+Lemma 14. Let α be a full eliminative removal for A1 , with result A0 , and α
+be a removal for S1 with result S0 . If Cut(c0 , S0 , A0 ) = L0 , U0 is a primary cut,
+then (1) Cut(α(c0 ), S1 , A1 ) = L1 , U1 is a primary cut; and α(U0 ) ⊆ U1 .
+Proof. 1. Since Cut(c0 , S0 , A0 ) is well-defined, there is a minimal n0 ∈ U0
+    where c0 †S0 msg(n0 ). Since α is a removal for S1 with result S0 , we
+    may apply Lemma 11, Clause 2, inferring that α(c0 ) †S1 α(msg(n0 )). Thus,
+    Cut(α(c0 ), S1 , A1 ) = L1 , U1 is well-defined. The remaining conditions are
+    immediate.
+ 2. If n ∈ U0 , then there is a minimal n0 ∈ U0 with n0 A0 n. Thus, α(n0 ) A1
+    α(n). As we have just seen, α(c0 ) †S1 α(msg(n0 )), so α(n0 ) ∈ U1 . Hence
+    α(n) ∈ U1 .                                                                t
+                                                                               u
+
+
+6    Strong disjointness
+The key notion—for ensuring that a multiprotocol does not interfere with the
+goals of its primary protocol—concerns how the secondary nodes transform en-
+cryptions. To create an encryption is one way to transform it, or another way is
+to remove some ingredient—such as a smaller encryption or a nonce or key—from
+inside it.
+Definition 15. 1. Suppose that e ∈ E(Π1 ). If e originates on any secondary
+   transmission node n2 , then n2 is an encryption creation conflict.
+2. Suppose that e ∈ E(Π1 ), and t1 v e v msg(n2 ), where n2 is a secondary
+   reception node. Suppose n2 ⇒+ n02 , where n02 is a transmission node, and
+   t1 v msg(n02 ). Node n02 is an extraction conflict if for some set S ⊆ E(Π1 ):
+              (∀m . m ⇒+ n02 ⊃ t1        S
+                                             msg(m))    ∧   t1 †S msg(n02 ).
+October 6, 2008                                                                 17
+
+ 3. Π, Π1 has strongly disjoint encryption (s.d.e.) iff it has neither encryption
+    creation conflicts nor extraction conflicts.                                t
+                                                                                u
+Strong disjointness, as defined here, may not appear entirely syntactic, because
+its definition talks about all strands of the protocols Π and Π1 . However, it may
+be checked in a syntactic way using the definitions of the finitely many roles of Π
+and Π1 . To check whether there is an encryption creation conflict, we consider
+each encryption e1 that is an ingredient in any node of a role ρ1 ∈ Π1 . Suppose
+that e1 unifies with some encryption e2 that is an ingredient in a transmission
+node m0 , with most general unifier α, where α(msg(m0 )) is a secondary node.
+Then there should be a node m such that
+
+                      m ⇒+ m0 and α(e2 ) v (α(msg(m))).
+
+If this is always the case, then there are no encryption creation conflicts. The
+use of unification to check extraction conflicts is more elaborate but similar.
+    Our main theorems—Thm. 2 here and Thm. 3 in Section 7—show that
+s.d.e. suffices to be able to extract a realized Π1 -skeleton from a realized Π-
+skeleton, and that these Π1 -skeletons witness for the fact that Π does not un-
+dermine security goals achieved by Π1 .
+Lemma 16. Let Π, Π1 have s.d.e., with A a Π-skeleton, and let Cut(c, S, A) =
+L, U be primary. Solutions for Cut(c, S, A) are primary nodes.
+
+Proof. A solution is either a listener node m—which is primary—or else a A -
+minimal transmission node m1 ∈ U . So suppose m1 is secondary.
+    If c is an atom, then since it originates uniquely, and on a primary node,
+there are nodes m0 ⇒+ m1 , where c v msg(m0 ). By Lemma 5, c is found only
+within S in all the nodes preceding m1 on the same strand, but c †S msg(m1 ),
+so m1 is an extraction conflict.
+    If c is an encryption, then it is a primary encryption by the definition of a
+primary cut. If c originates on m1 , then m1 is an encryption creation conflict.
+Thus, there are nodes m0 ⇒+ m1 , where c v msg(m0 ). By Lemma 5, c is
+found only within S in all the nodes preceding m1 on the same strand, but
+c †S msg(m1 ), so m1 is an extraction conflict.                                 t
+                                                                                u
+
+Lemma 17. Let Π, Π1 have s.d.e., with A a saturated Π-skeleton. Suppose
+Cut(c, S, A) = L, U is primary. If for some m ∈ L and secondary encryption
+e2 , e2 v msg(m), then either c S e2 or else Cut(c, S, A) = L, U has a listener
+solution.
+
+Proof. If c 6v e2 , the conclusion is immediate, so assume that c v e2 . Suppose
+that c †S e2 .
+    First, suppose that c is an atom. Then by the definition of primary cut, c
+originates on a primary node n0 . However, by Lemma 9, e2 does not originate
+on n0 . Also, e2 is not an ingredient in the message of any earlier node, since it
+contains c. Thus, e2 is not an ingredient in msg(n0 ). Hence, letting S 0 = {e ∈
+                          0
+S : e2 6v e}, in fact c S msg(n0 ).
+18                                                                   October 6, 2008
+
+    Since m ∈ U 0 , where Cut(c, S 0 , A) = L0 , U 0 , there exists a A -minimal n1 A
+m in U 0 . If n1 has a listener solution, then because S 0 ⊂ S, so does Cut(c, S, A) =
+L, U .
+    So suppose that n1 is a transmission node. By Lemma 16, n1 is a primary
+node. In particular, by Lemma 9, e2 does not originate on n1 . Moreover, since
+     0
+c †S e2 , e2 is not an ingredient in any earlier node on the strand of n1 . Therefore,
+e2 6v msg(n1 ). Hence, in fact, c †S msg(n1 ). contradicting the assumption that
+n1 A m ∈ L.
+    Second, suppose that c is an encryption. If the earliest n0 A m such that
+c v msg(n0 ) is a reception node, then since A is saturated, Cut(c, ∅, A) is solved,
+and there is a listener solution preceding n0 . This is also a listener solution for
+Cut(c, S, A). Alternatively, suppose that n0 is a transmission node on which c
+originates. From this point, the argument follows the same form as when c is an
+atom.                                                                                 t
+                                                                                      u
+
+Restricting to protocol Π1 . When a Π-skeleton A is a counterexample to a
+goal of Π1 , we are interested in the subskeleton of A which omits all secondary
+nodes.
+
+Definition 18. If A is a Π-skeleton, then its Π1 restriction, A |` Π1 , is the
+subskeleton A1 of A such that:
+
+ 1. m ∈ nodes(A1 ) iff m ∈ nodes(A) and m is primary.
+ 2. m A1 n iff m A n and m, n ∈ nodes(A1 ).
+ 3. uniqueA1 = uniqueA and nonA1 = nonA .                                            t
+                                                                                     u
+
+Definition 8 declares a node primary if the strand segment leading to it is iden-
+tical with an initial segment of an instance of a role ρ1 ∈ Π1 ; it does not matter
+what “would come later.”
+
+Theorem 2. Let Π, Π1 have strong disjoint encryption, and let A be a realized
+Π-skeleton. If A0 is the result of a full eliminative removal α applied to A |`Π1 ,
+then A0 is a realized Π1 -skeleton.
+
+Proof. We first prove that the theorem holds in case A is saturated. By Thm 1,
+it suffices to show that A0 is also saturated. Let A1 = A |` Π1 . Since A1 is a
+Π1 -skeleton, the result A0 of the removal α is a Π1 -skeleton.
+    Supposing Cut(c0 , S0 , A0 ) = L0 , U0 is well-defined, we would like to show
+that it is solved. Since in A0 no secondary encryptions whatever appear, by
+Lemma 7, we may assume that S0 is chosen to be primary. Since c0 †S0 n1 for
+some n1 ∈ nodes(A0 ), c0 v msg(n1 ). Hence if c0 is an encryption, it is a primary
+encryption. So Cut(c0 , S0 , A0 ) is a primary cut.
+    Let α(c0 ) = c, α(S0 ) = S. Cut(c, S, A1 ) = L, U is well defined by Lemmas 5,
+11. The other clauses for a primary cut are clearly satisfied. Thus, Cut(c, S, A1 )
+is primary.
+    By the definition, Cut(c, S, A) is also a primary cut, and since by assump-
+tion A is realized, Thm. 1 implies it is solved. Moreover, Lemma 16 implies
+October 6, 2008                                                                   19
+
+that all of its solutions lie on primary nodes, so Cut(c, S, A1 ) is also solved; let
+Cut(c, S, A1 ) = L1 , U1 .
+    Let n0 ∈ U0 be A0 -minimal. By Lemma 14, α(n0 ) ∈ U1 , although it may
+not be minimal. However, let n1 A1 α(n0 ) be A1 -minimal in U1 . If n1 is solved
+with a listener node m, then its result under the removal solves n0 ∈ U0 .
+    So suppose that n1 ∈ U1 is minimal, and solved only by a primary trans-
+mission node m1 . The node m1 lies on some strand • ⇒∗ m1 , and the result of
+applying the removal α is some strand • ⇒∗ m0 in A0 . Is the latter a solution
+for Cut(c0 , S0 , A0 ) = L0 , U0 ?
+    First, observe that for any node • prior to m0 , c0 is found only within S0 .
+Otherwise, Lemma 11 Clause 2 would imply that c appears outside S prior to
+m1 , so that it would not be a solution. By Lemma 11 Clause 1, we may infer
+that c0 is found outside S0 in msg(m1 ), unless c S ei for one of the removed,
+secondary ei . However, in this case, by Lemma 17, Cut(c, S, A) has a listener
+solution, returning us to an earlier case.
+    Finally, suppose that A is realized. Then, by Thm 1, A has a realized satu-
+rated extension A0 that differs only in what listener strands it contains. Apply
+the preceding to obtain a realized Π1 skeleton A00 . The desired A0 is the sub-
+skeleton of A00 that discards listener nodes from A00 when they are in A0 but not
+in A.                                                                              t
+                                                                                   u
+
+Our last job is to show that A1 is a Π1 -counterexample to any Π1 -security goal
+to which A is a counterexample. But for that, we need a definite notion of what
+a security goal is.
+
+
+7   A language L(Π) to describe skeletons of Π
+
+Given a protocol Π, we define a first order vocabulary for talking about the
+skeletons over Π.
+
+Definition 19. L(Π) consists of:
+
+Variables Var ranging over nonces (e.g. N, Na ), atomic keys (e.g. K), atoms
+   (e.g. a), messages (e.g. x, y), as well as variables ranging over nodes (e.g.
+   m, n, n1 ). We treat the sorts in the manner of order-sorted algebra [15];
+Predicate symbols equality u = v, falsehood false (no arguments), and:
+     – Non(v), Unq(v), and UnqAt(n, v), meaning respectively that v is assumed
+       non-compromised, that v is assumed uniquely originating, and that v is
+       assumed uniquely originating and moreover originates at node n;
+     – Pos(n) and Neg(n), meaning respectively that node n is positive, i.e. a
+       transmission node, or negative, i.e. a reception node;
+     – n0 ⇒ n1 and n0 ≺ n1 , meaning respectively that n0 immediately pre-
+       cedes n1 on the same strand, and that n0 precedes n1 in the partial
+       ordering ≺A ;
+20                                                                  October 6, 2008
+
+     – One role predicate for each node on each role in Π. For each role of length
+       k, there are k predicates. The arguments to the ith role predicate consist
+       of one node variable m, together with one variable for each parameter
+       to the role that has appeared in any of the first i messages.             t
+                                                                                 u
+Thus, every protocol has a role predicate Lsn1(m, x), meaning that m is the first
+node on a listener strand, on which message x has been received. In the case of
+the AIP TPM role, there are four role predicates, of which the first two are:
+ – aip tpm1(m, x), meaning that m is a reception node not preceded by any
+   other on its strand, and the message received is on node m is just the pa-
+   rameter x, as dictated by the definition of the AIP TPM role;
+ – aip tpm2(m, x, i, ks, f, e, ke), meaning that m lies on the second position on its
+   strand after a node m0 such that aip tpm1(m0 , x), and m transmits message:
+
+                             {|iˆk ˆxˆ[[ ekctag f ˆe ]]ks |}ke .
+
+These predicates are certainly not independent, given the valid formula:
+
+        aip tpm2(m2 , x, i, k, f, e, p) ⊃ ∃m1 . m1 ⇒ m2 ∧ aip tpm1(m1 , x).
+
+If Π1 is a subprotocol of Π in the sense that every role of Π1 is a role of Π, then
+L(Π1 ) is a sublanguage of L(Π).
+    Two ingredients are conspicuously missing from L(Π). Normally, one would
+expect this sort of language to have function symbols for the message construc-
+tors, encryption and concatenation. One would also expect a function which,
+given a node, would return the message sent or received on that node. We have
+omitted them for two reasons. First, we would like to make L(Π) as insensitive
+to the notational specifics of the protocol Π as possible, so that it describes the
+goals of the protocol without excessive reliance on choices about the syntax of
+messages. Second, we want to focus the security goals on the roles and their
+parameters. Assertions about compound messages embedded within parameters
+would provide artificial ways to construct counterexamples to our protocol inde-
+pendence theorem.
+    However, if we wanted to reason axiomatically about protocols, we would
+need to work within an expanded language with message constructors and a
+function to extract the message sent or received on a node. Goals would continue
+to be expressed in the sublanguage L(Π1 ).
+Semantics. The semantics for L(Π1 ) are a straightforward classical semantics,
+given the requirement that each structure form a skeleton for the protocol Π.
+This requirement builds the permissible behaviors of Π directly into the seman-
+tics without requiring an explicit axiomatization.
+Definition 20. Let L(Π) be the language for Π, and A be a skeleton for Π.
+    An assignment σ for A is a function from variables of L(Π1 ) to messages, as
+well as to nodes. Two assignments σ, σ 0 are similar up to v, written σ ∼v σ 0 , if
+for every variable v 0 , different from v, σ(v 0 ) = σ 0 (v 0 ).
+    Satisfaction A, σ |= Φ is defined inductively:
+October 6, 2008                                                                    21
+
+
+A, σ |= Φ ∧ Ψ iff             A, σ |= Φ and A, σ |= Ψ ;
+A, σ |= Φ ∨ Ψ iff             A, σ |= Φ or A, σ |= Ψ ;
+A, σ |= ¬Φ iff                A, σ 6|= Φ;
+A, σ |= ∀v . Φ iff            for every σ 0 , if σ ∼v σ 0 , then A, σ 0 |= Φ;
+A, σ |= ∃v . Φ iff            for some σ 0 , σ ∼v σ 0 and A, σ 0 |= Φ;
+A, σ |= u = v iff             σ(u) = σ(v);
+A, σ |= Non(v) iff            σ(v) ∈ nonA ;
+A, σ |= Unq(v) iff            σ(v) ∈ uniqueA ;
+A, σ |= UnqAt(m, v) iff       σ(m) ∈ nodes(A), and
+                              σ(v) ∈ uniqueA , and σ(v) originates at node σ(m);
+A, σ |= Pos(m) iff            σ(m) ∈ nodes(A), and σ(m) is a transmission node;
+A, σ |= Neg(m) iff            σ(m) ∈ nodes(A), and σ(m) is a reception node;
+A, σ |= m ⇒ n iff             m, n ∈ nodes(A), and σ(m) ⇒ σ(n);
+A, σ |= m ≺ n iff             σ(m) ≺A σ(n);
+
+A, σ |= RoleRhoJ(m, v1 , . . . , vk ) iff
+
+    σ(m) ∈ nodes(A), and σ(m) is the j th node on its strand, and the suc-
+    cessive transmissions and receptions on nodes n ⇒∗ m are identical with
+    the respective transmissions and receptions on the first j nodes of role
+    ρ, instantiated with the values σ(v1 ), . . . , σ(vk ).
+
+We write A |= Φ when A, σ |= Φ for all σ.                                          t
+                                                                                   u
+
+When n is a variable over nodes, although σ(n) 6∈ nodes(A) is permitted, in that
+case, whenever φ(n) is an atomic formula, A, σ 6|= φ(n).
+    In the satisfaction definition, the only noteworthy clause is the last, which
+stipulates that only the nodes preceding σ(m) on its strand are relevant to
+whether it satisfies RoleRhoJ(m, v1 , . . . , vk ). In protocols where there are two
+different roles ρ, ρ0 that differ only after their first j nodes—typically, because
+they represent different choices at a branch point after the j th node [16, 14]—the
+two predicates RoleRhoJ and RoleRho0 J are equivalent.
+    When one has a notion of homomorphism for a class of structures, one would
+expect (unnegated) atomic formulas to be preserved under homomorphisms.
+Moreover, the homomorphisms we use in this paper are bijections between the
+nodes of A and those of α(A), and they do not enrich the ordering on nodes.
+
+Lemma 21. 1. If A, σ |= φ and φ is an atomic formula, then α(A), α ◦ σ |= φ.
+ 2. If α(A), α ◦ σ |= φ, and φ is of any of the forms:
+        m = n, Pos(n), Neg(n), m ≺ n, and m ⇒ n,
+    with m, n variables over nodes, then A, σ |= φ.
+ 3. If α is injective, and α(A), α ◦ σ |= φ, and φ is of any of the forms:
+        x = y, Non(v), Unq(v), and UnqAt(m, v),
+    then A, σ |= φ.
+ 4. If α is an eliminative removal, and α(A), α◦σ |= φ, and φ is a role predicate,
+    then A, σ |= φ.
+22                                                                  October 6, 2008
+
+Proof. 1. By cases on the definition. 2. By the injectiveness of the skeleton ho-
+momorphism α on nodes. 3. By injectiveness and the definition of skeleton ho-
+momorphisms α. 4. By Lemma 12.                                                 t
+                                                                               u
+
+What is a security goal? A security goal is either an authentication or a
+confidentiality property. An authentication goal requires a peer to have executed
+some behavior. If the authentication goal is a goal of Π1 this behavior should be
+a strand belonging to Π1 . The peer’s behavior may have expected values for all
+parameters, or else for just some of the parameters, in which case the remaining
+parameters may freely take any value. A realized A is a counterexample when A
+does not contain any such behavior.
+    A confidentiality goal requires some desired secret t not to be shared as a
+parameter of another strand. In the usual case, this other strand is a listener
+strand Lsn[t], in which case the goal ensures that t can never be transmitted in
+plaintext, without being protected by encryption. A realized A is a counterexam-
+                                                                t
+ple to this if it contains a listener strand Lsn[t] of the form → •. More generally,
+a realized A is a counterexample to a confidentiality goal if it contains a strand
+of the prohibited kind, with the given parameter t. We consider here only “full
+disclosure” goals, rather than “partial information” goals, in which the adver-
+sary learns that the regular behavior is compatible with some values of t, but
+not others. Much is known about the relation between full disclosure goals and
+partial information goals, e.g. [4, 8].
+    A security goal also has assumptions. These assumptions may concern unique
+origination of some values. They may concern long-term keys that are uncom-
+promised, and thus non-originating. Finally, the assumptions may concern which
+roles have been instantiated, e.g. asserting that something must be true if a re-
+sponder strand has occurred. Alternatively, we may assume that part of a role
+has been instantiated, e.g. asserting that something must be true if the first
+two nodes on a responder strand have occurred. The languages L(Π) have been
+designed to express these properties.
+
+Definition 22. 1. A security hypothesis is an atomic formula of L(Π).
+2. An authentication conclusion is a conjunction Ψ of atomic formulas of L(Π).
+3. Suppose that G0 is Φ ⊃ ∃v0 . . . vj . (Ψ1 ∨ . . . ∨ Ψk ), where Φ is a conjunction
+   of security hypotheses and each Ψi is an authentication conclusion. If k = 0,
+   this is the empty disjunction false. Suppose that, for every variable n over
+   nodes occurring free in G0 , one of the hypotheses in Φ is a role predicate
+   RoleRhoJ(n, u, . . . , w).
+   Then G, the universal closure of G0 , is a security goal of Π. G is an authen-
+   tication goal if k > 0 and a confidentiality goal if k = 0.
+4. A counterexample to G is a realized Π-skeleton A such that A 6|= G. Π
+   enforces G if G has no counterexamples.                                          t
+                                                                                    u
+
+For a protocol to enforce goal G, we require only that A |= G hold for realized
+A. Nevertheless, satisfaction is defined for all skeletons A, and this eases stating
+the invariants we need in proving Thm. 3.
+October 6, 2008                                                                           23
+
+Main result. Our main theorem now depends only a further lemma, which
+says that being a counterexample to a Π1 -security goal is preserved under our
+two operations. This lemma does not assume Π, Π1 strongly disjoint.
+Lemma 23. Let Π, Π1 be a multiprotocol, with G1 ∈ L(Π1 ) a security goal for
+Π1 . Let B be a Π-skeleton, with B |= ¬G1 .
+ 1. B |`Π1 |= ¬G1 ;
+ 2. If A results from B by an eliminative removal γ, then A |= ¬G1 .
+Proof. Let G1 = ∀v0 , . . . , vj . Φ0 ∧ . . . ∧ Φk ⊃ ∃u0 , . . . , u` (Ψ0 ∨ . . . ∨ Ψi ). Let
+B, σ |= Φ0 ∧ . . . ∧ Φk , where there is no τ differing from σ only on u0 , . . . , u` such
+that B, τ |= Ψ0 ∨ . . . ∨ Ψi . So, for every such τ ,
+                       B, τ |= Φ0 ∧ . . . ∧ Φk ∧ ¬Ψ0 ∧ . . . ∧ ¬Ψi .
+We must show that all of the Φs remain true, while all of the Ψ s remain false.
+1. In this case, any atomic formula that does not mention a variable over nodes
+will have its truth value unchanged.
+    Suppose that one of the Φs is a role predicate RoleRhoJ(n, u, . . . , w). Since
+G1 is a security goal of L(Π1 ), RoleRhoJ concerns a primary role, and since
+the atomic formula is satisfied in B, σ(n) is a primary node. Therefore, σ(n) ∈
+nodes(B |`Π1 ), as are the predecessors of n on the same strand. Thus, B |`Π1 |=
+RoleRhoJ(n, u, . . . , w).
+    If Φ is another atomic formula that contains a node variable n, then by the
+definition of security goal, there is a Φ0 in which n is also the node variable.
+Thus, as we have just observed, it is a primary node σ(n) ∈ nodes(B |`Π1 ). From
+the definitions of restriction and satisfaction, we can see that all of the formulas
+m = n, UnqAt(n, v), Pos(n), Neg(n), m ≺ n, and m ⇒ n are preserved under
+restriction when the relevant nodes belong to the restricted skeleton.
+    Consider now a (false) security conclusion Ψ . Since Ψ is a conjunction, for
+some conjunct ψ of Ψ , B, τ |= ¬ψ. If ψ does not mention a node variable, its
+falsehood is certainly preserved. Suppose it mentions a node variable n, and
+suppose first that σ(n) ∈ nodes(B |`Π1 ) is primary. If B |`Π1 , τ |= ψ, then this fact
+would be preserved under the embedding of B |`Π1 into B (Lemma 21, Clause 1).
+If instead σ(n) is secondary, then σ(n) 6∈ nodes(B |` Π1 ), so that we certainly
+have B |`Π1 , τ |= ¬ψ. An atomic formula is true only if the nodes it mentions are
+present in the skeleton.
+2. Let τ 0 be the result of the eliminative removal γ to τ ; i.e. τ 0 (x) is the result
+of the removal γ on τ (x), for each variable x.
+    If any of the Ψ s were satisfied by some A, τ 0 , then Lemma 21 Clause 1 would
+imply that it is satisfied by B, τ . For the Φs , we use the remaining clauses of
+Lemma 21.                                                                            t
+                                                                                     u
+Theorem 3. Let Π, Π1 have strongly disjoint encryption, and let G1 ∈ L(Π1 )
+be a security goal. If for some realized Π-skeleton, A |= ¬G1 , then for some
+realized Π1 -skeleton A1 , A1 |= ¬G1 .
+24                                                                October 6, 2008
+
+8    Conclusion
+
+In this paper, we have established a result about composition of protocols, using
+a new, model-theoretic approach. It is model-theoretic because it combines rea-
+soning about the logical form of formulas—in Section 7, about the security goals
+G—with operations on the structures that furnish models of these formulas. In
+our case, these structures are the skeletons and especially realized skeletons, and
+the operations on them are homomorphisms and removals, as used in Sections 5
+and 6. The authentication tests are crucial, because they give us a criterion for
+when a skeleton is realized, and this criterion suggests the definition of strong
+disjointness (Def. 15).
+    Thm. 3 is useful, apart from any interest of the model-theoretic method used
+to establish it. First, it simplifies establishing that two protocols combine to
+provide a protocol achieving some desired goals. If strong disjointness holds, any
+goals of the joint protocol that are only about the primary protocol may be
+verified without reference to the secondary protocol. Goals that involve the sec-
+ondary protocol must be verified using the whole joint protocol, unless of course
+the relation is symmetric. If the joint protocol can be regarded as a strongly
+disjoint multiprotocol in both of two ways, with each of the two subprotocols as
+primary protocol, then goals about each one may be verified without reference
+to the other. This is the Cortier-Delaitre-Delaune case [9]. Unfortunately, their
+proof method appears not to extend to the asymmetric case.
+    There is a second reason why our composition result is useful. It can also be
+read as a prescription—or at least a heuristic—for protocol design. Protocols can
+be built from subprotocols that provide some of the intermediate cryptographic
+values that they require. Our addition of protocols for a payment process on
+top of the TCG authenticated identity protocol is an example of this process. In
+this context, Thm. 3 gives the constraints that a protocol designer must adhere
+to, in enriching an existing framework of protocols. His new operations must be
+strongly disjoint from the existing protocols, regarded as a primary protocol.
+
+Related work. Probably the outstanding work on protocol derivation and
+composition is a group of articles by Datta, Derek, Mitchell, and Pavlovic; for
+our purposes the central member of the group is [10]. In this paper the authors
+explore a variety of protocols that have common ingredients, and show how they
+can be viewed within a sort of family tree, related by a number of operations on
+protocols.
+   Our notion of composition corresponds directly to their parallel composition,
+but their sequential composition also fits within our context without any real
+additional work. They do have other operations: Refinement is an operation
+that enriches the message structure of a protocol to obtain another protocol.
+Transformation is an operation that moves information from one message in a
+protocol to a different message, either to reduce the number of messages or to
+provide a tighter binding among the protocol parameters.
+   Although they have defined a very rich palette of operations, their main
+results about them are restricted to parallel and sequential composition. [10,
+October 6, 2008                                                                    25
+
+Thm. 4.4] concerns parallel composition and [10, Thm. 4.8] concerns sequential
+composition. In each case, the theorem applies to a particular proof of a partic-
+ular security goal G1 about a protocol Π1 . This proof relies on some set Γ of
+invariant formulas that Π1 preserves. Thm. 4.4 states that if a secondary proto-
+col Π2 respects Γ , then G1 holds of the parallel composition Π1 ∪ Π2 . Thm 4.8
+is a more elaborate but comparable result for sequential composition.
+    By contrast, our result is more uniform. It makes an assertion about all
+security goals, rather than a single proof of a single goal. The strong disjointness
+property ensures that a secondary protocol will respect all usable invariants
+of the primary protocol. Thus, one need not check through the details of many
+proofs to find what invariants to re-establish. A syntactic property, checked once,
+suffices permanently.
+    Universal composability [7] appears to be a related property, although ex-
+pressed in a very different underlying model. Universal composability is typi-
+cally realized by randomly choosing a tag to be inserted in all the messages of
+a protocol, this tag being chosen at implementation time. Thus, the symmetric
+disjointness of any two protocols is ensured with overwhelming probability. An
+additional consequence of the model is that random values generated within the
+protocol must not be used as keys in the protocol run.
+    Andova, Cremers, et al. [1] also develop an approach to protocol composition
+which supports sequential as well as parallel composition. They suggest use of
+tags or of distinct sets of keys as implementation strategies, as in our [17], and
+independently propose a definition [1, Def. 25] akin to the symmetric definition
+of [9].
+Future work. A question with strong interest is whether there is a theorem
+akin to our Thm. 3 which applies to the refinement and transformation opera-
+tions [10]. We believe that at least for a specific, limited definition of refinement,
+the answer should be affirmative. Such a result would be extremely useful for
+guiding protocol design.
+Acknowledgments. I am grateful to Javier Thayer for conversations. A per-
+sonal communication of Stephanie Delaune explained that extending [9] to the
+asymmetric case appeared infeasible.
+
+References
+ 1. S. Andova, C.J.F. Cremers, K. Gjøsteen, S. Mauw, S.F. Mjølsnes, and
+    S. Radomirović. Sufficient conditions for composing security protocols. Infor-
+    mation and Computation, 2007.
+ 2. Alessandro Armando, David A. Basin, Yohan Boichut, Yannick Chevalier, Luca
+    Compagna, Jorge Cuéllar, Paul Hankes Drielsma, Pierre-Cyrille Héam, Olga
+    Kouchnarenko, Jacopo Mantovani, Sebastian Mödersheim, David von Oheimb,
+    Michaël Rusinowitch, Judson Santiago, Mathieu Turuani, Luca Viganò, and Lau-
+    rent Vigneron. The avispa tool for the automated validation of internet security
+    protocols and applications. In Kousha Etessami and Sriram K. Rajamani, editors,
+    CAV, volume 3576 of Lecture Notes in Computer Science, pages 281–285. Springer,
+    2005.
+26                                                                     October 6, 2008
+
+ 3. Michael Backes, Matteo Maffei, and Dominique Unruh. Zero-knowledge in the ap-
+    plied pi-calculus and automated verification of the Direct Anonymous Attestation
+    protocol. In IEEE Symposium on Security and Privacy, 2008.
+ 4. Michael Backes and Birgit Pfitzmann. Relating cryptographic and symbolic key
+    secrecy. In Proceedings, 26th IEEE Symposium on Security and Privacy, May 2005.
+    Extended version, http://eprint.iacr.org/2004/300.
+ 5. Boris Balacheff, Liqun Chen, Siani Pearson, David Plaquin, and Graeme Proudler.
+    Trusted Computing Platforms: TCPA Technology in Context. Prentice Hall PTR,
+    Upper Saddle River, NJ, 2003.
+ 6. Ernie Brickell, Jan Camenisch, and Liqun Chen. Direct anonymous attestation. In
+    ACM Conference on Communications and Computer Security (CCS), 2004. Full
+    version available at http://eprint.iacr.org/2004/205.
+ 7. Ran Canetti. Universally composable security: A new paradigm for cryptographic
+    protocols. Report 2000/067, Internation Association for Crryptographic Research,
+    October 2001. Extended Abstract appeared in proceedings of the 42nd Symposium
+    on Foundations of Computer Science (FOCS), 2001.
+ 8. Ran Canetti and Jonathan Herzog. Universally composable symbolic analysis of
+    mutual authentication and key exchange protocols. In Proceedings, Theory of
+    Cryptography Conference (TCC), March 2006.
+ 9. Véronique Cortier, Jérémie Delaitre, and Stéphanie Delaune. Safely composing
+    security protocols. In V. Arvind and Sanjiva Prasad, editors, Proceedings of the
+    27th Conference on Foundations of Software Technology and Theoretical Computer
+    Science (FSTTCS’07), Lecture Notes in Computer Science, New Delhi, India, De-
+    cember 2007. Springer.
+10. Anupam Datta, Ante Derek, John C. Mitchell, and Dusko Pavlovic. A deriva-
+    tion system and compositional logic for security protocols. Journal of Computer
+    Security, 13(3):423–482, 2005.
+11. Shaddin F. Doghmi, Joshua D. Guttman, and F. Javier Thayer. Completeness of
+    the authentication tests. In J. Biskup and J. Lopez, editors, European Symposium
+    on Research in Computer Security (ESORICS), number 4734 in LNCS, pages 106–
+    121. Springer-Verlag, September 2007.
+12. Shaddin F. Doghmi, Joshua D. Guttman, and F. Javier Thayer. Searching for
+    shapes in cryptographic protocols. In Tools and Algorithms for Construction and
+    Analysis of Systems (TACAS), number 4424 in LNCS, pages 523–538. Springer,
+    March 2007. Extended version at URL:http://eprint.iacr.org/2006/435.
+13. Daniel Dolev and Andrew Yao. On the security of public-key protocols. IEEE
+    Transactions on Information Theory, 29:198–208, 1983.
+14. Sibylle Fröschle. Adding branching to the strand space model. In Proceedings of
+    EXPRESS’08, Electronic Notes in Theoretical Computer Science. Elsevier, 2008.
+    To appear.
+15. Joseph A. Goguen and José Meseguer. Order-sorted algebra I: equational deduction
+    for multiple inheritance, overloading, exceptions and partial operations. Theoretical
+    Computer Science, 105(2):217–273, 1992.
+16. Joshua D. Guttman, Jonathan C. Herzog, John D. Ramsdell, and Brian T. Snif-
+    fen. Programming cryptographic protocols. In Rocco De Nicola and Davide San-
+    giorgi, editors, Trust in Global Computing, number 3705 in LNCS, pages 116–145.
+    Springer, 2005.
+17. Joshua D. Guttman and F. Javier Thayer. Protocol independence through disjoint
+    encryption. In Proceedings, 13th Computer Security Foundations Workshop. IEEE
+    Computer Society Press, July 2000.
+October 6, 2008                                                                 27
+
+18. Gavin Lowe. Casper: A compiler for the analysis of security protocols. In 10th
+    Computer Security Foundations Workshop Proceedings, pages 18–30. IEEE Com-
+    puter Society Press, 1997.
+19. Lawrence C. Paulson. The inductive approach to verifying cryptographic proto-
+    cols. Journal of Computer Security, 1998. Also Report 443, Cambridge University
+    Computer Lab.
+

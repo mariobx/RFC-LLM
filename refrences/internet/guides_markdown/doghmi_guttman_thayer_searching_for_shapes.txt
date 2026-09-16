@@ -1,0 +1,1610 @@
+Searching for Shapes in Cryptographic Protocols
+               (extended version)?
+
+          Shaddin F. Doghmi, Joshua D. Guttman, and F. Javier Thayer
+
+                                The MITRE Corporation
+
+
+
+        Abstract. We describe a method for enumerating all essentially differ-
+        ent executions possible for a cryptographic protocol. We call them the
+        shapes of the protocol. Naturally occurring protocols have only finitely
+        many, indeed very few shapes. Authentication and secrecy properties are
+        easy to determine from them, as are attacks and anomalies. cpsa, our
+        Cryptographic Protocol Shape Analyzer, implements the method.
+           In searching for shapes, cpsa starts with some initial behavior, and
+        discovers what shapes are compatible with it. Normally, the initial be-
+        havior is the point of view of one participant. The analysis reveals what
+        the other principals must have done, given this participant’s view.
+           The search is complete, i.e. every shape can in fact be found in a finite
+        number of steps. The steps in question are applications of two authenti-
+        cation tests, fundamental patterns for protocol analysis and heuristics for
+        protocol design. We have formulated the authentication tests in a new,
+        stronger form, and proved completeness for a search algorithm based on
+        them.
+
+
+
+
+1     Introduction
+
+The executions of cryptographic protocols frequently have very few essentially
+different forms, which we call shapes. By enumerating these shapes, we may
+ascertain whether they all satisfy a security condition such as an authentication
+or confidentiality property. We may also find other anomalies, which are not
+necessarily counterexamples to the security goals, such as involving unexpected
+participants, or involving more local runs than expected.
+    In this paper, we describe a complete method for enumerating the shapes of a
+protocol within a pure Dolev-Yao model [7]. If the protocol has only finitely many
+essentially different shapes, the enumeration will terminate. From the shapes,
+we can then read off the answers to secrecy and authentication questions and
+?
+    Supported by the National Security Agency and by MITRE-Sponsored Research.
+    Addresses: shaddin@stanford.edu, {guttman, jt}@mitre.org. Extended version of:
+    Shaddin F. Doghmi, Joshua D. Guttman, and F. Javier Thayer. Searching for shapes
+    in cryptographic protocols. In Tools and Algorithms for Construction and Analysis
+    of Systems (TACAS), number 4424 in LNCS, pages 523–538. Springer, March 2007.
+2                                                                  February 2, 2007
+
+observe other anomalies. Our software implementation of this method is called
+a Cryptographic Protocol Shapes Analyzer (cpsa).
+    We use the strand space theory [10]. A skeleton represents regular (non-
+penetrator) behavior that might make up part of an execution, and a homo-
+morphism is an information-preserving map between skeletons. Skeletons are
+partially-ordered structures, like fragments of Lamport diagrams [13] or frag-
+ments of message sequence charts [12]. A skeleton is realized if it is nonfragmen-
+tary, i.e. it contains exactly the regular behavior of some execution. A realized
+skeleton is a shape if it is minimal in a sense we will make precise (Definition 14).
+We search for shapes using the authentication tests [10] to find new strands to
+add when a skeleton is not large enough to be realized.
+    The main technical result underlying cpsa is completeness, in the sense
+that—for any protocol—our authentication test search eventually discovers ev-
+ery shape for that protocol (Thm. 3). It cannot terminate for every protocol [8].
+It does, however, terminate for reasonably inclusive classes [4, 19].
+    The type-and-effect system for spi calculus [9] is related to the authenti-
+cation tests, but differs from our work in two ways. First, we do not use the
+syntactically-driven form of a type system, but instead a direct analysis of behav-
+iors. Second, type-and-effect systems aim at a sound approximation, whereas our
+work provides actual counterexamples when a security goal is not met. Blanchet’s
+ProVerif [1] is also based on a sound approximation, and may thus refuse to cer-
+tify a protocol even though there are no counterexamples.
+    cpsa’s search is related to the second version of Athena [18], which adopted
+the authentication tests from [10]. However, cpsa differs from Athena in several
+ways. First, it involves the regular behaviors alone; we never represent adversary
+activity within a shape. Second, the notion of shape defines a criterion for which
+possible executions should be considered, among the infinitely many executions
+(of unbounded size) of any protocol. Third, we introduce strong versions of the
+authentication tests, for which completeness is true.
+    The shapes describe protocol executions of all sizes; we do not follow the
+widely practiced bounded protocol analysis (e.g. [2, 15]).
+
+
+Structure of this paper. Section 2 describes the idea of shapes, using the
+simplest example. Section 3 summarizes strand space terminology, with new
+definitions for replacements and protocols. Section 4 states the new version of
+the authentication test theorems as properties of bundles, i.e. complete protocol
+executions including adversary behavior. In Section 5 we define skeletons and
+homomorphisms, and in Section 6 we infer forms of the authentication tests that
+concern homomorphisms from skeletons to realized skeletons.
+    In Section 7 we illustrate the process using the Yahalom protocol. This anal-
+ysis illustrates almost every aspect of the cpsa search method. In Section 8, we
+define the search’s control structure. Section 9 establishes completeness.
+    Finally, the cpsa implementation is the subject of Section 10.
+    A shorter version of this work, focusing on the search but not its complete-
+ness, appears as [6].
+February 2, 2007                                                                          3
+
+2    The Idea of Shapes
+
+In practice, protocols have remarkably few shapes. The Needham-Schoeder-
+Lowe [16, 14] protocol has only one. This holds whether we take the point of
+view of a responder B, asking what global behavior must have occurred if B
+has had a local run of the protocol, or whether we start from a local run of an
+originator A. In either case, the other party must have had a matching run. A,
+however, can never be sure that the last message it sends was received by B, as
+A is no longer expecting to receive any further messages. Uniqueness of shape is
+perhaps not surprising for as strong a protocol as Needham-Schroeder-Lowe.
+    However, even a flawed protocol such as the original Needham-Schroeder
+protocol may have a unique shape, shown in Fig. 1.
+
+
+
+                     {|Na ˆA|}pubk(C)         {|Na ˆA|}pubk(B)
+                 A                  -                       - B
+                 ­
+                   {|Na ˆNb |}pubk(A)       {|Na ˆNb |}pubk(A)
+                                                               ­
+                 •                                          •
+                 ­
+                       {|Nb |}pubk(C)        {|Nb |}pubk(B)
+                                                               ­
+                 •                    - ≺                    - •
+
+    Fig. 1. Needham-Schroeder Shape for B (privk(A) uncompromised, Nb fresh)
+
+
+
+
+Terminology. Newly introduced terminology is in boldface.
+    B’s local behavior is represented by the right-hand column in Fig. 1, consist-
+ing of nodes connected by double arrows • ⇒ •. A’s local behavior is represented
+by the left-hand column. We call such a column a strand. The nodes represent
+message transmission or reception events, and the double arrows represent suc-
+cession within a single linearly ordered local activity. The message transmitted
+or received on a node n is written msg(n). A regular strand is a strand that
+represents a principal executing a single local session of a protocol; it is called a
+regular strand because the behavior follows the protocol rules. A local behavior
+as used so far refers to a regular strand. (See Section 3.2.)
+    In the messages, we use {|t|}K to refer to the encryption of t with key K, and
+tˆt0 means the pair of the messages t and t0 . Messages are constructed freely via
+these two operations from atomic values such as principal names A, nonces Na ,
+keys K, etc. (See Section 3.1.)
+    The subterm relation is the least reflexive, transitive relation such that t is
+a subterm of {|t|}K , t is a subterm of tˆt0 , and t is a subterm of t0 ˆt (for all K, t0 ).
+We write t v t0 if t is a subterm of t0 . Thus, K 6v {|t|}K unless (anomalously)
+K v t. Instead, K contributed to how {|t|}K was produced. This terminology has
+an advantage: Uncompromised long-term keys are never subterms of messages
+transmitted in a protocol; they are used by regular principals to encrypt, decrypt,
+or sign messages, but are never transmitted. A value a originates at a node n
+4                                                               February 2, 2007
+
+if (1) n is a transmission node; (2) a v msg(n); and (3) if m is any earlier node
+on the same strand, then a 6v msg(m). (Section 3.2, Example 3.)
+    Adversary behavior is represented by strands too. These penetrator strands
+codify the basic abilities that make up the Dolev-Yao model. They include trans-
+mitting a basic value such as a nonce or a key; transmitting an encrypted message
+after receiving its plaintext and the key; and transmitting a plaintext after re-
+ceiving ciphertext and decryption key. The adversary can also pair two messages,
+or separate the pieces of a paired message. Since a penetrator strand that en-
+crypts or decrypts must receive the key as one of its inputs, keys used by the
+adversary—compromised keys—have always been transmitted by some partici-
+pant. These penetrator strands are independent of the protocol under analysis.
+(See Definition 3.)
+    Suppose that B is a finite, directed acyclic graph whose nodes lie on regular
+and penetrator strands, and whose edges are either (a) strand succession edges
+n0 ⇒ n1 , or else (b) message transmission edges n → m where msg(n) = msg(m),
+n is a transmission node, and m is a reception node.
+    B is a bundle if (1) if n0 ⇒ n1 and n1 ∈ B, then n0 ∈ B, and (2) for every
+reception node m ∈ B, there is a unique transmission node n ∈ B such that
+the edge n → m is in B. The conditions (1,2) ensure that B is causally well
+founded. A global behavior or execution, as used so far, refers to a bundle. (See
+Definition 5.)
+
+
+The NS Shape. In the Needham-Schroeder protocol, let us suppose that B’s
+nonce Nb has been freshly chosen and A’s private key privk(A) is uncompromised,
+and that B has executed the strand shown at the right in Fig. 1. In protocols
+using asymmetric encryption, the private keys are used only by recipients to de-
+structure incoming messages. Given that—on a particular occasion—B received
+and sent these messages, what must have occurred elsewhere in the network?
+    A must have had a partially matching strand, with the messages sent and
+received in the order indicated by the arrows of both kinds and the connecting
+symbols ≺. These symbols mean that the endpoints are ordered, but that other
+behavior may intervene, whether adversary strands or regular strands. A’s strand
+is only partially matching, because the principal A meant to contact is some C
+which may or may not equal B. There is no alternative: Any diagram containing
+the responder strand of Fig. 1 must contain at least an instance of the initiator
+strand, with the events ordered as shown, or it cannot have happened.
+    Such a diagram is a shape. A shape consists of the regular strands of some
+execution, forming a minimal set containing the initial regular strands (in this
+case, just the right-hand column). Possible executions may freely add adversary
+behavior. Each shape is relative to assumptions about keys and freshness, in this
+case that privk(A) is uncompromised and Nb freshly chosen.
+    Although there is a single shape, there are two ways that this shape may be
+realized in executions. Either (1) C’s private key may be compromised, in which
+case we may complete this diagram with adversary activity to obtain the Lowe
+attack [14]; or else (2) C = B, leading to the intended run.
+February 2, 2007                                                                   5
+
+    Some protocols have more than one shape, Otway-Rees, e.g., having four. In
+searching for shapes, one starts from some initial set of strands. Typically, the
+initial set is a singleton, which we refer to as the “point of view” of the analysis.
+
+
+Skeletons, Homomorphisms, Shapes. A skeleton A is (1) a finite set of
+regular nodes, equipped with additional information. The additional information
+consists of (2) a partial order A on the nodes indicating causal precedence; (3)
+a set of keys nonA ; and (4) a set of atomic values uniqueA . Values in nonA must
+originate nowhere in A, whereas those in uniqueA originate at most once in A.1
+(See Def. 8.)
+    A is realized if it has precisely the regular behavior of some execution. Every
+message received by a regular participant either should have been sent previously,
+or should be constructable by the adversary using messages sent previously. (See
+Def. 10.)
+
+Example 1. Fig. 1 shows skeleton Ans , with nonAns = {privk(A)} and uniqueAns =
+{Nb }. Ans is a realized skeleton.
+    The right-hand strand of Fig. 1, B’s responder strand, also forms a skeleton
+Ab with the same choice of non, unique. Ab is not realized.
+    The first two nodes on Fig. 1 also form a skeleton Ab2 . This skeleton is
+realized, as the adversary can prepare the incoming message of its first node,
+and discard the outgoing message of its second node.
+    The result of replacing C by B throughout Ans —hence replacing pubk(C) by
+pubk(B)—yields a realized skeleton Ansi , the Needham-Schroeder intended run.
+
+    A homomorphism is a map H from A0 to A1 , written H : A0 7→ A1 . We
+represent it as a pair of maps (φ, α), where φ maps the nodes of A0 into those
+of A1 , and α is a replacement mapping atomic values into atomic values. We
+write t · α for the result of applying a replacement α to a message t. H = (φ, α) is
+a homomorphism iff: (1) φ respects strand structure, and msg(n)·α = msg(φ(n))
+for all n ∈ A0 ; (2) m A0 n implies φ(m) A1 φ(n); (3) nonA0 · α ⊆ nonA1 ; and
+(4) uniqueA0 · α ⊆ uniqueA1 . (Defs. 1, 12.)
+    Homomorphisms are information-preserving transformations. Each skeleton
+A0 describes the realized skeletons reachable from A0 by homomorphisms. Since
+homomorphisms compose, if H : A0 7→ A1 then any realized skeleton accessible
+from A1 is accessible from A0 . Thus, A1 preserves the information in A0 : A1
+describes a subset of the realized skeletons described by A0 .
+    A homomorphism may supplement the strands of A0 with additional behavior
+in A1 ; it may affect atomic parameter values; and it may identify different nodes
+together, if their strands are compatible in messages sent and positions in the
+partial ordering.
+
+Example 2. The map Hns : Ab 7→ Ans embedding the responder strand of Fig. 1
+into Ans is a homomorphism. Likewise if we embed the first two nodes of B’s
+1
+    When n ⇒∗ n0 and n0 ∈ A, we require n ∈ A and n A n0 .
+6                                                                 February 2, 2007
+
+strand (rather than all of Ab ) into Ans . Another homomorphism Hi : Ans 7→ Ansi
+rewrites each occurrence of C in Ans to B, hence each occurrence of pubk(C)
+to pubk(B). It exhibits the Needham-Schroeder intended run as an instance of
+Fig. 1. The composition Hnsi = Hi ◦ Hns embeds the responder strand into the
+intended run.
+
+     A homomorphism H = (φ, α) is nodewise injective if the function φ on
+nodes is injective. The nodewise injective homomorphisms determine a useful
+partial order on homomorphisms: When for some nodewise injective H1 , H1 ◦H =
+H 0 , we write H ≤n H 0 . If H ≤n H 0 ≤n H, then H and H 0 are isomorphic.
+     A homomorphism H : A0 7→ A1 is a shape iff (a) A1 is realized and (b) H
+is ≤n -minimal among homomorphisms from A0 to realized skeletons. If H is a
+                                        H       H
+shape, and we can factor H into A0 7→0 A0 7→1 A1 , where A0 is realized, then
+A0 cannot contain fewer nodes than A1 , or identify fewer atomic values. A1 is as
+small and as general as possible. (Def. 14.)
+     We call a skeleton A1 a shape when the homomorphism H (usually an em-
+bedding) is understood. In this looser sense, Fig. 1 shows the shape Ans . Strictly,
+the embedding Hns : Ab 7→ Ans is the shape. The embedding Hnsi : Ab 7→ Ansi ,
+with target the Needham-Schroeder intended run Ansi , is not a shape. Ans iden-
+tifies fewer atoms, and the map replacing C with B is a nodewise injective
+Hi : Ans 7→ Ansi , so Hns ≤n Hi ◦ Hns = Hnsi .
+     Shapes exist below realized skeletons: If H : A0 7→ A1 with A1 realized, then
+the set of shapes H1 with H1 ≤n H is finite and non-empty. (Prop. 8.)
+
+
+3     Terms, Strands, and Bundles
+
+In this section and Section 5 we give precise definitions, which include a number
+of fine points which seemed an unnecessary distraction in Section 2. In this sec-
+tion, the definitions of replacement and protocol (Defs. 1, 4) are new versus [10].
+
+
+3.1   Algebra of Terms
+
+Terms (or messages) form a free algebra A, built from atomic terms via con-
+structors. The atoms are partitioned into the types principals, texts, keys, and
+nonces. An inverse operator is defined on keys. There may be additional func-
+tions on atoms, such as an injective public key of function mapping principals to
+keys, or an injective long term shared key of function mapping pairs of principals
+to keys. These functions are not constructors, and their results are atoms. For
+definiteness, we include here functions pubk(a), ltk(a) mapping principals to (re-
+spectively) their public keys and to a symmetric key shared on a long-term basis
+                                −1                                 −1
+with a fixed server S. pubk(a) is a’s private key, where pubk(a) 6= pubk(a).
+                                               −1                   −1
+We often write the public key pair as Ka , Ka . By contrast, ltk(a) = ltk(a).
+                                              −1
+    Atoms, written in italics (e.g. a, Na , K ), serve as indeterminates (vari-
+ables). We assume A contains infinitely many atoms of each type. Terms in A
+are freely built from atoms using tagged concatenation and encryption. The tags
+February 2, 2007                                                                    7
+
+are chosen from a set of constants written in sans serif font (e.g. tag). The tagged
+concatenation using tag of t0 and t1 is written tagˆt0 ˆt1 . Tagged concatenation
+using the distinguished tag null of t0 and t1 is written t0 ˆt1 . Encryption takes a
+term t and an atomic key K, and yields a term as result written {|t|}K .
+    Replacements have only atoms in their range:
+
+Definition 1 (Replacement, Application). A replacement is a function α
+mapping atoms to atoms, such that (1) for every atom a, α(a) is an atom of the
+same type as a, and (2) α is a homomorphism with respect to the operations on
+                               −1
+atoms, i.e., α(K −1 ) = (α(K)) and α(pubk(a)) = pubk(α(a)).
+   The application of α to t, written t · α, homomorphically extends α’s action
+on atoms. More explicitly, if t = a is an atom, then a · α = α(a); and:
+
+                      (tagˆt0 ˆt1 ) · α = tagˆ(t0 · α)ˆ(t1 · α)
+                           ({|t|}K ) · α = {|t · α|}K·α
+
+Application distributes through larger objects such as pairing and sets. Thus,
+(x, y) · α = (x · α, y · α), and S · α = {x · α : x ∈ S}. If x 6∈ A is a simple value
+such as an integer or a symbol, then x · α = x.
+
+
+3.2   Strands and Origination
+
+Since replacements map atoms to atoms, not to compound terms, unification
+is very simple. Two terms are unifiable if and only if they have the same ab-
+stract syntax tree structure, with the same tags associated with corresponding
+concatenations, and the same type for atoms at corresponding leaves. To unify
+t1 , t2 means to partition the atoms at the leaves; a most general unifier is a finest
+partition that maps a, b to the same c whenever a appears at the end of a path
+in t1 and b appears at the end of the same path in t2 . If two terms t1 , t2 are
+unifiable, then t1 · α and t2 · β are still unifiable.
+      The direction + means transmission, and the direction − means reception:
+
+Definition 2 (Strand Spaces). A direction is one of the symbols +, −. A di-
+rected term is a pair (d, t) with t ∈ A and d a direction, normally written +t, −t.
+(±A)∗ is the set of finite sequences of directed terms.
+    A strand space over A is a structure containing a set Σ and two mappings: a
+trace mapping tr : Σ → (±A)∗ and a replacement application operator (s, α) 7→
+s · α such that (1) tr(s · α) = (tr(s)) · α, and (2) s · α = s0 · α implies s = s0 .
+
+By (2), Σ has infinitely many copies of each s, i.e. strands s0 with tr(s0 ) = tr(s).
+
+Definition 3. A penetrator strand has trace of one of the following forms:
+Mt : h+ti where t ∈text, principal,nonce                            KK : h+Ki
+Cg,h : h−g, −h, +g ˆhi                                 Sg,h : h−g ˆh, +g, +hi
+Eh,K : h−K, −h, +{|h|}K i                      Dh,K : h−K −1 , −{|h|}K , +hi.
+8                                                                   February 2, 2007
+
+If s is a penetrator strand, then s · α is a penetrator strand of the same kind.
+    The subterm relation, written v, is the least reflexive, transitive relation
+such that (1) t0 v tagˆt0 ˆt1 ; (2) t1 v tagˆt0 ˆt1 ; and (3) t v {|t|}K . Notice,
+however, K 6v {|t|}K unless (anomalously) K v t. We say that a key K is used
+for encryption in a term t if for some t0 , {|t0 |}K v t.
+    A node is a pair n = (s, i) where i ≤ length(tr(s)); strand(s, i) = s; and the
+direction and term of n are those of tr(s)(i). We prefer to write s ↓ i for the
+node n = (s, i). A term t originates at node n if n is positive, t v msg(n), and
+t 6v msg(m) whenever m ⇒+ n. Thus, t originates on n if t is part of a message
+transmitted on n, and t was neither sent nor received previously on this strand.
+If a originates on strand s, we write O(s, a) to refer to the node on which it
+originates.
+
+Example 3. Na originates on the first node of the Needham-Schroeder initiator
+strand si , so we write O(si , Na ) = si ↓ 1. Nb originates on the second node of the
+responder strand sr , i.e. O(sr , Nb ) = sr ↓ 2. More precisely, O(sr , Nb ) = sr ↓ 2
+unless Nb = Na , because if the two nonces were the same, then Nb would not
+originate on the responder strand at all. Instead, it would have been received
+before being re-transmitted. Thus, the replacement β = [Nb 7→ Na ] destroys the
+point of origination. Even if we have O(sr , Nb ) = sr ↓ 2, we have O(sr · β, Nb · β)
+undefined. In this sense, applying β to sr is a kind of degeneracy that destroys a
+point of origination. When we have assumed that a value such as Nb originates
+uniquely, we will avoid applying replacements that would destroy its point of
+origination. (See Def. 4, regular strands, and Def. 12, homomorphism.)
+
+A listener role is a regular strand Lsn[a] with trace h−ai. It documents that
+a is available on its own to the adversary, unprotected by encryption. Since
+replacements respect type, atoms of different type must be overheard by different
+roles. We assume each protocol Π has listener roles Lsn[N ] and Lsn[K] for nonces
+and keys respectively, with traces h−N i and h−Ki.
+
+
+3.3   Protocols and Bundles
+
+Definition 4 (Protocols). A candidate hΠ, strand non, strand uniquei consists
+of: (1) a finite set Π of strands—containing the listener strands Lsn[N ], Lsn[K]—
+called the roles of the protocol; (2) a function strand non mapping each role r
+to a finite set of keys strand nonr , called the non-originating keys of r; and (3) a
+function strand unique mapping each role r to a finite set of atoms strand uniquer
+called the uniquely originating atoms of r.
+    A candidate hΠ, strand non, strand uniquei is a protocol if (1) K ∈ strand nonr
+implies that K does not occur in any node of r, but either K or K −1 is used
+for encryption on some term of tr(r); and (2) a ∈ strand uniquer implies that a
+originates on r, i.e. O(r, a) is well defined.
+    The regular strands of hΠ, strand non, strand uniquei form the set ΣΠ =
+
+      {r · α : r ∈ Π and ∀a ∈ strand uniquer , (O(r, a)) · α = O(r · α, a · α)}.
+February 2, 2007                                                                  9
+
+The non-originating keys strand nonr and uniquely originating atoms strand uniquer
+are used in Defs. 9 and 15, Clauses 1c,d. The condition that constrains r ·α based
+on O(r, a) is a non-degeneracy condition. It says that replacement α determines
+an instance of r only if it does not cause a value a, assumed uniquely originat-
+ing, to collide with another value already encountered in executing r. Since for
+a ∈ strand uniquer , the left hand side of (O(r, a)) · α = O(r · α, a · α) is well-
+defined, we interpret the equation as meaning that the right hand side is also
+well-defined, and has the same value.
+Example 4. The Needham-Schroeder protocol has a set Πns of roles containing
+the two roles shown in Fig. 1 and two listener roles, to hear nonces and keys.
+For each r ∈ Πns , strand nonr = ∅ = strand uniquer .
+    Setting strand noninit = {privk(B)}, strand nonresp = {privk(A)} reproduces
+the original Needham-Schroeder [16] assumption that each peer chosen is un-
+compromised. The protocol achieves its goals relative to this assumption.
+    Setting strand uniqueinit = {Na } would express the assumption that every
+initiator uses a strong random number generator to select nonces, so that the
+probability of a collision or of an adversary guessing a nonce is negligible.
+The set N of all nodes forms a directed graph G = hN , (→ ∪ ⇒)i with edges
+n1 → n2 for communication (with the same term, directed from positive to
+negative node) and n1 ⇒ n2 for succession on the same strand.
+Definition 5 (Bundle). A finite acyclic subgraph B = hNB , (→B ∪ ⇒B )i of G
+is a bundle if (1) if n2 ∈ NB is negative, then there is a unique n1 ∈ NB with
+n1 →B n2 ; and (2) if n2 ∈ NB and n1 ⇒ n2 , then n1 ⇒B n2 . When B is a
+bundle, B is the reflexive, transitive closure of (→B ∪ ⇒B ).
+    A bundle B is over hΠ, strand non, strand uniquei if for every s ↓ i ∈ B, (1)
+either s ∈ ΣΠ or s is a penetrator strand; (2) if s = r · α and a ∈ strand nonr · α,
+then a does not occur in B; and (3) if s = r · α and a ∈ strand uniquer · α, then
+a originates at most once in B.
+Example 5. Fig. 1 is a bundle if we replace C with B and then connect arrows
+with matching labels. Alternatively, it becomes a bundle by adding penetrator
+strands to unpack values encrypted with KC and repackage them encrypted with
+KB .
+We say that a strand s is in B if s has at least one node in B. Henceforth, assume
+fixed some arbitrary protocol hΠ, strand non, strand uniquei.
+Proposition 1. Let B be a bundle. B is a well-founded partial order. Every
+non-empty set of nodes of B has B -minimal members.
+   B · α is a bundle if, for every regular strand s = r · β in B, and for every
+a ∈ strand uniquer · β, we have (O(s, a)) · α = O(s · α, a · α).
+
+4   Strengthened Authentication Tests in Bundles
+To direct the process of searching for realized skeletons, we use the authentication
+tests [10] in a strengthened and simplified form.
+10                                                                    February 2, 2007
+
+4.1     “Occurs Only Within”
+
+An outgoing test node receives a uniquely originating atom in a new form, while
+an incoming test node receives an encryption in a new form. A message t occurs
+in a new form in msg(n) if it occurs outside a set S of encryptions, whereas
+previously t occurred only within members of S:
+
+Definition 6 (Occurs only within/outside). A term t0 occurs only within
+S in t, where S is a set of encryptions, if:
+
+1. t0 6v t; or
+2. t ∈ S; or
+3. t 6= t0 and either (3a) t = {|t1 |}K and t0 occurs only within S in t1 ; or (3b)
+   t = tagˆt1 ˆt2 and t0 occurs only within S in each ti (i = 1, 2).
+
+It occurs outside S in t if t0 does not occur only within S in t.
+    We say that t exits S passing from t0 to t1 if t occurs only within S in t0
+but t occurs outside S in t1 . Term t exits S at a node n if t occurs outside S in
+msg(n) but occurs only within S in every msg(m) for m ≺ n.
+
+So t0 occurs only within S in t if in the abstract syntax tree, every path from
+the root t to an occurrence of t0 as a subterm of t traverses some t1 ∈ S before
+reaching t0 .2 If it occurs outside S, this means that t0 v t and there is a path
+from the root to an occurrence of t0 as a subterm of t that traverses no t1 ∈ S.
+
+Example 6 (Needham-Schroeder Occurrences). Nb occurs only within the
+singleton set Sr = {{|Na ˆNb |}pubk(A) } in the term {|Na ˆNb |}pubk(A) . However,
+Nb occurs outside Sr in the term {|Nb |}pubk(B) , so Nb exits Sr passing from
+{|Na ˆNb |}pubk(A) to {|Nb |}pubk(B) .
+
+
+4.2     The Tests in Bundles
+
+We say that a is protected in B iff msg(n) 6= a for all n ∈ B. By the definitions
+of the penetrator strands for encryption and decryption (Definition 3), if the
+adversary uses K for encryption or decryption anywhere in B, then K is not
+protected in B. Thus, the adversary cannot create any encrypted term with a
+protected key K. If K −1 is protected, it cannot decrypt any term encrypted with
+K.
+    We say that a is protected up to m in B, written a ∈ Protm (B), iff, for all
+n ∈ B, if msg(n) = a then m ≺B n. If a key is protected up to a negative node
+m, then the adversary cannot use that key to prepare the term received on m.
+
+Proposition 2 (Outgoing Authentication Test). Suppose an atom a orig-
+inates uniquely at a regular node n0 in bundle B, and suppose
+
+                           S ⊆ {{|t|}K : K −1 ∈ Protn1 (B)}.
+2
+    In our terminology (Section 3), the K in {|t|}K is not an occurrence as a subterm.
+February 2, 2007                                                                  11
+
+If, for some n1 ∈ B, a exits S passing from msg(n0 ) to msg(n1 ), then a exits
+from S at some positive regular m1 B n1 . If n0 and m1 lie on different strands,
+then for some negative m0 ∈ B with a v msg(m0 ),
+
+                            n0 ≺B m0 ⇒+ m1 B n1 .
+
+Proof. Apply Prop. 1 to T =
+
+               {m : m B n1 and a occurs outside S in msg(m)};
+
+n1 ∈ T , so T has B -minimal members m1 . Since keys K used in S have
+K −1 ∈ Protn1 (B), m1 cannot lie on a decryption penetrator D-strand. By unique
+origination, a does not lie on a M-strand or K-strand. By the definitions of S
+and “occurs only within,” m1 does not lie on a S-, C-, or E-strand. Thus, m1
+lies on some s ∈ ΣΠ . If n0 does not lie on s, then a does not originate on s, so
+a v msg(m0 ) for some negative m0 , with m0 ⇒+ m1 .                             t
+                                                                                u
+
+In the outgoing test, we call m0 ⇒+ m1 an outgoing transforming edge for a, S. It
+transforms the occurrence of a, causing a to exit S. We call (n0 , n1 ) an outgoing
+test pair for a, S when a originates uniquely at n0 and a exits S passing from
+msg(n0 ) to msg(n1 ). We also sometimes call m1 an outgoing transforming node
+and n1 an outgoing test node.
+Example 7. In the Needham-Schroeder protocol, with responder role sr , the
+nodes (sr ↓ 2), (sr ↓ 3) form an outgoing test pair for Nb , Sr , where Sr is as
+given in Example 6. If the initiator role is si , then the edge si ↓ 2 ⇒ si ↓ 3 is a
+outgoing transforming edge for Nb , Sr .
+     Also, the nodes (si ↓ 1), (si ↓ 2) form an outgoing test pair for Na , Si ,
+where Si is the singleton set {{|Na ˆA|}pubk(C) }. Letting s0r = sr · [B 7→ C], then
+s0r ↓ 1 ⇒ s0r ↓ 2 forms an outgoing transforming edge for Na , Si .
+
+Proposition 3 (Incoming Authentication Test). Let t = {|t0 |}K with K ∈
+Protn1 (B), and let S ⊆ {{|t0 |}K0 : K0−1 ∈ Protn1 (B)}. If t occurs outside S in any
+n1 ∈ B, then t exits S at some positive regular m1 B n1 .
+
+Proof. Apply Prop. 1 to the set T =
+
+               {m : m B n1 and t occurs outside S in msg(m)};
+
+n1 ∈ T , so T has minimal members m1 . Since keys K0 used in S have K0−1 ∈
+Protn1 (B), m1 cannot lie on a decryption D-strand. Since K ∈ Protn1 (B), m1
+cannot lie on an encryption E-strand. The remaining penetrator strands are
+inapplicable by the definition of “occurs only within”.                    t
+                                                                           u
+
+We call m1 an incoming transforming node for t, S, and n1 an incoming test node
+for t, S. In our experience with existing protocols, Prop. 3 is always used with
+S = ∅, i.e. t does not occur at all before m1 . However, one can invent protocols
+requiring non-empty S, and completeness requires the stronger form.
+12                                                                   February 2, 2007
+
+4.3   Penetrator Webs and Test Nodes
+We can see that Props. 2–3 have some sort of completeness by considering the
+powers of the adversary. In essence, if any negative regular node is neither an
+outgoing test node nor an incoming test node, then the adversary can derive the
+term on it. Thus, only test nodes in this sense can provide authentication guar-
+antees about the presence of regular activity. The rest could be the adversary’s
+work.
+   To make this precise, we define penetrator webs, which characterize what the
+adversary can do with fixed inputs from the regular participants.
+Definition 7 (Penetrator web, derivable). Let G = hNG , (→G ∪ ⇒G )i be
+a finite acyclic subgraph of hN , (→ ∪ ⇒)i such that NG consists entirely of
+penetrator nodes. G is a penetrator web with support Sspt and result R if Sspt
+and R are sets of terms and moreover:
+ 1. If n2 ∈ NG is negative, then either msg(n2 ) ∈ Sspt or there is a unique n1
+    such that n1 →G n2 .
+ 2. If n2 ∈ NG and n1 ⇒ n2 then n1 ⇒G n2 .
+ 3. For each t ∈ R, either t ∈ Sspt or for some positive n ∈ NG , msg(n) = t.
+If A is a set of atoms, then term t1 is derivable from Sspt avoiding A if there is
+a web G with support SG ⊆ Sspt and t1 ∈ RG , where no atom in A originates
+on a penetrator strand in G.
+If n ∈ B is a negative node, then B includes a penetrator web G with result
+RG = {msg(n)}. Its support SG = {msg(m) : m is positive regular and m ≺B n}.
+    When Sspt is a set of terms, we say that t exits Senc passing from Sspt to
+t1 if for each t0 ∈ Sspt , t exits Senc passing from t0 to t1 . Def. 6 says that this
+means that t occurs only within the encryptions in Senc in every t0 ∈ Sspt , and
+t occurs outside Senc in t1 .
+    Suppose that B is a bundle, and U is the set of atoms that originate uniquely
+in B, and on a regular node. In the following proposition, letting A = U ∪
+Protn1 (B), the first condition says that t1 6= msg(n1 ) for any outgoing test node
+n1 ∈ B. The second condition says that t1 6= msg(n1 ) for any incoming test node
+n1 ∈ B.
+Proposition 4. Let A be a set of atoms; let Sspt be a finite set of terms; and let
+t1 be a term such that, for any a ∈ A, if a v t1 , then a v t0 for some t0 ∈ Sspt .
+Suppose the following conditions hold:
+1. for all a ∈ A and all sets of encryptions Senc , if a exits Senc passing from
+   Sspt to t1 , then there is some {|t|}K0 ∈ Senc , such that K0 −1 is derivable from
+   Sspt avoiding A; and
+2. for all encryptions {|t|}K , and all sets of encryptions Senc , if {|t|}K exits Senc
+   passing from Sspt to t1 , then either K is derivable from Sspt avoiding A, or
+   else some K0 −1 with K0 ∈ used(Senc ) is derivable from Sspt avoiding A.
+Then term t1 is derivable from Sspt avoiding A.
+February 2, 2007                                                                         13
+
+Proof. The proof is by structural induction on the pair (Sspt , t1 ), i.e. the ordering
+                             0
+under which (Sspt , t1 ) ≤ (Sspt , t01 ) iff t1 v t01 , and for all t ∈ Sspt , there is some
+ 0    0                 0
+t ∈ S such that t v t .
+
+Case t1 = a: If a 6∈ A, then the one-node web originating a satisfies the con-
+   ditions. Otherwise, S a = {t ∈ Sspt : a v t} is non-empty. If a ∈ S a , then
+   the empty web suffices. If some concatenation t0 ˆt00 ∈ S a , then apply the
+   induction hypothesis to S a \ {t0 ˆt00 } ∪ {t0 } ∪ {t00 }. This asserts the existence
+   of a penetrator web Ga deriving a. Obtain the desired web by prepending a
+   separation S-strand above any occurrences of t0 and t00 in Ga .
+   Otherwise, S a consists entirely of encryptions, and a exits S a passing from
+   Sspt to a. By condition 1, there is some {|t|}K0 ∈ S a with K0 −1 derivable
+   from Sspt avoiding A, using some web GK0 −1 . Thus, applying the induction
+   hypothesis to (S a \ {{|t|}K0 }) ∪ {t}, we obtain a web G. We may prepend
+   GK0 −1 and a decryption D-strand before G to obtain the required web.
+Case t1 = t01 ˆ t001 : Apply the induction hypothesis to t01 and t001 , and append a
+   concatenation C-strand after the resulting webs.
+Case t1 = {|t01 |}K : Suppose K is derivable from Sspt avoiding A, using some web
+   GK . Apply the induction hypothesis to t01 , obtaining a web G. Append an
+   encryption E-strand after GK and G to derive {|t01 |}K .
+   Otherwise, by condition 2, some K0−1 with {|t0 |}K0 ∈ Senc is derivable from
+   Sspt avoiding A, using a web GK0 −1 . Apply the induction hypothesis to
+   (Sspt \{{|t0 |}K0 })∪{t0 }, obtaining a web G. Prepend GK0 −1 and a decryption
+   D-strand before G.                                                                 t
+                                                                                      u
+
+
+5     Preskeletons, Skeletons, and Homomorphisms
+
+The notion of penetrator web from Section 4.3 extracts parts of the adversary
+activity in a bundle, helping us focus on its structure. The notion of a skeleton
+is intended to extract parts of the regular behavior of bundles, so that we can
+focus our inferences on what regular behavior must also be present.
+
+
+5.1   Skeletons
+
+A preskeleton is potentially the regular (non-penetrator) part of a bundle or of
+some portion of a bundle, and skeletons are the subset that are well-behaved, in
+that atoms intended to originate uniquely do so.
+     A preskeleton consists of nodes annotated with additional information, in-
+dicating order relations among the nodes, uniquely originating atoms, and non-
+originating atoms. We say that an atom a occurs in a set nodes of nodes if for
+some n ∈ nodes, a v msg(n). A key K is used in nodes if for some n ∈ nodes,
+{|t|}K v msg(n). We say that a key K is mentioned in nodes if K or K −1 either
+occurs or is used in nodes. For a non-key a, a is mentioned if it occurs.
+
+Definition 8. A four-tuple A = (nodes, , non, unique) is a preskeleton if:
+14                                                                February 2, 2007
+
+ 1. nodes is a finite set of regular nodes; n1 ∈ nodes and n0 ⇒+ n1 implies
+     n0 ∈ nodes;
+ 2.  is a partial ordering on nodes such that n0 ⇒+ n1 implies n0  n1 ;
+ 3. non is a set of keys, and for all K ∈ non, either K or K −1 is used in nodes;
+30 . for all K ∈ non, K does not occur in nodes;
+ 4. unique is a set of atoms, and for all a ∈ unique, a occurs in nodes.
+
+A preskeleton A is a skeleton if in addition:
+
+40 . a ∈ unique implies a originates at no more than one node in nodes.
+
+We select components of a preskeleton using subscripts, so, in A = (N, R, S, S 0 ),
+A means R and uniqueA means S 0 . A need not contain all of the nodes of a
+strand, just some initial subsequence. We write n ∈ A to mean n ∈ nodesA , and
+we say that a strand s is in A when at least one node of s is in A. The A-height
+of s is the largest i with s ↓ i ∈ A. By Clauses 3, 4, uniqueA ∩ nonA = ∅.
+
+Example 8. Ans , shown in Fig 1, is a skeleton with non = {privk(A)}, unique =
+{Nb }. Its ordering is generated from the double arrows ⇒, single arrows →, and
+precedence signs. Ab , containing only the responder strand sr on the right side
+of Fig 1, is also a skeleton (equipped with non = {privk(A)}, unique = {Nb }).
+However, if we adjoin a copy s0r = sr · [B 7→ C] to Ans , then the result is not a
+skeleton, but only a preskeleton Apre . Nb originates both at sr ↓ 2 and at s0r ↓ 2.
+If instead we adjoin s00r = sr · [B 7→ C, Nb 7→ Nb0 ], we obtain a skeleton A0pre .
+
+   The skeletons for a protocol hΠ, strand non, strand uniquei are defined like
+the bundles for that protocol.
+
+Definition 9. A is a preskeleton for protocol hΠ, strand non, strand uniquei iff
+for every n ∈ nodesA with n = s ↓ i, (1) s ∈ ΣΠ ; (2) if s = r · α and
+a ∈ strand nonr · α, then a does not occur in A; and (3) if s = r · α and
+a ∈ strand uniquer · α, then a ∈ uniqueA . A is a skeleton for a protocol if A
+is a skeleton, and A is a preskeleton for that protocol.
+
+
+5.2   Skeletons and Bundles
+
+Bundles correspond to certain skeletons:
+
+Definition 10. Bundle B realizes skeleton A if:
+
+ 1. The nodes of A are the regular nodes n ∈ B.
+ 2. n A n0 just in case n, n0 ∈ nodesA and n B n0 .
+ 3. K ∈ nonA iff case K or K −1 is used in nodesA but K occurs nowhere in B.
+ 4. a ∈ uniqueA iff a originates uniquely in B.
+
+The skeleton of B is the skeleton that it realizes. The skeleton of B, written
+skeleton(B), is uniquely determined. A is realized if some B realizes it.
+February 2, 2007                                                                        15
+
+By condition (4), B does not realize A if A is a preskeleton but not a skeleton.
+Given a skeleton A, methods derived from [10] determine whether A is realized.
+Skeleton Ans from Example 8 is realized, but Nb is not.
+
+Definition 11. A term t is derivable before n in A if there is a penetrator web
+G with t ∈ RG such that:
+ 1. SG ⊆ {msg(m) : m positive and m A n};
+ 2. If K ∈ nonA , K does not originate in Gn ; and
+ 3. If a ∈ uniqueA and a originates in A, then a does not originate in Gn .
+
+Proposition 5. A skeleton A is realized iff, for every negative n ∈ A, msg(n)
+is derivable before n in A.
+
+5.3    Homomorphisms
+When A is a preskeleton, we may apply a substitution α to it, subject to the
+same condition as in Prop. 1. Namely, suppose α is a replacement, and suppose
+that for each regular strand s = r · β such that s has nodes in A, and for each
+atom b ∈ ur · β,
+                          (O(s, b)) · α = O(s · α, b · α).
+Then A·α is a well defined object. However, it is not a preskeleton when x·α = y·α
+where x ∈ nonA while y occurs in A. In this case, no further identifications can
+restore the preskeleton property. So we are interested only in replacements with
+the property that x · α = y · α and x ∈ nonA implies y does not occur in A. On
+this condition, A · α is a preskeleton.
+    However, A may be a skeleton, while objects built from it are preskeletons but
+not skeletons. In a preskeleton, we can sometimes, though, restore the skeleton
+unique origination property (40 ) by a mapping φ that carries the two points of
+origination to a common node. This will be possible only if the terms on them are
+the same, and likewise for the other nodes in A on the same strands. We regard
+φ, α as an information-preserving, or more specifically information-increasing,
+map. It has added the information that a1 , a2 , which could have been distinct,
+are in fact the same, and thus the nodes n1 , n2 , which could have been distinct,
+must also be identified.
+
+Example 9. A0pre is a skeleton, but the result of applying the replacement
+[Nb0 7→ Nb ] yields the preskeleton Apre which is not a skeleton. If the map
+φ : nodesApre 7→ nodesAns maps the successive nodes of the strand s0r to the nodes
+of the strand sr , then it will identify s0r ↓ 2 with sr ↓ 2, and thus restore the
+unique point of origination for Nb .
+
+Definition 12. Let A0 , A1 be preskeletons, α a replacement, φ : nodesA0 →
+nodesA1 . H = [φ, α] is a homomorphism if
+1a. For all n ∈ A0 , msg(φ(n)) = msg(n) · α, with the same direction;
+1b. For all s, i, if s ↓ i ∈ A then there is an s0 s.t. for all j ≤ i, φ(s ↓ j) = (s0 , j);
+16                                                                  February 2, 2007
+
+ 2. n A0 m implies φ(n) A1 φ(m);
+ 3. nonA0 · α ⊆ nonA1 ;
+ 4. uniqueA0 · α ⊆ uniqueA1 ; and φ(O(s, a)) = O(s0 , a · α) whenever a ∈ uniqueA0 ,
+    O(s, a) ∈ A0 , and φ(s ↓ j) = s0 ↓ j.
+
+We write H : A0 7→ A1 when H is a homomorphism from A0 to A1 . When
+a · α = a · α0 for every a that occurs or is used for encryption in dom(φ), then
+[φ, α] = [φ, α0 ]; i.e., [φ, α] is the equivalence class of pairs under this relation.
+
+The condition for [φ, α] = [φ, α0 ] implies that the action of α on atoms not
+mentioned in the A0 is irrelevant. The condition on O in Clause 4 avoids the de-
+generacy in which a point of origination is destroyed for some atom a ∈ uniqueA0 .
+We stipulate that such degenerate maps are not homomorphisms. For instance,
+a replacement α that sends both Na and Nb to the same value would not fur-
+nish homomorphisms on Ans . A responder, expecting to choose a fresh nonce,
+inadvertently selecting the same nonce Na he has just received, would be an
+event of negligible probability. Thus, we may discard this degenerate set. Some
+homomorphisms are given in Example 2.
+     A homomorphism I = [φ, α] : A0 7→ A1 is an isomorphism iff φ is a bijection
+and there is an injective α0 such that [φ, α] = [φ, α0 ]. Two homomorphisms
+H1 , H2 are isomorphic if they differ by an isomorphism I; i.e. H1 = I ◦ H2 .
+     When transforming a preskeleton A into a skeleton, one identifies nodes n, n0
+if some a ∈ uniqueA originates on both; to do so, one may need to unify additional
+atoms that appear in both msg(n), msg(n0 ). This process could cascade. However,
+when success is possible, and the cascading produces no incompatible constraints,
+there is a canonical (universal) way to succeed:
+
+Proposition 6. Suppose H0 : A 7→ A0 with A a preskeleton and A0 a skeleton.
+   There exists a homomorphism GA and a skeleton A0 such that GA : A 7→ A0
+and, for every skeleton A1 and every homomorphism H1 : A 7→ A1 , for some H,
+H1 = H ◦ GA . GA and A0 are unique to within isomorphism.
+
+Definition 13. The hull of A, written hull(A), is the universal map GA given
+in Prop. 6, when it exists. We write hullα (·) for the partial map that carries any
+skeleton A to hull(A · α).
+
+We sometimes use the word hull to refer also to the target A0 of GA .
+    We say that a skeleton A0 is live if for some H, A1 , H : A0 7→ A1 and A1 is
+realized. Otherwise, it is dead. There are two basic facts about dead skeletons:
+
+Proposition 7 (Dead Skeletons). (1) If a ∈ nonA and (Lsn[a]) ↓ 1 ∈ A, then
+A is dead. (2) If A is dead and H : A 7→ A0 , then A0 is dead.
+
+
+5.4   Shapes
+
+Shapes are minimal realizable skeletons, or more precisely, minimal homomor-
+phisms with realizable targets.
+February 2, 2007                                                                      17
+
+Definition 14 (Shape). [φ, α] : A0 7→ A1 is nodewise injective if φ is an injec-
+tive function on the nodes of A0 .
+     A homomorphism H0 is nodewise less than or equal to H1 , written H0 ≤n H1 ,
+if for some nodewise injective J, J ◦ H0 = H1 . H0 is nodewise minimal in a set
+S if H0 ∈ S and for all H1 ∈ S, H1 ≤n H0 implies H1 is isomorphic to H0 .
+     H : A0 7→ A1 is a shape for A0 if H is nodewise minimal among the set of
+homomorphisms H 0 : A0 7→ A01 where A01 is realized.
+The composition of two nodewise injective homomorphisms is nodewise injec-
+tive, and a nodewise injective H : A 7→ A is an isomorphism. Thus, H0 , H1 are
+isomorphic if each is nodewise less than or equal to the other. Hence, the relation
+≤n is a partial order on homomorphisms, to within isomorphism.
+    When we say that A1 is a shape, we mean that it is the target of some shape
+H : A0 7→ A1 , where a particular A0 is understood from the context.
+Proposition 8. Let H : A0 7→ A1 . The set S = {H 0 : H 0 ≤n H} is finite (up to
+isomorphism). If A1 is realized, then at least one H 0 ∈ S is a shape for A0 .
+Proof. Letting H = [φ, α], we generate S by making two choices. For each node
+n ∈ (A1 \ φ(A0 )), we consider whether to omit it and all nodes later than n on
+the same strand. Second, we also consider, whenever two strands contain the
+same parameter a, whether to assign these parameters different values.
+     We partition the strands containing a parameter a. A partition is permissible
+if it respects identifications already present in A0 . By this we mean that s00 , s01
+are in the same partition class whenever there are strands s0 , s1 with φ(s0 ) = s00
+and φ(s1 ) = s01 , and s0 , s1 already agree on this parameter. We choose a partition
+for each parameter a.
+     S contains the homomorphisms determined by a choice of nodes to omit and
+a family of permissible partitions. We replace each occurrence of a either by a
+representative atom from α−1 (a) or by a new value not mentioned in A0 . There
+are only finitely many ways to do this (to within renaming), so S is finite.
+     H is a member of S, namely the one that omits no nodes and has a single
+partition class for each a. Thus, if A1 is realized, S has members with a realized
+target. Letting S 0 ⊆ S be the set of H 0 ∈ S such that the target of H 0 is realized,
+S 0 is non-empty and finite; hence, S 0 has ≤n -minimal members.                    t
+                                                                                    u
+Example 10. The process described in this proof, applied to the embedding
+Hnsi : Ab 7→ Ansi (see Example 2), discovers that the multiple occurrences of
+pubk(B) can be partitioned into those on the responder strand and those on the
+initiator strand. These can be distinguished, preserving being realized. Applied
+to the embedding of Ab2 (containing the first two responder node, see Example 1)
+into Ansi , it discards all the nodes outside Ab2 , since the latter is already realized.
+
+6    The Tests in Skeletons
+To adapt the authentication tests of Section 4 to skeletons and homomorphisms,
+there are essentially two steps. First, we must “pull back” from bundles or re-
+alized skeletons to the skeletons that reach them via homomorphisms. Second,
+18                                                                February 2, 2007
+
+we can no longer read off the safe atoms from Prot(B). We have only partial
+information about which atoms will turn out to be safe or compromised. Thus,
+we speculatively consider both possibilities, i.e. both the possibility that a key
+will turn out to be compromised, and also the possibility that the transformed
+nodes need to be explained with a transforming edge.
+Definition 15 (Augmentations, Contractions). 1. An augmentation is an
+   inclusion [id, id] : A0 7→ A1 such that:
+   (a) nodesA1 \ nodesA0 = {s ↓ j : j ≤ i} for some s = r · α;
+   (b) A1 is the transitive closure of (i) A0 ; (ii) the strand ordering of s up
+        to i; (iii) pairs (n, m) or (n, m) with n ∈ nodesA0 , m = s ↓ j, and j ≤ i;
+        and (iv) the pair (na , ma ), when a originates on a node na ∈ A0 and a
+        is mentioned in ma = s ↓ j, for any a ∈ uniqueA1 .
+   (c) nonA1 = nonA0 ∪ (strand nonr · α); and
+   (d) uniqueA1 = uniqueA0 ∪ (strand uniquer · α).
+2. An augmentation H : A0 7→ A1 is an outgoing augmentation if there exists
+   an outgoing test edge n0 , n1 ∈ A0 with no outgoing transforming edge in A0 ,
+   and s ↓ 1 ⇒∗ m0 ⇒+ s ↓ i, where m0 ⇒+ s ↓ i is the earliest transforming
+   edge for this test on s. The additional pairs in the ordering (clause 1b(iii))
+   are the pairs (n0 , m0 ) and ((s ↓ i), n1 ).
+3. It is an incoming augmentation if it adds an incoming transforming edge for
+   an incoming test node in A0 . The pair (m1 , n1 ) in the notation of Prop. 3 is
+   the additional pair in the ordering.
+4. It is a listener augmentation for a if it adds a listener strand Lsn[a], with no
+   pairs added to the ordering.
+5. A replacement α is a contraction for A if there are two distinct atoms a, b
+   mentioned in A such that a · α = b · α. We write hullα (A) for the canonical
+   homomorphism from A to hull(A·α), when the latter is defined. (See Prop. 6.)
+
+Example 11. The embeddings Hns , Hnsi (Example 2) are outgoing augmenta-
+tions; the test edge lies between the second and third nodes of the responder
+strand. Hns is more general, as Hnsi factors through it.
+                                                   K
+We use a listener strand Lsn[K], having the form → • to mark a key K as a target
+for compromise. Lsn[K] records a commitment, the commitment to somehow
+compromise the value K before reaching a realized skeleton, if a transforming
+edge has not been chosen. The listener strand thus tests compromise for K.
+If K cannot be compromised, the skeleton containing the listener strand will
+be dead, and no homomorphism leads from it to a realized skeleton. Listener
+strands, lacking transmission nodes, never precede anything else; they are always
+maximal in A .
+    Since in a realized skeleton listener strands may be freely omitted, or freely
+added as long as the skeleton remains realized, we regard realized skeletons as
+similar if they differ only in what listener strands they contain. We write A1 ∼L A2
+for skeletons that are similar in this sense. Shapes, being minimal, contain no
+listener strands; a homomorphism that simply embeds A1 into a A2 having more
+listener strands is nodewise injective.
+February 2, 2007                                                                    19
+
+    We write H1 ∼L H2 if by adding listener strands we can equalize the homo-
+morphisms H1 , H2 . That is, H1 ∼L H2 iff each Hi (for i = 1, 2) is of the form
+Hi : A 7→ Ai , and there are embeddings Ei : Ai 7→ A0 such that A1 ∼L A0 ∼L A2
+and E1 ◦ H1 = E2 ◦ H2 .
+    The search-oriented version of Prop. 2 states that when a skeleton A0 with an
+unsolved outgoing transformed pair leads to a realized skeleton A1 , we can reach
+it starting with one of three kinds of steps: (1) a contraction, (2) an outgoing
+augmentation, or (3) adding a listener strand witnessing that one of the relevant
+keys is in fact not properly protected by the time we reach A1 .
+Theorem 1 (Outgoing Augmentation). Let H : A0 7→ A1 , where A1 is re-
+alized. Let n0 , n1 ∈ A0 be an outgoing test pair for a, S, for which A0 contains
+no transforming edge. Then there exist H 0 , H 00 such that either:
+1. H = H 00 ◦ H 0 , and H 0 = hullα (A0 ) for some contraction α; or
+2. H = H 00 ◦ H 0 , and H 0 is some outgoing augmentation for a, S; or
+3. H ∼L H 00 ◦ H 0 , and H 0 is a listener augmentation H 0 : A0 7→ A00 adding
+   Lsn[K −1 ], for some K ∈ used(S).
+
+Proof. Assuming H = [φ, α] : A0 7→ A1 with A1 realized, say with skeleton(B) =
+A1 , we have the following possibilities. If α contracts any atoms, then we may
+factor H into a contraction followed by some remainder H 00 (clause 1).
+    If α does not contract any atoms, then (φ(n0 ), φ(n1 )) is an outgoing test pair
+for a · α, S · α. There are now two cases. First, suppose used(S) · α ⊆ Protφ(n1 ) (B).
+Then we may apply Prop. 2 to infer that B and thus also A1 contains an outgoing
+transforming edge m0 ⇒+ m1 for a · α, S · α. Since α is injective on atoms
+mentioned in A0 , we may augment A0 with an edge m00 ⇒+ m01 such that
+msg(m00 ) · α = msg(m0 ) and msg(m01 ) · α = msg(m1 ).
+    Second, if there is some K ∈ used(S) such that K −1 · α 6∈ Protφ(n1 ) B, then
+there is A01 ∼L A1 such that A01 contains Lsn[K −1 ·α], and φ(n1 ) 6 (Lsn[K −1 · α]) ↓
+1. Hence, clause 3 is satisfied.
+
+   Protocols have only finitely many roles, hence only finitely many transforming
+edges that can solve a given outgoing test pair n0 , n1 . Each S uses only finitely
+many keys. Moreover, each A0 mentions only finitely many atoms. Thus, there
+are only finitely many (non-isomorphic) contractions.
+Proposition 9. Let n0 , n1 ∈ A0 be an outgoing test pair for a, S, for which
+A0 contains no transforming edge. There are finite families F = {Hj0 }j≤k of
+contractions and augmentations as in Theorem 1, such that for every H : A0 7→
+A1 , where A1 is realized, H ∼L H 00 ◦ Hj0 for some H 00 and Hj0 ∈ F.
+    For each unsolved n0 , n1 ∈ A0 and a, S, there is a finite, most general set
+F of contractions and augmentations H solving it, meaning that any such H
+factors through some member of F.
+The outgoing augmentations in a most general family are obtained by unifying
+messages in the roles of Π with terms in S. One selects edges lying between a
+negative node in which a occurs only within S · α and a positive node in which
+20                                                                 February 2, 2007
+
+a occurs outside S · α. We need a contraction α only if either (1) n0 · α, n1 · α is
+no longer an outgoing transformed pair, or else (2) for some candidate outgoing
+augmentation, n0 · α, n1 · α is the most general version of the test that it solves.
+This occurs when the protocol role mentions the same atom at several locations
+where different atoms are mentioned in n0 , n1 ; α must then identify these atoms.
+   We call a most general F an outgoing cohort for n0 , n1 and a, S.
+   Incoming augmentations are similar to outgoing ones, except that the key
+used for encryption in the test node is also relevant. The proof is similar.
+Theorem 2 (Incoming Augmentation). Let H : A0 7→ A1 , where A1 is re-
+alized. Let n1 ∈ A0 be an incoming test node for t, S with t = {|t0 |}K . If there is
+no incoming transforming node for t, S in A0 , then there exist H 0 , H 00 such that
+either:
+1. H = H 00 ◦ H 0 , and H 0 = hullα (A0 ) for some contraction α; or
+2. H = H 00 ◦ H 0 , for H 0 an incoming augmentation emitting {|t0 |}K occurring
+   outside S; or
+3. H ∼L H 00 ◦ H 0 , for H 0 a listener augmentation H 0 : A0 7→ A00 adding K or
+   some K0−1 , for K0 ∈ used(S).
+Each incoming test determines a most general family of augmentations and con-
+tractions, akin to those in Prop. 9; we refer to them as incoming cohorts.
+    Evidently, Thms. 1–2 are useful for authentication results. Thm. 1 is also
+useful for checking secrecy for atoms a. Starting from A0 , we add a listener
+Lsn[a] to A0 . If a is not penetrator-derivable, then Lsn[a] is an outgoing test
+node. Incoming and outgoing augmentations may lead from A0 ∪ Lsn[a] to a
+realized skeleton. Success guarantees that a can become compromised, while
+failure ensures its safety.
+
+7     The Yahalom Protocol
+Yahalom’s protocol is quite compact, but subtle. The shape search for the re-
+sponder illustrates almost every aspect of the cpsa search method.
+
+7.1   Protocol Definition
+The Yahalom protocol (Fig. 2 [17]) provides a session key K to principals sharing
+long-term symmetric keys with a key server. We let ltk(·) map each principal A
+to its long term shared key ltk(A). We assume that all participants agree on the
+server, which does not also participate as a client.
+    The protocol contains three roles, the initiator, the responder, and the server.
+Each is described by one strand in Fig. 2, each parametrized by A, B, Na , Nb , K.
+The parameters are atomic values, and the instances of each role are constructed
+by replacing them with other atomic values. The behavior Init of the initiator
+consists in transmitting AˆNa followed by receiving some message of the form
+{|B ˆK ˆNa ˆNb |}ltk(A) and finally transmitting {|Nb |}K . The other roles are also
+self-explanatory. The key server is trusted to generate a fresh, uniquely originat-
+ing session key K in each run, i.e. strand uniqueServ = {K}.
+February 2, 2007                                                                    21
+
+
+                    AˆNa                                  AˆNa
+        Init
+         w
+                                  -                                    - Resp
+                                                    B ˆ{|AˆNa ˆNb |}ltk(B)
+         w                                                                   ­
+         w
+         w
+         w                                                                  •
+                                                                             w
+         ­
+             {|B ˆK ˆNa ˆNb |}ltk(A)
+                                                                             w
+                                                                             w
+         • 
+         w
+                                                                             w
+                                                                             w
+                                                       {|AˆK|}ltk(B)
+         w                                                                   ­
+         w
+         w
+         w                                                                 - •
+         ­                                                                   ­
+                   {|Nb |}K                               {|Nb |}K
+         •                        -                                        - •
+
+                                                  B ˆ{|AˆNa ˆNb |}ltk(B)
+                                         Serv 
+              {|B ˆK ˆNa ˆNb |}ltk(A)
+                                          ­
+                                          •
+                                          ­
+                                                      {|AˆK|}ltk(B)
+                                          •                                -
+
+                   Fig. 2. Yahalom protocol (forwarding removed)
+
+
+7.2   A Search: Shapes for the Responder
+Suppose an execution contains a local run sr of the responder’s role as in the
+upper right column of Fig. 2. We assume the long term keys ltk(A), ltk(B) are
+uncompromised, as no authentication can be achieved otherwise. Similarly, we
+assume the responder’s nonce Nb to be fresh and unguessable.
+    So let the initial skeleton A0 consist of sr , with nonA0 = {ltk(A), ltk(B)} and
+uniqueA0 = {Nb }. What skeletons are shapes for A0 ? Or more precisely, for what
+realized skeletons A is there a shape H : A0 7→ A?
+    We will find only one possibility, the skeleton A4 (Fig. 5). Any realized A
+containing any responder strand s0r —with uncompromised long-term keys and
+a fresh nonce—has a subskeleton A0 containing s0r , with J : A4 7→ A0 . J is both
+nodewise injective and surjective, i.e. an isomorphism on nodes, although it may
+identify atoms. In this sense, A0 , the portion of A containing s0r , resembles A4 .
+
+Transforming the Nonce. B chooses a fresh nonce Nb in node n0 (see Fig. 3),
+and transmits it within the encrypted unit {|AˆNa ˆNb |}ltk(B) . In B’s node n2 ,
+it is received outside that unit, in the form {|Nb |}K . So n0 , n2 is an outgoing test
+pair for Nb , S1 where S1 =
+
+           {{|AˆNa ˆNb |}ltk(B) } ∪ {{|B ˆK 0 ˆNa ˆNb |}ltk(A) : K 0 a key}.
+
+ 1. The only outgoing transforming edges for Nb , S1 lie on initiator strands.
+    Unifying node 2 of the role with messages in S1 shows that the parameters
+    must be A, B, Na , Nb , and some K 0 . We ask later whether K 0 = K.
+ 2. Alternatively some decryption key may be compromised. Since used(S1 ) =
+    {ltk(A), ltk(B)} contains symmetric (self-inverse) keys, this means we con-
+    sider adding Lsn[ltk(A)] or Lsn[ltk(B)].
+22                                                                                                       February 2, 2007
+
+No contraction is relevant. Thus, these three embeddings—adding to A0 either an
+initiator strand si , or a listener strand Lsn[ltk(A)], or a listener Lsn[ltk(B)]—form
+an outgoing cohort. When adding si , we know that n0 ≺ (si ↓ 2) ⇒ (si ↓ 3) ≺ n2 .
+
+
+
+                   Aw: si                                                                                B : sr
+                     w                                                                                     w
+                     w
+                     w                                                                                     ­
+                                                                    <3      ............................
+                                                          S : ss                                          nw0
+                     w
+                     w
+                     w
+                     w                                          w
+                     ­                                          ­                                          w
+                                                                                                           w
+                                                                                                           w
+                     •   .................................. m1                                            w
+                                                                                                           w
+                     w
+                     w                                          w                                          w
+                                                                                                           w
+                     w                                          ­                                          ­
+                     w
+                                                                ?                                         n1
+                     w
+                     w
+                     w
+                     w                                                                                     w
+                     ­                                                                                     ­
+                     • .................................................................................
+                                                                                                     - n2
+              A, B, Na , Nb , K 0               A, B, Na , Nb , K 0                           A, B, Na , Nb , K
+
+
+     Fig. 3. Skeleton A1 , with nonA1 = {ltk(A), ltk(B)} and uniqueA1 = {Nb , K 0 }.
+
+
+
+    Since nonA0 = {ltk(A), ltk(B)}, Prop. 7 says that A0 ∪ Lsn[ltk(A)] and A0 ∪
+Lsn[ltk(B)] are unrealizable. No bundle B can ever contain a listener strand
+for a value that originates nowhere. Thus, the embeddings of Case 2 are dead.
+Thus, every homomorphism from A0 to a realized skeleton factors through the
+embedding A0 7→ A0 ∪ {si } of Case 1.
+    We again have an outgoing test edge between n0 and si ↓ 2, for Nb , S2 where
+
+        S2 = {{|AˆNa ˆNb |}ltk(B) } ∪ {{|B ˆK 00 ˆNa ˆNb |}ltk(A) : K 00 6= K 0 }.
+
+Nb originates only at n0 , where it occurs only within S2 ; however, in msg(si ↓ 2),
+Nb occurs outside S2 in the form {|B ˆK 0 ˆNa ˆNb |}ltk(A) .
+
+
+ 3. The only outgoing transforming edges for Nb , S2 lie on server strands ss .
+    Unifying node 1 of the role with messages in S2 shows that the parameters
+    must be A, B, Na , Nb , and some K 00 . Since Nb must occur outside S2 in
+    ss ↓ 2, we have K 00 = K 0 ; so that the last parameter is K 0 . The last node
+    ss ↓ 3 may not be included; we will write s<3s for the initial segment of ss .
+ 4. Alternatively a decryption key in used(S1 ) = {ltk(A), ltk(B)} may be com-
+    promised. However, the listener strands produce dead skeletons, as in Case 2.
+
+
+Thus, any homomorphism from A0 to a realized skeleton must factor through the
+embedding A0 7→ A0 ∪ sr ∪ s<3 s . We call this skeleton A1 , shown in Fig 3, which
+also shows how the ordering relation extends. Since the server always provides
+a fresh session key, we also have K 0 ∈ uniqueA1 .
+February 2, 2007                                                                   23
+
+Does K 0 = K? The server generated K 0 on strand ss and delivers it to A on
+si ↓ 2. B receives K on n1 , and on n2 finds K also used to encrypt the nonce
+Nb . Must the keys K 0 , K be the same, or could they be distinct?
+    Nodes n0 , n2 form an outgoing test pair for Nb and the set
+
+          S3 = { {|AˆNa ˆNb |}ltk(B) , {|B ˆK 0 ˆNa ˆNb |}ltk(A) , {|Nb |}K 0 }.
+
+The resulting outgoing cohort consists of Cases 5–7:
+
+
+ 5. Under the contraction β that maps K 0 7→ K and is elsewhere the identity,
+    no new edge is needed, as {|Nb |}K 0 · β = {|Nb |}K · β.
+ 6. Another server strand s0s could receive Nb in its original form and transmit
+    Nb and a new session key K 00 as {|B ˆK 00 ˆNa ˆNb |}ltk(A) .
+ 7. used(S3 ) = {ltk(A), ltk(B), K 0 }. Although adding Lsn[ltk(A)] and Lsn[ltk(B)]
+    lead to dead skeletons, perhaps adding Lsn[K 0 ] does not, i.e. K 0 may become
+    compromised.
+
+However, we can prune Case 6, because K 00 is not usefully different from K 0 . The
+adversary cannot use messages transmitted by s0s differently from the messages
+transmitted by the existing ss . In Section 9, we formalize this pruning principle
+(Prop. 11). Discarding Case 6, there are two live possibilities: either K 0 = K or
+else K 0 becomes compromised. We consider Case 7 next.
+
+Case 7: K 0 becomes compromised. Consider the skeleton A1 ∪ Lsn[K 0 ]. K 0 origi-
+nates uniquely at m1 , so m1 , (Lsn[K 0 ] ↓ 1) is an outgoing transformed pair for K 0
+and S4 = { {|B ˆK 0 ˆNa ˆNb |}ltk(A) , {|AˆK 0 |}ltk(B) }. Thus, we have the outgoing
+cohort 8–9:
+
+
+ 8. Some role Init, Resp, Serv provides a transforming edge for K 0 , S4 . However,
+    no Yahalom role retransmits it as a subterm of any new message. The initia-
+    tor uses K 0 to encrypt a message, but in our model, this discloses nothing.
+    For finer models, see e.g. [3, 5].
+ 9. One of the keys that protects K 0 in S4 , i.e. a key K0 ∈ used(S4 ), becomes
+    compromised; but used(S4 ) = { ltk(A), ltk(B) }.
+
+So neither Case 8 nor Case 9 is possible. We discard Case 7, as the whole co-
+hort 8–9 is unrealizable or “dead.”
+    Hence, all homomorphisms to realized skeletons must factor through Case 5.
+Let A2 = A1 · β be the result of replacing K 0 by K wherever mentioned in A1 .
+If any homomorphism H : A0 7→ A0 has A0 realized, then H factors through the
+embedding A0 7→ A2 .
+
+
+B’s Source for K. The responder B receives {|AˆK|}ltk(B) on node n1 . We
+apply the Incoming Test Principle, with cohort:
+24                                                                                                                            February 2, 2007
+
+
+           A : si                                                                               B : sr
+            w
+            w                                                                                    w
+            w                                                                                    w
+            w                                                                                    ­
+                                                            <3       ...........................                                       S : s0s
+            w
+            w
+            w                                     S   :  s  s
+                                                                                                n
+                                                                                                 w 0
+            w                                          w
+                                                       w                                         w                                       w
+            w                                                                                    w                                       ­
+            ­                                          ­                                         w
+                                                                                                 w
+             •   ................................. m1                                                                                  m01
+                                                                                                 w
+                                                                                                 w
+            w
+            w                                          w                                         w
+                                                                                                 w                                       w
+            w                                          w                                         w                                       ­
+            w                                          ­                                         ­
+            w
+                                                        ?                                        n1    ................................ m02
+            w
+            w                                                                                        
+            w
+            w                                                                                    w
+            w                                                                                    w
+            ­                                                                                    ­
+             •  ...............................................................................
+                                                                                            -    n2
+      A, B, Na , Nb , K                  A, B, Na , Nb , K                       A, B, Na , Nb , K                       A, B, Na0 , Nb0 , K
+
+
+     Fig. 4. Preskeleton A3 , with nonA3 = {ltk(A), ltk(B)} and uniqueA3 = {Nb , K}.
+
+
+10. A server strand s0s , with parameters A, B, K, transmits {|AˆK|}ltk(B) ; possi-
+    bly different nonces appear in s0s . The embedding yields A3 in Fig. 4.
+11. Alternatively, ltk(B) has been compromised and {|AˆK|}ltk(B) is generated
+    by the adversary. However, ltk(B) ∈ nonA2 , excluding this case.
+A3 is not a skeleton, but only a preskeleton, because of an anomaly. K ∈ uniqueA3
+is intended to originate at just one node, but in fact originates at both m1 and
+m01 . Therefore, in any skeleton obtained by a homomorphism H = [φ, α] jointly
+
+
+                          Aw: si                                                                              B : sr
+                            w                                                                                   w
+                            w
+                            w                                                                                   ­
+                            w
+                            w                                    S    :  s s
+                                                                                 ............................. n0
+                            w
+                            w                                        w                                          w
+                            ­                                        ­                                          w
+                                                                                                                w
+                                                                                                                w
+                            •  ................................. m1                                            w
+                                                                                                                w
+                            w
+                            w                                        w                                          w
+                                                                                                                w
+                            w
+                            w                                        ­                                          ­
+                            w
+                            w                                       m   2    ................................
+                                                                                                          - n1
+                            w
+                            w                                                                                   w
+                            ­                                                                                   ­
+                            • ...............................................................................
+                                                                                                          - n2
+                     A, B, Na , Nb , K                A, B, Na , Nb , K                            A, B, Na , Nb , K
+
+
+      Fig. 5. Skeleton A4 , with nonA4 = {ltk(A), ltk(B)} and uniqueA4 = {Nb , K}.
+
+
+from the union A2 ∪{s0s } = A3 , necessarily φ(m1 ) = φ(m01 ), equating the strands
+ss and s0s . H must then factor through skeleton A4 (Fig. 5), where consequently
+Na · α = Na0 · α and Nb · α = Nb0 · α, and the height of φ(ss ) is 3.
+    Skeleton A4 is realized : every message received is sent, even without adversary
+activity. Moreover, A4 is a shape. First, if we leave out any nodes, then either B’s
+February 2, 2007                                                                    25
+
+original strand is no longer embedded in the result, or else the result is no longer
+realized. Second, we cannot make it more general: If two different strands share
+a parameter, and we alter that parameter in one of the strands, then the result
+is no longer realized. For instance, the diagram would no longer be realized if
+A’s parameter Nb were altered to some Nb0 . Since all homomorphisms from A0
+to realized skeletons factor through A4 , it is the only shape for A0 .
+
+
+8    Search Strategy
+The goal of cpsa is defined using the following notions:
+
+step(A, C) which holds if the finite set C of skeletons is an outgoing or incom-
+     ing cohort for A. Any homomorphism from A to a realized skeleton passes
+     through some Ak ∈ C. The principles of Section 6 imply that the tests and
+     their cohorts may be used in any order, while still finding all shapes.
+realized(A) which holds if A is realized; we can determine this directly.
+min realA0 (A0 ) which is defined if A0 is realized. Its value is the finite, non-empty
+     set of shapes A such that (1) there is a homomorphism from A0 to A; (2)
+     A is realized; (3) there is a nodewise injective homomorphism from A to A0 ;
+     and (4) A is ≤n -minimal among skeletons satisfying (1–3). min realA0 (A0 )
+     implements the procedure described in the proof of Prop. 8.
+
+We say child(A, A0 ) if for some C, step(A, C) and A0 ∈ C. Let descendent be
+the reflexive, transitive closure of child. The goal of the search, given a starting
+skeleton A0 , is to determine the set
+
+     shapes(A0 ) = {A2 : ∃A1 . descendent(A0 , A1 ) ∧ A2 ∈ min realA0 (A1 )}.
+
+To do so, we use the search algorithm in Fig 6. We also need some auxiliaries:
+dead(A) means A cannot be realized, i.e. there is no realized A0 with H : A 7→ A0 .
+    Dead(A) follows from any of the following: (1) A contains Lsn[a] where a ∈
+    nonA ; (2) dead(A0 ) and H : A0 7→ A; or (3) step(A, C) where C consists of
+    dead skeletons. Condition (1) was used repeatedly and condition (3) was
+    used to discard Case 7, as the cohort 8–9 consisted of dead skeletons.
+redundant strand(A) tests whether A contains a redundant strand that can be
+    identified with some other strand by a homomorphism from A to a proper
+    subskeleton. We discarded a redundant strand in Case 6 (see Prop. 11).
+step applies(A) tests if an unsolved outgoing or incoming step exists in A.
+apply step(A) selects an unsolved step, finds a cohort, updates the step relation,
+    and then returns the cohort (assuming step applies(A) is true).
+targets(H) = {Ak : k ≤ j}, if H is a set of j homomorphisms Hk : A 7→ Ak .
+We assume select S selects a member of S if it is non-empty; and filter p S takes
+the subset of S satisfying p. The failure marked “Impossible” in Fig. 6 cannot
+be reached, because completeness (Thm. 3) ensures that when A is not realized,
+then some authentication test step applies.
+26                                                                  February 2, 2007
+
+             F := {A0 }; shapes found := ∅; seen := F ;
+             while F = 6 ∅ begin
+                   A := select(F ); F := F \ {A};
+                   if realized(A)
+                      then shapes found := shapes found ∪ min realA0 (A)
+                   else if redundant strand(A) then skip
+                   else if step applies(A) then begin
+                           let new = targets(apply step(A)) \ seen in
+                           F := F ∪ new; F := F \ (filter dead F );
+                           seen := seen ∪ new
+                           end
+                   else fail “Impossible.”
+                   end;
+             return shapes found
+
+
+                          Fig. 6. cpsa Search Algorithm
+
+
+
+9    Completeness of the Authentication Tests
+
+If a skeleton A is not realized, does it necessarily contain an outgoing test node
+or an incoming test node, with no matching transforming node? Yes, it does,
+and this is the core reason why every shape can be reached with finitely many
+applications of the authentication tests.
+    Prop. 4 from Section 4.3 essentially isolates the inductive property of pene-
+trator webs on this depends; we may formalize the conclusion for derivability in
+skeletons (using Def. 11) as follows.
+
+Proposition 10. Suppose that for all a ∈ uniqueA , if a originates at any m ∈ A
+and a v msg(n), then m A n. If n1 is negative and msg(n1 ) is not derivable
+before n1 in A, then either:
+
+1. (n0 , n1 ) is an unsolved outgoing test pair with respect to some a, S:
+   I.e. there exist (i) a node n0 A n1 , (ii) an atom a ∈ uniqueA originating
+   at n0 , (iii) a set S of encryptions such that a occurs only within S in t in
+   positive nodes preceding n1 , and for each K ∈ used(S), K −1 is not derivable
+   before n1 in A; or else
+2. n1 is an unsolved incoming test node for some t, S where t = {|t0 |}K :
+   I.e., (i) t occurs only within S in positive nodes before n1 in A, (ii) t occurs
+   outside S in msg(n1 ), (iii) K is not derivable before n1 in A, and (iv) for
+   all K1 ∈ used(S) K1−1 is not derivable before n1 in A.
+
+Proof. If msg(n) is not derivable before n, we can use Prop. 4, letting A =
+nonA ∪ (uniqueA ∩ {a : a originates in A}). If Prop. 4 Clause 1 (resp. Clause 2) is
+false, there is an unsolved outgoing test (resp. an unsolved incoming test).     t
+                                                                                 u
+February 2, 2007                                                                   27
+
+Shapes, being minimal, do not contain unnecessary listener strands. Thus, a
+sequence of contractions and augmentations leading to a shape, as in Theo-
+rems 1, 2, does not contain listener augmentations. The augmentations it con-
+tains are outgoing and incoming augmentations.
+Theorem 3 (Authentication Tests Completeness). Let J = [φJ , αJ ] : A 7→
+As be a shape. J is isomorphic to Hi ◦ . . . ◦ H0 for some sequence of homomor-
+phisms {Hj }0≤j≤i , where
+1. For some α0 and some subskeleton A0 of A, H0 : A 7→ hullα0 (A0 ) is surjective;
+2. For each j with 1 ≤ j ≤ i, Hj : Aj−1 7→ Aj is a contraction or an augmen-
+   tation as in Theorem 1 or Theorem 2, Clauses 1, 2.
+Proof. We define a sequence {Hj }0≤j≤i of homomorphisms satisfying (1,2), and
+a sequence {Lj }0≤j≤i such that for every j, (3) Lj is nodewise injective, and (4)
+J = Lj ◦ Hj ◦ . . . ◦ H0 (see Fig. 7). By the definition of shape, if any composition
+Hj ◦ . . . ◦ H0 is realized, then Lj is an isomorphism, so we may take i = j and
+stop.
+
+
+                                  H1       H2         Hi
+                            A0     → A1     → ···      → Ai
+                            ↑
+                                                 L    ···
+                                                  1
+                                          L0
+                         H0                                 Li
+                                                        → ↓
+                                                        →
+                              A                         → As
+                                            J
+
+
+       Fig. 7. Augmentations, contractions Hj+1 , and nodewise injective Lj .
+
+
+   For L0 to be nodewise injective, with J = L0 ◦ H0 , we define H0 to prune
+unnecessary strands in A. Partition strands in A by their image under φJ ; i.e.
+                         es = {s0 : φJ (s0 ↓ 1) = φJ (s ↓ 1)}.
+For each partition element es , choose a representative r(es ) of maximal height.
+We let β0 be a most general unifier for all the pairs msg(s ↓ `), msg(s0 ↓ `) where
+es = es0 and ` is no greater than both their heights. Such a mgu β0 exists,
+because αJ unifies all these pairs. If φ0 is the map s 7→ r(es ), let H0 = [φ0 , β0 ].
+L0 is defined to send each φ0 (n) to φJ (n) and each β0 (a) to αJ (a).
+   Next, suppose H0 . . . Hj and L0 . . . Lj are defined, with Hj : Aj−1 7→ Aj , but
+Aj is not realized. Let Lj = [ψj , βj ] : Aj 7→ As . Choose n1 ∈ Aj be a negative
+node with msg(n1 ) not penetrator derivable before n1 in Aj (Prop. 5).
+   By Prop. 10, n1 is an incoming or outgoing test node, for some set of en-
+cryptions S and term t, where for an incoming test node t = {|t0 |}K0 and for an
+outgoing test node t = a. However, n1 has no corresponding transformed node.
+Consider its image under Lj ; there are three essential possibilities.
+28                                                                     February 2, 2007
+
+ψj (n1 ) has a corresponding transforming node: We select a most general
+    preimage of the strand up to the transforming node, and add the preimage
+    strand as an incoming or outgoing augmentation.
+ψj (n1 ) is no longer a transformed node: If n1 is a transformed node rela-
+    tive to S, t but ψj (n1 ) is not a transformed node relative to S · βj , t · βj , then
+    we let Hj+1 be a most general contraction with this property.
+ψj (n1 ) has no corresponding transforming node: By Props. 2, 3, some rel-
+    evant key K is compromised in the bundle realizing As . However, by the
+    choice of n1 , K is not derivable in Aj . Thus, in As there is an outgoing
+    transforming edge for Lsn[K · βj ], and we may augment Aj with the listener
+    strand Lsn[K] and a most general preimage of this transforming edge.                 t
+                                                                                         u
+
+There a couple of fine points to mention about this proof. One is that the most
+general preimage that we augment with in the first and third case above may be
+less general than the test node. If so, we first apply a contraction as Hj+1 , and
+then do the augmentation as Hj+2 ; see the discussion after Prop. 9. Another
+fine point concerns the third case. The point of origination for a key K0 may
+not yet exist in Aj , but be added in some later augmentation Hk with k > j.
+Possibly K0 6∈ uniqueAj , although K0 · βj ∈ uniqueAs . However, K0 is derivable
+then, although its image in As is not derivable using only the regular nodes of
+As that are in the image of Aj . The choice of n1 ensures that we do not select
+such a K0 for the key K in the third case.
+
+
+A Pruning Condition The nodewise injective sequence {Lj }0≤j≤i in the proof
+of Thm. 3 ensures that each augmentation in the sequence {Hj }0≤j≤i is actually
+contributing to the eventual result. No node is added, only to be identified later
+with any other node on the way to the shape As .
+    By contrast, suppose an augmentation introduces a new strand that could be
+identified with an existing strand. The following proposition shows that it will
+be identified with some existing strand before a shape is reached. Thus, we do
+not miss any shapes if we never add a strand that is redundant in this sense.
+
+Proposition 11. Let A be a subskeleton of A0 with idempotent I = [ψ, β] : A0 7→
+A. If J 0 = [φ0 , α0 ] : A0 7→ A0s is a shape, then ψ(m) = n implies φ0 (m) = φ0 (n).
+
+Proof. Since A is a subskeleton of A0 , there is an embedding E : A 7→ A0 . Let
+
+
+
+                               H00        H10      Hi0
+                          A0     → A00     → · · · → A0i = A0s
+                           ↑          ↑                   ↑
+                         E         E0                  Ei
+                               H0         H1       Hi
+                           A     → A0      → ···       → Ai
+
+           Fig. 8. Homomomorphisms and embeddings justifying pruning
+February 2, 2007                                                                    29
+
+Hi0 ◦ . . . ◦ H00 , as shown in Fig. 8, be the decomposition of J 0 as in Thm. 3, with
+successive targets A0j . We construct a corresponding sequence Hi ◦ . . . ◦ H0 : A 7→
+Ai , together with a sequence of embeddings Ej : Aj 7→ A0j . For H0 , we identify
+any two strands in A0 if they are identified by H00 , and contract atoms mentioned
+in A0 if they are contracted by H00 . If Hj+1   0
+                                                    augments or contracts to solve a
+node n1 ∈ Aj , then Hj+1 applies the same augmentation or contraction. If
+n1 ∈ A0j \ Aj , then we let Hj+1 be the identity. Evidently, we can construct Ej+1
+from Ej since augmentations to Aj have also been applied to A0j .
+    Derivability is preserved, since for any node in n ∈ Aj whose derivation in
+A0j uses a positive node m ∈ nodesA0j \ nodesAj , we use ψ(m) instead.
+    Thus, the target Ai of Hi ◦ . . . ◦ H0 is a realized substructure of A0s . So
+Hi ◦ . . . ◦ H0 ◦ I : A00 7→ Ai . Since the embedding Ei : Ai 7→ A0s is node injective,
+and J 0 is a shape, Ei is an isomorphism.                                            t
+                                                                                     u
+
+
+10      Implementing CPSA
+
+We discuss here two aspects of the cpsa implementation. They are: (1) finding
+candidate transforming edges in protocols, and using unification in applying
+them; and (2) choosing sets S for outgoing tests, and representing the sets.
+
+
+Finding transforming edges. When cpsa reads a protocol description in its
+input format, it identifies all the potential transforming edges. For the outgoing
+tests, it locates all candidate pairs of a reception node m0 and a transmission
+node m1 later on the same role such that a key or nonce is received in one or
+more encrypted forms on m0 and retransmitted outside these forms in m1 . For
+incoming tests, cpsa notes all transmission nodes m1 that send encrypted units.
+    To find outgoing transforming edges for a ∈ uniqueA and a set S, cpsa
+considers each candidate edge m0 ⇒+ m1 . Suppose an encrypted sub-message
+t of msg(m0 ) unifies with a member of S using a replacement α. If a · α occurs
+in msg(m0 ) · α, but only within S · α, then we check msg(m1 ) · α. If it occurs
+outside S · α in msg(m1 ) · α, then m0 ⇒+ m1 is a successful candidate. If α
+contracts atoms, then we apply the Outgoing Test Principle twice, once to apply
+this contraction, and once to add the instance of m0 ⇒+ m1 .3 We also check
+whether a contraction eliminates the outgoing test edge entirely, as in Case 5.
+    For incoming tests, we do a unification on the candidate nodes m1 .
+
+
+Selecting sets S for outgoing tests. To select sets S in the outgoing test
+principle, we use a trick we call the “forwards-then-backwards” technique. cpsa
+plans a sequence of applications of the outgoing test until no further transforming
+edge is found, as in Yahalom cases 3 and 1. It follows the transmission of the
+uniquely originating value—Nb in that case—forwards. Newly introduced atoms
+3
+    This and the incoming test with S 6= ∅ are the only aspects of the authentication
+    test search that do not occur in the Yahalom analysis.
+30                                                                       February 2, 2007
+
+like K 0 are implicitly universal. Originally, Nb occurs only in {|AˆNa ˆNb |}ltk(B) ;
+after a server strand it also occurs in {|B ˆK 0 ˆNa ˆNb |}ltk(A) . After an initiator
+strand, no other transforming edges can succeed.
+    cpsa uses the sets in the opposite order. The set S1 = {{|AˆNa ˆNb |}ltk(B) } ∪
+{{|B ˆK 0 ˆNa ˆNb |}ltk(A) : K 0 a key} is used first to introduce the initiator trans-
+forming edge. Then the smaller set {{|AˆNa ˆNb |}ltk(B) } is used to introduce the
+(earlier) server transforming edge.4
+    The forwards-then-backwards technique suggested cpsa’s representation for
+the sets S. These sets are not necessarily finite; S1 e.g. is not. The family is closed
+under union and set difference. The primitive members are singletons {t0 } and
+sets that represent all the instances of a term t1 as some of t1 ’s parameters vary.
+Thus, we can represent all candidate sets are as finite unions and differences
+of values of the form λv . t, where the vector v binds 0 or more atoms in t.
+Completeness requires only sets S representable in this form.
+    This representation fits also nicely with our use of unification to provide an
+extremely focused search, leading to good runtimes on a variety of protocols.
+Samples run on a Thinkpad X31, with a 1.4 GHz Pentium M processor and 1
+GB store, under Linux, are shown in Fig. 9. cpsa is implemented in OCaml.
+
+
+              Protocol                      Point of view   Runtime    Shapes
+              iso reject                     responder        0.193s     2
+              Kerberos                          client        1.443s     1
+              Needham-Schroeder              responder        0.055s     1
+              Needham-Schroeder-Lowe         responder        0.124s     1
+              Yahalom                        responder        2.709s     1
+
+
+                           Fig. 9. Protocols with cpsa runtimes
+
+
+
+
+Conclusion
+
+In this paper, we have developed the theory of skeletons and homomorphisms.
+We used it together with the strong form of the authentication tests (Props. 2–3)
+to establish search-oriented versions of the tests (Thms. 1–2). We described how
+to use these ideas to mechanize protocol analysis. Finally, we showed that these
+tests have a form of completeness (Thm. 3).
+    The soundness of the search algorithm does not require the bare-bones Dolev-
+Yao model used here. One can augment cpsa with Diffie-Hellman operations, as
+studied for an earlier strand-based method in [11]. One can also allow keys to
+be complex messages, typically the result of hashing. In our current framework,
+replacements map atoms to other atoms only, but it should be possible to map
+4
+    The cleverer set S2 we used in Case 3 is an optimization. To ensure that the server
+    and initiator agree on the session key, cpsa uses instead a cohort similar to Cases 6–7.
+February 2, 2007                                                                  31
+
+atoms to terms in general, at the cost of using more sophisticated methods
+to check whether skeletons are realized (e.g. [15]). Indeed, the skeletons-and-
+homomorphisms approach may remain useful in a cryptographic, asymptotic
+probabilistic context.
+
+Acknowledgments. We thank Lenore Zuck and John D. Ramsdell for their
+comments. Larry Paulson suggested the Yahalom protocol as a challenge.
+
+
+References
+ 1. Martı́n Abadi and Bruno Blanchet. Analyzing security protocols with secrecy types
+    and logic programs. Journal of the ACM, 52(1):102–146, January 2005.
+ 2. Roberto M. Amadio and Denis Lugiez. On the reachability problem in crypto-
+    graphic protocols. In Concur, number 1877 in LNCS, pages 380–394, 2000.
+ 3. Michael Backes and Birgit Pfitzmann. Relating cryptographic and symbolic key
+    secrecy. In Proceedings, 26th IEEE Symposium on Security and Privacy, May 2005.
+    Extended version, http://eprint.iacr.org/2004/300.
+ 4. Bruno Blanchet and Andreas Podelski. Verification of cryptographic protocols:
+    Tagging enforces termination. In Foundations of Software Science and Computa-
+    tion Structures, LNCS, pages 136–152, April 2003.
+ 5. Ran Canetti and Jonathan Herzog. Universally composable symbolic analysis of
+    mutual authentication and key exchange protocols. In Proceedings, Theory of
+    Cryptography Conference (TCC), March 2006.
+ 6. Shaddin F. Doghmi, Joshua D. Guttman, and F. Javier Thayer. Searching for
+    shapes in cryptographic protocols. In Tools and Algorithms for Construction and
+    Analysis of Systems (TACAS), number 4424 in LNCS, pages 523–538. Springer,
+    March 2007. Extended version at URL:http://eprint.iacr.org/2006/435.
+ 7. Daniel Dolev and Andrew Yao. On the security of public-key protocols. IEEE
+    Transactions on Information Theory, 29:198–208, 1983.
+ 8. Nancy Durgin, Patrick Lincoln, John Mitchell, and Andre Scedrov. Multiset rewrit-
+    ing and the complexity of bounded security protocols. Journal of Computer Secu-
+    rity, 12(2):247–311, 2004.
+ 9. Andrew D. Gordon and Alan Jeffrey. Types and effects for asymmetric crypto-
+    graphic protocols. Journal of Computer Security, 12(3/4):435–484, 2003.
+10. Joshua D. Guttman and F. Javier Thayer. Authentication tests and the structure
+    of bundles. Theoretical Computer Science, 283(2):333–380, June 2002. Conference
+    version appeared in IEEE Symposium on Security and Privacy, May 2000.
+11. Jonathan C. Herzog. The Diffie-Hellman key-agreement scheme in the strand-
+    space model. In 16th Computer Security Foundations Workshop, pages 234–247,
+    Asilomar, CA, June 2003. IEEE CS Press.
+12. ITU. Message sequence chart (MSC). Recommendation Z.120, 1999.
+13. Leslie Lamport. Time, clocks and the ordering of events in a distributed system.
+    CACM, 21(7):558–565, 1978.
+14. Gavin Lowe. Breaking and fixing the Needham-Schroeder public-key protocol using
+    FDR. In Proceeedings of tacas, volume 1055 of Lecture Notes in Computer Science,
+    pages 147–166. Springer Verlag, 1996.
+15. Jonathan K. Millen and Vitaly Shmatikov. Constraint solving for bounded-process
+    cryptographic protocol analysis. In 8th ACM Conference on Computer and Com-
+    munications Security (CCS ’01), pages 166–175. ACM, 2001.
+32                                                                   February 2, 2007
+
+16. Roger Needham and Michael Schroeder. Using encryption for authentication in
+    large networks of computers. Communications of the ACM, 21(12), 1978.
+17. Lawrence C. Paulson. Relations between secrets: Two formal analyses of the Ya-
+    halom protocol. Journal of Computer Security, 2001.
+18. Adrian Perrig and Dawn Xiaodong Song. Looking for diamonds in the desert:
+    Extending automatic protocol generation to three-party authentication and key
+    agreement protocols. In Proceedings of the 13th IEEE Computer Security Founda-
+    tions Workshop. IEEE Computer Society Press, July 2000.
+19. R. Ramanujam and S. P. Suresh. Decidability of context-explicit security protocols.
+    Journal of Computer Security, 13(1):135–166, 2005. Preliminary version appeared
+    in WITS ’03, Workshop on Issues in the Theory of Security, Warsaw, April 2003.
+

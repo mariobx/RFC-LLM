@@ -1,0 +1,757 @@
+                                                    Deducing Security Goals From
+                                                      Shape Analysis Sentences
+arXiv:1204.0480v4 [cs.CR] 5 Feb 2018
+
+
+
+
+                                                                   John D. Ramsdell
+                                                                   February 5, 2018
+
+                                                                         Abstract
+                                                Guttman presented a model-theoretic approach to establishing se-
+                                            curity goals in the context of strand space theory. In his approach, a
+                                            run of the Cryptographic Protocol Shapes Analyzer (cpsa) produces
+                                            models that determine if a goal is satisfied.
+                                                This paper presents a method for extracting a sentence that com-
+                                            pletely characterizes a run of cpsa. Logical deduction can then be
+                                            used to determine if a goal is satisfied. This method has been imple-
+                                            mented and is available to all.
+
+
+                                       1    Introduction
+                                       This revision updates the strand-oriented protocol language described in Sec-
+                                       tion 3 to one that has been shown to be useful in practice. The November
+                                       2014 revision of the January 2012 paper corrects several minor errors and
+                                       adds a description of a node-oriented protocol language in Appendix B.
+                                           A central problem in cryptographic protocol analysis is to determine
+                                       whether a formula that expresses a security goal about behaviors compat-
+                                       ible with a protocol is true. Following [6], a security goal is a quantified
+                                       implication:                          _
+                                                                   ∀~x(Φ0 ⊃      ∃~yi Φi ).                      (1)
+                                                                             1≤i≤n
+
+                                          The hypothesis Φ0 is a conjunction of atomic formulas describing regular
+                                       (honest) behavior. Each disjunct Φi that makes up the conclusion is also
+                                       a conjunction of atomic formulas. When Φi describes desired behaviors of
+
+                                                                              1
+other regular participants, then the formula is an authentication goal. The
+goal says that each run of the protocol compatible with Φ0 will include the
+regular behavior described by one of the disjuncts. When n = 0, the goal’s
+conclusion is false. If Φ0 mentions an unwanted disclosure, (1) says the
+disclosure cannot occur, thus a security goal with n = 0 expresses a secrecy
+goal.
+     Guttman [6] presented a model-theoretic approach to establishing secu-
+rity goals in the context of strand space theory. In that setting, a skeleton
+describes regular behaviors compatible with a protocol. For skeleton k and
+formula Φ, he defined k, α |= Φ to mean that the conjunction of atomic
+formulas that make up Φ is satisfied in k with variable assignment α.
+     A realized skeleton is one that includes enough regular behavior to spec-
+ify all the non-adversarial part of an execution of the protocol. In a realized
+skeleton, its message transmissions combined with possible adversarial be-
+havior explain every message reception in the skeleton.
+     In strand space theory, a homomorphism is a structure-preserving map δ
+that shows how the behaviors in one skeleton are reflected within another.
+As skeletons serve as models, homomorphisms preserve satisfaction for con-
+junctions of atomic formulas.
+     The Cryptographic Protocol Shapes Analyzer (cpsa) constructs homo-
+morphisms from a skeleton k0 to realized skeletons [9]. If cpsa termi-
+nates, it generates a set of realized skeletons ki and a set of homomorphisms
+δi : k0 7→ ki . These realized skeletons are all the minimal, essentially different
+skeletons that are homomorphic images of k0 and are called the shapes of the
+analysis.
+     Guttman proposed a recipe for evaluating goal (1) based on the following
+two technical results.
+
+   • For any security hypothesis Φ0 there is a skeleton k0 that characterizes
+     it in the sense that for all k:
+
+                            ∃α k, α |= Φ0 iff ∃δ δ : k0 7→ k
+
+   • There exists a realized skeleton that is a counterexample to (1) iff there
+     exists some shape in the analysis of k0 that is a counterexample.
+
+These two results justify the following procedure.
+
+   1. Construct a characteristic skeleton k0 for Φ0 .
+
+                                        2
+  2. Ask cpsa for the shapes produced by analyzing k0 .
+
+  3. As cpsa delivers shapes, check that each satisfies some disjunct Φi .
+
+  4. If the answer is no, this shape is a counterexample to (1).
+
+  5. If cpsa terminates with no counterexample, then (1) is achieved.
+
+Implementing Security Goals. cpsa now has support for security goals,
+but not as specified by Guttman. Part of the reason for the difference is that
+the details of the formalism that underlies the cpsa implementation [11]
+dictate changes to the logic of security goals. These details will be elaborated
+later in this paper.
+    The key difference is a change in perspective. Instead of finding a formula
+that characterizes a security hypothesis, cpsa includes a tool that extracts
+a sentence that characterizes a shape analysis. This so called shape analysis
+sentence is special in that it encodes everything that can be learned from the
+shape analysis.
+    Given a shape analysis sentence, a security goal is achieved if the goal
+can be deduced from the sentence. cpsa includes a Prolog program that
+translates shape analysis sentences into Prover9 [8] syntax. Typically, a goal
+that is a theorem is quickly proved by Prover9.
+    There is another advantage to this approach. It can be tedious to generate
+security goals. Realistic ones can be large and complicated. An easy way
+to create one is to modify a shape analysis sentence. This typically involves
+deleting parts of the conclusion.
+    There is a disadvantage to this approach. When a goal cannot be de-
+duced from a shape analysis sentence, one cannot conclude that there is a
+counterexample. It could be simply that the sentence is not relevant to the
+security goal.
+
+Motivating Example. The running example used throughout this paper
+is now presented. An informal version of the example is presented here, and
+the example with all of the details filled is in Section 4.
+    The following protocol is a simplified version of the Denning-Sacco key
+distribution protocol [4] due to Bruno Blanchet [1].
+
+                             A → B : {|{|s|}a−1 |}b
+                             B → A : {|d|}s
+
+                                       3
+Alice (A) freshly generates symmetric key s, signs the symmetric key with
+her private uncompromised asymmetric key a−1 and intends to encrypt it
+with Bob’s (B) uncompromised asymmetric key b. Alice expects to receive
+data d encrypted, such that only Alice and Bob have access to it.
+   The protocol was constructed with a known flaw for expository purposes,
+and as a result the secret is exposed due to an authentication failure. The
+protocol does not prevent Alice from using a compromised key b′ , so that
+Mallory (M) can perform this man-in-the-middle attack:
+
+                            A → M : {|{|s|}a−1 |}b′
+                            M → B : {|{|s|}a−1 |}b
+                            B → E : {|d|}s
+
+   The protocol fails to provide a means for Bob to ensure the original
+message was encrypted using his key. The authentication failure is avoided
+with this variation of the protocol:
+
+                            A → B : {|{|s, b|}a−1 |}b
+                                                                           (2)
+                            B → A : {|d|}s
+
+    In strand space theory, a strand is a linearly ordered sequence of events
+e0 ⇒ · · · ⇒ en−1 , and an event is either a message transmission • → or a
+reception • ←. In cpsa, adversarial behavior is not explicitly represented,
+so strands always represent regular behavior.
+    Regular behavior is constrained by a set of roles that make up the proto-
+col. In this protocol, Alice’s behaviors must be compatible with an initiator
+role, and Bob’s behaviors follow a responder role.
+
+                  init                                       resp
+                   • / {|{|s|}a−1 |}b       {|{|s|}a−1 |}b    /•
+                                                                           (3)
+                                                              
+                    •o      {|d|}s             {|d|}s o       •
+
+    The important authentication goal from Bob’s perspective is that if an
+instance of a responder role runs to completion, there must have been an
+instance of the initiator role that transmitted its first message. Furthermore,
+assuming the symmetric key is freshly generated, and the private keys are
+uncompromised, the two strands agree on keys used for signing and encryp-
+tion.
+
+                                        4
+    A cpsa analysis of the authentication goal requires two inputs, a speci-
+fication of the roles that make up the protocol, as in Eq. 3, and a question
+about runs of the protocol. The question in this case is the hypothesis of
+Eq. 4, that an instance of the responder role ran to completion. In these
+diagrams, a strand instantiated from a role is distinguished from a role by
+placing messages above communication arrows, and ≻ is used to assert an
+event occurred after another.
+
+             resp                              resp                                       init
+                {|{|s|}a−1 |}b                          {|{|s|}a−1 |}b       {|{|s|}a−1 |}b′
+               •o                    implies       •o                    ≻o                    •   (4)
+                    {|d|}s                                {|d|}s
+               •                 /                 •                     /
+
+    cpsa produces the conclusion in Eq. 4, that an instance of the initiator
+role must have transmitted its first message, but it does not conclude that
+the strands agree on the key used for the outer encryption. When cpsa is
+run using the amended protocol in Eq. 2, the strands agree on the key, and
+the authentication goal is achieved.
+    The contribution of this paper is a method of formalizing security goals
+and the results of a cpsa analysis in first-order logic such that whenever
+a cpsa analysis demonstrates that a security goal is achieved, the logical
+sentence associated with the security goal will be deducible from the shape
+analysis sentence with the relevant cpsa analysis. The sentences associated
+with this example are presented in Section 4.
+
+Some Related Work. This paper is the result of implementing security
+goals as described in Guttman [6]. The original motivation for extracting
+shape analysis sentences rather than following the procedure in [6] was ease
+of implementation. With shape analysis sentences, most of the work is per-
+formed by a post-processing stage, and there were only a few changes made
+to the core cpsa program. Only later it was realized the sense in which shape
+analysis sentences completely characterize a shape analysis.
+    The Scyther tool [2] integrates security goal verification with its core
+protocol analysis algorithm. Security goals are easy to state as long as they
+can be expressed using a predefined vocabulary, however, there is no sense
+in which Scyther goals characterize an analysis.
+    The Protocol Composition Logic [3] provides a contrasting approach to
+specifying security goals. It extends strand spaces by adding an operational
+
+
+                                               5
+        Sorts:      ⊤, A, S, D
+        Subsorts:   A < ⊤, S < ⊤, D < ⊤
+        Operations: (·, ·) : ⊤ × ⊤ → ⊤ Pairing
+                    {| · |}(·) : ⊤ × A → ⊤ Asymmetric encryption
+                    {| · |}(·) : ⊤ × S → ⊤ Symmetric encryption
+                    (·)−1 : A → A          Asymmetric key inverse
+                    (·)−1 : S → S          Symmetric key inverse
+        Equations: (x−1 )−1 = x for x : A
+                    y −1 = y for y : S
+
+                 Figure 1: Simple Crypto Algebra Signature
+
+semantics as a small set of reduction rules, and a run of a protocol is a
+sequence of reduction steps derived from an initial configuration. The logic
+is a temporal logic interpreted over runs. The logic is more expressive than
+what is described within this paper at the cost of added complexity.
+
+Structure of this Paper. Section 2 describes the formalism on which
+cpsa is built, Section 3 presents the logic built upon that formalism, and
+Section 4 displays the example above in full detail.
+
+Notation. A finite sequence is a function from an initial segment of the
+natural numbers. The length of a sequence X is |X|, and sequence X =
+hX(0), . . . , X(n − 1)i for n = |X|. If S is a set, then S ∗ is the set of finite
+sequences over S, and S + is the non-empty finite sequences over S. The
+prefix of sequence X of length n is X † n.
+
+
+2     Message Algebras and Homomorphisms
+The two details of cpsa’s formalism that dictate changes to the logic of
+security goals are the fact that in cpsa, a message algebra is an order-sorted
+quotient term algebra and homomorphisms are strand-oriented, not node-
+oriented. The issues surrounding homomorphisms will be described later.
+    An order-sorted algebra is a generalization of a many-sorted algebra in
+which sorts may be partially ordered [5]. The carrier sets associated with
+ordered sorts are related by the subset relation.
+
+
+                                        6
+      Figure 1 shows the simplification of the cpsa message algebra signature
+used by the examples in this paper. Sort ⊤ is the sort of all messages. Mes-
+sages of sort A (asymmetric keys), sort S (symmetric keys), and sort D (data)
+are called atoms. Messages are generated from the atoms using encryption
+{| · |}(·) and pairing (·, ·), where the comma operation is right associative and
+parentheses are omitted when the context permits.
+      Each variable x in an order-sorted term has a unique sort S. The decla-
+ration of x is x : S. The set of variables that occur in term t is Vars(t).
+      The quotient term algebra generated by declarations X over the signature
+in Figure 1 is written AX . It is the carrier set of sort ⊤. The canonical
+representative of each member of AX is the term with the fewest occurrences
+of the (·)−1 operation. Unification and matching can be implemented in such
+a way that only canonical terms are considered [10, Appendix B].
+      A message t0 is carried by t1 , written t0 ⊑ t1 if t0 can be derived from t1
+given the right set of keys, that is ⊑ is the smallest reflexive, transitive
+relation such that t0 ⊑ t0 , t0 ⊑ (t0 , t1 ), t1 ⊑ (t0 , t1 ), and t0 ⊑ {|t0 |}t1 .
+      The use of a message algebra that is order-sorted dictates that the logic
+used to express the characteristic sentence associated with a shape analysis
+is also order-sorted. Furthermore, the signature for the logic must inherit
+the sorts and subsort relations from the message algebra.
+
+Implementation-Oriented Strand Spaces. A run of a protocol is viewed
+as an exchange of messages by a finite set of local sessions of the protocol.
+Each local session is called a strand [12]. The behavior of a strand, its trace,
+is a non-empty sequence of messaging events. An event is either a message
+transmission or a reception. Outbound message t ∈ AX is written as +t, and
+inbound message t is written as −t. A message originates in a trace if it is
+carried by some event and the first event in which it is carried is outbound.
+    A strand space ΘX is a finite map from a set of strands to their traces.
+cpsa represents a set of strands as an initial segment of the natural numbers,
+therefore, a strand space is a sequence of traces. The nodes of a strand space
+are nodes(ΘX ) = {(s, i) | s ∈ Dom(ΘX ), 0 ≤ i < |ΘX (s)|}. The event at
+node n = (s, i) is evt Θ (s, i) = Θ(s)(i).
+    In a strand space, a message that originates in exactly one trace is uniquely
+originating, and represents a freshly chosen value. A message that originates
+nowhere and is never used by the adversary to decrypt or encrypt a message
+is non-originating, and represents an uncompromised key.
+
+
+                                        7
+   A protocol P is a finite set of traces, which are the roles of the protocol.
+Strand s ∈ Dom(ΘX ) is an elaboration of role r ∈ P if ΘX (s) is a prefix of
+the result of applying some substitution σ to r. An example of a protocol is
+in Eq. 6 in Section 4.
+
+Skeletons. A skeleton represents all or part of the regular portion of an
+execution. A skeleton contains a strand space, a partial ordering of its nodes,
+assumptions about uncompromised keys and freshly generated atoms, and
+role associations.
+    A skeleton k = kX (rl , P, ΘX , ≺, N, U), where rl : Dom(ΘX ) → P is a role
+map, ≺ is a strict partial ordering of the nodes, N is a set of atoms, none
+of which originate in a trace in ΘX , and U is a set of atoms, all of which
+originate in no more than one trace in ΘX . In addition, ≺ must order the
+node for each event that receives a uniquely originating atom after the node
+of its transmission, so as to model the idea that the atom represents a value
+freshly generated when it is transmitted.
+    The above definition of a skeleton is useful for defining the semantics of
+shape analysis sentences, but it does not reflect the syntax used by cpsa.
+In cpsa syntax, the trace and the role associated with a strand is specified
+by an instance. An instance is of the form i(r, h, σ), where r is a role, h
+specifies the length of a trace instantiated from the role, and σ specifies how
+to instantiate the variables in the role to obtain the trace. Thus the trace
+associated with i(r, h, σ) is σ ◦ r † h, the prefix of length h that results from
+applying σ to r.
+    In the cpsa syntax, the role map and sequence of traces are replaced
+by a sequence of instances. So for skeleton kX (rl , P, ΘX , ≺, N, U), the cpsa
+syntax is kX (P, I, ≺, N, U), where for each s ∈ Dom(ΘX ), I(s) = i(r, h, σ),
+r = rl (s), and the trace of i(r, h, σ) is ΘX (s).
+    Two examples of skeletons are displayed in Figure 2 in Section 4.
+
+Homomorphisms. Let k0 = kX (rl0 , P, Θ0, ≺0 , N0 , U0 ) and k1 = kY (rl1 , P,
+Θ1 , ≺1 , N1 , U1 ) be skeletons. There is a skeleton homomorphism (φ, σ) : k0 7→
+k1 if φ and σ are maps with the following properties:
+
+  1. φ maps strands of k0 into those of k1 , and nodes as φ((s, i)) = (φ(s), i),
+     that is φ is in Dom(Θ0 ) → Dom(Θ1 );
+
+  2. σ : AX → AY is a message algebra homomorphism;
+
+                                       8
+    3. n ∈ nodes(Θ0 ) implies σ(evt Θ0 (n)) = evt Θ1 (φ(n));
+
+    4. n0 ≺0 n1 implies φ(n0 ) ≺1 φ(n1 );
+
+    5. σ(N0 ) ⊆ N1 ;
+
+    6. σ(U0 ) ⊆ U1 ;
+
+    7. t ∈ U0 implies φ(Ok0 (t)) ⊆ Ok1 (σ(t));
+
+where Ok (t) is the set of nodes of events at which t originates. Item 7 says
+the node at which an atom declared to be uniquely originating is preserved
+by homomorphisms. Note that φ is a strand mapping, not a node mapping
+as in [6].
+
+
+3      Shape Analysis Sentences
+Given the definitions in the previous section, the language L(P ) used for
+shape analysis sentences is quite constrained. The signature for terms extends
+the one used for the underlying message algebra with a sort Z. Variables of
+this sort denote strands.
+    Security goals make use of protocol specific and protocol independent
+predicates. For each role r ∈ P , there are strand length predicates and strand
+parameter predicates. There are |r| unary length predicates P [r, h] : Z, with
+1 ≤ h ≤ |r|. Relative to skeleton k, P [r, h](z) asserts that strand z in k is
+an instance of r and has a length of at least h. For each variable x : S that
+occurs in r, there is a binary parameter predicate P [r, x] : Z × S. Relative
+to skeleton k, P [r, x](z, t) asserts that strand z in k is an instance of r in
+which x is instantiated as t.
+    For each B ∈ {A, S, D}, there are unary predicates non : B and uniq : B.
+non(t) asserts t is non-originating in k and uniq(t) asserts t uniquely originates
+in k.
+    Let m be the length of the longest role in P . There are m2 binary prece-
+dence predicates prec[i, j] : Z × Z for 0 ≤ i, j < m. prec[i, j](x, y) asserts that
+node (x, i) is before node (y, j) in k. There are 3m binary origin predicates
+orig[i] : B × Z, with 0 ≤ i < m and B as before. orig[i](t, z) asserts that t
+uniquely originates in k at node (z, i). The predicate false has arity zero and,
+of course, equality is binary.
+
+
+                                        9
+    To improve the readability of formulas to follow, we write prec(x, i, y, j)
+for prec[i, j](x, y) and orig(t, z, i) for orig[i](t, z).
+    We define K(k) = (Y, Φ), where Φ is k’s skeleton formula, and Y is
+the formula’s declarations. Using the cpsa skeleton syntax presented in
+Section 2, let k = kX (P, I, ≺, N, U). The declarations Y is X augmented
+with a fresh variable zs : Z for each strand s ∈ Dom(I). Let ≺− be the
+transitive reduction of ≺. The skeleton formula Φ of k is a conjunction of
+atomic formulas composed as follows.
+
+   • For each s ∈ Dom(I), let I(s) = i(r, h, σ). Assert P [r, h](zs ). For each
+     variable x ∈ Vars(r † h) and term t = σ(x), assert P [r, x](zs , t).
+
+   • For each (s, i) ≺− (s′ , i′ ) with s 6= s′ , assert prec(zs , i, zs′ , i′ )
+
+   • For each t ∈ N, assert non(t).
+
+   • For each t ∈ U, assert uniq(t).
+
+   • For each t ∈ U and (s, i) ∈ Ok (t), assert orig(t, zs , i).
+
+   Given a set of homomorphisms δi : k0 7→ ki , its shape analysis sentence is
+                                             _
+               S(δi : k0 7→ ki ) = ∀X0 (Φ0 ⊃   ∃Xi (∆i ∧ Φi )),           (5)
+                                                      i
+
+where K(k0 ) = (X0 , Φ0 ). The same procedure produces Xi and Φi for shape ki
+with one proviso—the variables in Xi that also occur in X0 must be renamed
+to avoid trouble while encoding the structure preserving maps δi .
+    The structure preserving maps δi = (φi , σi ) are encoded in ∆i by a con-
+junction of equalities. Map σi is coded as equalities between a message
+algebra variable in the domain of σi and the term it maps to. Map φi
+is coded as equalities between strand variables in Φ0 and strand variables
+in Φi . Let Z0 be the sequence of strand variables freshly generated for k0 ,
+and
+V Zi be the ones generated for ki . The strand mapping part of ∆i is
+  j∈Dom(Θ) Z0 (j) = Zi (φi (j)).
+    An example shape analysis sentence is displayed in Figure 3. A strand
+length predicate P [r, h](z) is written rh (z) with the protocol left implicit,
+and similarly for the strand parameter predicates.
+
+
+
+                                            10
+Semantics of Skeleton Formulas. Let k = kX (rl , P, Θ, ≺, N, U). When
+formula Φ is satisfied in skeleton k with order-sorted variable assignment α,
+we write k, α |= Φ. For x : S ∈ X, α(x) is in the carrier set of AX for sort S.
+For x : Z, α(x) ∈ Dom(Θ). We write ᾱ when α is extended to terms in the
+obvious way. When sentence Σ is satisfied in skeleton k, we write k |= Σ.
+
+   • k, α |= P [r, h](y) iff h ≤ |Θ(s)| and Θ(s) † h = σ ◦ r † h for some σ,
+     where s = α(y).
+   • k, α |= P [r, x](y, t) iff Θ(s) † h = σ ◦ r † h for some σ with σ(x) = ᾱ(t),
+     where s = α(y) and h is the smallest ℓ such that x occurs in r † ℓ.
+   • k, α |= prec(x, i, y, j) iff (α(x), i) ≺ (α(y), j).
+   • k, α |= non(t) iff ᾱ(t) ∈ N.
+   • k, α |= uniq(t) iff ᾱ(t) ∈ U.
+   • k, α |= orig(t, z, i) iff ᾱ(t) ∈ U and (α(z), i) ∈ Ok (ᾱ(t)).
+   • k, α |= y = z iff ᾱ(y) = ᾱ(z).
+   • k, α 6|= false.
+
+Theorem 1. Let K(k0 ) = (X, Φ) and Σ = ∃X Φ. Sentence Σ is satisfied
+in k iff there is a homomorphism from k0 to k, i.e. k |= Σ iff ∃δ δ : k0 7→ k.
+   This theorem corrects the first of the two main results from [6], as that
+paper omits the orig predicate. A later paper includes the orig predicate [7],
+using the symbol UnqAt.
+Proof. For the forward direction, assume α is a variable assignment for the
+variables in X such that k, α |= Φ, and let Z be the sequence of strand
+variables constructed while generating Φ from k0 . Then the pair of maps
+δ = (α ◦ Z, α) demonstrate a homomorphism from k0 to k, i.e. each item in
+the definition of a skeleton homomorphism in Section 2 is satisfied.
+   For the reverse direction, assume maps δ = (φ, σ) are such that δ : k0 7→ k.
+Then the desired variable assigment is
+                               φ(Z −1 (x)) x ∈ Ran(Z)
+                             
+                     α(x) =
+                               σ(x)        x ∈ Dom(σ).
+
+
+
+                                         11
+Deducing Security Goals. A shape analysis δi : k0 7→ ki is complete if for
+each realized skeleton k, δ : k0 7→ k iff ∃i, δ ′ δ ′ : ki 7→ k. There is an ongoing
+effort to show that whenever cpsa terminates it produces a complete shape
+analysis, however, preliminary analysis suggests that with the exception of
+specially constructed, artificial protocols, cpsa’s output is complete. See
+Appendix A for an example of a troublesome artificial protocol.
+    The next theorem captures the sense in which a shape analysis sentence
+characterizes a complete shape analysis.
+Theorem 2. Let δi : k0 7→ ki be a complete shape analysis. Then the shape
+analysis sentence Σ = S(δi : k0 7→ ki ) is satisfied in all realized skeletons k,
+i.e. k |= Σ.
+Proof. Shapes are minimal among realized skeletons, so there is no realized
+skeleton in the image of k that is not in the image of one of the shapes.
+Therefore, by Theorem 1, the negation of the hypothesis of the implication
+is satisfied in all realized skeletons that are not in the image of k0 , and the
+disjunction is satisfied in the remaining realized skeletons.
+   Let Σ be the shape analysis sentence of a complete shape analysis and Ψ
+be a security goal. If Σ ⊃ Ψ is a theorem in order-sorted first-order logic,
+then Ψ is satisfied in all realized skeletons and its protocol achieves this goal.
+   Since ≺ is transitive, transitivity of prec can also be used to prove a
+protocol achieves a goal. That is,
+                prec(x, i, y, j) ∧ prec(y, j, z, k) ⊃ prec(x, i, z, k).
+
+
+4     Detailed Example
+The simplified version of the Denning-Sacco key distribution protocol [4] due
+to Bruno Blanchet is now revisited.
+                               A → B : {|{|s|}a−1 |}b
+                               B → A : {|d|}s
+Symmetric key s is freshly generated, asymmetric keys a−1 and b−1 are un-
+compromised, and the goal of the protocol is to keep data d secret. This
+cpsa description of the protocol in Eq. 3, has an initiator and a responder
+role.
+              init(a, b : A, s : S, d : D) = h+{|{|s|}a−1 |}b , −{|d|}s i
+                                                                          (6)
+             resp(a, b : A, s : S, d : D) = h−{|{|s|}a−1 |}b , +{|d|}si
+
+                                          12
+k0 = kX ({init(a0 , b0 , s0 , d0 ), resp(a1 , b1 , s1 , d1 )},         Protocol
+         hi(resp, 2, {a1 7→ a, b1 7→ b, s1 7→ s, d1 7→ d})i,           Instances
+         ∅,                                                            Node orderings
+         {a−1 , b−1 },                                                 Non-origination
+         {s})                                                          Unique origination
+     where X = a, b : A, s : S, d : D
+k1 = kY ({init(a0 , b0 , s0 , d0 ), resp(a1 , b1 , s1 , d1 )},        Protocol
+         hi(resp, 2, {a1 7→ a, b1 7→ b, s1 7→ s, d1 7→ d}),           Instances
+          i(init, 1, {a0 7→ a, b0 7→ b′ , s0 7→ s})i                  Note b0 7→ b′ not b!
+         {(1, 0) ≺ (0, 0)},                                           Node orderings
+         {a−1 , b−1 },                                                Non-origination
+         {s})                                                         Unique origination
+     where Y = a, b, b′ : A, s : S, d : D
+δ1 = (h0i, {a 7→ a, b 7→ b, s 7→ s, d 7→ d})
+
+                Figure 2: Shape Analysis for Blanchet’s Protocol
+
+   The protocol was constructed with a known flaw for expository purposes,
+and as a result the secret is exposed due to an authentication failure. The
+desired authentication goal is:
+
+    ∀a, b : A, s : S, d : D, z0 : Z(
+      resp 2 (z0 ) ∧ resp a (z0 , a) ∧ resp b (z0 , b) ∧ resp s (z0 , s) ∧ resp d (z0 , d) ∧
+      non(a−1 ) ∧ non(b−1 ) ∧ uniq(s) ⊃ ∃z1 : Z(init 1 (z1 ) ∧ init b (z1 , b)))
+
+that is, when the responder (B) runs to completion, there is an initiator (A)
+that is using b for the encryption of its initial message.
+    To investigate this goal, we ask cpsa to find out what other regular
+behaviors must occur when a responder runs to completion by giving cpsa
+skeleton k0 in Figure 2. cpsa produces shape k1 that shows that an initiator
+must run, but it need not use the same key to encrypt its first message. The
+shape analysis sentence for this scenario is displayed in Figure 3. Needless
+to say, the authentication goal cannot be deduced from this sentence due to
+the man-in-the-middle attack. If one repeats the analysis using the protocol
+in Eq. 2, the generated shape analysis sentence can be used to deduce the
+authentication goal.
+
+
+                                              13
+ ∀a0 , b0 : A, s0 : S, d0 : D, z0 : Z(
+   resp 2 (z0 ) ∧ resp a (z0 , a0 ) ∧ resp b (z0 , b0 ) ∧ resp s (z0 , s0 ) ∧ resp d (z0 , d0 ) ∧
+   non(a−1                −1
+            0 ) ∧ non(b0 ) ∧ uniq(s0 )
+   ⊃
+   ∃a1 , b1 , b2 : A, s1 : S, d1 : D, z1 , z2 : Z(
+       z0 = z1 ∧ a0 = a1 ∧ b0 = b1 ∧ s0 = s1 ∧ d0 = d1 ∧ resp 2 (z1 ) ∧
+       resp a (z1 , a1 ) ∧ resp b (z1 , b1 ) ∧ resp s (z1 , s1 ) ∧ resp d (z1 , d1 ) ∧
+       init 1 (z2 ) ∧ init a (z2 , a1 ) ∧ init b (z2 , b2 ) ∧ init s (z2 , s1 ) ∧ orig(s1 , z2 , 0) ∧
+       prec(z2 , 0, z1 , 0) ∧ non(a−1                   −1
+                                        1 ) ∧ non(b1 ) ∧ uniq(s1 )))
+
+
+
+          Figure 3: Shape Analysis Sentence for Blanchet’s Protocol
+
+5     Conclusion
+This paper presented a method for extracting a sentence that completely
+characterizes a run of cpsa and showed that logical deduction can then be
+used to determine if a security goal is satisfied. To ensure the fidelity of the
+translation between cpsa output and a shape analysis sentence, an order-
+sorted first-order logic is employed. Furthermore, the first-order language
+used for formulas is dictated by the cpsa syntax for skeletons and the for-
+malization of homomorphisms used by cpsa.
+
+
+Acknowledgment
+Paul Rowe and Jon Millen provided valuable feedback on an early draft of
+this paper.
+
+
+References
+ [1] Bruno Blanchet. Using Horn clauses for analyzing security protocols.
+     In Veronique Cortier and Steve Kremer, editors, Formal Models and
+     Techniques for Analyzing Security Protocols, volume 5 of Cryptology and
+     Information Security Series. ISO Press, 2011.
+
+
+
+
+                                                 14
+ [2] Casimier J. Cremers. Scyther—semantics and verification of security
+     protocols. Ph.D. Thesis, Eindhoven Univesity of Technology, 2006.
+     http://people.inf.ethz.ch/cremersc/scyther/.
+ [3] Anupam Datta, Ante Derek, John C. Mitchell, and Dusko Pavlovic.
+     A derivation system and compositional logic for security protocols. J.
+     Comput. Secur., 13(3):423–482, 2005.
+ [4] Dorothy E. Denning and Giovanni M. Sacco. Timestamps in key distri-
+     bution protocols. Communications of the ACM, 24(8):533–536, August
+     1981.
+ [5] Joseph A. Goguen and Jose Meseguer. Order-sorted algebra I: Equa-
+     tional deduction for multiple inheritance, overloading, exceptions and
+     partial operations. Theoretical Computer Science, 105(2):217–273, 1992.
+ [6] Joshua D. Guttman.     Security theorems via model theory.    In
+     Express: Expressiveness in Concurrency, Workshop affiliated with
+     Concur, September 2009. Post-proceedings to appear in EPTCS,
+     http://www.eptcs.org/.
+ [7] Joshua D. Guttman. Security goals and protocol transformations. In
+     Theory of Security and Applications (TOSCA), March 2011.
+ [8] Bill W. McCune. Prover9. http://www.cs.unm.edu/~ mccune/mace4/.
+ [9] John D. Ramsdell and Joshua D. Guttman.     CPSA: A crypto-
+     graphic protocol shapes analyzer. The MITRE Corporation, 2009.
+     https://github.com/ramsdell/cpsa.
+[10] John D. Ramsdell and Joshua D. Guttman. CPSA Design. The MITRE
+     Corporation, 2009. In https://github.com/ramsdell/cpsa, doc di-
+     rectory.
+[11] John D. Ramsdell, Joshua D. Guttman, Moses D. Liskov, and Paul D.
+     Rowe. The CPSA Specification: A Reduction System for Searching for
+     Shapes in Cryptographic Protocols. The MITRE Corporation, 2009. In
+     https://github.com/ramsdell/cpsa, doc directory.
+[12] F. Javier Thayer, Jonathan C. Herzog, and Joshua D. Guttman. Strand
+     spaces: Proving security protocols correct. Journal of Computer Secu-
+     rity, 7(1), 1999.
+
+                                    15
+A          Artificial Protocol
+This section presents an example of a protocol that causes cpsa to fail to
+produce a complete shape analysis.
+
+                             init(a : A, d : D) = h+{|d|}a , −di
+                                                                                                 (7)
+                            resp(x : ⊤, d : D) = h−x, +di
+   The initiator in the protocol specifies half of a common authentication
+pattern. Assuming nonce d is freshly generated, and key a−1 is uncompro-
+mised, an execution of the protocol in which an instance of the initiator role
+runs to completion must include other regular behavior by a strand that
+possesses the decryption key a−1 .
+   It’s the responder role that is artificial. Its first event is the reception of
+a message of any sort, and then it transmits a message of sort data. There
+are many ways in which an instance of the responder role can serve as the
+other half of the authentication pattern, such as:
+
+     init                           resp        init                             resp
+             {|d|}a        {|d|}a                        {|d|}a    ({|d|}a ,{|d|}a )
+      •               /≺             /•    or    •                /≺              /•       ···   (8)
+              d             d                           d              d            
+      •o              ≻o             •           •o               ≻o                   •
+    Yet consider an operational interpretation of the responder strand in
+Eq. 8. The role states that it first receives a message without knowing its
+structure, but the strand interprets that message as something it can decrypt
+and extracts the nonce. Formalizations based on an operation semantics,
+such as what is used for the Protocol Composition Logic [3], exclude the ex-
+ecutions in Eq. 8, but there in nothing in strand space theory that prohibits
+those executions.
+
+
+B      Node-Oriented Shape Analysis Sentences
+The language L̄(P ) used for node-oriented shape analysis sentences more in
+tune with the language described in [7]. The signature for terms extends the
+one used for the underlying message algebra with a sort N, the sort for nodes.
+   Security goals make use of protocol specific and protocol independent
+predicates. For each role r ∈ P and i < |r|, there is a protocol specific unary
+position predicate P [r, i] : N. For each role r ∈ P and variable x : S that
+
+                                                16
+occurs in r, there is a protocol specific binary parameter predicate P [r, x] :
+N × S. The protocol independent unary predicates are non : B and uniq : B
+for each atomic sort B ∈ {A, S, D}. The predicate false has arity zero. The
+remaining protocol independent predicates are binary, and are orig : B × N,
+sprec : N × N, prec : N × N, and equality.
+    Soon we define K(k) = (Y, Φ), where Φ is k’s skeleton formula, and Y is
+the formula’s declarations, but first we define the relevant nodes of a skele-
+ton N. Let k = kX (P, I, ≺, ν, υ) and let ≺− be the transitive reduction of ≺.
+Recall that ΘX is the strand space defined by I. The relevant nodes of k are
+N = Ns ∪ N≺ ∪ Nυ where
+
+            Ns = {(s, i) | s ∈ Dom(ΘX ) ∧ i = |ΘX (s)| − 1}
+           N≺ = {(s, i) | (s′ , i′ ) ∈ nodes(ΘX ) ∧ s 6= s′
+                             ∧((s, i) ≺− (s′ , i′ ) ∨ (s′ , i′ ) ≺− (s, i))}
+            Nυ = {(s, i) | t ∈ υ, (s, i) ∈ Ok (t)}
+   For K(k) = (Y, Φ), the declarations Y is X augmented with a fresh vari-
+able of sort N for each node in N, and let v(n) be the variable associated
+with node n.
+   The formula Φ is a conjunction of atomic formulas composed as follows.
+
+   • For each (s, i) ∈ N, assert P [r, i](v(s, i)), where I(s) = i(r, h, σ).
+
+   • For each s ∈ Dom(I), let I(s) = i(r, h, σ). For each variable x ∈
+     Vars(r † h) and term t = σ(x), assert P [r, x](v(s, h − 1), t).
+
+   • For each (s, i), (s, i′ ) ∈ N such that i < i′ , assert sprec(v(s, i), v(s, i′ )).
+
+   • For each (s, i) ≺− (s′ , i′ ) such that s 6= s′ , assert prec(v(s, i), v(s′, i′ )).
+
+   • For each t ∈ ν, assert non(t).
+
+   • For each t ∈ υ, assert uniq(t).
+
+   • For each t ∈ υ and node n such that n ∈ Ok (t), assert orig(t, v(n)).
+
+   Given a set of homomorphisms δi : k0 7→ ki , its shape analysis sentence is
+                                             _
+                S(δi : k0 7→ ki ) = ∀X0 Φ0 ⊃    ∃Xi ∆i ∧ Φi ,             (9)
+                                                     i
+
+
+                                          17
+where K(k0 ) = (X0 , Φ0 ). The same procedure produces Xi and Φi for shape ki
+with one proviso—the variables in Xi that also occur in X0 must be renamed
+to avoid trouble while encoding the structure preserving maps δi .
+    The structure preserving maps δi = (φi , σi ) are encoded in ∆i by a con-
+junction of equalities. Map σi is coded as equalities between a message alge-
+bra variable in the domain of σi and the term it maps to. Map φi is coded
+as equalities between node variables in Φ0 and node variables in Φi . Let v0
+be the node variables freshly generated for k0 , and vi be the ones generated
+for ki . The strand mapping part of ∆i is
+                            ^
+                                  v0 (s, j) = vi (φi (s), j).
+                       (s,j)∈Dom(v0 )
+
+
+Semantics of Skeleton Formulas. Let k = kX (rl , P, Θ, ≺, N, U). When
+formula Φ is satisfied in skeleton k with order-sorted variable assignment α,
+we write k, α |= Φ. For x : S ∈ X, α(x) is in the carrier set of AX for sort S.
+For x : N, α(x) ∈ nodes(Θ). We write ᾱ when α is extended to terms in the
+obvious way. When sentence Σ is satisfied in skeleton k, we write k |= Σ.
+
+   • k, α |= P [r, i](y) iff α(y) = (s, i), and for some σ,
+
+                             ΘX (s) † i + 1 = σ ◦ r † i + 1.
+
+   • k, α |= P [r, x](y, t) iff α(y) = (s, i), x occurs in r † i + 1, and for some σ
+     with σ(x) = ᾱ(t),
+
+                             ΘX (s) † i + 1 = σ ◦ r † i + 1.
+
+   The interpretation of the protocol independent predicates is straightfor-
+ward.
+   • k, α |= prec(y, z) iff α(y) ≺ α(z).
+
+   • k, α |= sprec(y, z) iff α(y) ≺ α(z), α(y) = (s, i), and α(z) = (s, i′ ).
+
+   • k, α |= non(t) iff ᾱ(t) ∈ ν.
+
+   • k, α |= uniq(y) iff ᾱ(t) ∈ υ.
+
+   • k, α |= orig(t, y) iff ᾱ(t) ∈ υ and α(y) ∈ Ok (ᾱ(t)).
+
+                                        18
+        ∀a0 , b0 : A, s0 : S, d0 : D, n0 : N
+          resp 1 (n0 ) ∧ resp a (n0 , a0 ) ∧ resp b (n0 , b0 )
+               ∧ resp s (n0 , s0 ) ∧ resp d (n0 , d0 )
+               ∧ non(a−1               −1
+                         0 ) ∧ non(b0 ) ∧ uniq(s0 )
+          ⊃
+          ∃a1 , b1 , b2 : A, s1 : S, d1 : D, n1 , n2 , n3 : N
+              n0 = n1 ∧ a0 = a1 ∧ b0 = b1 ∧ s0 = s1 ∧ d0 = d1
+                 ∧ resp 1 (n1 ) ∧ resp a (n1 , a1 ) ∧ resp b (n1 , b1 )
+                 ∧ resp s (n1 , s1 ) ∧ resp d (n1 , d1 ) ∧ resp 0 (n2 )
+                 ∧ init 0 (n3 ) ∧ init a (n3 , a1 ) ∧ init b (n3 , b2 ) ∧ init s (n3 , s1 )
+                 ∧ orig(s1 , n2 ) ∧ prec(n3 , n2 ) ∧ sprec(n2 , n1 )
+                 ∧ non(a−1                −1
+                           1 ) ∧ non(b1 ) ∧ uniq(s1 )
+
+
+ Figure 4: Node-Oriented Shape Analysis Sentence for Blanchet’s Protocol
+
+   • k, α |= y = z iff ᾱ(y) = ᾱ(z).
+
+   • k, α 6|= false.
+
+   The node-oriented shape analysis sentence equivalent to the one in Fig-
+ure 3 is in Figure 4.
+   Since ≺ is transitive, transitivity of prec can be used to prove a protocol
+achieves a goal. That is,
+
+                          prec(x, y) ∧ prec(y, z) ⊃ prec(x, z).
+
+Furthermore, sprec(x, y) ⊃ prec(x, y).
+
+
+
+
+                                               19
+

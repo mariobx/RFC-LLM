@@ -1,0 +1,334 @@
+    Symbolic Cryptographic Protocol
+         Analysis using CPSA
+
+              John D. Ramsdell
+
+           The MITRE Corporation
+
+               October 2012
+
+
+
+
+1
+Cyptographic Protocol Shapes Analyzer
+
+Goal: Protocol analysis using Dolev-Yao model
+
+
+Foundation: Strand Spaces
+
+
+Distribution: https://github.com/mitre/cpsaexp
+
+
+Contributors: Joshua D. Guttman, John D. Ramsdell, Jon C.
+   Herzog, Shaddin F. Doghmi, F. Javier Thayer, Paul D. Rowe,
+   and Moses D. Liskov
+
+
+2
+Pages of this form attempt to fill in the spoken part of a class
+using these slides.
+
+The Cryptographic Protocol Shapes Analyzer (CPSA) attempts
+to enumerate all essentially different executions possible for a
+cryptographic protocol. We call them the shapes of the protocol.
+Naturally occurring protocols have only finitely many, indeed very
+few shapes. Authentication and secrecy properties are easy to
+determine from them, as are attacks and anomalies.
+
+This presentation gives a very brief tour of the tool and how it
+is used in practice.
+
+
+                                                               2-1
+Anatomy of a CPSA Installation
+
+    • Programs
+      – cpsa4: main analysis tool
+      – cpsa4shapes: extracts shapes from cpsa output
+      – cpsa4graph: visualize output using XHTML and SVG
+      – cpsa4diff: compare two cpsa output files
+      – cpsa4sas: produce shape analysis sentences
+      – cpsa4pp: pretty print input and output
+      – Build tools: GNU makefile template and a Haskell script
+    • Documentation
+      – User documentation: user guide, primer, and goal descrip-
+        tion
+      – Sample input: Needham-Schroeder, Blanchet, Woo-Lam,
+        Otway-Rees, Yahalom, ffgg, goals, rules
+
+3
+Although there are many programs in the CPSA package, typical
+usage is very simple.
+
+
+
+
+                                                          3-1
+Using CPSA
+
+    • With a text editor, user enters a description of a
+
+      – protocol as a set of roles
+      – problem point-of-view
+        (what is assumed to have happened)
+
+
+    • User runs the tool ($ echo build | ghci Make4.hs
+      or on Windows, click on Make4.hs and type build)
+
+
+    • In a web browser, user views the output that shows
+
+      – what else CPSA inferred must have happened, or
+      – all CPSA steps used to produce the answers
+
+4
+At this point, if you have not already done so, follow the instruc-
+tions in index.html and analyze the examples. The rest of these
+slides will focus on Blanchet’s “Simple Example Protocol”, so
+open blanchet.xhtml. Click on Derivation Tree 9.
+
+
+
+
+                                                                4-1
+Blanchet’s “Simple Example Protocol”
+
+
+                        A → B : {|{|S|}K −1 |}KB
+                                          A
+                        B → A : {|D|}S
+
+                         CPSA Style Roles
+
+     Initiator (init role)               Responder (resp role)
+
+    init   {|{|S|}K −1 |}KB              {|{|S|}K −1 |}KB   resp
+                    A                              A
+
+
+     •     {|D|}S                                  {|D|}S    •
+
+
+
+5
+Blanchet’s protocol has two steps. Alice sends to Bob a freshly
+                                                            −1
+generated symmetric key S signed with Alice’s private key KA
+and then encrypted with Bob’s public key KB . Bob sends data D
+encrypted with the symmetric key.
+
+Locate the description of the protocol in blanchet.xhtml in the
+third derivation tree.
+
+
+
+
+                                                            5-1
+Blanchet Protocol in CPSA
+
+    (defprotocol blanchet basic
+      (defrole init
+        (vars (a b name) (s skey) (d data))
+        (trace
+         (send (enc (enc s (privk a)) (pubk b)))
+         (recv (enc d s))))
+      (defrole resp
+        (vars (a b name) (s skey) (d data))
+        (trace
+         (recv (enc (enc s (privk a)) (pubk b)))
+         (send (enc d s)))))
+
+
+6
+Locate the description of scenario in blanchet.xhtml in Derivation
+Tree 9.
+
+
+
+
+                                                               6-1
+Blanchet Problem Statement
+
+    • Analyze from the point-of-view of a full length responder
+
+              −1      −1
+    • Assume KA  and KB  are uncompromised                    resp
+
+
+    • Assume symmetric key S is freshly generated                 •
+
+
+      (defskeleton blanchet
+        (vars (a b name) (s skey) (d data))
+        (defstrand resp 2 (a a) (b b) (s s) (d d))
+        (non-orig (privk a) (privk b))
+        (uniq-orig s))
+
+7
+CPSA takes one step to find the shape associated with the sce-
+nario. Locate the shape for the scenario in this derivation tree.
+
+
+
+
+                                                              7-1
+Blanchet Shape
+
+    (defskeleton blanchet
+      (vars (d data) (a b b-0 name) (s skey))
+      (defstrand resp 2 (d d) (a a) (b b) (s s))
+      (defstrand init 1 (a a) (b b-0) (s s))
+      (precedes ((1 0) (0 0)))
+      (non-orig (privk a) (privk b))
+      (uniq-orig s)
+      ...)
+
+
+
+
+8
+Observe that the responder role variable b maps to skeleton vari-
+able b, but the initiator role variable b maps to skeleton variable
+b 0. The two strands disagree on Bob’s identity when agree-
+ment is expected. The dotted line in Skeleton 10 indicates the
+message transmitted differs from the one sent.
+
+In the next slide, the traces show the implication of the disagree-
+ment on the instantiations of variable b.
+
+
+
+
+                                                                8-1
+Blanchet Shape with Traces
+
+    (defskeleton blanchet
+      (vars (d data) (a b b-0 name) (s skey))
+      (defstrand resp 2 (d d) (a a) (b b) (s s))
+      (defstrand init 1 (a a) (b b-0) (s s))
+      ...
+      (traces
+        ((recv (enc (enc s (privk a)) (pubk b)))
+         (send (enc d s)))
+        ((send (enc (enc s (privk a)) (pubk b-0)))))
+      ...)
+
+
+
+9
+Blanchet Shape
+             {|{|S|}K −1 |}KB         {|{|S|}K −1 |}K ′
+                     A                        A     B
+     resp                       ≻                         init
+
+
+      •
+
+
+     (defskeleton blanchet
+       (vars (d data) (a b b-0 name) (s skey))
+       (defstrand resp 2 (d d) (a a) (b b) (s s))
+       (defstrand init 1 (a a) (b b-0) (s s))
+       (precedes ((1 0) (0 0)))
+       ...)
+
+
+10
+The operation field describes the authentication test that was
+solved to produce the shape. Authentication tests are introduced
+in cpsaprimer.pdf.
+
+
+
+
+                                                            10-1
+Blanchet Shape with Operation
+
+     (defskeleton blanchet
+       (vars (d data) (a b b-0 name) (s skey))
+       (defstrand resp 2 (d d) (a a) (b b) (s s))
+       (defstrand init 1 (a a) (b b-0) (s s))
+       ...
+       (operation
+         encryption-test       ; Authentication test type
+         (added-strand init 1) ; Regular augmentation
+         (enc s (privk a))     ; Critical message
+         (0 0))                ; Test node
+       ...)
+
+
+11
+The operation field explains why CPSA produced strands that
+do not agree on the identity of b. The critical message does not
+refer to it, so there is nothing that forces agreement.
+
+Navigate to Derivation Tree 23 in blanchet.xhtml.
+
+
+
+
+                                                            11-1
+Corrected Blanchet Example Protocol
+
+
+                     A → B : {|{|S, B|}K −1 |}KB
+                                         A
+                     B → A : {|D|}S
+
+                           CPSA Style Roles
+
+       Initiator (init role)           Responder (resp role)
+
+     init   {|{|S, B|}K −1 |}KB       {|{|S, B|}K −1 |}KB   resp
+                       A                           A
+
+
+      •     {|D|}S                                 {|D|}S    •
+
+
+
+12
+Corrected Blanchet Protocol in CPSA
+
+     (defprotocol blanchet-fixed basic
+       (defrole init
+         (vars (a b name) (s skey) (d data))
+         (trace
+          (send (enc (enc s b (privk a)) (pubk b)))
+          (recv (enc d s))))
+       (defrole resp
+         (vars (a b name) (s skey) (d data))
+         (trace
+          (recv (enc (enc s b (privk a)) (pubk b)))
+          (send (enc d s)))))
+
+
+13
+The corrected protocol ensures the critical message refers to b.
+As a result, CPSA infers the desired agreement.
+
+
+
+
+                                                            13-1
+Corrected Blanchet Shape
+
+     (defskeleton blanchet-fixed
+       (vars (d data) (a b name) (s skey))
+       (defstrand resp 2 (d d) (a a) (b b) (s s))
+       (defstrand init 1 (a a) (b b) (s s))
+       (precedes ((1 0) (0 0)))
+       (non-orig (privk a) (privk b))
+       (uniq-orig s)
+       (operation encryption-test
+         (added-strand init 1)
+         (enc s b (privk a))   ; Critical message
+         (0 0))
+       ...)
+
+14
+

@@ -1,0 +1,730 @@
+                          Security Theorems via Model Theory∗
+
+                                                   Joshua D. Guttman
+                                                    The MITRE Corporation
+                                                 Worcester Polytechnic Institute
+
+
+        A model-theoretic approach can establish security theorems, which are formulas expressing authen-
+        tication and non-disclosure properties of protocols. Security theorems have a special form, namely
+        quantified implications ∀~x . (φ ⊃ ∃~y . ψ ).
+             Models (interpretations) for these formulas are skeletons, partially ordered structures consisting
+        of a number of local protocol behaviors. Realized skeletons contain enough local sessions to explain
+        all the behavior, when combined with some possible adversary behaviors.
+             We show two results. (1) If φ is the antecedent of a security goal, then there is a skeleton Aφ
+        such that, for every skeleton B, φ is satisfied in B iff there is a homomorphism from Aφ to B. (2) A
+        protocol enforces ∀~x . (φ ⊃ ∃~y . ψ ) iff every realized homomorphic image of Aφ satisfies ψ .
+             Since the program CPSA finds the minimal realized skeletons, or “shapes,” that are homomorphic
+        images of Aφ , if ψ holds in each of these shapes, then the goal holds.
+
+
+1     Introduction
+Much work has been done in recent years on cryptographic protocol analysis. A central problem is, given
+a protocol, to determine whether a formula, expressing a security goal about its behaviors in the presence
+of an adversary, is true. If the protocol achieves the goal, one would like some explanation why. If it
+does not achieve the goal, one would like a counterexample. A security goal is a quantified implication:
+
+                                                      ∀~x . (φ0 ⊃ ∃~y . ψ ).                                                   (1)
+
+The hypothesis φ0 is a conjunction of atomic formulas describing regular behavior. The conclusion ψ
+                                                                W
+is a disjunction of zero or more such conjunctions, i.e. ψ is 1≤i≤k φi . When the φi describe desired
+behaviors of other regular participants, who are intended to be peers in protocol runs, then this goal is an
+authentication goal. It says that each protocol run contains at least one peer execution from k different
+possibilities among which the protocol may allow the participants to choose.
+    When k = 0, ψ is the empty disjunction false. If φ0 mentions an unwanted disclosure, (1) says the
+disclosure cannot occur. Hence, security goals with k = 0 express secrecy goals.1
+    Our models are skeletons, partially ordered sets of regular strands, i.e. local behaviors of regular
+participants. A skeleton A defines a set of executions, namely executions in which images of these
+strands can be found. We use A, σ |= Φ in the classical sense, to mean that the formula Φ is satisfied in
+the skeleton A, when the variable assignment σ determines how variables free in Φ are interpreted.
+    A skeleton A is an execution if it is realized. This means that the message transmissions in A—
+when combined with possible adversary behavior—suffice to explain every message received in A. A
+counterexample to a goal G is a realized skeleton C such that, for some variable assignment σ , C, σ |= φ ,
+and for every extension σ ′ of σ , C, σ ′ |= ¬ψ . C is a counterexample to G only if C is realized, even
+though |= is also well-defined for non-realized skeletons.
+    ∗ Supported by the MITRE-Sponsored Research program. Author’s address: guttman@{mitre.org,wpi.edu}.
+    1 We will use φ , φ , etc., for conjunctions of 0 or more atomic formulas, and ψ for disjunctions W
+                       i                                                                               1≤i≤k φi where 0 ≤ k.
+
+
+S. Fröschle, D. Gorla (Eds.): Workshop on Expressiveness
+in Concurrency 2009 (EXPRESS’09).
+EPTCS 8, 2009, pp. 51–65, doi:10.4204/EPTCS.8.5
+52                                                                                          Sec. Thms. via Model Theory
+
+
+    We focus on the homomorphisms among models. A homomorphism is a structure-preserving map,
+which may embed one skeleton into a larger one; may identify one strand with another strand that sends
+and receives similar messages; and may fill in more information about the parameters to the strands.
+As usual, homomorphisms preserve satisfaction for atomic formulas. Suppose H is a homomorphism
+H : A 7→ B. And suppose A, σ |= φ , i.e. the skeleton A satisfies the atomic formula φ under an assign-
+ment σ , which maps variables occurring in φ to values that may appear in A. Then B, H ◦ σ |= φ .
+    This holds for conjunctions of atomic formulas also. Thus, a security goal ∀~x . (φ0 ⊃ ∃~y . ψ ), concerns
+the homomorphic images of skeletons satisfying φ0 . If any homomorphic image C is realized, then C
+should satisfy the disjunction ψ , i.e. C should satisfy at least one of the disjuncts φi for 1 ≤ i ≤ k.
+    We already have a method for constructing homomorphisms from a skeleton A to realized skele-
+tons [8]. The Cryptographic Protocol Shapes Analyzer CPSA is a program that—given a protocol Π and
+a skeleton of interest A—generates all of the minimal, essentially different realized skeletons that are
+homomorphic images of A. We call these minimal, essentially different skeletons shapes, and there are
+frequently very few of them.
+
+Main Results. We show how a single run of the search for shapes checks the truth of a security goal.
+To determine whether Π achieves a goal G = ∀~x . (φ0 ⊃ ∃~y. ψ ), we find the shapes for the single skeleton
+Aφ0 . Two technical results are needed to justified this.
+      • For any security hypothesis φ0 , a single skeleton Aφ0 characterizes φ0 . I.e., for all B:
+
+                                            ∃σ . B, σ |= φ0       iff   ∃H . H : Aφ0 7→ B.
+
+      • There exists a realized C that is a counterexample to G iff there exists some shape H : Aφ 7→ B
+        where B provides a counterexample.
+Our main results suggest a recipe for evaluating a goal G = ∀~x . (φ ⊃ ∃~y . ψ ) for a protocol Π.
+     1. Construct the skeleton Aφ .
+     2. Ask CPSA what shapes are accessible in Π, starting from Aφ .
+     3. As CPSA delivers shapes, check that each satisfies some disjunct φi .
+     4. If the answer is no, this shape is a counterexample to G.
+     5. If CPSA terminates with no counterexample, then G is achieved.
+Since the problem is undecidable [9], it is also possible that CPSA will not terminate. Step 3 is easy, since
+each φi is a conjunction of atomic formulas, and each shape is a finite (typically small) structure.
+
+The Language of Goals. For each protocol, we define a first order language L (Π), in which for-
+mulas (1) are security goals. L (Π) expresses authentication and secrecy goals [17] for Π, including
+“injective agreement”, as adapted to strand spaces [13].2 It talks only about the roles. One can say which
+roles executed, and how far they executed in partial executions, and with what parameters. Saying that
+different roles executed with the same values for certain parameters is important.
+    However, L (Π) is carefully designed to limit expressiveness. L (Π) says nothing about the forms
+of messages, and there are no function symbols for encryption or pairing. The protocol Π determines the
+forms of messages, so to speak behind L (Π)’s back in the semantics. Thus, L (Π) need only stipulate
+the underlying parameters, when describing what has happened.
+     2 L (Π) does not express observational indistinguishability properties, or “strong secrecy” [1].
+J.D. Guttman                                                                                                          53
+
+
+    A benefit of this approach is that related protocols Π, Π′ may have similar languages, or indeed
+identical languages, when corresponding roles use the same parameters to compose messages of different
+concrete forms. This makes the languages L (Π) suited to analyze protocol transformations (as in [15])
+to determine when security goals are preserved. We used them (with inessential differences) in [14],
+where we gave a syntactic criterion that ensures the safety of combining pairs of protocols. When Π1 , Π2
+meet the criterion, then any goal (1) in L (Π1 ) that Π1 meets is still achieved by Π1 ∪ Π2 . Combining
+Π1 with Π2 to form Π1 ∪ Π2 is a simple sort of transformation of Π1 .
+
+Some Related Work. To document a protocol meeting a security goal, one might like to provide a
+proof, e.g. in Paulson’s style [19], or in the Protocol Composition Logic [6]. One might also view a
+counterexample as a syntactic object much like a proof. Symbolic constraint solving techniques (start-
+ing with [11, 18, 20]) treat them in this way, using rules, including unification, to construct them. The
+“adversary-centered” approach of Selinger [21] also leads to a proof-like treatment of protocol coun-
+terexamples, and to a model-theoretic view of achieving goals. To show that a goal is met, one exhibits
+a model in which axioms are satisfied, but the adversary’s knowledge does not include any intended se-
+crets. These axioms describe the behavior of the regular (non-compromised) participants. The model is
+a set that is invariant under disclosures effected by the protocol, but in which the secrets do not appear.
+    We give another model-theoretic approach to achieving goals, but from a “protocol-centered” point
+of view rather than an “adversary-centered” one. In contrast to Selinger, who expresses authentication
+properties of a protocol Π by means of secrecy properties of an expanded protocol Π′ , we represent
+secrecy properties as the special case of authentication properties where k = 0, as indicated above.
+    Chein and Mugnier also use homomorphisms to evaluate the truth of implications, e.g. [4, 5], in the
+context of conceptual graphs. However, that context is quite different, since their formulas are graph-like
+objects, whereas our interpretations are graph-like structures. Our framework is tuned to the specific
+case of cryptographic protocols; for instance, there is no analog of “realized” in their framework.
+
+Structure of this Paper. We start with some examples of protocol goals in a simple protocol that does
+not achieve all of them, and a corrected protocol that does (Section 2). In Section 3, we define the
+first order classical languages L (Π) that express security goals for each protocol Π. Section 4 defines
+skeletons and homomorphisms between them, and gives a semantics for L (Π) using skeletons. We show
+next in Section 5 that each conjunction φ of atomic formulas has a characteristic skeleton. In Section 6,
+we show how to use the characteristic skeletons to check security goals.
+
+Strand Spaces. A strand is a (linearly ordered) sequence of nodes n1 ⇒ . . . ⇒ n j , each of which
+transmits or receives some message msg(ni ). A strand may represent the behavior of a principal in
+a single local session of a protocol, in which case it is a regular strand of that protocol, or it may
+represent a basic adversary activity. Basic adversary activities include receiving a plaintext and a key and
+transmitting the result of the encryption, and receiving a ciphertext and its matching decryption key, and
+transmitting the resulting plaintext.
+    A protocol Π is a finite set of strands, which are the roles of the protocol. A strand s is an instance
+of a role ρ ∈ Π, if s = α (ρ ), i.e. if s results from ρ by applying a substitution α to parameters in ρ .
+    Message t1 is an ingredient of t2 , written t1 ⊑ t2 , if t1 is used to construct t2 other than as an encryption
+key; i.e. ⊑ is the smallest reflexive, transitive relation such that t1 ⊑ t1 ˆt2 , and t2 ⊑ t1 ˆt2 , and t1 ⊑ {|t1 |}t2 .
+    A message t originates on a strand node n if (1) t ⊑ msg(n); (2) n is a transmission node; and (3)
+m ⇒+ n implies t 6⊑ msg(m). A value that originates only once in an execution is uniquely originating,
+54                                                                                 Sec. Thms. via Model Theory
+
+
+
+                                    {|{|k|}sk(A) |}pk(B)    {|{|k|}sk(A) |}pk(B)
+                             A                         /                           /B
+
+
+                                         {|s|}k                  {|s|}k            
+                              •o                            o                      •
+
+                            Figure 1: Blanchet’s “Simple Example Protocol”
+
+i.e. a freshly chosen value. A value that originates nowhere in an execution may nevertheless be used
+within regular strands to encrypt or decrypt. However, if the adversary uses a value to encrypt or decrypt,
+then the key must have been received, and must therefore have originated somewhere. Hence non-
+originating values represent uncompromised long term keys. For more detail, see the Appendix.
+
+
+2    Examples
+Blanchet’s Example. We start from an example suggested by Blanchet [2], as shown in Fig. 1. A
+principal A wishes to have B transmit a secret to A alone. A has a private signature key sk(A), with a
+public verification key known to B. B has a private decryption key with a public encryption key pk(B)
+known to A. A transmits a freshly chosen symmetric key k to B, signed by A and encrypted for B. B then
+uses k to encipher the secret s.
+
+Authentication Goals of A. A wants the protocol to ensure that s came from B.
+     To establish this, we attribute some assumptions to A, from which it may follow that B has transmit-
+ted s. A has had a run of her side of the protocol, so the execution will contain the two nodes of the strand
+shown on the left of the figure. We must assume that B’s private decryption key pk(B)−1 is uncompro-
+mised, in the sense that this private key never originates. It is thus used only by regular participants in
+accordance with the protocol, and never by an adversary. Moreover, we assume that the symmetric key
+k originates only once, namely, on A’s first node. In particular, the adversary can not send it until after
+receiving k. In a word, the adversary will not guess k.
+     A0 summarizes these assumptions, as shown on the left in Fig. 2. Here nonA0 is the set of long
+term keys assumed uncompromised for the sake of this analysis, and uniqueA0 is the set of fresh values
+assumed uniquely originating. We call a diagram of this kind a skeleton.
+     We want now to “analyze” this assumption, by which we mean, to find all shapes accessible from
+A0 . The shapes give all the minimal, essentially different executions (realized skeletons) accessible from
+A0 . CPSA reports a single shape, shown on the right of Fig. 2 as A1 . This is what A desired, as B sent s
+on its transmission node at lower right.
+     The antecedent of the implication expressing this goal concerns the starting point; is it φ A =
+                    Init2(n2 , a, b, k, s) ∧ Unq(k) ∧ Non(sk(a)) ∧ Non(inv(pk(a))).
+The predicate Init2(n2 , a, b, k, s) says that n2 is the second node of an initiator strand with the given
+parameters. The remaining conjuncts express the supplementary assumptions about non-compromised
+long term keys and a fresh session key. The fact that the only shape we obtain is A1 , which has a
+responder’s second node with the desired parameters, validates:
+                                       φ A ⊃ ∃m . Resp2(m, a, b, k, s).
+J.D. Guttman                                                                                                55
+
+
+
+                             t0                                                  t0               t0
+                      A             /                     7→          A               /   ≺            /B
+
+
+                          {|s|}k                                          {|s|}k            {|s|}k    
+                      •o                                              •o                  ≻   o        •
+
+
+                      A0                                             A1
+
+
+                       {pk(B)−1 } = nonA0 = nonA1 , {k} = uniqueA0 = uniqueA1
+
+           Figure 2: Skeletons A0 , A1 , input and output for CPSA, with t0 = {|{|k|}sk(A) |}pk(B)
+
+
+The conclusion of this implication describes some of the additional structure contained in A1 .
+
+Confidentiality of s. The analysis for A’s confidentiality goal is similar. We again use the same as-
+sumptions, augmented by the pessimistic assumption that s is compromised. We represent this using a
+                                   s
+trick: We use a listener node • ← that “hears” the value s shorn of any cryptographic protection. Here
+we must also assume that s ∈ uniqueA2 , since otherwise possibly the adversary will simply guess (re-
+originate) s. Thus, we start the analysis with the form shown in Fig. 3. We now reach an impasse: CPSA
+reports that no shape exists, starting from A2 . Thus, A2 is dead: No realized skeleton can result from it.
+We express this confidentiality goal in the form:
+
+                                                φ A ∧ Unq(s) ∧ Lsn(m, s) ⊃ false.
+
+The conjunct Lsn(m, s) describes the listener node m that “hears” the value s. This listener node is
+incompatible with the other assumptions φ A . Thus, A achieves her goals using this protocol.
+
+Authentication Goal for B. Unfortunately, the situation is less favorable for B. We start the analysis
+with the skeleton A3 , shown on the left in Fig. 4. It represents the hypothesis φ B :
+
+                     Resp2(m, a, b, k, s) ∧ Unq(k) ∧ Non(sk(a)) ∧ Non(inv(pk(a)))
+
+We obtain the form A4 shown on the right in Fig. 4. Unfortunately, we have learnt nothing about the
+
+
+
+                                              t0
+                                        A             /                    67→                ·
+
+
+                                            {|s|}k
+                                        •o                     s
+                                                           •←
+
+                                        {pk(B)−1 } = nonA0         {k, s} = uniqueA0
+
+                      Figure 3: A2 , for A’s confidentiality analysis, with no shapes
+56                                                                                                    Sec. Thms. via Model Theory
+
+
+
+                  {|{|k|}sk(A) |}pk(B)                                         {|{|k|}sk(A) |}pk(C)        {|{|k|}sk(A) |}pk(B)
+                                         /B                7→              A                          /≺                          /B
+
+
+                        {|s|}k                                                                                  {|s|}k            
+              o                          •                                                             o                          •
+
+
+            A3                                                            A4
+
+
+                       {sk(A), pk(B)−1 } = nonA3 = nonA4                  {k} = uniqueA3 = uniqueA4
+
+                                              Figure 4: A3 , A4 , for B’s authentication goal
+
+
+recipient C for whom A intended this key. Possibly pk(C)−1 is compromised. Thus, the adversary can
+decrypt {|{|k|}sk(A) |}pk(C) and use B’s public key to construct {|{|k|}sk(A) |}pk(B) . Thus, skeleton A4 is
+realized, but validates only:
+                                      φ B ⊃ ∃n, c . Init1(n, a, c, k).
+The expected initiator has got to step 1 of a run with some c, who—the protocol ensures—has originated
+the key k. However, since possibly C 6= B, confidentiality for k and s may fail.
+    The details of the CPSA run make clear how to fix the protocol. This requires us to replace t0 with
+{|{|kˆB|}sk(A) |}pk(B) , which includes B’s identity under A’s signature. In fact, Blanchet [2] makes a more
+complicated suggestion, using the component {|kˆAˆB|}sk(A) . However, the CPSA analysis is very precise,
+and indicates that only the responder’s identity needs to be included inside the signature.
+
+
+3    Language
+We now consider the logical representation of our example authentication and confidentiality goals.
+
+Role Predicates. We need to be able to describe the different kinds of nodes that are present in a
+skeleton, namely the initiator’s first and second nodes, and the responder’s first and second nodes, each
+of which has a number of parameters. We must be able to express these parameters, because we know
+(e.g.) that whether the initiator’s first node has B or C as its responder identity parameter makes all the
+difference. On the other hand, the form of the messages is defined in the protocol, and is thus irrelevant
+to describing what goals are achieved. Thus, for Blanchet’s simple example protocol, we suggest four
+protocol-specific predicates:
+
+                                                Init1(m, a, b, k)       Resp1(m, a, b, k)
+                                              Init2(m, a, b, k, s)      Resp2(m, a, b, k, s)
+
+Suppose that we are given a variable assignment σ that associates values σ (m), σ (a), etc. to the variables
+m, a, etc. Then we read Init1(m, a, b, k) as asserting that σ (m) is a node, which is the first step of an
+initiator strand, and the initiator is σ (a), its intended responder is σ (b), and it has created the key σ (k)
+for this session. We read Init2(m, a, b, k, s) as asserting that σ (m) is a node, which is the second step of
+an initiator strand, and the initiator is σ (a), its intended responder is σ (b), the session key is σ (k), and
+J.D. Guttman                                                                                                   57
+
+
+the intended secret is σ (s). Thus, if Init2(m, a, b, k, s), then we know that m is preceded by a node n
+such that Init1(n, a, b, k) is true under the same σ . Analogous explanations hold for the responder role.
+    These role predicates are similar to those used by Cervesato, Durgin et al. [3, 10] in multiset rewriting.
+    We also need a role predicate Lsn(m, v), which says, under an assignment σ , that σ (m) is a listener
+node that receives that value σ (v). The language L (Π), where Π is Blanchet’s example protocol,
+contains these five role predicates.
+
+Shared Vocabulary. All languages L (Π) also contain some additional predicates. Preceq(m, n) ex-
+presses the causal partial ordering . Col(m, n) says that σ (m) and σ (n) are collinear, i.e. they lie on the
+same strand. Non(v) and Unq(v) express the assumptions that σ (v) ∈ non and σ (v) ∈ unique, resp.
+    In Section 2, we also used the function symbols sk, pk, and inv to talk about the long term keys
+signature keys of principals, their long term public encryption keys, and the inverses of those keys.
+    This is the full language L (Π) where Π is Blanchet’s example protocol. As it happens, the language
+L (Π′ ), for the corrected version of the protocol, is identical. The roles are the same, each with the same
+number of nodes, and with the same parameters. Thus, nothing in the language needs to change.
+    Apparently, for every goal G ∈ L (Π), if G is achieved in Blanchet’s example protocol Π, then G
+is also achieved in its correction Π′ . Moreover, additional formulas are achieved in Π′ . A satisfactory
+theory of protocol transformation should give ways to prove (or disprove) intuitions like this one.
+
+The Languages L (Π). For each protocol Π, L (Π) is a language for talking about its executions. We
+use typewriter font x, m, etc. for syntactic items such as variables or predicates within the language.
+    Suppose that Π has r protocol-specific roles {ρ1 , . . . , ρr }, where each role ρi is of length |ρi |, and
+the listener role. We let {RP0,1 , . . . , RPr,|ρr | } be a collection of 1 + ∑i |ρi | predicate symbols. RP0,1 is
+the listener role predicate, which we will write as Lsn(m, v), indicating that node m receives the value
+v. Each remaining predicate RPi j takes parameters (m, v1 , . . . , vk ) where the jth node on role ρi , and its
+predecessors, have involved k parameters.
+    We write fv(Φ), bv(Φ) for the free and bound variables of any formula Φ, defined in the usual way.
+                          W
+The empty disjunction i∈0/ φi is identical with false; a one-element disjunction or conjunction is iden-
+tical with its single disjunct or conjunct.
+Definition 3.1     1. L (Π) is the classical first order quantified language with vocabulary:
+      Variables (unsorted) ranging over messages and nodes;
+      Function symbols sk, pk, inv;3
+      Predicate symbols equality u = v, falsehood false (no arguments), and:
+              • Non(v), and Unq(v);
+              • Col(m, n) and Preceq(m, n);
+              • One role predicate RPi j for each ρi ∈ Π and j with 1 ≤ j ≤ |ρi |.
+                The predicate RPi j (m, v1 , . . . , vk ) for the jth node on ρi has as arguments: a variable m
+                for the node, and variables vℓ for each of the k parameters that have appeared in any of
+                ρi ’s first j messages.
+   2. A security claim φ is a conjunction of atomic formulas of L (Π) such that two conditions hold:
+       (a) Any two role predicate conjuncts have different variables as their first arguments n, n′ .
+       (b) If a conjunct is not a role predicate, then each variable or key term that appears as an
+           argument to it also appears as argument to some role predicate RPi j (n, t1 , . . . , ti ).
+   3 We call terms built with these unary function symbols key terms.
+58                                                                                Sec. Thms. via Model Theory
+
+
+     3. A sentence ∀~x . (φ ⊃ ∃~y . ψ ) is a security goal if (1) the ~xs and ~ys are disjoint; (2) φ is a security
+                                              W
+        claim; and (3) ψ is a disjunction i φi of conjunctions φi of atomic formulas.
+The conditions in Clauses 2a–2b on security claims φ allow us to construct a single skeleton Aφ to
+characterize φ (Thm. 5.2). Without Clause 2a, we would have to be rather careful in our choice of
+message algebras and protocols to ensure that there is a single “most general” role that applies when
+two roles can have common instances. The role predicate RPi j in Clause 2b serves as an implicit sort
+declaration for the variables x appearing in it. The sorts of parameters within the role ρi determines the
+set of values that may lead to true instances of this atomic formula.
+    We have already illustrated three security goals earlier, in Section 2; or, more precisely, we have
+shown three formulas whose universal closures are security goals. Another relevant example is the
+“missing” confidentiality goal that a responder would have wanted, but was actually not achieved by Π
+but only by its correction Π′ . It is the universal closure of:
+
+           Resp2(n2 , a, b, k, s) ∧ Unq(k) ∧ Non(sk(a)) ∧ Non(inv(pk(a))) ∧ Lsn(m, s) ⊃ false.
+
+Axiomatizing Protocols. L (Π) is specifically intended to limit expressiveness, and there is no way
+to axiomatize the behavior of protocols within it. However, the slightly larger language L + (Π) appears
+sufficient to axiomatize protocol behaviors, and derive security goals. It adds to L (Π):
+Function symbols concat(v1 , v2 ) and enc(v1 , v2 ), representing the concatenation of two messages
+     v1 , v2 and the encryption of a message v1 using a second message v2 as key; and
+     msgAt(n1 ) returning the message transmitted or received on the node n1 ;
+Predicate symbols Xmit(n1 ) and Rcv(n1 ), true if n1 is a transmission node or reception node, resp.
+A few inductively defined notions such as “message t0 is found only within the set of encryptions S in
+message t1 ” [8, extended version, Def. 6] must be introduced using these primitives. The property of a
+skeleton being realized can then be expressed as a closed sentence. With these notions, the reasoning
+encoded in CPSA could be carried out axiomatically, at least in theory, within L + (Π). The important
+theorems would be the security goals, which lie within the sublanguage L (Π).
+
+
+4     Skeletons, Homomorphisms, and Satisfaction
+Before we define the satisfaction relation A, σ |= φ , we must define the skeletons that we have already
+worked with in Section 2. We start by summarizing our assumptions about the message algebra; more
+detail may be found in Appendix A.
+
+Message Algebra. Let A0 be an algebra equipped with some operators and a set of homomorphisms
+η : A0 → A0 . We call members of A0 atoms.
+    For the sake of definiteness, we will assume here that A0 is the disjoint union of infinite sets of nonces,
+atomic keys, names, and texts. The operator sk(a) maps names to (atomic) signature keys, and K −1 maps
+an asymmetric atomic key to its inverse, and a symmetric atomic key to itself. Homomorphisms η are
+maps that respect sorts, and act homomorphically on sk(a) and K −1 .
+    Let X is an infinite set disjoint from A0 ; its members—called indeterminates—act like unsorted
+variables. A is freely generated from A0 ∪ X by two operations: encryption {|t0 |}t1 and tagged concate-
+nation tag t0 ˆt1 , where the tags tag are drawn from some set TAG. For a distinguished tag nil, we write
+J.D. Guttman                                                                                                            59
+
+
+nil t0 ˆt1 as t0 ˆt1 with no tag. In {|t0 |}t1 , a non-atomic key t1 is a symmetric key. Members of A are called
+messages.
+    A homomorphism α = (η , χ ) : A → A consists of a homomorphism η on atoms and a function
+χ : X → A. It is defined for all t ∈ A by the conditions:
+        α (a) = η (a), if a ∈ A0              α ({|t0 |}t1 ) = {|α (t0 )|}α (t1 )
+        α (x) = χ (x), if x ∈ X             α (tag t0 ˆt1 ) = tag α (t0 )ˆ α (t1 )
+Thus, atoms serve as typed variables, replaceable only by other values of the same sort, while indetermi-
+nates x are untyped. Indeterminates x serve as blank slots, to be filled by any χ (x) ∈ A. Indeterminates
+and atoms are jointly parameters.
+    This A has the most general unifier property, which we will rely on. That is, suppose that for v, w ∈ A,
+there exist α , β such that α (v) = β (w). Then there are α0 , β0 , such that α0 (v) = β0 (w), and whenever
+α (v) = β (w), then α and β are of the forms γ ◦ α0 and γ ◦ β0 .
+
+Skeletons. A skeleton is a partially ordered set of nodes, together with assumptions non about uncom-
+promised long term keys and unique about freshly chosen values. We write s ↓ i for the ith node along s,
+using 1-based indexing.
+    A skeleton A consists of (possibly partially executed) role instances, i.e. a finite set of nodes, nodes(A),
+with two additional kinds of information:
+   1. A partial ordering A on nodes(A);
+   2. Sets uniqueA , nonA of atomic values assumed uniquely originating and non-originating in A.
+nodes(A) and A must respect the strand order, i.e. if n1 ∈ nodes(A) and n0 ⇒ n1 , then n0 ∈ nodes(A)
+and n0 A n1 . If a ∈ uniqueA , then a must originate at most once in nodes(A). If a ∈ nonA , then a
+must originate nowhere in nodes(A), though a or a−1 may be the key encrypting some ingredient of
+n ∈ nodes(A).
+    A is a preskeleton if it meets the conditions except that some values a ∈ uniqueA may originate more
+than once in nodes(A). If A is a preskeleton, and it is possible to extract a skeleton by identifying
+nodes and atoms, then there is a canonical, most general way to do so [8, extended version, Prop. 6].
+The canonical skeleton extracted from A is called the hull of A. We write hullA for the homomorphism
+(Def. 4.1) that maps a preskeleton A to its hull.
+    A skeleton A is a skeleton for a protocol Π if all of its strands are strands of Π.
+    A is realized if it can occur without additional activity of regular participants; i.e., for every reception
+node n, the adversary can construct msg(n) via the Dolev-Yao adversary actions,4 using as inputs:
+   1. the messages msg(m) where m ≺A n and m is a transmission node;
+   2. indeterminates x; and
+   3. any atomic values a such that a 6∈ (nonA ∪ uniqueA ), or such that a ∈ uniqueA but a originates
+      nowhere in A.
+Definition 4.1 Let A0 , A1 be preskeletons, α a homomorphism on A, and ζ : nodesA0 → nodesA1 . H =
+[ζ , α ] is a (skeleton) homomorphism if
+  1a. For all n ∈ A0 , msg(ζ (n)) = α (msg(n)), with the same direction, either transmission or reception;
+  1b. For all s, i, if s ↓ i ∈ A, then there is an s′ s.t. for all j ≤ i,     ζ (s ↓ j) = s′ ↓ j;
+   4 The Dolev-Yao adversary actions are: concatenating messages and separating the pieces of a concatenation; encrypting a
+
+given plaintext using a given key; and decrypting a given ciphertext using the matching decryption key.
+60                                                                                 Sec. Thms. via Model Theory
+
+
+     2. n A0 m implies ζ (n) A1 ζ (m);
+     3. α (nonA0 ) ⊆ nonA1 ;
+  4a. α (uniqueA0 ) ⊆ uniqueA1 ;
+  4b. If a ∈ uniqueA0 and a originates at n ∈ nodesA0 , then α (a) originates at ζ (n) ∈ nodesA1 .
+We write H : A0 7→ A1 when H is a homomorphism from A0 to A1 . When α (a) = α (a)′ for every a that
+is an ingredient or is used for encryption in dom(ζ ), then [ζ , α ] = [ζ , α ′ ]; i.e., [ζ , α ] is the equivalence
+class of pairs under this relation.
+
+The condition for [ζ , α ] = [ζ , α ′ ] implies that the action of α on atoms not mentioned in the A0 is
+irrelevant. We write H(n) for ζ (n) or H(a) for α (a), when H = [ζ , α ]. Evidently, preskeletons and
+homomorphisms form a category, of which skeletons and homomorphisms are subcategory.
+     In Section 2, we have already given examples of homomorphisms. Each of the shapes we have
+considered is a homomorphic image of its starting point. Thus, for instance, we have homomorphisms
+A0 7→ A1 and A3 7→ A4 . A2 is dead in the sense that there is no realized B such that A2 7→ B.
+     Our first CPSA run in Section 2 tells us that every homomorphism from A0 to a realized skeleton goes
+“by way of” A1 [8]. That is, if B is realized and H : A0 7→ B, then H = H1 ◦ H0 where H0 : A0 7→ A1 .
+Thus, any realized skeleton accessible from A0 has at least the structure contained in A1 , homomorphisms
+being structure-preserving maps.
+     In Figs. 2 and 4, the homomorphism simply adds nodes. I.e. ζ is an embedding and α is the identity.
+However, in other homomorphisms, ζ may be a bijection and α does the work, mapping distinct values
+to the same result. In other cases ζ is non-injective, mapping two distinct strands in source to the same
+strand in the target. For instance, suppose that A is a preskeleton but not a skeleton, because some
+a ∈ uniqueA originates on two strands. If the map hullA is well defined, then hullA must map both
+strands on which a originates to the same strand in the target skeleton. Hence, non-trivial hullA maps are
+examples of non-injective homomorphisms.
+
+Semantics for L (Π). The semantics for L (Π) are classical, with each structure a skeleton for the
+protocol Π. This requirement builds the permissible behaviors of Π directly into the semantics without
+requiring an explicit axiomatization.
+    An assignment σ for A is a partial function from variables of L (Π) to A∪ nodes(Π). By convention,
+if σ is undefined for any variable x in fv(Ψ), then A, σ 6|= Ψ. We write σ1 ⊕ σ2 for the partial function
+that—for σ1 and σ2 with disjoint domains—acts as either σi on the domain of that σi .
+Definition 4.2 Let A be a skeleton for Π. Extend any assignment σ to key terms of L (Π) via the rules:
+σ (sk(t)) = sk(σ (t)), σ (inv(t)) = (σ (t))−1 .
+    Satisfaction. A, σ |= Φ is defined via the standard Tarski inductive clauses for the classical first order
+logical constants, and the base clauses:
+A, σ |= u = v                     iff   σ (u) = σ (v);
+A, σ |= Non(v)                    iff   σ (v) ∈ nonA ;
+A, σ |= Unq(v)                    iff   σ (v) ∈ uniqueA ;
+A, σ |= Col(m, n)                 iff   σ (m), σ (n) ∈ nodes(A), and either σ (m) ⇒∗ σ (n) or σ (n) ⇒∗ σ (m);
+A, σ |= Preceq(m, n)              iff   σ (m) A σ (n);
+and, for each role ρi ∈ Π and index j on ρi , the predicate RPi j (m, v1 , . . . , vk ) obeys the clause
+A, σ |= RPi j (m, v1 , . . . , vk )     iff σ (m) ∈ nodes(A), and
+J.D. Guttman                                                                                                        61
+
+
+                                    σ (m) is an instance of the jth node on role ρi ,
+                                    with the parameters σ (v1 ), . . . , σ (vk ).
+We write A |= Φ when A, σ |= Φ for all σ , e.g. when Φ is a sentence satisfied by A.
+In protocols where there are two different roles ρi , ρh that differ only after their first j nodes—typically,
+because they represent different choices at a branch point after the jth node [16, 12]—the two predicates
+RPi j and RPh j are equivalent, as Def. A.1 makes precise.
+
+Lemma 4.3 Suppose φ is an atomic formula, and H : A 7→ B. If A, σ |= φ , then B, H ◦ σ |= φ .
+
+
+5    Characteristic Skeletons
+We write σ |`fv(Φ) for the partial function σ restricted in domain to the free variables of Φ.
+Definition 5.1 A pair A, σ∗ is characteristic for a formula Φ iff A, σ∗ |= Φ and, for all B, σ ,
+
+                     B, σ |= Φ implies         ∃!H . H : A 7→ B and σ |`fv(Φ) = H ◦ σ∗ .                           (2)
+
+If there is such a σ∗ , then A is a characteristic skeleton for Φ.
+Being a homomorphic image of this A characterizes satisfiability of Φ. A has minimal structure needed
+to make Φ true, in the sense that Φ is satisfiable in any A′ just in case A′ results from A by a structure-
+preserving map (a homomorphism). From the form of the definition, A, σ∗ is universal among interpre-
+tations satisfying Φ, and such a A, σ∗ will be unique to within isomorphism.
+
+Constructing a Characteristic Skeleton. In order to construct a characteristic skeleton cs(φ ) for a
+                     V
+security claim φ = 1≤i≤ℓ φi , we treat the successive atomic formulas φ j in turn. As we do so, we
+maintain two data structures. One is an assignment σ which summarizes what atomic value or node we
+have associated to each variable we have seen so far. Initially σ is the empty function. The other is
+                               V
+the characteristic skeleton cs( 1≤i≤ j−1 φi ) constructed from the part of the formula seen so far. This is
+initially the empty skeleton. If φ is unsatisfiable, then instead of returning cs(φ ), σ we must fail.
+     We assume that the conjuncts of φ have been reordered if necessary so that atomic formulas con-
+taining role predicates precede atomic formulas of the other forms. For convenience, we also eliminate
+equations by replacing the left hand side by the right hand side throughout the remainder of the formula.
+                                     V
+Base Case. If ℓ = 0, so that φ = 1≤i≤0 φi = true, then let cs(φ ) be the empty skeleton, and let σ0 be
+     the empty (nowhere defined) substitution.
+                             V                                V
+Recursive Step. Let φ = 1≤i≤ℓ+1 φi , and let Aℓ = cs( 1≤i≤ℓ φi ) be a characteristic skeleton for all but
+     the last conjunct, relative to σℓ . We take cases on the form of the last conjunct, φℓ+1 :
+      RPi j (m, t1 , . . . , tk ): By clause 2a in Defn. 3.1, the variable m is not in the domain of σℓ . If
+             variables appearing in t1 , . . . , tk , are not in the domain of σℓ , select atoms of appropriate
+             sorts, not yet appearing in Aℓ , letting σ ′ be the result of extending σℓ with these choices.
+             Let n1 ⇒ . . . ⇒ n j be the first j nodes of the role ρi , instantiated with the values σ ′ (t1 ), . . . ,
+             σ ′ (tk ). If any nλ (with 1 ≤ λ ≤ j) originates any value a ∈ nonσℓ , then we must fail.
+             Otherwise, let the preskeleton A′ be the result of adding n1 ⇒ . . . ⇒ n j to Aℓ , and let Aℓ+1
+             be its hull. If the hull is undefined, fail. Otherwise, define σℓ+1 = (hullA′ ◦ σ ′ ) ⊕ (m 7→ n j ).
+             Return Aℓ+1 , σℓ+1 .
+62                                                                                   Sec. Thms. via Model Theory
+
+
+      Non(t):    By clause 2b in Defn. 3.1, σℓ (t) = v is well defined. If the result of adding v to nonAℓ
+          is a skeleton, then this skeleton is Aℓ+1 . Otherwise, we fail. Let σℓ+1 = σℓ .
+      Unq(t):    By clause 2b in Defn. 3.1, σℓ (t) = v is well defined. If the result of adding v to
+          uniqueAℓ is a preskeleton A′ whose hull is a well-defined skeleton, then this skeleton is Aℓ+1 .
+          Otherwise, we fail. Let σℓ+1 = hullA′ ◦ σℓ .
+      Preceq(m, n):    By clause 2b in Defn. 3.1, σℓ (m) and σℓ (n) are well defined. Let Aℓ+1 be Aℓ
+          with the ordering enriched so that σℓ (m) Aℓ+1 σℓ (n), failing if the latter introduces a cycle
+          because in fact σℓ (n) Aℓ σℓ (m). Let σℓ+1 = σℓ .
+      Col(m, n):    By clause 2b in Defn. 3.1, σℓ (m) = s ↓ k and σℓ (n) = s′ ↓ k′ are well defined. If
+          one strand, e.g. s, is at least as long as the other, we would like to map the successive nodes
+          of s′ to nodes of s. However, their messages and directions in Aℓ may not be the same. If
+          the directions (transmit vs. receive) conflict, then we must fail. Otherwise, if the successive
+          messages are unequal, we may succeed by unifying them.
+          Let β be the most general unifier such that, for each i where both s ↓ i and s′ ↓ i are defined,
+
+                                               β (msg(s ↓ i)) = β (msg(s′ ↓ i)).
+
+            Let A′ be the preskeleton resulting from applying β throughout A, failing if this is impossible
+            because any value in nonA′ would originate somewhere. Let A′′ be the preskeleton resulting
+            from omitting β (s′ ), and identifying its nodes with those of β (s), failing if this identification
+            introduces any cycle into the ordering. If A′′ does not have a well defined hull, then fail.
+            Otherwise, let that hull be Aℓ+1 . Let σℓ+1 = hullA′′ ◦ β ◦ σℓ .
+                                           V
+Theorem 5.2 If a security claim φ = 1≤i≤ℓ φi is unsatisfiable, the procedure above fails. If φ is satisfi-
+able, then the procedure returns a pair A, σ that is characteristic for φ .
+Proof:    We follow the inductive definition of cs(φ ).
+Base Case. Let ℓ = 0, and φ = true. Then cs(true) is the empty skeleton A0 . In fact, every B satisfies
+     true via the empty substitution, and there exists exactly one homomorphism H : A0 7→ B.
+                              V                               V
+Recursive Step. Let φ = 1≤i≤ℓ+1 φi , and let φ − = 1≤i≤ℓ φi be its predecessor, with all but the last
+     conjunct of φ . Let Aℓ = cs(φ − ) be a characteristic skeleton for all but the last conjunct, relative to
+     σℓ . In particular, φ − is satisfiable. If φ is unsatisfiable, then we need to check we will fail at this
+     step. If this step succeeds, then we need to show that Aℓ+1 , σℓ+1 are characteristic for cs(φ ).
+     Suppose that, for any B, τ , we have B, τ |= φ . Then B also satisfies φ − , so by the induction hypoth-
+     esis, there is a unique homomorphism Hℓ = [ζℓ , αℓ ] : Aℓ 7→ B to within isomorphism. Moreover,
+     τ |`fv(φ − ) = αℓ ◦ σℓ . We take cases on the form of the last conjunct, φℓ+1 . In each case, Hℓ can be
+     adjusted to form a unique homomorphism Hℓ+1 : Aℓ+1 7→ B, to within isomorphism.
+     We use the same notation as in the corresponding cases of the definition of cs.
+      RPi j (m, t1 , . . . , tk ): This is not jointly satisfiable with φ − iff the new nodes n1 ⇒ . . . ⇒ n j originate
+             a value a ∈ nonAℓ , or if the hull is not defined. In these cases, cs fails.
+             B, τ |= φ , and, since RPi j (m, t1 , . . . , tk ) is its last conjunct B, τ |= RPi j (m, t1 , . . . , tk ).
+             Thus, τ (m) is an instance of ρi ↓ j with parameters τ (t1 ), . . . , τ (tk ). Naming τ (m) = n′j , we
+             have n′1 ⇒ . . . ⇒ n′j , and by the construction of cs(φ ), we have n1 ⇒ . . . ⇒ n j in cs(φ ). Thus,
+             we can extend the node map ζℓ to ζℓ+1 by mapping each nλ to nλ′ . This is the only extension
+             compatible with τ .
+J.D. Guttman                                                                                                   63
+
+
+          Moreover, for each new variable v appearing in t1 , . . . , tk , we extend αℓ by sending σℓ+1 (v)
+          to τ (v). By the construction of σℓ+1 (v), this is a new value, not equal to any value mentioned
+          in Aℓ . So σℓ+1 is a partial function. Moreover, there is no other way to extend σℓ compatible
+          with τ . The resulting αℓ+1 , together with ζℓ+1 , forms a homomorphism Aℓ1 7→ B, and is
+          uniquely determined.
+      Non(t): If not jointly satisfiable with φ − , then σℓ+1 (t) originates in Aℓ , and cs fails.
+          Since B, τ |= φℓ+1 , τ (t) ∈ nonB , so Hℓ is also a homomorphism from Aℓ+1 to B.
+      Unq(t): The universality of the hullA′ homomorphism among homomorphisms to realized skele-
+          tons ensures that Hℓ factors through hullA′ .
+      Preceq(m, n): Since B, τ |= φℓ+1 , τ (m) B τ (n), so Hℓ is also a homomorphism from Aℓ+1 to B.
+      Col(m, n): In the non-failing case, ζℓ maps σℓ (m) and σℓ (n) to nodes on the same strand. Thus,
+          Hℓ factors through the homomorphism from Aℓ to Aℓ+1 .
+                                                                                                                ⊔
+                                                                                                                ⊓
+
+
+6    Security Goals
+We turn now to our second result, which puts the pieces together.
+Theorem 6.1 Suppose that G = ∀~x . (φ ⊃ ∃~y . ψ ) is a security goal in L (Π) where φ is satisfiable.
+   Π achieves G iff, whenever H : cs(φ ) 7→ B is a shape, there is a σ such that B, σ |= ψ .
+Proof: 1. Suppose that Π achieves G. By Thm. 5.2, cs(φ ) is well-defined. By Lemma 4.3, H : cs(φ ) 7→
+B implies that B satisfies φ . If B is a shape, it is realized. Since Π achieves G, B satisfies ψ .
+    2. Suppose that Π does not achieves G, so that there is a realized C which satisfies ¬G. Let ψ =
+W
+  1≤i≤ℓ φi . Using
+               V
+                    the Tarski satisfaction clauses and the disjointness of ~x,~y, we obtain a σC such that
+C, σC |= φ ∧ 1≤i≤ℓ ¬φi .
+    Since C, σC |= φ , there is a J such that J : cs(φ ) 7→ C, and σC |`fv(φ ) = J ◦ σ∗ . Using Prop. 8 of the
+extended version of [8], J = K ◦ H where H : cs(φ ) 7→ B is a shape.
+    If this B satisfies any φi , then so would C by Lemma 4.3.                                               ⊔
+                                                                                                             ⊓
+
+Conclusion. We have explained a way to ensure that a protocol achieves a security goal G. We use
+the antecedent φ to choose a skeleton, namely cs(φ ). We then obtain the shapes accessible from cs(φ ),
+e.g. by using CPSA. If any shape does not satisfy any disjunct of the conclusion of G, then we have a
+counterexample. If no counterexample is found, then G is achieved.
+    In future work, we will apply this method to protocol transformation. It suggests a criterion to ensure
+that the result Π2 of a protocol transformation preserves all goals achieved by its source protocol Π1 .
+
+Acknowledgments. I am grateful to my colleagues, Leonard Monk, John Ramsdell, and Javier Thayer,
+for many relevant discussions. Marco Carbone gave valuable comments. John Ramsdell is the author of
+the CPSA implementation.
+
+
+References
+ [1] B. Blanchet (2004): Automatic proof of strong secrecy for security protocols. In: Security and Privacy, 2004.
+     Proceedings. 2004 IEEE Symposium on. IEEE CS Press, pp. 86–100.
+64                                                                             Sec. Thms. via Model Theory
+
+
+ [2] Bruno Blanchet (2008): Vérification automatique de protocoles cryptographiques : modèle formel et modèle
+     calculatoire. Automatic verification of security protocols: formal model and computational model. Mémoire
+     d’habilitation à diriger des recherches, Université Paris-Dauphine.
+ [3] I. Cervesato, N. A. Durgin, P. D. Lincoln, J. C. Mitchell & A. Scedrov (2000): Relating Strands and Mul-
+     tiset Rewriting for Security Protocol Analysis. In: Proceedings, 13th IEEE Computer Security Foundations
+     Workshop. IEEE Computer Society Press.
+ [4] Michel Chein & Marie-Laure Mugnier (1992): Conceptual Graphs: fundamental notions. Revue
+     d’Intelligence Artificielle 6, pp. 365–406.
+ [5] Michel Chein & Marie-Laure Mugnier (2004): Concept Types and Coreference in Simple Conceptual Graphs.
+     In: Conceptual Structures at Work: 12th International Conference on Conceptual Structures, ICCS 2004,
+     Huntsville, AL, USA, July 19-23, 2004. Proceedings, number 3127 in LNCS. pp. 303–318.
+ [6] Anupam Datta, Ante Derek, John C. Mitchell & Dusko Pavlovic (2005): A Derivation System and Composi-
+     tional Logic for Security Protocols. Journal of Computer Security 13(3), pp. 423–482.
+ [7] Shaddin F. Doghmi, Joshua D. Guttman & F. Javier Thayer (2007): Completeness of the Authentication Tests.
+     In: J. Biskup & J. Lopez, editors: European Symposium on Research in Computer Security (ESORICS),
+     number 4734 in LNCS. Springer-Verlag, pp. 106–121.
+ [8] Shaddin F. Doghmi, Joshua D. Guttman & F. Javier Thayer (2007): Searching for Shapes in Cryptographic
+     Protocols. In: Tools and Algorithms for Construction and Analysis of Systems (TACAS), number 4424 in
+     LNCS. Springer, pp. 523–538. Extended version at URL:http://eprint.iacr.org/2006/435.
+ [9] Nancy Durgin, Patrick Lincoln, John Mitchell & Andre Scedrov (2004): Multiset Rewriting and the Com-
+     plexity of Bounded Security Protocols. Journal of Computer Security 12(2), pp. 247–311. Initial version
+     appeared in Workshop on Formal Methods and Security Protocols, 1999.
+[10] Nancy Durgin, Patrick Lincoln, John Mitchell & Andre Scedrov (2004): Multiset Rewriting and the Com-
+     plexity of Bounded Security Protocols. Journal of Computer Security 12(2), pp. 247–311. Initial version
+     appeared in Workshop on Formal Methods and Security Protocols, 1999.
+[11] Marcelo Fiore & Martı́n Abadi (2001): Computing Symbolic Models for Verifying Cryptographic Protocols.
+     In: Computer Security Foundations Workshop.
+[12] Sibylle Fröschle (2008): Adding Branching to the Strand Space Model. In: Proceedings of EXPRESS’08,
+     ENTCS. Elsevier.
+[13] Joshua D. Guttman (2001): Security Goals: Packet Trajectories and Strand Spaces. In: Roberto Gorrieri &
+     Riccardo Focardi, editors: Foundations of Security Analysis and Design, LNCS 2171. Springer Verlag, pp.
+     197–261.
+[14] Joshua D. Guttman (2009): Cryptographic Protocol Composition via the Authentication Tests. In: Luca
+     de Alfaro, editor: Foundations of Software Science and Computation Structures (FOSSACS), number 5504
+     in LNCS. Springer, pp. 303–317.
+[15] Joshua D. Guttman (2009): Transformations between Cryptographic Protocols. In: P. Degano & L. Viganò,
+     editors: Automated Reasoning in Security Protocol Analysis, and Workshop on Issues in the Theory of
+     Security (ARSPA-WITS), number 5511 in LNCS. Springer, pp. 107–123.
+[16] Joshua D. Guttman, Jonathan C. Herzog, John D. Ramsdell & Brian T. Sniffen (2005): Programming Cryp-
+     tographic Protocols. In: Rocco De Nicola & Davide Sangiorgi, editors: Trust in Global Computing, number
+     3705 in LNCS. Springer, pp. 116–145.
+[17] Gavin Lowe (1997): A Hierarchy of Authentication Specifications. In: 10th Computer Security Foundations
+     Workshop Proceedings. IEEE Computer Society Press, pp. 31–43.
+[18] Jonathan K. Millen & Vitaly Shmatikov (2001): Constraint Solving for Bounded-Process Cryptographic
+     Protocol Analysis. In: 8th ACM Conference on Computer and Communications Security (CCS ’01). ACM,
+     pp. 166–175.
+[19] Lawrence C. Paulson (1998): The Inductive Approach to Verifying Cryptographic Protocols. Journal of
+     Computer Security Also Report 443, Cambridge University Computer Lab.
+[20] Michaël Rusinowitch & Mathieu Turuani (2001): Protocol Insecurity with Finite Number of Sessions is NP-
+J.D. Guttman                                                                                                      65
+
+
+     Complete. In: Computer Security Foundations Workshop. pp. 174–. Available at http://csdl.computer.
+     org/comp/proceedings/csfw/2001/1146/00/11460174abs.htm.
+[21] Peter Selinger (2001): Models for an adversary-centric protocol logic. Electr. Notes Theor. Comput. Sci.
+     55(1). Available at http://www.elsevier.com/gej-ng/31/29/23/83/27/show/Products/notes/
+     index.htt#007.
+
+
+A     Messages and Protocols
+Messages are abstract syntax trees in the usual way:
+    1. Let ℓ and r be the partial functions such that for t = {|t1 |}t2 or t = tag t1 ˆt2 , ℓ(t) = t1 and r(t) = t2 ;
+       and for t ∈ A0 , ℓ and r are undefined.
+    2. A path p is a sequence in {ℓ, r}∗ . We regard p as a partial function, where hi = Id and cons( f , p) =
+       p ◦ f . When the rhs is defined, we have: 1. hi(t) = t; 2. cons(ℓ, p)(t) = p(ℓ(t)); and 3.
+       cons(r, p)(t) = p(r(t)).
+    3. p traverses a key edge in t if p1 (t) is an encryption, where p = p1 ⌢ hri⌢ p2 .
+    4. t0 is an ingredient of t, written t0 ⊑ t, if t0 = p(t) for some p that does not traverse a key edge in t.
+    5. t0 appears in t, written t0 ≪ t, if t0 = p(t) for some p.
+A message t0 originates at a node n1 if (1) n1 is a transmission node; (2) t0 ⊑ msg(n1 ); and (3) whenever
+n0 ⇒+ n1 , t0 6⊑ msg(n0 ).
+     In the tree model of messages, to apply a homomorphism, we walk through, copying the tree, but
+inserting α (a) every time an atom a is encountered, and inserting α (x) every time that an indeterminate
+x is encountered.
+
+Protocols. A protocol Π is a finite set of strands which includes Lsn[k], representing the roles of the
+protocol.
+    A principal executing a role such as the initiator’s role in Fig. 1 may be partway through its run;
+for instance, it may have executed the first transmission node without “yet” having executed its second
+event, the reception node.
+Definition A.1 Node n is a role node of Π if n lies on some ρ ∈ Π.
+   Let n j be a role node of Π of the form n1 ⇒ . . . ⇒ n j ⇒ . . .. Node m j is an instance of n j if, for some
+homomorphism α , the strand of m j , up to m j , takes the form: α (n1 ) ⇒ . . . ⇒ α (n j ) = m j .
+That is, messages and their directions—transmission or reception—must agree up to node j. However,
+any remainders of the two strands beyond node j are unconstrained. They need not be compatible. When
+a protocol allows a principals to decide between different behaviors after step j, based on the message
+contents of their run, then this definition represents branching [12, 16]. At step j, one doesn’t yet know
+which branch will be taken.
+

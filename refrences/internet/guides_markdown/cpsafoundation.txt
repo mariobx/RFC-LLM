@@ -1,0 +1,493 @@
+     Strand Spaces with Channels and Rules
+              Joshua D. Guttman John D. Ramsdell
+                     The MITRE Corporation
+                       CPSA Version 4.4.8
+                            February 27, 2026
+
+
+1    Introduction
+This paper describes the formalism on which cpsa4 is built. Section 2 de-
+scribes an implementation-oriented specification of strand spaces. It is based
+on the presentation for cpsa2 in [3], but modified so as to reflect changes
+implemented in cpsa4. In particular, channels and facts have been added to
+bundles and skeletons, and rules have been added to protocols.
+    In previous versions of cpsa, a communication event is either the trans-
+mission or reception of a message. In this version of cpsa, a communication
+event may optionally occur on a channel. If during a run of a protocol, the
+adversary never transmits a message on the channel, the channel is considered
+authenticated. Dually, if during a run of a protocol, the adversary never re-
+ceives a message on the channel, the channel is considered to be confidential.
+A channel that is both authenticated and confidential is secure.
+    The messages without an associated channel—which are thus certainly
+not assumed to be authenticated or confidential—will be called plain mes-
+sages.
+    Section 3 presents the strand spaces rule language that is used for rewrit-
+ing. Protocols have been redefined so that they include both roles and rules.
+
+Notation. A finite sequence f is a function from an initial segment of the
+natural numbers. The length of f is |f |, and f = ⟨f (0), . . . , f (n − 1)⟩ for
+n = |f |. When f is a sequence, we will write g : |f | → S to mean that
+dom(g) = {i : 0 ≤ i < |f |} and ran(g) = S. Thus, in effect we are regarding
+
+                                       1
+each natural number i as being the set of natural numbers smaller than it,
+like the ordinals of ZF set theory.
+    If S is a set, then S ∗ is the set of finite sequences over S, and S + is the
+non-empty finite sequences over S. The prefix of sequence f of length n
+is f † n. For partial function g, g(x)↓ asserts g is defined at x.
+
+
+2      Implementation-Oriented Strand Spaces
+This section describes the formalism on which cpsa is based. The parameters
+to this strand space theory are:
+    1. a set of messages Alg. The set of messages Alg is the carrier set (or
+       domain) of a term algebra.
+    2. a set of basic values BV ⊂ Alg. Keys and nonces are examples of basic
+       values.
+    3. a carried by relation ⊑ ⊆ Alg × Alg. Intuitively, a message t0 is carried
+       by t1 , written t0 ⊑ t1 , if it is possible to extract t0 from t1 for someone
+       who knows the relevant decryption keys.
+    4. a set of application specific predicate symbols P .
+
+Example Message Algebra. The signature of one possible order-sorted [1]
+message algebra is in Figure 1. The algebra is the simplification of the cpsa
+message algebra used by the examples in this paper. In an order-sorted
+algebra, each variable x has a unique sort S. The declaration of x is x : S.
+    The algebra of interest is the order-sorted quotient term algebra generated
+by a set of declarations X. The message algebra AlgX is the carrier set for
+sort M. The set of basic values BVX is the union of the carrier sets for sorts
+A, S, and D. We write t : S to say that term t is in the carrier set of sort S.
+    A variable has no intrinsic sort associated with it. Variables occur in the
+context of a set of declarations, and a declaration for the variable specifies its
+sort. The set of variables that occur in term t is Vars(t). A variable declared
+to be of sort M is called a message variable.
+    A message t0 is carried by t1 , written t0 ⊑ t1 , if t0 can be derived from t1
+given the right set of keys. That is: ⊑ is the smallest reflexive, transitive
+relation such that
+                t0 ⊑ (t0 , t1 ),   t1 ⊑ (t0 , t1 ),   and   t0 ⊑ {|t0 |}t1 .
+
+                                               2
+       Sorts:      M, A, S, D
+       Subsorts:   A < M, S < M, D < M
+       Operations: (·, ·)          : M×M→M      Pairing
+                   {| · |}(·) : M × A → M       Asymmetric encryption
+                   {| · |}(·) : M × S → M       Symmetric encryption
+                   (·)−1           :A→A         Asymmetric key inverse
+                   τ0 , τ1 , . . . : M          Tag constants
+       Equations: (x−1 )−1 = x for x : A
+
+                 Figure 1: Simple Crypto Algebra Signature
+
+         Extra Sorts: C, CM
+         Operations: [·] : M → CM                 Plain messages
+                      [·, ·] : C × M → CM         Channeled messages
+
+       Figure 2: Channel Signature additions to a Message Signature
+
+Channel Messages Some messages are transmitted over channels. A
+channel is a variable of sort C. For c : C and t : M, [c, t] associates message t
+with channel c, and is called a channeled message. A message t transmitted
+without a channel is written [t], and is called a plain message. Fig. 2 shows
+the additions to a message signature required to support channels. The sort
+associated with a channeled or plain message is CM. The carrier set for that
+sort is Alg. Variables of sort CM are forbidden by the implementation.
+    The carried by relation is extended to channel messages as follows:
+
+                             t ⊑ [c, t] and t ⊑ [t].
+
+
+Strand Spaces. A run of a protocol is viewed as an exchange of channel
+messages by a finite set of local sessions of the protocol. Each local session
+is called a strand. The behavior of a strand, its trace, is a finite non-empty
+sequence of events. An event is either a channel message transmission or a
+channel message reception. An event transmitting m ∈ Alg is written as +m;
+and an event receiving channel message m is written as −m. If e = ±m is
+                                                                      +
+an event, then msg(e) = m. The set of traces over Alg is (±Alg) . When
+the context is clear, the plain message [t] may be abbreviated by t.
+
+
+                                       3
+  1. A message t originates in trace a at index i iff a(i) = +t1 , t ⊑ t1 , and
+     for all j < i, t ̸⊑ msg(a(j)).
+
+  2. A message t is acquired in trace a at index i iff a(i) = −t1 , t ⊑ t1 , and
+     for all j < i, t does not occur in msg(a(j)).
+
+  3. A variable x appears in trace a at index i iff x occurs in msg(a(i)), and
+     for all j < i, x does not occur in msg(a(j)).
+
+  4. For algebra homomorphism σ,
+
+                σ ◦ ⟨±m0 , . . . , ±mn−1 ⟩ = ⟨±σ(m0 ), . . . , ±σ(mn−1 )⟩,
+
+     so that (σ ◦ c) † h = σ ◦ (c † h) = σ ◦ c † h.
+
+  5. For traces a1 , a2 , a1 ⋆ a2 = σ if σ(a2 † |a1 |) = a1 , and the domain of σ is
+     the variables that occur in a2 † |a1 |. When a1 ⋆ a2 is defined, a1 is said
+     to be an instance of a2 .
+
+  6. A strand space is a set Σ of values, which we will call the strands of Σ,
+                                                         +
+     equipped with a trace-of operator tr : Σ → (±Alg) .
+
+To avoid excess notation, we generally suppress tr and regard Σ as the strand
+space. We write dom(Σ) for the underlying set of strands, and Σ(s) for tr (s)
+when s ∈ dom(Σ).
+    The set of strands dom(Σ) that cpsa uses are of a specific kind. They are
+finite initial segments of the natural numbers, so that Σ is in fact a sequence
+of traces.
+    Message events occur at nodes in a strand space. For each strand s, there
+is a node for every event in Σ(s).
+  7. The nodes of strand space Σ are
+
+                      N (Σ) = {(s, i) | s ∈ dom(Σ), i < |Σ(s)|}
+
+     and the event at a node is evt Σ (s, i) = Σ(s)(i).
+
+  8. The message at a node n, written msg Σ (n), is msg(evt Σ (n)).
+
+  9. The strand succession relation ⇒ is defined by
+
+               (s, i) ⇒ (s, i + 1) iff s ∈ dom(Σ) and i < |Σ(s)| − 1.
+
+                                         4
+ 10. A basic value t is non-originating in a strand space Σ, written non(Σ, t),
+     iff it originates on no strand in Σ and each variable in t occurs in Σ.
+
+ 11. A basic value t uniquely originates at node n in strand space Σ, written
+     uniq(Σ, t, n), iff t originates at index i in s ∈ dom(Σ), n = (s, i), and t
+     originates on no other strand in dom(Σ).
+
+ 12. An atomic formula p(t1 , . . . , tm ) is a fact of Σ iff
+
+       (a) p ∈ P is a predicate symbol,
+      (b) ti ∈ Alg ∪ dom(Σ), and
+       (c) each variable that occurs in ti occurs in Σ.
+
+Definition 1 (Bundle). Let B = (Σ, →, ω), where →⊆ N (Σ) × N (Σ) and ω
+is a set of atomic formulas. Relation → is called the communication relation.
+B is a bundle iff:
+
+  1. n0 → n1 implies evt Σ (n0 ) = +t and evt Σ (n1 ) = −t for some message t;
+
+  2. evt Σ (n1 ) = −t implies there exists a unique n0 such that n0 → n1 ;
+
+  3. N (Σ), → ∪ ⇒ forms a well-founded directed graph; and
+
+  4. for all f ∈ ω, f is a fact of Σ.
+
+Let ≺B = (→ ∪ ⇒)+ , the transitive closure of the edges.
+
+    The transitive closure ≺B is an irreflexive relation on N (Σ). This transi-
+tive, irreflexive relation specifies the causal ordering of nodes in a bundle. A
+transitive irreflexive binary relation is also called a strict (partial) order.
+    Since cpsa manipulates only finite strand spaces, and acyclicity is equiv-
+alent to well-foundedness for finite graphs, cpsa just checks acyclicity. Thus,
+in B = (Σ, →, ω), the nodes form the vertices of a directed acyclic graph,
+whose edges represent communications → and strand succession ⇒ in Σ.
+
+Lemma 1. Let B = (Σ, →, ω) be a bundle. Then ≺B is a well-founded strict
+partial order.
+   If S ⊆ N (Σ) is non-empty, then S has ≺B -minimal members.
+
+ 13. The strand space of bundle B is written str (B), its communication
+     relation is →B , and the facts are fac(B), so B = (str (B), →B , fac(B)).
+
+                                         5
+Runs of Bare Protocols. In a run of a bare protocol, each strand is an
+instance of a role of that protocol. We view adversarial strands as constrained
+by roles, just like compliant, non-adversarial strands. Recall that when f is
+a sequence, g : |f | → S means that dom(g) = {i : 0 ≤ i < |f |}.
+
+Definition 2 (Role, Bare Protocol).
+
+  1. A role is of the form rX (a), where
+
+      X is the parameters of the role, the declarations used to generate its
+          algebra.
+                 +
+      a ∈ (±Alg)X is the trace of the role;
+
+      satisfying the following property:
+
+       (a) every message variable is acquired on a, i.e. its first occurrence is
+           in a reception event of a;
+
+  2. The listener role is lsn = r{x:M} (⟨−x, +x⟩).
+
+  3. A bare protocol is a set of roles that includes the listener role.
+
+    Notice that in one role, variable k may be declared to be of sort A, and
+in another, of sort S.
+
+Definition 3. A strand s ∈ Σ is an instance of a role rY (a) in strand space Σ
+over AlgX iff the function inst(Σ, s, rY (a)) is defined, and inst(Σ, s, rY (a)) =
+σ when
+
+  1. |Σ(s)| ≤ |a|;
+
+  2. σ ∈ AlgY → AlgX ; and
+
+  3. σ = Σ(s) ⋆ a.
+
+   We use the variables ρ, ρ′ , ρi , etc., to range over roles.
+
+
+
+
+                                         6
+             create = ⟨+x⟩                     x : A or x : S or x : D
+               pair = ⟨−x, −y, +(x, y)⟩        x, y : M
+                sep = ⟨−(x, y), +x, +y⟩        x, y : M
+              aenc = ⟨−x, −k, +{|x|}k ⟩        x : M and k : A
+               adec = ⟨−{|x|}k , −k −1 , +x⟩   x : M and k : A
+               senc = ⟨−x, −k, +{|x|}k ⟩       x : M and k : S
+               sdec = ⟨−{|x|}k , −k, +x⟩       x : M and k : S
+            unchan = ⟨−[c, t], +[t]⟩           c : C and t : M
+              chan = ⟨−[t], +[c, t]⟩           c : C and t : M
+
+                         Figure 3: Adversary Roles
+
+Adversary Model. The roles of adversarial behavior are in Figure 3.
+There are three create roles, one for each basic sort. In fact, the defining
+characteristic of a basic value is that it denotes the set of messages the ad-
+versary can create out of thin air, consistent with origination assumptions.
+    The adversary roles form the bare protocol Adv. We are always interested
+in bare protocols that contain these roles. Thus, given a set Π of roles that
+represent the legitimate, compliant behaviors of principals in some (real-
+world) bare protocol, we will refer to the roles of Π as the regular behaviors,
+and to strands that instantiate them as regular strands. We will be interested
+in the bundles that are executions of the “penetrated” bare protocol Π+ =
+Π ∪ Adv.
+
+ 14. A bundle B = (Σ, →, ω) is a run of bare protocol Π iff, for every s ∈
+     dom(Σ), there is a role ρ ∈ Π+ = Π ∪ Adv such that inst(Σ, s, ρ)↓.
+
+ 15. Bnd (Π) is the set of bundles that are runs of bare protocol Π.
+
+ 16. For B ∈ Bnd (Π), ϱ ∈ dom(str (B)) → Π+ is a role assignment if for
+     every s ∈ dom(str (B)), inst(str (B), s, ϱ(s))↓.
+
+Lemma 2. If B ∈ Bnd (Π) and x is a message variable, then x ̸∈ Vars(B).
+
+Ensuring this is the purpose of requiring that in each role, every message
+variable in the trace is acquired.
+
+Definition 4. For bundle B = (Σ, →, ω), channel c is authenticated in B,
+written auth(B, c), iff no strand in Σ is a full length instance of the chan
+
+
+                                       7
+adversary role instantiated with c. Dually, channel c is confidential in B,
+written conf (B, c), iff no strand in Σ is a full length instance of the unchan
+adversary role instantiated with c.
+
+Skeletons. A skeleton represents part of the regular behavior in a set of
+bundles. It consists of a strand space, a partial ordering on the nodes, as-
+sumptions about uncompromised keys and about freshly generated basic val-
+ues, and a set of facts.
+Definition 5. A = kX (Π, Σ, ≺, ν, υ, ζ, χ, ω) is a skeleton of bare protocol Π
+over declarations X iff:
+  1. A variable is declared in X iff it occurs in Σ.
+
+  2. For all s < |Σ|, there is some ρ ∈ Π such that inst(Σ, s, ρ)↓;
+
+  3. ≺ is a strict (partial) order on N (Σ);
+
+  4. for all t ∈ ν, (i) t ∈ BVX ; and (ii) for all n ∈ N (Σ), t ̸⊑ msg(n);
+
+  5. for all (t, n) ∈ υ, (i) t ∈ BVX ; (ii) for some n = (s, i), t originates in
+     Σ(s) at i; and (iii) t originates at no other node in N (Σ).
+
+  6. for all c ∈ ζ, c is channel that occurs in strand space Σ.
+
+  7. for all c ∈ χ, c is channel that occurs in strand space Σ.
+
+  8. for all f ∈ ω, f is a fact of Σ.
+    We regard skeletons as giving us partial information about a set of bun-
+dles; these are the executions that it is compatible with. This notion of com-
+patibility is determined by the the notion of a homomorphism, or information-
+preserving map between skeletons.
+Definition 6 (Homomorphism). Let A0 = kX (Π, Σ0 , ≺0 , ν0 , υ0 , ζ0 , χ0 , ω0 )
+and A1 = kY (Π, Σ1 , ≺1 , ν1 , υ1 , ζ1 , χ1 , ω1 ) be skeletons of bare protocol Π.
+   H = (ϕ, σ) is a skeleton homomorphism, written H : A0 ·→ A1 , if ϕ and σ
+are maps with the following properties:
+  1. ϕ : dom(Σ0 ) → dom(Σ1 ) maps strands of A0 into those of A1 . We
+     require |Σ0 (s)| ≤ |Σ1 (ϕ(s))|, and we regard ϕ also as mapping nodes by
+     the rule ϕ((s, i)) = (ϕ(s), i);
+
+                                        8
+  2. σ : AlgX → AlgY is a message algebra homomorphism;
+
+  3. for all n ∈ N (Σ0 ), σ(evt Σ0 (n)) = evt Σ1 (ϕ(n));
+
+  4. n0 ≺0 n1 implies ϕ(n0 ) ≺1 ϕ(n1 );
+
+  5. σ(ν0 ) ⊆ ν1 ;
+
+  6. (t, n) ∈ υ0 implies (σ(t), ϕ(n)) ∈ υ1 ; and
+
+  7. σ(ζ0 ) ⊆ ζ1 ;
+
+  8. σ(χ0 ) ⊆ χ1 ;
+
+  9. p(t1 , . . . , tm ) ∈ ω0 implies p(δ(t1 ), . . . , δ(tm )) ∈ ω1 , where
+                                       
+                                          σ(t) if t ∈ Alg
+                                δ(t) =
+                                          ϕ(t) if t ∈ dom Σ.
+
+    Property 6 says the node at which a basic value is declared to be uniquely
+originating is preserved by homomorphisms.
+
+Definition 7 (Skeleton of Bundle).
+
+  1. Suppose that B is a bundle of bare protocol Π+ = Π ∪ Adv, and A =
+     kX (Π, Σ, ≺, ν, υ, ζ, χ, ω) is a Π-skeleton. A is a skeleton of B, written
+     A ∈ skels(B), iff the strands of B can be permuted to form bundle B
+     such that Σ is a prefix of str (B), and:
+
+      (a) the strands not in Σ are adversary strands;
+      (b) ≺ = ≺B ∩(N (Σ) × N (Σ));
+      (c) ν = {t | non(B, t) and each variable in t occurs in Σ};
+      (d) υ = {(t, n) | uniq(B, t, n) ∧ n ∈ N (Σ)}; and
+      (e) ζ = {c | auth(B, c) and variable c occurs in Σ};
+       (f ) χ = {c | conf (B, c) and variable c occurs in Σ};
+      (g) ω = {f ∈ fac(B) | f is a fact of Σ}.
+
+  2. [[A]] = {B : ∃B ∃H B ∈ skels(B) ∧ H : A ·→ B}.
+
+
+
+                                             9
+3      Strand Spaces Rule Language
+This section describes an order-sorted first-order language intimately tied to
+strand spaces with protocols. Given a bare protocol Π, the strand spaces
+rule language is written L(Π). The signature of L(Π) includes the sorts,
+sort orderings, and the function symbols of the protocol’s message algebra
+signature, such as the one in Figure 1. It also includes the strand sort Z, and
+no other additions.
+    The predicates in the signature of L(Π) will now be described. For each
+role rX (a) ∈ Π, there are height and parameter predicates. There are |a|
+unary height predicates Π[rX (a), h] : Z with 1 ≤ h ≤ |a|. Relative to skele-
+ton A, Π[ρ, h](z) asserts that strand z in A is an instance of ρ and has a
+height of at least h. For each parameter x : S ∈ X, there is a binary param-
+eter predicate Π[rX (a), x] : Z × S. Relative to skeleton A, Π[ρ, x](z, t) asserts
+that strand z in A is an instance of ρ in which x is instantiated as t. If x
+appears in a and index i, the height of strand z must be greater than i.
+    For each base sort B, there are unary predicates non : B and uniq : B.
+non(t) asserts t is non-originating in A and uniq(t) asserts t uniquely origi-
+nates in A.
+    There exists two predicates about channels, auth : C and conf : C. auth(c)
+asserts c is authenticated in A and conf(c) asserts c is confidential in A.
+    Let m be the length of the longest role in Π. There are m2 precedence
+predicates prec[i, j] : Z × Z for 0 ≤ i, j < m. prec[i, j](x, y) asserts that node
+(x, i) is before node (y, j) in A. There are 3m origin predicates uniq-at[i] :
+B × Z, with 0 ≤ i < m and B as before. uniq-at[i](t, z) asserts that t
+uniquely originates in A at node (z, i). For each fact predicate symbol p,
+fact[p](t1 , . . . , tm ) asserts that p(t1 , . . . , tm ) is a fact of A. Finally, equality is
+binary.
+    To improve the readability of formulas to follow, we write prec(x, i, y, j)
+for prec[i, j](x, y), uniq-at(t, z, i) for uniq-at[i](t, z), and fact(p, t1 , . . . , tm ) for
+fact[p](t1 , . . . , tm ).
+
+Semantics of Strand Space Rule Formulas. When formula Φ is satis-
+fied in skeleton A with order-sorted variable assignment α, we write A, α |= Φ.
+For x : S ∈ X, α(x) is in the carrier set of AlgX for sort S. For x : Z,
+α(x) ∈ dom(Σ). We write ᾱ when α is extended to terms in the obvious way.
+When sentence Φ is satisfied in skeleton A, we write A |= Φ. The semantics
+of atomic formulas is given in Figure 4.
+
+                                              10
+Let A = kX (Π, Σ, ≺, ν, υ, ζ, χ, ω).
+
+   • A, α |= Π[rX (a), h](z) iff |Σ(s)| ≥ h and Σ(s) † h ⋆ a↓, where s = α(z).
+
+   • A, α |= P [rX (a), x](z, t) iff |Σ(s)| ≥ h, Σ(s)†h⋆a = σ, and σ(x) = ᾱ(t),
+     where s = α(z), x appears in a at index i, and h = i + 1.
+
+   • A, α |= prec(x, i, y, j) iff (α(x), i) ≺ (α(y), j).
+
+   • A, α |= non(t) iff ᾱ(t) ∈ ν.
+
+   • A, α |= uniq(t) iff (ᾱ(t), n) ∈ υ for some node n.
+
+   • A, α |= uniq-at(t, z, i) iff (ᾱ(t), (α(z), i)) ∈ υ.
+
+   • A, α |= auth(c) iff α(c) ∈ ζ.
+
+   • A, α |= conf(c) iff α(c) ∈ χ.
+
+   • A, α |= fact(p, t1 , . . . , tm ) iff p(ᾱ(t1 ), . . . , ᾱ(tm )) ∈ ω.
+
+   • A, α |= y = z iff ᾱ(y) = ᾱ(z).
+
+                Figure 4: Strand Space Rule Formula Semantics
+
+
+
+
+                                               11
+Rule Syntax. Given a bare protocol Π, a rule is an order-sorted first-
+order sentence in L(Π) with a restricted syntax. A rule is an implication in
+which the antecedent is a conjunction of atomic formulas, and the conclusion
+is a disjunction of possibly existentially quantified conjunctions of atomic
+formulas.
+
+Definition 8 (Rule). A rule is a sentence of the form
+                                _
+                        ∀⃗x Φ ⊃    ∃⃗yi Ψi , where
+                                    i
+
+  1. Φ and Ψi are conjunctions of atomic formulas,
+
+  2. each variable that occurs free in ∨i ∃⃗yi Ψi , occurs in Φ,
+
+  3. each strand variable in ⃗yi occurs in a height formula in Ψi , and
+
+  4. each non-strand variable in ⃗yi occurs in a parameter formula in Ψi .
+
+Definition 9 (Protocol). Υ = (Π, A) is a protocol iff Π is a bare protocol
+and A is a set of rules in L(Π).
+
+Definition 10 (Run of Protocol). Bundle B is a run of protocol Υ = (Π, A)
+iff B is a run of bare protocol Π and for all A ∈ skels(B) and rules Φ ∈ A,
+A |= Φ.
+
+   The strand spaces rule language is a descendent of the security goal lan-
+guage [2]. They are very similar, but differ in several ways.
+
+  1. Pairing and encryption is purposely omitted from the security goal
+     language.
+
+  2. The security goal language has variables that range over nodes rather
+     than strands as is the case for the strand spaces rule language.
+
+  3. Node variables that occur in the antecedent of a security goal sentence
+     occur in a height predicate in the antecedent.
+
+  4. Non-node variables that occur in the antecedent of a sentence occur in
+     a parameter predicate in the antecedent.
+
+  5. Facts are not part of the security goal language.
+
+                                        12
+References
+[1] Joseph A. Goguen and Jose Meseguer. Order-sorted algebra I: Equational
+    deduction for multiple inheritance, overloading, exceptions and partial
+    operations. Theoretical Computer Science, 105(2):217–273, 1992.
+
+[2] Joshua D. Guttman. Establishing and preserving protocol security goals.
+    Journal of Computer Security, 22(2):201–267, 2014.
+
+[3] John D. Ramsdell, Joshua D. Guttman, Moses D. Liskov, and Paul D.
+    Rowe. The CPSA Specification: A Reduction System for Searching for
+    Shapes in Cryptographic Protocols. The MITRE Corporation, 2009. In
+    https://github.com/mitre/cpsaexp source distribution, doc directory.
+
+
+
+
+                                    13
+

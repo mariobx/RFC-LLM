@@ -1,0 +1,702 @@
+          Cryptographic Protocol Analysis and
+         Compilation Using CPSA and Roletran
+
+                                 John D. Ramsdell(B)
+
+                  The MITRE Corporation, Bedford, MA 01730, USA
+                              ramsdell@mitre.org
+
+
+
+       Abstract. The Cryptographic Protocol Shapes Analyzer cpsa deter-
+       mines if a cryptographic protocol achieves authentication and secrecy
+       goals. It can be diﬃcult to ensure that an implementation of a protocol
+       matches up with what cpsa analyzed, and therefore be sure the imple-
+       mentation achieves the security goals determined by cpsa.
+          Roletran is a program distributed with cpsa that translates a role in
+       a protocol into a language independent description of a procedure that is
+       easily translated into an existing computer language. This paper shows
+       how we ensure the procedure produced by Roletran is faithful to strand
+       space semantics and therefore achieves the security goals determined by
+       cpsa.
+          Real implementations of cryptographic functions make use of proba-
+       bilistic encryption, but cpsa will conclude that two encryptions are the
+       same if they are constructed with the same plaintext and key. The paper
+       concludes by showing how we ensure that executions of generated code
+       that make use of probabilistic encryption achieve the goals determined
+       by cpsa.
+
+
+1    Introduction
+The Cryptographic Protocol Shapes Analyzer (cpsa) [8] attempts to enumerate
+all essentially diﬀerent executions possible for a cryptographic protocol. We call
+them the shapes of the protocol. Naturally occurring protocols have only ﬁnitely
+many, indeed very few shapes. Authentication and secrecy properties are easy
+to determine from them, as are attacks and anomalies.
+    For each input problem, the cpsa program is given some initial behavior,
+and it discovers what shapes are compatible with it. Normally, the initial behav-
+ior is from the point of view of one participant. The analysis reveals what the
+other participants must have done, given the participant’s view. The search is
+complete, i.e. we proved every shape can in fact be found in a ﬁnite number of
+steps, relative to a procedural semantics of protocol roles [7].
+This paper is dedicated to Joshua Guttman in gratitude for all the wonderful collabora-
+tions we shared throughout our careers. From the first rigorous verification of the imple-
+mentation of a programming language in actual use (Scheme via the vlisp project [6]),
+to cryptographic protocol analysis ( cpsa), it has been a joy to work with you.
+
+c The Author(s) 2021
+D. Dougherty et al. (Eds.): Guttman Festschrift, LNCS 13066, pp. 355–369, 2021.
+https://doi.org/10.1007/978-3-030-91631-2_20
+356       J. D. Ramsdell
+
+    When we say a role has procedural semantics, we mean that there exists a
+program that implements the intent of the speciﬁed role. Until now, establish-
+ing the correspondence between a cpsa role and its implementation has been
+informal. It requires a programmer that is well versed in the semantics of cpsa.
+As the messages used in roles become more complex, the likelihood of errors in
+the correspondence increases, even when employing the best programmer/cpsa
+expert. The Roletran compiler automates the translation of a cpsa role into a
+procedure that is easily translated into the source for an existing programming
+language, in our case, Rust. It uses the same algorithms implemented in cpsa to
+ensure a faithful translation. But how do we know its translations are correct?
+    Section 4 presents the abstract semantics of procedures used to guide our
+implementation of a runtime system for Roletran generated programs. It includes
+a deﬁnition of correctness, Deﬁnition 8, that precisely deﬁnes whether the output
+of Roletran correctly implements the role it is given.
+    The semantics presented in Sect. 4 has been speciﬁed in Coq [1]. An attempt
+was made to specify the Roletran compiler as a function in Coq and prove that
+every output of Roletran correctly implements the role it is given. However,
+the proofs turned out to be too complex and challenging, and the attempt was
+abandoned.
+    As a fallback, one can present Coq with the runtime semantics, a role, and
+procedure, and when the procedure is the output of Roletran, Coq will automat-
+ically prove it correctly implements the role. The Coq automation succeeds on
+protocols of substantial size. Thus for high-assurance applications, we provide a
+means to validate compiler input/output pairs in lieu of verifying the compiler
+algorithm.
+    There is one loose end in what might seem to be a tidy story at this
+point. Real implementations of cryptographic functions make use of probabilistic
+encryption. This means that there may be several bit patterns that correspond
+to one encryption term in cpsa. If the compiler generates code that asserts that
+two encryptions are equal, the assertion might fail at runtime if the two encryp-
+tions diﬀer only because of the randomness used to generate them. To explore
+these issues, a more concrete semantics has been deﬁned that models randomness
+in encryptions. The paper concludes by showing that
+1. the concrete semantics is faithful to the abstract semantics, in that for every
+   run of the concrete semantics, there is a corresponding run of the abstract
+   semantics, and
+2. the concrete semantics is adequate with respect to the abstract semantics,
+   in that for every run of the abstract semantics and choice of random values,
+   there is a corresponding run of the concrete semantics.
+      Therefore, probabilistic encryption is handled correctly.
+                                        ∗∗∗
+   The Roletran compiler and supporting Coq proofs were written by the author
+and the sources are available on GitHub [8]. The sources contain about 5800 lines
+of Coq scripts and the Intro module presents an overview of the work.
+                           Cryptographic Protocol Analysis and Compilation        357
+
+    There have been a variety of systems that compile high-level descriptions of
+protocols into executable code [2,5]. To our knowledge, this is the ﬁrst example
+of a compiler that uses the input of a cryptographic protocol analyzer as its sole
+input and honors its semantics.
+
+Notation. A ﬁnite sequence f is a function from an initial segment of the natural
+numbers. The length of f is |f |, and f = f (0), . . . , f (n − 1) for n = |f |. The
+sequence x::f is x, f (0), . . . , f (n−1). The concatenation of sequences f1 and f2
+is f1  f2 .
+    If S is a set, then S ∗ is the set of ﬁnite sequences over S, and S + is the
+                                                                   →
+                                                                   −
+non-empty ﬁnite sequences over S. If S is a ﬁnite set, then S is some injective
+sequence that is onto S. That is, it is a sequence that contains every element in
+S without duplicates.
+    Suppose g : X  Y is a ﬁnite partial function.
+                                             
+                                               y    if z = x,
+                          g[x → y](z) =
+                                               g(z) otherwise.
+
+We use ∅ to denote the ﬁnite partial function that has an empty domain.
+
+
+2    Message Algebras
+
+This section describes the formalism on which cpsa message algebras are based.
+The parameters to an algebra are:
+
+1. a set of messages Alg. The set of messages Alg is the carrier set (or domain)
+   of a term algebra.
+2. a set of basic values BV ⊂ Alg. Keys and nonces are examples of basic values.
+3. a carried by relation ⊆ Alg × Alg. Intuitively, a message t0 is carried by t1
+   if it is possible to extract t0 from t1 by someone who knows the relevant
+   decryption keys.
+
+Example Message Algebra. The signature of one possible order-sorted [4] message
+algebra is in Fig. 1. The algebra is the simpliﬁcation of the cpsa message algebra
+used by the examples in this paper.
+     In an order-sorted algebra, each variable x has a unique sort S. The declara-
+tion of x is x : S.
+     The algebra of interest is the order-sorted quotient term algebra generated by
+a set of declarations X. The message algebra AlgX is the carrier set for sort M.
+The set of basic values BVX is the union of the carrier sets for sorts A, S, and D.
+The carrier set for sort A contains the algebra’s asymmetric key pairs. We write
+t : S to say that term t is in the carrier set of sort S.
+     A variable has no intrinsic sort associated with it. The declarations that
+generate an algebra determine the sort of variables that occur within terms of
+the algebra. A variable declared to be of sort M is called a message variable.
+358     J. D. Ramsdell
+
+                Sorts:      M, A, S, D
+                Subsorts: A < M, S < M, D < M
+                Operations: (·, ·)          : M × M → M Pairing
+                            {| · |}(·) : M × M → M Encryption
+                            #               :M→M        Hash
+                            (·)−1           :M→M        Key inverse
+                            τ0 , τ1 , . . . : M         Tag constants
+                Equations: (x−1 )−1 = x for x : A; x−1 = x otherwise
+
+                      Fig. 1. Simple crypto algebra signature
+
+
+    The Simple Crypto Algebra is interesting because like cpsa’s message alge-
+bra, any message can be used as a key when constructing an encryption, with
+the exception of a message variable. The reason for the exception is that message
+variable x could be uniﬁed with any basic value, and so what equation applies
+to x−1 ?
+    Each element of the message algebra is a set of terms. The canonical represen-
+tative of each element is the term with the fewest number of occurrences of the
+                     −1
+inverse operation (·) . Thus when x is a variable, the canonical representative
+of the algebra element that contains
+                                          −1 −1
+                                   ((x−1 )   )
+
+is x−1 if x : A, and x otherwise. Message t0 occurs in t1 iﬀ the canonical repre-
+sentative of t0 is a subterm of the canonical representative of t1 . In what follows,
+we conﬂate each algebra element with its canonical representative.
+Definition 1 (Encryption free terms). Term t is encryption free, written
+enc f ree t, iﬀ no encryption term occurs in t.
+    A message t0 is carried by t1 , written t0   t1 , if t0 can be derived from t1
+given the right set of keys. That is: is the smallest reﬂexive, transitive relation
+such that
+                t0 (t0 , t1 ), t1 (t0 , t1 ),  and t0 {|t0 |}t1 .
+
+
+3     Strand Spaces with Channels
+The foundation of this work is a version of strand spaces in which messages are
+transmitted over channels. This change facilitates the translation of a role into
+code by adding a natural handle for performing input and output in generated
+code.
+    Recall that a strand space [9] is a ﬁnite map from a local session of a protocol,
+called a strand, to its behavior, called a trace. The addition of channels changes
+the standard deﬁnition of a trace, but otherwise leaves the basic deﬁnitions of
+strand space theory unchanged.
+                           Cryptographic Protocol Analysis and Compilation        359
+
+    A channel is a variable of sort C. For h : C and t : M, [h, t] associates message
+t with channel h, and is called a channeled message. The additions to a message
+signature required to support channels follow.
+
+             Extra Sorts: C, CM
+             Operation: [·, ·] : C × M → CM       Channeled messages
+
+The sort associated with a channeled message is CM. The carrier set for that
+sort is AlgX . Variables of sort CM are not allowed in X. The carrier set for sort
+                 
+C is ChnX . Let Alg X = AlgX ∪ ChnX .
+
+
+Traces and Roles. The behavior of a strand, its trace, is a ﬁnite non-empty
+sequence of events. An event is either a channeled message transmission or a
+channeled message reception. An event transmitting m ∈ AlgX is written as +m;
+and an event receiving channeled message m is written as −m. If e = ±[h, t] is
+                                                                       +
+an event, then msg(e) = t. The set of traces over AlgX is (±AlgX ) .
+    A message t originates in trace c at index i iﬀ c(i) = +[h, t1 ], t t1 , and for
+all j < i, t msg(c(j)). A message t uniquely originates in strand space Θ iﬀ
+it originates in exactly one trace in Θ. A message t is non-originating in strand
+space Θ iﬀ it originates in no trace in Θ.
+    Structure rX (c, i, o, u) is a role when
+                            +
+1. c is a trace in (±AlgX ) ,
+2. each variable declared in X occurs in c,
+3. i ∈ (BVX ∪ ChnX )∗ is a sequence of basic values and channels that specify
+   the inputs to the role,
+4. o ∈ Alg∗X is a sequence of terms that specify the outputs of the role, and
+5. u ⊆ BVX is a set of basic values that originate in c.
+The elements of i and o are a sequence because the order matters when generating
+a procedure from the role. Elements of u are freshly generated when the compiled
+role executes.
+
+Executions. An execution eY (c, i, o, u) is similar to a role except that its uniquely
+originating values are a sequence, not a set. The semantics of an execution
+requires that the fresh values be presented in the order in which they are con-
+sumed. Otherwise, the components of an execution must satisfy the same con-
+                  
+straints. Let φ : Alg     
+                      X → AlgY be a homomorphism, and φ̄ be the extension of φ
+to traces and sequences of terms in the obvious way.
+
+Definition 2 (Run of a role). Execution eY (c , i , o , u ) is a run of role
+rX (c, i, o, u) iﬀ there exists a homomorphism φ such that φ̄(c) = c , φ̄(i) = i ,
+φ̄(o) = o , φ̄(u) = u , and u is some sequence that contains the elements in u.
+
+   The strand spaces model of a protocol execution is a bundle. A bundle adds
+a communication relation to a strand space, and constraints that ensure that
+causality is respected in that every received message is transmitted previously
+360     J. D. Ramsdell
+
+in the bundle. In strand spaces, a Dolev-Yao adversary [3] is modeled by strands
+in a bundle along with the strands derived from the protocol being analyzed.
+    cpsa does not represent executions using bundles or adversarial behavior
+using strands. Instead, it uses a skeleton to represent a collection of bundles. A
+skeleton has a strand space, an ordering relation between events, and some orig-
+ination assumptions that must be satisﬁed by the strand space of the skeleton.
+A bundle is modeled by a skeleton if it contains all of the structure speciﬁed by
+the skeleton, in other words, there is a homomorphism from the skeleton into
+the bundle.
+    For each input problem, cpsa is given some initial behavior, and it discovers
+what shapes are compatible with it. A shape is a special kind of skeleton in that
+it contains enough protocol behavior to explain all message receptions in the
+presence of adversarial behavior, and it is minimal in that if there is a homo-
+morphism from another skeleton to the shape, then there is a homomorphism
+from the shape to the other skeleton.
+    To describe the executions of a protocol, each strand in a skeleton must be
+an instance of some role in the protocol, which is deﬁned to mean there is a
+homomorphism from the role to the strand. The deﬁnition of a run of a role
+codiﬁes that link for procedure execution semantics.
+
+3.1   Unilateral Protocol Example
+The Unilateral Protocol is a very simple authentication protocol. It consists of
+two roles, an initiator and a responder. The initiator encrypts a freshly chosen
+nonce using the public key of the responder and sends it. The responder decrypts
+the encryption it receives using its private key, and transmits the plaintext. If the
+initiator receives the nonce it sent unencrypted, it concludes it is communicating
+with a responder that possesses the corresponding private key, assuming the
+private key has not been compromised. In the notation presented above, the
+protocol is speciﬁed as follows.
+Example 3 (Unilateral Protocol)
+             init = rh:C,n:D,k:A (+[h, {|n|}k ], −[h, n], h, k, n, {n})
+            resp = rh:C,n:D,k:A (−[h, {|n|}k ], +[h, n], h, k −1 , n, {})
+    Both the initiator and the responder use a message algebra generated by
+a channel h, a datum n, and an asymmetric key k. The trace of the initiator
+contains two events, a channeled message transmission followed by a channeled
+message reception. The inputs to the initiator are a channel and the public part
+of a key pair. The inputs to the responder are a channel and the private part
+of a key pair. The outputs produced by both roles is the single nonce n. The
+initiator freshly generates nonce n, and the responder freshly generates nothing.
+    cpsa determines that if an instance of an initiator role runs to completion,
+and the private part of the key pair is not compromised, i.e. is non-originating,
+then there must have been a corresponding run of the responder role that agrees
+with the initiator on the values of the nonce and the public key.
+                          Cryptographic Protocol Analysis and Compilation     361
+
+3.2   Channel Assumptions
+
+With the addition of channels to cpsa, skeletons now include additional kinds of
+assumptions besides origination assumptions. A channel can be assumed to be
+authenticated and/or conﬁdential. In a bundle, when a channel is authenticated,
+the adversary is not allowed to transmit a message on the channel, and when
+it is conﬁdential, the adversary is not allowed to received a message on the
+channel. The addition of channel assumptions allows interesting new analyses of
+protocols, but does not impact Roletran, so it will not be further discussed.
+
+
+4     Abstract Execution Semantics
+
+Roletran generates a procedure for each role in a protocol. To build an executable
+program, the procedure is trivially translated into source code for an existing
+programming language, in our case Rust. The code is compiled and linked with
+a runtime system. The implementer of the program provides a main routine that
+invokes the procedure with inputs that must be compatible with inputs of the
+translated role. We trust the implementor to do so.
+     When the program executes, it goes through state changes associated with
+each statement generated by Roletran. The abstract execution semantics speci-
+ﬁes an abstract view of properties of the states that must be preserved in order
+to be in compliance with the execution semantics stated in the previous section.
+     When the compiled translation of a role is executing, the runtime system
+for the source language maintains a binding between program variables and
+binary objects that represent message fragments. The abstract execution seman-
+tics models these bindings with a map from program variables to terms in the
+message algebra. This map is called an environment. The implementor of the
+runtime library must ensure that each binary object naturally abstracts into the
+corresponding term in the message algebra as speciﬁed by the current environ-
+ment.
+     A runtime system for a program provides two more capabilities, support for
+sending and receiving messages on channels, and freshly generating random val-
+ues. To model freshly generating random values, the abstract execution semantics
+maintains a sequence of basic values that is the source of randomness. Initially
+it is the sequence of uniquely originating values in an execution. The implemen-
+tor of the runtime library must ensure each binary object it creates naturally
+abstracts into the corresponding term in the message algebra as speciﬁed by the
+abstract execution semantics.
+     To model messaging on channels, the abstract execution semantics maintains
+a trace that initially is the trace in the execution. The implementor of the run-
+time library must ensure each binary object transmitted or received naturally
+abstracts into the corresponding event over the message algebra as speciﬁed by
+the abstract execution semantics.
+362    J. D. Ramsdell
+
+             ae :       Alg Y environment
+                           ∗
+                × (±AlgY ) input trace
+                      ∗
+                × AlgY        input fresh values
+                ×E            expression
+                × AlgY        value
+                           ∗
+                × (±AlgY ) output trace
+                × Alg∗Y       output fresh values
+
+
+                  ae(E, c, u, quot(τ ) , τ, c, u)                     (1)
+
+                 E(v1 ) = t1        E(v2 ) = t2
+                                                                      (2)
+             ae(E, c, u, pair(v1 , v2 ) , (t1 , t2 ), c, u)
+
+                  E(v1 ) = t1       E(v2 ) = t2
+                                                                      (3)
+             ae(E, c, u, encr(v1 , v2 ) , {|t1 |}t2 , c, u)
+                           E(v1 ) = t1
+                                                                      (4)
+                ae(E, c, u, hash(v1 ) , #t1 , c, u)
+
+                        E(v1 ) = (t1 , t2 )
+                                                                      (5)
+                  ae(E, c, u, frst(v1 ) , t1 , c, u)
+                        E(v1 ) = (t1 , t2 )
+                                                                      (6)
+                 ae(E, c, u, scnd(v1 ) , t2 , c, u)
+
+        E(v1 ) = {|t1 |}t2 E(v2 ) = t2 −1 enc free t2 −1
+                                                                      (7)
+               ae(E, c, u, decr(v1 , v2 ) , t1 , c, u)
+                            E(v1 ) = h
+                                                                      (8)
+             ae(E, −[h, t] :: c, u, recv(v1 ) , t, c, u)
+
+                   ae(E, c, t :: u, frsh , t, c, u)                   (9)
+
+                 Fig. 2. Abstract execution expression semantics
+
+
+    The output of the compiler is an executable procedure x(p, s), where p is
+a sequence of parameters and s is a sequence of statements. Each parameter
+is a program variable and its type, and is associated with an input when the
+procedure is invoked. A type is one of M, A, I, S, D, and C.
+    The code generated by the compiler is a sequence of statements. Let V be
+the syntactic category for program variables. The syntax of a statement is
+
+        S :: = V : T ← E | V ≈ V | invp(V, V) | send(V, V) | return(V ∗ )
+        T :: = M | A | I | S | D | C
+        E :: = quot(τ ) | pair(V, V) | encr(V, V) | hash(V)
+            | frst(V) | scnd(V) | decr(V, V) | recv(V) | frsh
+                               Cryptographic Protocol Analysis and Compilation              363
+
+                as :      AlgY input environment
+                             ∗
+                   × (±AlgY ) input trace
+                        ∗
+                   × AlgY      input fresh values
+                   ×S          statement
+                   ×      AlgY output environment
+                             ∗
+                   × (±AlgY ) output trace
+                        ∗
+                   × AlgY      output fresh values
+
+
+                ae(E, c1 , u1 , x, t, c2 , u2 ) chk (t, k)
+                                                                                     (10)
+             as(E, c1 , u1 , v : k ← x , E[v       t], c2 , u2 )
+
+               chk (t, M) always true
+               chk (t, A) iﬀ t is a variable of sort A
+               chk (t, I) iﬀ t−1 is a variable of sort A
+                                                                                     (11)
+               chk (t, S) iﬀ t is a variable of sort S
+               chk (t, D) iﬀ t is a variable of sort D
+               chk (t, C) iﬀ t is a variable of sort C
+                   E(v1 ) = E(v2 ) enc free E(v1 )
+                                                                                     (12)
+                    as(E, c, u, v1 ≈ v2 , E, c, u)
+
+                  E(v1 ) = E(v2 )−1 enc free E(v1 )
+                                                                                     (13)
+                  as(E, c, u, invp(v1 , v2 ) , E, c, u)
+                      E(v1 ) = h E(v2 ) = t
+                                                                                     (14)
+             as(E, +[h, t] :: c, u, send(v1 , v2 ) , E, c, u)
+
+                            as∗(E, , , , E )                                         (15)
+
+         as(E1 , c1 , u1 , x, E2 , c2 , u2 ) as∗(E2 , c2 , u2 , s, E3 )
+                                                                                     (16)
+                         as∗(E1 , c1 , u1 , x :: s, E3 )
+
+
+                    Fig. 3. Abstract execution statement semantics
+
+
+    At runtime, a program variable is associated with an element of a message
+algebra. This association is represented by an environment E :V  Alg    Y , a ﬁnite
+partial function. The semantics of a sequence of statements is speciﬁed using the
+                                                                                   ∗
+relation asret(E, c, u, s, o), where E is an environment, c is a trace in (±AlgY ) ,
+u is a sequence of fresh terms in Alg∗Y , s is a sequence of statements, and o is a
+sequence of outputs in Alg∗Y .
+
+                 as∗(E, c, u, s, E  ) E  ◦ v0 , v1 , . . . = t0 , t1 , . . .
+                                                                                           (17)
+                 asret(E, c, u, s return(v0 , v1 , . . .), t0 , t1 , . . .)
+
+The semantics of the remaining statements are given in Fig. 3. The semantics of
+expressions are given in Fig. 2. Note that Eq. 7, 12, and 13 make assertions that
+some terms must be free of encryptions. The purpose of these restrictions has to
+364       J. D. Ramsdell
+
+
+
+
+                           Fig. 4. Initiator procedure execution
+
+
+do with the correct handling of probabilistic encryption and will be explained in
+Sect. 7.
+    The intuition behind the semantics can be gleaned from the statement seman-
+tics as in Fig. 3. Think of an environment, trace, fresh values triple (E, c, u) as
+a state, and a statement as a label. Figure 3 speciﬁes a labeled transition sys-
+tem. It deﬁnes how the states evolve during the course of an execution. For a
+sameness test v1 ≈ v2  (Eq. 12), the state does not change. Execution halts
+if the test fails. For a send statement send(v1 , v2 ) (Eq. 14), only the trace is
+updated. For a bind statement v : k ← x (Eq. 10), all three components of the
+state are updated as determined by the expression semantics ae. The trace is
+changed only in response to a recv(v1 ) expression (Eq. 8), and a fresh value
+is consumed only in response to a frsh expression (Eq. 9). Sequences of state
+transitions are tied together in the natural way by as∗ (Eqs. 15 and 16). The
+asret predicate (Eq. 17) ensures that the ﬁnal statement in a procedure is a
+return statement, and that the outputs of the procedure are correctly retrieved
+from the ﬁnal environment.
+Definition 4 (Procedure execution). Let p = (v0 , k0 ), . . . , (vn−1 , kn−1 )
+and i = i0 , . . . , in−1 . Execution e = eY (c, i, o, u) is an execution of procedure
+x = x(p, s), written exec(x, e), iﬀ
+1. for all j < n, chk (ij , kj ), and
+2. asret(E, c, u, s, o), where E = ∅[v0 → i0 ] · · · [vn−1 → in−1 ].
+See Eq. 11 for the deﬁnition of chk .
+      Roletran generates the following procedures for the Unilateral Protocol.
+Example 5 (Unilateral Protocol Procedures)
+          initp = x((v0 , C), (v1 , A),      respp = x((v0 , C), (v1 , I),
+                    v2 : D ← frsh                        v2 : M ← recv(v0 )
+                    v3 : M ← encr(v2 , v1 )              v3 : D ← decr(v2 , v1 )
+                    send(v0 , v3 )                       send(v0 , v3 )
+                    v4 : D ← recv(v0 )                   return(v3 ))
+                    v2 ≈ v4
+                    return(v2 ))
+                             Cryptographic Protocol Analysis and Compilation            365
+
+   The execution inite = eh:C,n:D,k:A (+[h, {|n|}k ], −[h, n], h, k, n, n) is an
+execution of procedure initp. The state transitions caused by this execution of
+procedure initp are shown in Fig. 4.
+
+
+4.1   Correctness
+
+Definition 6 (Liveness). Procedure x is live for role r, iﬀ there exists an exe-
+cution e such that
+
+1. e is a run of r, and
+2. e is an execution of x.
+
+Definition 7 (Safety). Procedure x is safe for role r, iﬀ when
+
+1. e is an execution of x, then
+2. e is a run of r.
+
+Definition 8 (Correctness). Procedure x correctly implements role r, iﬀ x is
+live and safe for r.
+
+    The Coq scripts that come with Roletran automatically prove that the Uni-
+lateral Protocol procedures it generates correctly implement their respective
+roles.
+    Consider the case in which Roletran mistakenly omitted the sameness test
+(v2 ≈ v4 ) in the initiator procedure. The Coq scripts would determine that
+ec:C,n,n :D,k:A (+[h, {|n|}k ], −[h, n ], h, k, n, n) is an execution of procedure
+initp , but note that this execution violates the safety condition. The safety
+condition ensures that runs of a collection of procedures that correctly implement
+the roles of a protocol achieve the security goals of the protocol.
+
+
+5     A Runtime with Probabilistic Encryption
+
+This section presents message algebras, called concrete message algebras, that
+are very similar to the ones used by the abstract execution semantics. The only
+diﬀerence is the way in which they model encryption. The signature used by the
+previous algebras has one operation for encryption, {|(·)|}(·) (See Fig. 1), which
+suggests that two encryptions are the same if the plaintext and the key used to
+construct them are the same. This is not true for implementations of encryption
+in actual use. Instead, some randomness is added to an encryption during its
+construction in such a way that knowledge of the randomness is not needed to
+recover the plaintext by someone in possession of the decryption key.
+366       J. D. Ramsdell
+
+
+
+
+                      Fig. 5. Concrete crypto algebra signature
+
+
+    Figure 5 shows the signature used for concrete algebras that model proba-
+bilistic encryption. This signature features a family of encryption operations,
+{(·)}i(·) , one for each natural number i. The natural number is meant to rep-
+resent the randomness used while creating the encryption. In concrete algebras,
+two encryptions created with the same plaintext and key are equal only if they
+were created using the same random value.
+    The algebra of interest is the order-sorted quotient term algebra generated by
+a set of declarations Y . The message algebra CAlgY is the carrier set for sort M.
+The deﬁnitions of traces, roles, and executions, extend to concrete algebras in
+the obvious ways.
+
+Definition 9 (Forgetful function). Let F : CAlgY → AlgY be the obvious
+function that forgets the randomness used to create encryptions.
+
+Lemma 10. For x ∈ AlgY , if x is encryption free (enc f ree x), then there
+exists a unique y ∈ AlgY such that F(y) = x.
+
+Proof. By induction on the structure of y.
+
+      The lemma used in proofs follows.
+Lemma 11. For x, y ∈ CAlgY , if enc free(F(x)) and F(x) = F(y), then x = y.
+
+
+6      Concrete Execution Semantics
+The concrete execution semantics is analogous to the abstract execution seman-
+tics except that references to message algebras are replaced with references to
+concrete message algebras. There is one big exception. When executing an encr
+expression, there must be a source of randomness for use in creating an encryp-
+tion. To provide a source of fresh basic values, the abstract execution seman-
+tics threads a sequence of values through state changes. In the concrete execu-
+tion semantics, a sequence of natural numbers γ is also threaded through state
+changes and used to create encryptions.
+
+                              E(v1 ) = t1         E(v2 ) = t2
+                                                                                 (18)
+                   ce(E, c, u, ι :: γ, encr(v1 , v2 ), {t1 }ιt2 , c, u, γ)
+                              Cryptographic Protocol Analysis and Compilation          367
+
+                              E(v1 ) = t1        E(v2 ) = t2
+                                                                                      (19)
+                     ce(E, c, u, , encr(v1 , v2 ), {t1 }0t2 , c, u, )
+Equation 19 handles the case in which the source of randomness has been
+exhausted.
+   Other than the case for the encr expression, the deﬁnition of the concrete exe-
+cution semantics follows that of the abstract execution semantics in the obvious
+ways.
+Definition 12 (Concrete procedure execution)
+Assume p = (v0 , k0 ), . . . , (vn−1 , kn−1 ) and i = i0 , . . . , in−1 . Execution e =
+eY (c , i , o , u ) is a concrete execution of procedure x = x(p, s) with random-
+ness γ, written cexec(x, e, γ), iﬀ
+1. for all j < n, chk (F(ij ), kj );
+2. csret(E, c, u, γ, s, o), where E = ∅[v0 → i0 ] · · · [vn−1 → in−1 ];
+3. c is the result of mapping c using F;
+4. i = F ◦ i;
+5. o = F ◦ o; and
+6. u = F ◦ u.
+
+7    Relating Execution Semantics
+The proofs of the theorems stated in this section were performed using Coq and
+the proof scripts are available in the distribution of cpsa [8].
+Theorem 13 (Faithfulness). cexec(x, e, γ) implies exec(x, e).
+    The proof of faithfulness is tedious but straightforward. The forgetful func-
+tion in Deﬁnition 9 is used to map items in the concrete semantics to items in
+the abstract semantics, and then the proofs go through as expected.
+Theorem 14 (Adequacy). exec(x, e) implies cexec(x, e, γ).
+    The proof of adequacy is tricky. Where there is a sequence of state transitions
+in the abstract execution semantics, one must ﬁnd a corresponding sequence
+in the concrete execution semantics. During both sequences, an event in the
+trace is consumed when a send statement or a receive expression is encountered.
+The case of a receive expression is the easy situation. The received term in the
+complex algebra can be any term as long as applying the forgetful function
+to it produces the received term in the abstract algebra. However, the case
+of a send statement is quite diﬀerent. The transmitted term in the complex
+algebra must agree with what is in the environment associated with the send
+statement’s message variable. And the term in the environment depends on the
+particular sequence of random values consumed up to this point in the execution.
+Engineering a proof that maintains this property is what makes the proof tricky.
+    The proof of adequacy makes demands on both the abstract and concrete
+execution semantics. The proof depends on the fact that the following terms
+must not contain an encryption,
+368     J. D. Ramsdell
+
+– the key used during a decryption (see Eq. 7),
+– the terms compared with a sameness test (see Eq. 12), and
+– the terms compared with an inverse key predicate test (see Eq. 13).
+The lack of encryptions allow the use of Lemma 11.
+   With these checks in place, the means we use to validate compiler
+input/output pairs correctly handles probabilistic encryption.
+
+
+8     Epilogue
+The development of the Roletran compiler is part of a project aimed at address-
+ing the fact that there are systems built on aging software components with
+questionable security. An approach to protecting such systems is to isolate each
+component, and mediate communication between the components using trusted
+software that achieves desired security goals. Veriﬁed implementations of proto-
+cols is a key component to our approach. Members of this project include Ian
+D. Kretz and Dan J. Dougherty. The project is led by Joshua D. Guttman.
+    The project has developed a runtime system in Rust for code generated by
+Roletran, and several test protocols have been analyzed and then translated
+into running code, the simplest of which is the Unilateral Protocol. The project
+has another compiler that compiles protocols that make use of state. Future
+work might include the construction of a veriﬁed runtime system for Roletran
+generated code.
+    The addition of channels to cpsa was due to yet another successful collabo-
+ration between Joshua and the author.
+
+Acknowledgement. Paul D. Rowe provided valuable comments that improved this
+paper.
+
+
+References
+1. The Coq proof assistant reference manual (2021). http://coq.inria.fr
+2. Bhargavan, K., Corin, R., Deniélou, P., Fournet, C., Leifer, J.J.: Cryptographic
+   protocol synthesis and veriﬁcation for multiparty sessions. In: Proceedings of the
+   22nd IEEE Computer Security Foundations Symposium, CSF 2009, Port Jeﬀerson,
+   New York, USA, 8–10 July 2009, pp. 124–140. IEEE Computer Society (2009).
+   https://doi.org/10.1109/CSF.2009.26
+3. Dolev, D., Yao, A.C.: On the security of public key protocols. IEEE Trans. Inf.
+   Theory 29(2), 198–207 (1983). https://doi.org/10.1109/TIT.1983.1056650
+4. Goguen, J.A., Meseguer, J.: Order-sorted algebra I: equational deduction for mul-
+   tiple inheritance, overloading, exceptions and partial operations. Theor. Comput.
+   Sci. 105(2), 217–273 (1992). https://citeseer.ist.psu.edu/goguen92ordersorted.html
+5. Guttman, J.D., Herzog, J.C., Ramsdell, J.D., Sniﬀen, B.T.: Programming crypto-
+   graphic protocols. In: De Nicola, R., Sangiorgi, D. (eds.) TGC 2005. LNCS, vol. 3705,
+   pp. 116–145. Springer, Heidelberg (2005). https://doi.org/10.1007/11580850 8
+6. Guttman, J.D., Wand, M.: VLISP: a veriﬁed implementation of scheme. Lisp Sym-
+   bolic Comput. 8, 5–32 (1995). https://doi.org/10.1007/BF01128406
+                           Cryptographic Protocol Analysis and Compilation        369
+
+7. Liskov, M.D., Rowe, P.D., Thayer, F.J.: Completeness of CPSA. Technical
+   report, MTR110479, The MITRE Corporation (2011). https://www.mitre.org/
+   publications/technical-papers/completeness-of-cpsa
+8. Ramsdell, J.D., Guttman, J.D.: CPSA4: A cryptographic protocol shapes analyzer.
+   The MITRE Corporation (2018). https://github.com/mitre/cpsaexp
+9. Thayer, F.J., Herzog, J.C., Guttman, J.D.: Strand spaces: proving security proto-
+   cols correct. J. Comput. Secur. 7(1), 191–230 (1999). http://content.iospress.com/
+   articles/journal-of-computer-security/jcs117
+
+
+
+
+Open Access This chapter is licensed under the terms of the Creative Commons
+Attribution 4.0 International License (http://creativecommons.org/licenses/by/4.0/),
+which permits use, sharing, adaptation, distribution and reproduction in any medium
+or format, as long as you give appropriate credit to the original author(s) and the
+source, provide a link to the Creative Commons license and indicate if changes were
+made.
+     The images or other third party material in this chapter are included in the
+chapter’s Creative Commons license, unless indicated otherwise in a credit line to the
+material. If material is not included in the chapter’s Creative Commons license and
+your intended use is not permitted by statutory regulation or exceeds the permitted
+use, you will need to obtain permission directly from the copyright holder.
+
