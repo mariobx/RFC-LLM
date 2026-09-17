@@ -39,18 +39,23 @@ else
     echo "[1/2] Local Provider: Ollama"
 fi
 
-# Step 1: Semantic Component Chunking
-echo "[2/2] Extracting atomic semantic components with exact line-break boundaries..."
+# Step 1: Documentation Semantic Component Chunking
+echo "[1/2] Processing technical documentation into atomic semantic chunks..."
 if [ -n "$TARGET_DIR" ]; then
-    "$PYTHON" "$DIR/scripts/01_extract_chunks.py" --dir "$TARGET_DIR" --semantic-split -m "$MODEL"
+    "$PYTHON" "$DIR/scripts/01_extract_chunks.py" --dir "$TARGET_DIR" -m "$MODEL"
 else
-    "$PYTHON" "$DIR/scripts/01_extract_chunks.py" --semantic-split -m "$MODEL"
+    "$PYTHON" "$DIR/scripts/01_extract_chunks.py" -m "$MODEL"
 fi
+
+# Step 2: SCM Code Examples Extraction
+echo ""
+echo "[2/2] Extracting SCM code examples with formal AST features and scenario summaries..."
+"$PYTHON" "$DIR/scripts/02_extract_code_examples.py" -m "$MODEL"
 
 echo ""
 echo "============================================================"
-echo "RAG Semantic Decomposition complete!"
-echo "Chunks catalog: $DIR/chunks/manual_chunks.jsonl"
-echo "Checkpoint:     $DIR/chunks/checkpoint.json"
+echo "CPSA Full RAG Corpus Pipeline Complete!"
+echo "Documentation Chunks: $DIR/chunks/manual_chunks.jsonl"
+echo "Code Examples:        $DIR/chunks/code_examples.jsonl"
 echo "To query: $PYTHON $DIR/scripts/03_query_rag.py '<query>'"
 echo "============================================================"

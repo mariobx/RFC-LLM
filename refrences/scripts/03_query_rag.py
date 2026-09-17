@@ -74,9 +74,11 @@ class CPSASemanticRetriever:
 
         total_words = 0
         for c in self.chunks:
-            # Combined text for indexing with title and breadcrumb weighted
+            # Combined text for indexing with title, breadcrumb, summary, and tags weighted
             breadcrumb = c.get('breadcrumb') or c.get('chapter', '')
-            full_text = f"{c.get('title', '')} {c.get('title', '')} {breadcrumb} {c.get('text', '')}"
+            summary = c.get('scenario_summary', '')
+            tags_str = " ".join(c.get('tags', []))
+            full_text = f"{c.get('title', '')} {c.get('title', '')} {breadcrumb} {summary} {tags_str} {c.get('text', '')}"
             tokens = tokenize(full_text)
             doc_len = len(tokens)
             self.doc_lengths.append(doc_len)
@@ -87,8 +89,8 @@ class CPSASemanticRetriever:
 
         self.avg_doc_len = total_words / self.total_docs if self.total_docs > 0 else 1.0
 
-    def search(self, query: str, top_k: int = 5, source_filter: str = None) -> list[dict]:
-        """BM25 search over verbatim atomic semantic chunks."""
+    def search(self, query: str, top_k: int = 5, source_filter: str = None, chunk_type: str = None) -> list[dict]:
+        """BM25 search over verbatim atomic semantic chunks and full code examples."""
         if not self.chunks:
             return []
 
@@ -101,12 +103,16 @@ class CPSASemanticRetriever:
         scores = []
 
         for idx, chunk in enumerate(self.chunks):
+            if chunk_type and chunk.get("chunk_type", "") != chunk_type:
+                continue
             if source_filter and source_filter.lower() not in chunk.get("source_file", "").lower():
                 continue
 
             breadcrumb = chunk.get('breadcrumb') or chunk.get('chapter', '')
+            summary = chunk.get('scenario_summary', '')
+            tags_str = " ".join(chunk.get('tags', []))
             doc_tokens = tokenize(
-                f"{chunk.get('title', '')} {chunk.get('title', '')} {breadcrumb} {chunk.get('text', '')}"
+                f"{chunk.get('title', '')} {chunk.get('title', '')} {breadcrumb} {summary} {tags_str} {chunk.get('text', '')}"
             )
             doc_len = self.doc_lengths[idx] if idx < len(self.doc_lengths) else len(doc_tokens)
             doc_freq = Counter(doc_tokens)
@@ -124,12 +130,14 @@ class CPSASemanticRetriever:
                 denom = tf + k1 * (1.0 - b + b * (doc_len / self.avg_doc_len))
                 score += idf * (num / denom)
 
-            # Exact query string bonus in title or text
+            # Exact query string bonus in title, summary, or text
             q_lower = query.lower()
             if q_lower in chunk.get("title", "").lower():
                 score += 8.0
             if q_lower in breadcrumb.lower():
                 score += 4.0
+            if summary and q_lower in summary.lower():
+                score += 6.0
             if q_lower in chunk.get("text", "").lower():
                 score += 3.0
 
@@ -141,11 +149,14 @@ class CPSASemanticRetriever:
             {
                 "score": round(score, 3),
                 "chunk_id": c["chunk_id"],
+                "chunk_type": c.get("chunk_type", "documentation"),
                 "title": c.get("title"),
                 "breadcrumb": c.get("breadcrumb") or c.get("chapter", ""),
                 "chapter": c.get("breadcrumb") or c.get("chapter", ""),
                 "source_file": c.get("source_file"),
                 "word_count": c.get("word_count"),
+                "scenario_summary": c.get("scenario_summary", ""),
+                "tags": c.get("tags", []),
                 "text": c.get("text")
             }
             for score, c in scores[:top_k]
