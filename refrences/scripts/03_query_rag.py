@@ -74,8 +74,9 @@ class CPSASemanticRetriever:
 
         total_words = 0
         for c in self.chunks:
-            # Combined text for indexing with title and chapter weighted
-            full_text = f"{c.get('title', '')} {c.get('title', '')} {c.get('chapter', '')} {c.get('text', '')}"
+            # Combined text for indexing with title and breadcrumb weighted
+            breadcrumb = c.get('breadcrumb') or c.get('chapter', '')
+            full_text = f"{c.get('title', '')} {c.get('title', '')} {breadcrumb} {c.get('text', '')}"
             tokens = tokenize(full_text)
             doc_len = len(tokens)
             self.doc_lengths.append(doc_len)
@@ -103,8 +104,9 @@ class CPSASemanticRetriever:
             if source_filter and source_filter.lower() not in chunk.get("source_file", "").lower():
                 continue
 
+            breadcrumb = chunk.get('breadcrumb') or chunk.get('chapter', '')
             doc_tokens = tokenize(
-                f"{chunk.get('title', '')} {chunk.get('title', '')} {chunk.get('chapter', '')} {chunk.get('text', '')}"
+                f"{chunk.get('title', '')} {chunk.get('title', '')} {breadcrumb} {chunk.get('text', '')}"
             )
             doc_len = self.doc_lengths[idx] if idx < len(self.doc_lengths) else len(doc_tokens)
             doc_freq = Counter(doc_tokens)
@@ -126,6 +128,8 @@ class CPSASemanticRetriever:
             q_lower = query.lower()
             if q_lower in chunk.get("title", "").lower():
                 score += 8.0
+            if q_lower in breadcrumb.lower():
+                score += 4.0
             if q_lower in chunk.get("text", "").lower():
                 score += 3.0
 
@@ -138,7 +142,8 @@ class CPSASemanticRetriever:
                 "score": round(score, 3),
                 "chunk_id": c["chunk_id"],
                 "title": c.get("title"),
-                "chapter": c.get("chapter"),
+                "breadcrumb": c.get("breadcrumb") or c.get("chapter", ""),
+                "chapter": c.get("breadcrumb") or c.get("chapter", ""),
                 "source_file": c.get("source_file"),
                 "word_count": c.get("word_count"),
                 "text": c.get("text")
@@ -166,8 +171,8 @@ def main():
 
     for i, res in enumerate(results, 1):
         print(f"[{i}] Score: {res['score']} | Chunk #{res['chunk_id']} | Source: {res['source_file']}")
-        print(f"    Title:   {res['title']}")
-        print(f"    Chapter: {res['chapter']} ({res['word_count']} words)")
+        print(f"    Title:      {res['title']}")
+        print(f"    Breadcrumb: {res['breadcrumb']} ({res['word_count']} words)")
         print("    " + "-" * 70)
         # Print first 350 chars of verbatim text
         snippet = res['text'][:350].replace("\n", "\n    ")
