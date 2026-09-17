@@ -49,7 +49,7 @@ DEFAULT_MODEL = os.environ.get("MODEL_NAME", "gemini/gemini-3.1-flash-lite")
 DEFAULT_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 DEFAULT_API_BASE = os.environ.get("OLLAMA_API_BASE", "http://localhost:11434")
 
-SUPPORTED_EXTENSIONS = {".pdf", ".md", ".txt", ".scm"}
+SUPPORTED_EXTENSIONS = {".pdf", ".md", ".txt"}
 EXCLUDE_FILENAMES = {
     "cpsa4manual.txt",       # Duplicate text of cpsa4manual.pdf
     "cpsa4manual_clean.md",  # Duplicate markdown
@@ -87,11 +87,24 @@ def clean_page_text(text: str) -> str:
         cleaned.append(line)
     return "\n".join(cleaned).strip()
 
-def partition_into_paragraph_blocks(text: str, target_words: int = TARGET_BLOCK_WORDS) -> list[str]:
-    """Split text into ~1000-word blocks, respecting clean paragraph boundaries."""
+def partition_into_paragraph_blocks(text: str, target_words: int = TARGET_BLOCK_WORDS, max_single_words: int = 1400) -> list[str]:
+    """
+    Split text into balanced ~1000-word blocks respecting clean paragraph boundaries.
+    - If text <= max_single_words (e.g. 1200-1400 words), preserves as 1 unified block
+      to give the LLM full document context and avoid awkward runt tails.
+    - For larger texts, divides dynamically into k balanced blocks (e.g. 2300w -> 2 x 1150w).
+    """
     raw_paras = [p.strip() for p in text.split("\n\n") if p.strip()]
     if not raw_paras:
         return []
+
+    words = text.split()
+    total_words = len(words)
+    if total_words <= max_single_words:
+        return ["\n\n".join(raw_paras)]
+
+    k = max(2, round(total_words / target_words))
+    target_per_block = total_words // k
 
     blocks = []
     curr_paras = []
@@ -99,7 +112,7 @@ def partition_into_paragraph_blocks(text: str, target_words: int = TARGET_BLOCK_
 
     for p in raw_paras:
         p_words = len(p.split())
-        if curr_words + p_words > target_words and curr_paras:
+        if len(blocks) < k - 1 and curr_words + p_words > target_per_block and curr_paras:
             blocks.append("\n\n".join(curr_paras))
             curr_paras = [p]
             curr_words = p_words
@@ -310,6 +323,7 @@ class ChunkStreamManager:
         words = text.split()
         chunk = {
             "chunk_id": self.current_chunk_id,
+            "chunk_type": "documentation",
             "source_file": source_file,
             "breadcrumb": breadcrumb,
             "title": title,
