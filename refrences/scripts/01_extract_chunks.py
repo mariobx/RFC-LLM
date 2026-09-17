@@ -64,10 +64,14 @@ class SemanticBoundary(BaseModel):
 
 class SemanticBlockSplitter(dspy.Signature):
     """You are a formal methods expert and cryptographic protocol analyst.
-Analyze the provided ~1000-word block of CPSA technical documentation.
-Identify every distinct conceptual component, rule, protocol definition, algebraic operation, or diagnostic mechanism.
-For each distinct component, output:
-- concept_title: descriptive title of the sub-concept
+Analyze the provided block of CPSA technical documentation.
+Identify natural conceptual shifts, major rules, protocol definitions, algebraic operations, or mechanisms.
+Keep your output natural and focused:
+- If the block is a unified discussion of a single topic, identifying 1 or 2 natural points is completely fine.
+- If multiple distinct concepts or rules are introduced, identify each one.
+- Do not force or invent artificial splits; capture the true structure of the text.
+For each distinct concept or section, output:
+- concept_title: descriptive, clear title of the concept
 - first_sentence_verbatim: the exact verbatim line/sentence from the text where it begins.
 Do NOT alter, paraphrase, or invent words. Return exact verbatim lines as they appear in the text."""
     source_context: str = dspy.InputField(desc="File and block breadcrumb context")
