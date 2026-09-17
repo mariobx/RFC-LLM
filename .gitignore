@@ -221,4 +221,5 @@ __marimo__/
 all_RFCs/
 **/all_RFCs/
 *.log
+!refrences/chunks/*.log
 
