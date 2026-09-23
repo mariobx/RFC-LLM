@@ -77,7 +77,7 @@ Determine if this RFC is an eligible interactive cryptographic protocol for MITR
     system_prompt = f"{GATEKEEPER_SYSTEM_PROMPT}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_str}"
 
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=0.0)
         response = litellm.completion(
             **llm_kwargs,
             messages=[
@@ -85,7 +85,6 @@ Determine if this RFC is an eligible interactive cryptographic protocol for MITR
                 {"role": "user", "content": user_prompt},
             ],
             response_format={"type": "json_object"},
-            temperature=0.0,
             timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
         )
 

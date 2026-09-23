@@ -106,7 +106,7 @@ Provide the complete repaired CPSAProtocolSpecification resolving the error with
     schema_str = json.dumps(CPSAProtocolSpecification.model_json_schema(), indent=2)
     system_prompt = f"{REPAIR_SYSTEM_PROMPT}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_str}"
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name)
+    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=temp)
     response = litellm.completion(
         **llm_kwargs,
         messages=[
@@ -114,7 +114,6 @@ Provide the complete repaired CPSAProtocolSpecification resolving the error with
             {"role": "user", "content": user_prompt},
         ],
         response_format={"type": "json_object"},
-        temperature=temp,
         timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
     )
 

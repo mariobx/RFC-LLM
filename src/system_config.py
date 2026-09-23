@@ -1,10 +1,20 @@
-"""System and Environment Configuration for RFC-LLM."""
-
 import os
+import warnings
+import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
+import litellm
 from pydantic_settings import BaseSettings
+
+# Suppress third-party LiteLLM verbosity, debug info, and deprecation warnings
+litellm.suppress_debug_info = True
+litellm.set_verbose = False
+for _logger_name in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router"):
+    logging.getLogger(_logger_name).setLevel(logging.ERROR)
+warnings.filterwarnings("ignore", category=DeprecationWarning, module=".*litellm.*")
+warnings.filterwarnings("ignore", category=UserWarning, module=".*litellm.*")
+warnings.filterwarnings("ignore", message=".*temperature.*")
 
 # Load .env file eagerly from project root
 _ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
@@ -51,8 +61,8 @@ class SystemEnvironmentConfig(BaseSettings):
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
-    def get_llm_kwargs(self, model_name: str) -> Dict[str, Any]:
-        """Returns provider-specific arguments (API keys, base URLs) for LiteLLM."""
+    def get_llm_kwargs(self, model_name: str, temperature: Optional[float] = None) -> Dict[str, Any]:
+        """Returns provider-specific arguments (API keys, base URLs, sampling) for LiteLLM."""
         kwargs: Dict[str, Any] = {"model": model_name}
         if model_name.startswith("ollama/"):
             kwargs["api_base"] = self.OLLAMA_API_BASE
@@ -65,6 +75,15 @@ class SystemEnvironmentConfig(BaseSettings):
         elif model_name.startswith("anthropic/"):
             if self.ANTHROPIC_API_KEY:
                 kwargs["api_key"] = self.ANTHROPIC_API_KEY
+
+        # Handle temperature cleanly: Gemini 3+ models deprecate temp < 1.0 and perform best without it
+        if temperature is not None:
+            if model_name.startswith("gemini/"):
+                if temperature > 0.0:
+                    kwargs["temperature"] = temperature
+            else:
+                kwargs["temperature"] = temperature
+
         return kwargs
 
 

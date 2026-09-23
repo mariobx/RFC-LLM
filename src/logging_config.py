@@ -50,6 +50,12 @@ def configure_pipeline_logging(
     if root_logger.hasHandlers():
         root_logger.handlers.clear()
 
+    # Silence third-party litellm loggers completely
+    for _noisy_logger in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router"):
+        _nl = logging.getLogger(_noisy_logger)
+        _nl.setLevel(logging.ERROR)
+        _nl.propagate = False
+
     # 1. Console Handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(log_level)

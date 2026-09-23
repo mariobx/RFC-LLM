@@ -56,7 +56,7 @@ Select the section IDs containing the primary cryptographic message exchange or 
     system_prompt = f"{ROUTER_SYSTEM_PROMPT}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_str}"
 
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=0.0)
         response = litellm.completion(
             **llm_kwargs,
             messages=[
@@ -64,7 +64,6 @@ Select the section IDs containing the primary cryptographic message exchange or 
                 {"role": "user", "content": user_prompt},
             ],
             response_format={"type": "json_object"},
-            temperature=0.0,
             timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
         )
 
