@@ -108,20 +108,28 @@ Verbatim RFC Exchange Specification (SOLE GROUND TRUTH):
 Extract the complete CPSAProtocolSpecification adhering to all executability and sort constraints.
 Do NOT copy protocol elements, names, or messages from the reference examples; extract strictly what is defined in the Verbatim RFC Exchange Specification."""
 
+    schema_str = json.dumps(CPSAProtocolSpecification.model_json_schema(), indent=2)
+    system_prompt = f"{EXTRACTION_SYSTEM_PROMPT}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_str}"
+
     response = litellm.completion(
         model=model_name,
         api_base=SYSTEM_CONFIG.OLLAMA_API_BASE if model_name.startswith("ollama/") else None,
         messages=[
-            {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        response_format={"type": "json_object", "schema": CPSAProtocolSpecification.model_json_schema()},
+        response_format={"type": "json_object"},
         temperature=0.0,
         timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
     )
 
     content = response.choices[0].message.content
-    data = json.loads(content)
+    try:
+        data = json.loads(content)
+    except Exception:
+        import json_repair
+        data = json_repair.loads(content)
+
     spec = CPSAProtocolSpecification.model_validate(data)
 
     logger.info(

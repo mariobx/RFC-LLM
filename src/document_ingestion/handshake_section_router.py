@@ -52,21 +52,29 @@ Table of Contents:
 
 Select the section IDs containing the primary cryptographic message exchange or handshake."""
 
+    schema_str = json.dumps(SectionRoutingDecision.model_json_schema(), indent=2)
+    system_prompt = f"{ROUTER_SYSTEM_PROMPT}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_str}"
+
     try:
         response = litellm.completion(
             model=model_name,
             api_base=SYSTEM_CONFIG.OLLAMA_API_BASE if model_name.startswith("ollama/") else None,
             messages=[
-                {"role": "system", "content": ROUTER_SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            response_format={"type": "json_object", "schema": SectionRoutingDecision.model_json_schema()},
+            response_format={"type": "json_object"},
             temperature=0.0,
             timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
         )
 
         content = response.choices[0].message.content
-        decision_data = json.loads(content)
+        try:
+            decision_data = json.loads(content)
+        except Exception:
+            import json_repair
+            decision_data = json_repair.loads(content)
+
         decision = SectionRoutingDecision.model_validate(decision_data)
 
         # Validate that the selected IDs actually exist in the TOC

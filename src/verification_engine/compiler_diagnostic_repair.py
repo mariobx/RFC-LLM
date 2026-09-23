@@ -103,21 +103,28 @@ Provide the complete repaired CPSAProtocolSpecification resolving the error with
 
     # Use higher temperature if cycle detected to break greedy minimum
     temp = 0.4 if cycle_detected else 0.0
+    schema_str = json.dumps(CPSAProtocolSpecification.model_json_schema(), indent=2)
+    system_prompt = f"{REPAIR_SYSTEM_PROMPT}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_str}"
 
     response = litellm.completion(
         model=model_name,
         api_base=SYSTEM_CONFIG.OLLAMA_API_BASE if model_name.startswith("ollama/") else None,
         messages=[
-            {"role": "system", "content": REPAIR_SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        response_format={"type": "json_object", "schema": CPSAProtocolSpecification.model_json_schema()},
+        response_format={"type": "json_object"},
         temperature=temp,
         timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
     )
 
     content = response.choices[0].message.content
-    data = json.loads(content)
+    try:
+        data = json.loads(content)
+    except Exception:
+        import json_repair
+        data = json_repair.loads(content)
+
     repaired_spec = CPSAProtocolSpecification.model_validate(data)
 
     logger.info("Repair pass completed for '%s'", repaired_spec.protocol_name)
