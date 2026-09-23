@@ -1,0 +1,2 @@
+# Ignore continuous log streams, keep tabular CSV results
+*.log
