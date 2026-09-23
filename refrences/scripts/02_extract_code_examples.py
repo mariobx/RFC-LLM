@@ -21,11 +21,20 @@ import time
 import json
 import re
 import argparse
+import logging
+import warnings
 from pathlib import Path
 from pydantic import BaseModel, Field
 import dspy
 import backoff
 from dotenv import load_dotenv, find_dotenv
+import litellm
+
+# Silence LiteLLM log spam and deprecation warnings
+litellm.suppress_debug_info = True
+litellm.set_verbose = False
+logging.getLogger("LiteLLM").setLevel(logging.ERROR)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(find_dotenv(usecwd=True))
@@ -49,10 +58,34 @@ DEFAULT_API_BASE = os.environ.get("OLLAMA_API_BASE", "http://localhost:11434")
 # Option C: Static Formal CPSA Grammar Feature Extractor
 # =====================================================================
 
+def strip_scheme_comments(content: str) -> str:
+    """Strip line comments (;...) and block comments (#|...|#) while preserving string literals."""
+    strings = []
+    def save_str(m):
+        strings.append(m.group(0))
+        return f"__STR_LITERAL_{len(strings)-1}__"
+
+    # Protect string literals from semicolon stripping
+    protected = re.sub(r'"(?:\\.|[^"\\])*"', save_str, content)
+    # Strip block comments #| ... |#
+    protected = re.sub(r'#\|.*?\|#', ' ', protected, flags=re.DOTALL)
+    # Strip line comments ; ...
+    protected = re.sub(r';.*$', ' ', protected, flags=re.MULTILINE)
+    # Restore string literals
+    for idx, s in enumerate(strings):
+        protected = protected.replace(f"__STR_LITERAL_{idx}__", s)
+    return protected
+
 def parse_cpsa_scm(content: str, file_name: str) -> dict:
     """Extract complete formal CPSA 4.4 grammar AST features from an S-expression file."""
-    # 1. Herald Title and Comment
-    m_herald = re.search(r"\(herald\s+[\"\x27]([^\"]+)[\"\x27](.*?)\)", content, re.DOTALL)
+    # 1. Developer Intent Comments (extracted from raw content before stripping)
+    dev_comments = [line.strip("; \t") for line in re.findall(r";;;+(.+)", content) if line.strip("; \t")]
+
+    # 2. Strip comments to analyze only active syntax forms
+    clean_code = strip_scheme_comments(content)
+
+    # 3. Herald Title and Comment
+    m_herald = re.search(r"\(herald\s+[\"\x27]([^\"]+)[\"\x27](.*?)\)", clean_code, re.DOTALL)
     herald_title = m_herald.group(1).strip() if m_herald else ""
     herald_comment = ""
     if m_herald:
@@ -60,41 +93,38 @@ def parse_cpsa_scm(content: str, file_name: str) -> dict:
         if m_c:
             herald_comment = m_c.group(1).strip()
 
-    # 2. Developer Intent Comments (;;; lines)
-    dev_comments = [line.strip("; \t") for line in re.findall(r";;;+(.+)", content) if line.strip("; \t")]
-
-    # 3. Protocols and Algebras
+    # 4. Protocols and Algebras
     protocols = []
-    for pm in re.finditer(r"\(defprotocol\s+([^\s\(\)]+)\s+([^\s\(\)]+)", content):
+    for pm in re.finditer(r"\(defprotocol\s+([^\s\(\)]+)\s+([^\s\(\)]+)", clean_code):
         protocols.append({"name": pm.group(1), "algebra": pm.group(2)})
     algebras = list(dict.fromkeys([p["algebra"] for p in protocols]))
-    if re.search(r"\bdiffie-hellman\b", content) and "diffie-hellman" not in algebras:
+    if re.search(r"\bdiffie-hellman\b", clean_code) and "diffie-hellman" not in algebras:
         algebras.append("diffie-hellman")
 
-    # 4. Roles
-    roles = list(dict.fromkeys(re.findall(r"\(defrole\s+([^\s\(\)]+)", content)))
+    # 5. Roles
+    roles = list(dict.fromkeys(re.findall(r"\(defrole\s+([^\s\(\)]+)", clean_code)))
 
-    # 5. Sorts
+    # 6. Sorts
     all_sorts = ["text", "data", "name", "skey", "akey", "mesg", "chan", "locn", "rndx", "expt", "base", "strd"]
-    sorts_used = [s for s in all_sorts if re.search(r"\b" + s + r"\b", content)]
+    sorts_used = [s for s in all_sorts if re.search(r"\b" + s + r"\b", clean_code)]
 
-    # 6. Cryptographic Primitives
+    # 7. Cryptographic Primitives
     all_crypto = ["pubk", "privk", "invk", "ltk", "cat", "enc", "senc", "aenc", "sign", "hash", "exp", "gen", "mul", "rec"]
-    crypto_used = [c for c in all_crypto if re.search(r"\b" + c + r"\b", content)]
+    crypto_used = [c for c in all_crypto if re.search(r"\b" + c + r"\b", clean_code)]
 
-    # 7. Channels and State Operations
+    # 8. Channels and State Operations
     all_state_chan = ["auth", "conf", "stor", "load", "gen-st", "critical-sections"]
-    state_chan_used = [sc for sc in all_state_chan if re.search(r"\b" + sc + r"\b", content)]
+    state_chan_used = [sc for sc in all_state_chan if re.search(r"\b" + sc + r"\b", clean_code)]
 
-    # 8. Assumptions and Constraints
+    # 9. Assumptions and Constraints
     all_assumptions = ["non-orig", "pen-non-orig", "uniq-orig", "uniq-gen", "precedes", "priority", "facts"]
-    assumptions_used = [a for a in all_assumptions if re.search(r"\b" + a + r"\b", content)]
+    assumptions_used = [a for a in all_assumptions if re.search(r"\b" + a + r"\b", clean_code)]
 
-    # 9. Top-Level Entity Counts
-    skel_count = len(re.findall(r"\(defskeleton\b", content))
-    listener_count = len(re.findall(r"\(deflistener\b", content))
-    goal_count = len(re.findall(r"\(defgoal\b", content))
-    rule_count = len(re.findall(r"\(defrule\b|\(rule\b", content))
+    # 10. Top-Level Entity Counts
+    skel_count = len(re.findall(r"\(defskeleton\b", clean_code))
+    listener_count = len(re.findall(r"\(deflistener\b", clean_code))
+    goal_count = len(re.findall(r"\(defgoal\b", clean_code))
+    rule_count = len(re.findall(r"\(defrule\b|\(rule\b", clean_code))
 
     title = herald_title or Path(file_name).stem.replace("_", " ").title()
 
@@ -125,17 +155,20 @@ def parse_cpsa_scm(content: str, file_name: str) -> dict:
 
 class SCMExampleSummarizer(dspy.Signature):
     """You are a formal methods expert and cryptographic protocol analyst specializing in CPSA.
-Analyze the provided CPSA Scheme (.scm) model and its extracted formal features.
-Provide a short, informative overview:
-- What real-world protocol or security scenario this file models (e.g., Needham-Schroeder, TLS handshake, TPM state, Kerberos).
-- The key security properties or attacks analyzed (e.g., mutual authentication, secrecy, man-in-the-middle, replay).
-- Notable modeling techniques used (e.g., state passing with load/stor, authenticated channels, Diffie-Hellman exponentiation, shape rules).
-Keep your summary natural, concise, and focused. Do not force an artificial structure."""
-    file_name: str = dspy.InputField(desc="Filename of the SCM model")
+Analyze the provided CPSA Scheme (.scm) source code and its extracted AST metadata.
+Synthesize a concise, rigorous technical summary of the protocol model.
+
+Requirements:
+1. Scenario & Classification: Identify the specific protocol or cryptographic interaction being modeled. If the file is a theoretical benchmark, regression test, minimal counterexample, or sanity check rather than an RFC protocol, explicitly state its theoretical purpose. Do not force-map abstract models to named real-world protocols.
+2. Security Properties & Goals: State the exact security invariants, shapes, or adversarial behaviors under verification, as evidenced by the skeletons, listeners, and goal declarations.
+3. Formal Modeling Constructs: Detail the key CPSA primitives actually declared in formal_metadata and the code (algebras, sorts, channel abstractions, state operations, origination assumptions, and custom rewrite rules). Never reference primitives that are absent from the model.
+4. Grounding: Base the summary strictly on the source code, comments, and formal AST. Avoid generic boilerplate.
+5. Determinism: Maintain strict factual precision and low variance. State only verifiable AST constructs and explicit security goals."""
+    file_name: str = dspy.InputField(desc="Filename of the CPSA Scheme model")
     formal_metadata: str = dspy.InputField(desc="Extracted formal AST features (herald, protocols, roles, primitives, assumptions)")
     scm_code: str = dspy.InputField(desc="Verbatim Scheme source code")
-    scenario_summary: str = dspy.OutputField(desc="Short, informative overview of the protocol scenario, attack, and modeling techniques")
-    tags: list[str] = dspy.OutputField(desc="List of 3 to 6 descriptive tags (e.g. 'man-in-the-middle', 'mutual-authentication', 'diffie-hellman')")
+    scenario_summary: str = dspy.OutputField(desc="Accurate, factual 2-4 sentence summary of the model's protocol scenario, security properties, and modeling mechanics")
+    tags: list[str] = dspy.OutputField(desc="List of 3 to 6 lowercase kebab-case tags capturing the protocol name, algebra, key primitives, and verified properties")
 
 @backoff.on_exception(
     backoff.expo,
@@ -177,6 +210,20 @@ class CodeExampleStreamManager:
                 self.checkpoint_path.unlink()
             if self.history_log_path.exists():
                 self.history_log_path.unlink()
+            # Strip previous code_example records from manual_chunks.jsonl to avoid duplicates
+            if self.manual_jsonl_path.exists():
+                doc_lines = []
+                with open(self.manual_jsonl_path, "r", encoding="utf-8") as mf:
+                    for line in mf:
+                        if line.strip():
+                            try:
+                                rec = json.loads(line)
+                                if rec.get("chunk_type") != "code_example":
+                                    doc_lines.append(line)
+                            except Exception:
+                                doc_lines.append(line)
+                with open(self.manual_jsonl_path, "w", encoding="utf-8") as mf:
+                    mf.writelines(doc_lines)
             self.completed_files = set()
             self.all_examples = []
             self.current_chunk_id = self._get_next_manual_chunk_id()
@@ -197,7 +244,8 @@ class CodeExampleStreamManager:
                     if line:
                         try:
                             c = json.loads(line)
-                            max_id = max(max_id, c.get("chunk_id", 0))
+                            if c.get("chunk_type") != "code_example":
+                                max_id = max(max_id, c.get("chunk_id", 0))
                         except Exception:
                             pass
         return max_id
@@ -260,11 +308,19 @@ class CodeExampleStreamManager:
         self._code_f.flush()
         os.fsync(self._code_f.fileno())
 
-        # Also append to manual_chunks.jsonl for unified RAG search
+        # Also append to manual_chunks.jsonl for unified RAG search (check deduplication)
         if self._manual_f:
-            self._manual_f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
-            self._manual_f.flush()
-            os.fsync(self._manual_f.fileno())
+            already_in_manual = False
+            if self.manual_jsonl_path.exists():
+                with open(self.manual_jsonl_path, "r", encoding="utf-8") as mf:
+                    for line in mf:
+                        if f'"{source_file}"' in line:
+                            already_in_manual = True
+                            break
+            if not already_in_manual:
+                self._manual_f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+                self._manual_f.flush()
+                os.fsync(self._manual_f.fileno())
 
         return chunk
 
@@ -395,8 +451,8 @@ def main():
                 print("Error: GEMINI_API_KEY is required for Gemini models.", file=sys.stderr)
                 sys.exit(1)
             os.environ["GEMINI_API_KEY"] = api_key
-            print(f"Configuring Gemini 3.1 Flash Lite ('{model_tag}', delay: {delay}s) for SCM scenario summarization...")
-            lm = dspy.LM(model_tag, api_key=api_key, temperature=0.2)
+            print(f"Configuring Gemini ('{model_tag}', delay: {delay}s) for SCM scenario summarization...")
+            lm = dspy.LM(model_tag, api_key=api_key)
         else:
             clean_model = args.model
             for prefix in ["ollama_chat/", "ollama/"]:

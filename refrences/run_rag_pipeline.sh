@@ -20,9 +20,14 @@ elif [ -f "$DIR/../.env" ]; then
     set +a
 fi
 
-# Model selection
-MODEL="${1:-${MODEL_NAME:-gemini/gemini-3.1-flash-lite}}"
-TARGET_DIR="${2:-}"
+# Model and Target Directory selection
+if [[ "$1" == --* ]]; then
+    MODEL="${MODEL_NAME:-gemini/gemini-3.5-flash-lite}"
+    TARGET_DIR=""
+else
+    MODEL="${1:-${MODEL_NAME:-gemini/gemini-3.5-flash-lite}}"
+    TARGET_DIR="${2:-}"
+fi
 
 echo "============================================================"
 echo "    CPSA Atomic Semantic Decomposition & RAG Pipeline       "
@@ -39,18 +44,26 @@ else
     echo "[1/2] Local Provider: Ollama"
 fi
 
+# Check for reprocess-all flag
+EXTRA_ARGS=()
+for arg in "$@"; do
+    if [ "$arg" == "--reprocess-all" ]; then
+        EXTRA_ARGS+=("--reprocess-all")
+    fi
+done
+
 # Step 1: Documentation Semantic Component Chunking
 echo "[1/2] Processing technical documentation into atomic semantic chunks..."
-if [ -n "$TARGET_DIR" ]; then
-    "$PYTHON" "$DIR/scripts/01_extract_chunks.py" --dir "$TARGET_DIR" -m "$MODEL"
+if [ -n "$TARGET_DIR" ] && [ "$TARGET_DIR" != "--reprocess-all" ]; then
+    "$PYTHON" -u "$DIR/scripts/01_extract_chunks.py" --dir "$TARGET_DIR" -m "$MODEL" "${EXTRA_ARGS[@]}"
 else
-    "$PYTHON" "$DIR/scripts/01_extract_chunks.py" -m "$MODEL"
+    "$PYTHON" -u "$DIR/scripts/01_extract_chunks.py" -m "$MODEL" "${EXTRA_ARGS[@]}"
 fi
 
 # Step 2: SCM Code Examples Extraction
 echo ""
 echo "[2/2] Extracting SCM code examples with formal AST features and scenario summaries..."
-"$PYTHON" "$DIR/scripts/02_extract_code_examples.py" -m "$MODEL"
+"$PYTHON" -u "$DIR/scripts/02_extract_code_examples.py" -m "$MODEL" "${EXTRA_ARGS[@]}"
 
 echo ""
 echo "============================================================"

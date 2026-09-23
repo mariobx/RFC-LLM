@@ -23,12 +23,21 @@ import time
 import json
 import re
 import argparse
+import logging
+import warnings
 from pathlib import Path
 from pydantic import BaseModel, Field
 import pymupdf
 import dspy
 import backoff
 from dotenv import load_dotenv, find_dotenv
+import litellm
+
+# Silence LiteLLM log spam and deprecation warnings
+litellm.suppress_debug_info = True
+litellm.set_verbose = False
+logging.getLogger("LiteLLM").setLevel(logging.ERROR)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(find_dotenv(usecwd=True))
@@ -59,22 +68,26 @@ EXCLUDE_FILENAMES = {
 }
 
 class SemanticBoundary(BaseModel):
-    concept_title: str = Field(description="Clear, descriptive title for this specific concept, rule, or mechanism.")
-    first_sentence_verbatim: str = Field(description="The exact verbatim first sentence where this concept begins in the text.")
+    concept_title: str = Field(
+        description="Concise, descriptive title defining the specific formal concept, grammar rule, or protocol mechanism."
+    )
+    first_sentence_verbatim: str = Field(
+        description="The exact character-for-character opening sentence where this concept begins in the source text."
+    )
 
 class SemanticBlockSplitter(dspy.Signature):
-    """You are a formal methods expert and cryptographic protocol analyst.
-Analyze the provided block of CPSA technical documentation with high precision.
-Identify every distinct conceptual component, formal rule, protocol definition, algebraic operation, security property, or diagnostic mechanism.
-Ensure boundaries are rigorous, complete, and mutually exclusive:
-- Precisely isolate each distinct theoretical concept, syntax definition, rule, or algorithm.
-- For each distinct concept or component:
-  - concept_title: precise, descriptive title for this specific concept or rule
-  - first_sentence_verbatim: the exact, verbatim first sentence where this concept begins in the text.
-Do NOT alter, paraphrase, or invent words. Return exact verbatim lines as they appear in the text."""
-    source_context: str = dspy.InputField(desc="File and block breadcrumb context")
-    block_text: str = dspy.InputField(desc="Verbatim text of the block")
-    boundaries: list[SemanticBoundary] = dspy.OutputField(desc="List of distinct concept boundaries with verbatim anchors")
+    """You are a formal methods expert and cryptographic protocol analyst specializing in CPSA.
+Deconstruct the provided text block into atomic, self-contained semantic units.
+
+Requirements:
+1. Sequential Ordering: Identify inflection points strictly in the chronological order they appear in the text from top to bottom.
+2. Conceptual Independence: Each boundary must isolate a single distinct topic—such as a specific syntactic rule, algebraic property, protocol role, security goal, operational algorithm, or analysis technique.
+3. Verbatim Fidelity: The first_sentence_verbatim MUST match the exact opening characters of the sentence as printed in the text, including punctuation and capitalization. Do not paraphrase or alter tokens.
+4. Grounding: Base boundaries strictly on the provided text. Do not hallucinate external concepts or create redundant sub-divisions for brief continuous explanations.
+5. Determinism: Maintain strict low-variance deterministic extraction. Adhere purely to factual syntactic boundaries without creative interpolation."""
+    source_context: str = dspy.InputField(desc="File and block breadcrumb hierarchy")
+    block_text: str = dspy.InputField(desc="Verbatim source text to partition")
+    boundaries: list[SemanticBoundary] = dspy.OutputField(desc="Chronologically ordered semantic boundaries with exact verbatim text anchors")
 
 def clean_page_text(text: str) -> str:
     """Clean recurring PDF headers/footers."""
@@ -140,13 +153,14 @@ def clip_block_by_anchors(block_text: str, boundaries: list[SemanticBoundary], b
         anchor = b.first_sentence_verbatim.strip().lower()
         if not anchor:
             continue
-        anchor_sub = anchor[:35]
+        anchor_sub = anchor[:35] if len(anchor) >= 35 else anchor
         found_idx = -1
         for idx, line in enumerate(lines):
             line_clean = line.strip().lower()
             if not line_clean:
                 continue
-            if anchor in line_clean or line_clean in anchor or anchor_sub in line_clean:
+            # Avoid false positives: require minimum length before checking line_clean in anchor
+            if anchor in line_clean or (len(anchor) >= 20 and anchor[:30] in line_clean) or (len(line_clean) >= 25 and line_clean in anchor):
                 found_idx = idx
                 break
 
@@ -177,10 +191,13 @@ def clip_block_by_anchors(block_text: str, boundaries: list[SemanticBoundary], b
             slice_text = prepend_to_first + slice_text
         slices.append({"title": titles[i], "text": slice_text})
     raw_slices = slices if slices else [{"title": base_title, "text": block_text}]
-    return ensure_minimum_chunk_floor(raw_slices, min_words=60)
+    return ensure_minimum_chunk_floor(raw_slices, min_words=35)
 
-def ensure_minimum_chunk_floor(slices: list[dict], min_words: int = 60) -> list[dict]:
-    """Merge undersized slices (< 60 words) into adjacent slices to prevent over-fragmentation."""
+def ensure_minimum_chunk_floor(slices: list[dict], min_words: int = 35) -> list[dict]:
+    """
+    Merge undersized runt slices (< 35 words) into adjacent slices to prevent fragmentation,
+    while preserving semantic purity of titles instead of blindly concatenating with ' / '.
+    """
     if len(slices) <= 1:
         return slices
 
@@ -191,10 +208,17 @@ def ensure_minimum_chunk_floor(slices: list[dict], min_words: int = 60) -> list[
         if curr is None:
             curr = dict(s)
         elif len(curr["text"].split()) < min_words:
-            curr["title"] = f"{curr['title']} / {s['title']}"
+            # Current accumulator is a runt intro/bridge; merge it into the incoming concept
+            curr_title = curr["title"]
+            incoming_title = s["title"]
+            if "(intro)" in curr_title.lower() or len(curr["text"].split()) < 20:
+                final_title = incoming_title
+            else:
+                final_title = f"{curr_title}: {incoming_title}" if curr_title != incoming_title else curr_title
+            curr["title"] = final_title
             curr["text"] = f"{curr['text']}\n\n{s['text']}"
         elif w_count < min_words:
-            curr["title"] = f"{curr['title']} / {s['title']}"
+            # Incoming slice is a runt trailing remark/note; fold it into current
             curr["text"] = f"{curr['text']}\n\n{s['text']}"
         else:
             merged.append(curr)
@@ -202,7 +226,6 @@ def ensure_minimum_chunk_floor(slices: list[dict], min_words: int = 60) -> list[
 
     if curr:
         if merged and len(curr["text"].split()) < min_words:
-            merged[-1]["title"] = f"{merged[-1]['title']} / {curr['title']}"
             merged[-1]["text"] = f"{merged[-1]['text']}\n\n{curr['text']}"
         else:
             merged.append(curr)
@@ -527,8 +550,8 @@ def main():
                 print("Error: GEMINI_API_KEY is required for Gemini models. Set it in .env or pass --api-key.", file=sys.stderr)
                 sys.exit(1)
             os.environ["GEMINI_API_KEY"] = api_key
-            print(f"Configuring Gemini 3.1 Flash Lite ('{model_tag}', delay: {delay}s) for 1000-word block splitting...")
-            lm = dspy.LM(model_tag, api_key=api_key, temperature=0.1)
+            print(f"Configuring Gemini ('{model_tag}', delay: {delay}s) for 1000-word block splitting...")
+            lm = dspy.LM(model_tag, api_key=api_key)
         else:
             clean_model = args.model
             for prefix in ["ollama_chat/", "ollama/"]:

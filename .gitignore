@@ -221,5 +221,30 @@ __marimo__/
 all_RFCs/
 **/all_RFCs/
 *.log
-!refrences/chunks/*.log
 
+# Pipeline runtime checkpoints and ephemeral state
+refrences/chunks/*checkpoint*.json
+refrences/chunks/*.log
+refrences/chunks/manual_chunks.json
+refrences/chunks/code_examples.json
+refrences/chunks/*cache*.json
+refrences/reports/*200*.jsonl
+
+
+# Track canonical distribution datasets and vector embeddings explicitly
+!refrences/chunks/*.jsonl
+!refrences/chunks/embeddings.npy
+!refrences/chunks/embeddings_meta.json
+!refrences/chunks/all_references_clean.md
+
+# LaTeX compilation artifacts & previews
+*.aux
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bak
+*preview*.png
+
+# Root HTML mirror
+/embedding_clusters.html
