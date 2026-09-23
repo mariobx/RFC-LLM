@@ -76,6 +76,12 @@ def main():
         help="Model identifier for Pydantic constrained semantic extraction",
     )
     parser.add_argument(
+        "--repair-model",
+        type=str,
+        default=None,
+        help="Model identifier for RAG self-healing compiler diagnostic repair",
+    )
+    parser.add_argument(
         "--visualize",
         "-v",
         action="store_true",
@@ -160,6 +166,7 @@ def main():
     total_files = len(rfc_files)
     active_router_model = args.router_model or args.model or SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL
     active_extraction_model = args.extraction_model or args.model or SYSTEM_CONFIG.DEFAULT_EXTRACTION_MODEL
+    active_repair_model = args.repair_model or args.model or SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL
 
     for idx, rfc_file in enumerate(rfc_files, 1):
         if total_files > 1:
@@ -172,6 +179,7 @@ def main():
             output_dir=output_base_dir,
             router_model=active_router_model,
             extraction_model=active_extraction_model,
+            repair_model=active_repair_model,
         )
         results.append(summary)
 

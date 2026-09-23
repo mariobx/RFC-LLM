@@ -42,6 +42,7 @@ def run_rfc_translation_pipeline(
     output_dir: Optional[Path] = None,
     router_model: Optional[str] = None,
     extraction_model: Optional[str] = None,
+    repair_model: Optional[str] = None,
 ) -> PipelineExecutionSummary:
     """Executes the end-to-end RFC to formally verified MITRE CPSA synthesis pipeline."""
     start_time = time.time()
@@ -54,6 +55,7 @@ def run_rfc_translation_pipeline(
     run_log_path = target_output_dir / "run.log"
     configure_pipeline_logging(run_log_file=run_log_path)
     csv_recorder = PipelineMetricsCSVLogger()
+    active_repair_model = repair_model or extraction_model or SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL
 
     logger.info("================================================================")
     logger.info("Starting RFC-LLM Synthesis Pipeline for: %s", rfc_file_path.name)
@@ -250,7 +252,7 @@ def run_rfc_translation_pipeline(
                 error_diagnostic=roletran_res.error_diagnostic or "Executability verification failure",
                 verbatim_slice=verbatim_slice,
                 failure_stage="roletran",
-                model=extraction_model,
+                model=active_repair_model,
                 cycle_detected=cycle_detected,
             )
             scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
@@ -332,7 +334,7 @@ def run_rfc_translation_pipeline(
                         error_diagnostic=last_build_err,
                         verbatim_slice=verbatim_slice,
                         failure_stage="solver",
-                        model=extraction_model,
+                        model=active_repair_model,
                         cycle_detected=cycle_detected,
                     )
                     scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
