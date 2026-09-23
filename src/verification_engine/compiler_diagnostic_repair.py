@@ -106,9 +106,9 @@ Provide the complete repaired CPSAProtocolSpecification resolving the error with
     schema_str = json.dumps(CPSAProtocolSpecification.model_json_schema(), indent=2)
     system_prompt = f"{REPAIR_SYSTEM_PROMPT}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_str}"
 
+    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name)
     response = litellm.completion(
-        model=model_name,
-        api_base=SYSTEM_CONFIG.OLLAMA_API_BASE if model_name.startswith("ollama/") else None,
+        **llm_kwargs,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},

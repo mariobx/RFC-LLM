@@ -2,7 +2,14 @@
 
 import os
 from pathlib import Path
+from typing import Optional, Dict, Any
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+
+# Load .env file eagerly from project root
+_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+if _ENV_PATH.exists():
+    load_dotenv(_ENV_PATH)
 
 
 class SystemEnvironmentConfig(BaseSettings):
@@ -25,11 +32,17 @@ class SystemEnvironmentConfig(BaseSettings):
     CPSA4GRAPH_BIN: Path = CABAL_BIN_DIR / "cpsa4graph"
     CPSA4PROT_BIN: Path = CABAL_BIN_DIR / "cpsa4prot"
 
-    # LLM Settings
+    # API Keys & Cloud Endpoints
+    GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
+    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+    ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
     OLLAMA_API_BASE: str = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
-    DEFAULT_ROUTER_MODEL: str = os.getenv("LLM_ROUTER_MODEL", "ollama/qwen2.5:7b-instruct")
-    DEFAULT_EXTRACTION_MODEL: str = os.getenv("LLM_EXTRACTION_MODEL", "ollama/qwen2.5:7b-instruct")
-    DEFAULT_REPAIR_MODEL: str = os.getenv("LLM_REPAIR_MODEL", "ollama/qwen2.5:7b-instruct")
+
+    # LLM Settings (Defaults read from MODEL_NAME or LLM_*_MODEL env vars)
+    DEFAULT_MODEL: str = os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite")
+    DEFAULT_ROUTER_MODEL: str = os.getenv("LLM_ROUTER_MODEL", os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite"))
+    DEFAULT_EXTRACTION_MODEL: str = os.getenv("LLM_EXTRACTION_MODEL", os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite"))
+    DEFAULT_REPAIR_MODEL: str = os.getenv("LLM_REPAIR_MODEL", os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite"))
 
     # Timeouts & Limits
     SUBPROCESS_TIMEOUT_SECONDS: int = 60
@@ -37,6 +50,22 @@ class SystemEnvironmentConfig(BaseSettings):
     MAX_REPAIR_ATTEMPTS: int = 50
 
     model_config = {"env_file": ".env", "extra": "ignore"}
+
+    def get_llm_kwargs(self, model_name: str) -> Dict[str, Any]:
+        """Returns provider-specific arguments (API keys, base URLs) for LiteLLM."""
+        kwargs: Dict[str, Any] = {"model": model_name}
+        if model_name.startswith("ollama/"):
+            kwargs["api_base"] = self.OLLAMA_API_BASE
+        elif model_name.startswith("gemini/"):
+            if self.GEMINI_API_KEY:
+                kwargs["api_key"] = self.GEMINI_API_KEY
+        elif model_name.startswith("openai/"):
+            if self.OPENAI_API_KEY:
+                kwargs["api_key"] = self.OPENAI_API_KEY
+        elif model_name.startswith("anthropic/"):
+            if self.ANTHROPIC_API_KEY:
+                kwargs["api_key"] = self.ANTHROPIC_API_KEY
+        return kwargs
 
 
 # Global singleton instance

@@ -56,9 +56,9 @@ Select the section IDs containing the primary cryptographic message exchange or 
     system_prompt = f"{ROUTER_SYSTEM_PROMPT}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_str}"
 
     try:
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name)
         response = litellm.completion(
-            model=model_name,
-            api_base=SYSTEM_CONFIG.OLLAMA_API_BASE if model_name.startswith("ollama/") else None,
+            **llm_kwargs,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},

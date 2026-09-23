@@ -57,6 +57,13 @@ def main():
         help="Directory to place synthesized models and build artifacts",
     )
     parser.add_argument(
+        "--model",
+        "-m",
+        type=str,
+        default=None,
+        help="Global model identifier for all pipeline stages (e.g. 'gemini/gemini-3.5-flash-lite', 'ollama/qwen2.5:7b-instruct')",
+    )
+    parser.add_argument(
         "--router-model",
         type=str,
         default=None,
@@ -151,6 +158,8 @@ def main():
     output_base_dir = Path(args.output_dir) if args.output_dir else None
     results: List[PipelineExecutionSummary] = []
     total_files = len(rfc_files)
+    active_router_model = args.router_model or args.model or SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL
+    active_extraction_model = args.extraction_model or args.model or SYSTEM_CONFIG.DEFAULT_EXTRACTION_MODEL
 
     for idx, rfc_file in enumerate(rfc_files, 1):
         if total_files > 1:
@@ -161,8 +170,8 @@ def main():
         summary = run_rfc_translation_pipeline(
             rfc_file_path=rfc_file,
             output_dir=output_base_dir,
-            router_model=args.router_model,
-            extraction_model=args.extraction_model,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
         )
         results.append(summary)
 
