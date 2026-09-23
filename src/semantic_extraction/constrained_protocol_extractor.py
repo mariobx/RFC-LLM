@@ -99,13 +99,14 @@ def extract_protocol_specification(
     user_prompt = f"""Protocol Identifier: {protocol_name}
 {principals_hint}
 
-MITRE CPSA Reference Syntax Examples:
+MITRE CPSA Reference Syntax Examples (Helper Only - Use strictly for syntax and algebraic structure, NEVER as ground truth for protocol facts):
 {rag_grounding_text}
 
-Verbatim RFC Exchange Specification:
+Verbatim RFC Exchange Specification (SOLE GROUND TRUTH):
 {verbatim_slice}
 
-Extract the complete CPSAProtocolSpecification adhering to all executability and sort constraints."""
+Extract the complete CPSAProtocolSpecification adhering to all executability and sort constraints.
+Do NOT copy protocol elements, names, or messages from the reference examples; extract strictly what is defined in the Verbatim RFC Exchange Specification."""
 
     response = litellm.completion(
         model=model_name,

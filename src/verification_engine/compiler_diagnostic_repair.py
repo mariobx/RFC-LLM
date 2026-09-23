@@ -80,16 +80,16 @@ Failure Stage: {failure_stage}
 Compiler Diagnostic / Error:
 {error_diagnostic}
 
-MITRE CPSA Reference Guidance on this Error:
+MITRE CPSA Reference Guidance (Helper Only - Explains syntax rules and failure mechanisms):
 {guidance_text}
 
-Verbatim RFC Exchange Specification:
+Verbatim RFC Exchange Specification (SOLE GROUND TRUTH for protocol messages and keys):
 {verbatim_slice}
 
 Current Failing CPSA Specification (JSON):
 {failing_spec.model_dump_json(indent=2)}
 
-Provide the complete repaired CPSAProtocolSpecification resolving the error."""
+Provide the complete repaired CPSAProtocolSpecification resolving the error without inventing fictional protocol terms."""
 
     response = litellm.completion(
         model=model_name,

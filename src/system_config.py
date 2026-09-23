@@ -34,7 +34,7 @@ class SystemEnvironmentConfig(BaseSettings):
     # Timeouts & Limits
     SUBPROCESS_TIMEOUT_SECONDS: int = 60
     ROLETRAN_TIMEOUT_SECONDS: int = 15
-    MAX_REPAIR_ATTEMPTS: int = 3
+    MAX_REPAIR_ATTEMPTS: int = 50
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
