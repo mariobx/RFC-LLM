@@ -53,10 +53,11 @@ def repair_protocol_specification(
     verbatim_slice: str,
     failure_stage: Literal["roletran", "solver"],
     model: Optional[str] = None,
+    cycle_detected: bool = False,
 ) -> CPSAProtocolSpecification:
     """Uses RAG-guided diagnostic repair to patch a failing CPSAProtocolSpecification."""
     model_name = model or SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL
-    logger.info("Executing RAG-guided repair for stage '%s' with diagnostic: %s", failure_stage, error_diagnostic)
+    logger.info("Executing RAG-guided repair for stage '%s' (cycle_detected=%s) with diagnostic: %s", failure_stage, cycle_detected, error_diagnostic)
 
     # 1. RAG Retrieval on Compiler Diagnostic
     retrieved_guidance = []
@@ -75,6 +76,15 @@ def repair_protocol_specification(
 
     guidance_text = "\n\n".join(retrieved_guidance) if retrieved_guidance else "Review standard CPSA executability and preskeleton assumption rules."
 
+    cycle_warning = ""
+    if cycle_detected:
+        cycle_warning = (
+            "\n\nCRITICAL WARNING: An oscillation/cycle was detected. You previously generated a specification "
+            "identical or near-identical to this one that already failed. Do NOT repeat the previous edits. "
+            "You MUST apply an alternative repair strategy (e.g. check sort declarations, add missing variables to role inputs, "
+            "or adjust preskeleton non-originating/unique-originating assumptions) to escape this cycle."
+        )
+
     user_prompt = f"""Failing Protocol: {failing_spec.protocol_name}
 Failure Stage: {failure_stage}
 Compiler Diagnostic / Error:
@@ -87,9 +97,12 @@ Verbatim RFC Exchange Specification (SOLE GROUND TRUTH for protocol messages and
 {verbatim_slice}
 
 Current Failing CPSA Specification (JSON):
-{failing_spec.model_dump_json(indent=2)}
+{failing_spec.model_dump_json(indent=2)}{cycle_warning}
 
 Provide the complete repaired CPSAProtocolSpecification resolving the error without inventing fictional protocol terms."""
+
+    # Use higher temperature if cycle detected to break greedy minimum
+    temp = 0.4 if cycle_detected else 0.0
 
     response = litellm.completion(
         model=model_name,
@@ -99,7 +112,7 @@ Provide the complete repaired CPSAProtocolSpecification resolving the error with
             {"role": "user", "content": user_prompt},
         ],
         response_format={"type": "json_object", "schema": CPSAProtocolSpecification.model_json_schema()},
-        temperature=0.0,
+        temperature=temp,
         timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
     )
 

@@ -17,6 +17,8 @@ from src.code_generation.cpsa_scheme_emitter import emit_cpsa_scheme
 from src.verification_engine.roletran_executability_gate import verify_role_executability
 from src.verification_engine.mitre_build_orchestrator import execute_mitre_make_build, CPSABuildArtifacts
 from src.verification_engine.compiler_diagnostic_repair import repair_protocol_specification
+import hashlib
+from src.pipeline_events import GLOBAL_EVENT_BUS
 
 logger = get_pipeline_logger("orchestrator")
 
@@ -58,9 +60,12 @@ def run_rfc_translation_pipeline(
     logger.info("Output Directory: %s", target_output_dir)
     logger.info("================================================================")
 
+    GLOBAL_EVENT_BUS.emit("pipeline_started", rfc_id=rfc_id, rfc_file=rfc_file_path.name)
+
     if not rfc_file_path.exists():
         err = f"RFC source file not found: {rfc_file_path}"
         logger.error(err)
+        GLOBAL_EVENT_BUS.emit("pipeline_failed", error_message=err)
         return PipelineExecutionSummary(rfc_id=rfc_id, is_eligible=False, error_message=err)
 
     with open(rfc_file_path, "r", encoding="utf-8", errors="ignore") as f:
@@ -69,6 +74,7 @@ def run_rfc_translation_pipeline(
     # -------------------------------------------------------------------------
     # STAGE 1a: Tier 0 Header Filter
     # -------------------------------------------------------------------------
+    GLOBAL_EVENT_BUS.emit("stage_started", stage=1, stage_name="Document Intake & Applicability Gate")
     header_res = filter_rfc_header(raw_rfc_text)
     if not header_res.is_eligible:
         elapsed = time.time() - start_time
@@ -78,6 +84,7 @@ def run_rfc_translation_pipeline(
             error_message=header_res.disqualification_reason,
             duration_seconds=elapsed,
         )
+        GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=header_res.disqualification_reason)
         return PipelineExecutionSummary(
             rfc_id=rfc_id,
             is_eligible=False,
@@ -123,6 +130,7 @@ def run_rfc_translation_pipeline(
             error_message=f"Ineligible: {app_report.rationale}",
             duration_seconds=elapsed,
         )
+        GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=app_report.rationale)
         return PipelineExecutionSummary(
             rfc_id=rfc_id,
             protocol_name=app_report.protocol_name or protocol_title,
@@ -132,6 +140,7 @@ def run_rfc_translation_pipeline(
         )
 
     final_proto_name = app_report.protocol_name or protocol_title
+    GLOBAL_EVENT_BUS.emit("stage_completed", stage=1, protocol_name=final_proto_name)
 
     # -------------------------------------------------------------------------
     # STAGE 1d: Exchange Section Routing
@@ -154,15 +163,25 @@ def run_rfc_translation_pipeline(
     with open(slice_file, "w", encoding="utf-8") as f:
         f.write(verbatim_slice)
 
+    GLOBAL_EVENT_BUS.emit("slice_ready", sections=target_sections, line_count=slice_lines_count)
+
     # -------------------------------------------------------------------------
     # STAGE 2: Constrained Extraction
     # -------------------------------------------------------------------------
+    GLOBAL_EVENT_BUS.emit("stage_started", stage=2, stage_name="Constrained Protocol Extraction")
     try:
         protocol_ast = extract_protocol_specification(
             verbatim_slice=verbatim_slice,
             protocol_name=final_proto_name,
             principals=app_report.participating_principals,
             model=extraction_model,
+        )
+        GLOBAL_EVENT_BUS.emit(
+            "stage_completed",
+            stage=2,
+            roles_count=len(protocol_ast.roles),
+            skeletons_count=len(protocol_ast.skeletons),
+            ast=protocol_ast.model_dump(),
         )
     except Exception as e:
         elapsed = time.time() - start_time
@@ -177,6 +196,7 @@ def run_rfc_translation_pipeline(
             duration_seconds=elapsed,
             error_message=err,
         )
+        GLOBAL_EVENT_BUS.emit("stage_failed", stage=2, error_message=err)
         return PipelineExecutionSummary(
             rfc_id=rfc_id,
             protocol_name=final_proto_name,
@@ -190,19 +210,38 @@ def run_rfc_translation_pipeline(
     # -------------------------------------------------------------------------
     # STAGE 3 & 4: Scheme SCM Emission
     # -------------------------------------------------------------------------
+    GLOBAL_EVENT_BUS.emit("stage_started", stage=3, stage_name="CPSA Scheme Code Generation")
     scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
+    GLOBAL_EVENT_BUS.emit("stage_completed", stage=3, scm_path=str(scm_path))
 
     # -------------------------------------------------------------------------
     # STAGE 5: Roletran Executability Gate (<15 ms) with RAG Self-Healing Loop
     # -------------------------------------------------------------------------
+    GLOBAL_EVENT_BUS.emit("stage_started", stage=5, stage_name="Roletran Executability Verification")
     roletran_res = verify_role_executability(scm_path)
     attempt = 0
+    seen_roletran_hashes = set()
+
     while not roletran_res.is_executable and attempt < SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS:
         attempt += 1
+        current_hash = hashlib.sha256(protocol_ast.model_dump_json().encode()).hexdigest()
+        cycle_detected = current_hash in seen_roletran_hashes
+        seen_roletran_hashes.add(current_hash)
+
+        GLOBAL_EVENT_BUS.emit(
+            "repair_attempt",
+            stage=5,
+            attempt=attempt,
+            max_attempts=SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS,
+            diagnostic=roletran_res.error_diagnostic,
+            cycle_detected=cycle_detected,
+        )
+
         logger.warning(
-            "Roletran check failed on attempt %d/%d: %s. Initiating RAG self-healing repair...",
+            "Roletran check failed on attempt %d/%d (cycle=%s): %s. Initiating RAG self-healing repair...",
             attempt,
             SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS,
+            cycle_detected,
             roletran_res.error_diagnostic,
         )
         try:
@@ -212,6 +251,7 @@ def run_rfc_translation_pipeline(
                 verbatim_slice=verbatim_slice,
                 failure_stage="roletran",
                 model=extraction_model,
+                cycle_detected=cycle_detected,
             )
             scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
             roletran_res = verify_role_executability(scm_path)
@@ -235,6 +275,7 @@ def run_rfc_translation_pipeline(
             duration_seconds=elapsed,
             error_message=err,
         )
+        GLOBAL_EVENT_BUS.emit("stage_failed", stage=5, error_message=err)
         return PipelineExecutionSummary(
             rfc_id=rfc_id,
             protocol_name=final_proto_name,
@@ -246,12 +287,16 @@ def run_rfc_translation_pipeline(
             error_message=err,
         )
 
+    GLOBAL_EVENT_BUS.emit("stage_completed", stage=5, attempts=attempt)
+
     # -------------------------------------------------------------------------
     # STAGE 6: MITRE Build Orchestration with RAG Self-Healing Loop
     # -------------------------------------------------------------------------
+    GLOBAL_EVENT_BUS.emit("stage_started", stage=6, stage_name="MITRE Build & Shapes Exploration")
     artifacts = None
     build_attempt = 0
     last_build_err = None
+    seen_solver_hashes = set()
 
     while build_attempt <= SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS:
         try:
@@ -261,10 +306,24 @@ def run_rfc_translation_pipeline(
             last_build_err = str(e)
             if build_attempt < SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS:
                 build_attempt += 1
+                current_hash = hashlib.sha256(protocol_ast.model_dump_json().encode()).hexdigest()
+                cycle_detected = current_hash in seen_solver_hashes
+                seen_solver_hashes.add(current_hash)
+
+                GLOBAL_EVENT_BUS.emit(
+                    "repair_attempt",
+                    stage=6,
+                    attempt=build_attempt,
+                    max_attempts=SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS,
+                    diagnostic=last_build_err,
+                    cycle_detected=cycle_detected,
+                )
+
                 logger.warning(
-                    "MITRE make build failed (attempt %d/%d): %s. Initiating RAG self-healing repair...",
+                    "MITRE make build failed (attempt %d/%d, cycle=%s): %s. Initiating RAG self-healing repair...",
                     build_attempt,
                     SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS,
+                    cycle_detected,
                     last_build_err,
                 )
                 try:
@@ -274,6 +333,7 @@ def run_rfc_translation_pipeline(
                         verbatim_slice=verbatim_slice,
                         failure_stage="solver",
                         model=extraction_model,
+                        cycle_detected=cycle_detected,
                     )
                     scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
                     roletran_res = verify_role_executability(scm_path)
@@ -302,6 +362,8 @@ def run_rfc_translation_pipeline(
             duration_seconds=elapsed,
             error_message=err,
         )
+        GLOBAL_EVENT_BUS.emit("stage_failed", stage=6, error_message=err)
+        GLOBAL_EVENT_BUS.emit("pipeline_failed", error_message=err)
         return PipelineExecutionSummary(
             rfc_id=rfc_id,
             protocol_name=final_proto_name,
@@ -334,6 +396,17 @@ def run_rfc_translation_pipeline(
     logger.info("Pipeline Complete for %s in %.2fs!", rfc_id, elapsed)
     logger.info("Generated: %s", artifacts.shapes_graph_xhtml_path)
     logger.info("================================================================")
+
+    GLOBAL_EVENT_BUS.emit(
+        "pipeline_completed",
+        success=True,
+        protocol_name=final_proto_name,
+        duration_seconds=elapsed,
+        shapes_count=artifacts.shapes_count,
+        shapes_xhtml=str(artifacts.shapes_graph_xhtml_path),
+        shapes_txt=str(artifacts.shapes_txt_path),
+        scm_path=str(scm_path),
+    )
 
     return PipelineExecutionSummary(
         rfc_id=rfc_id,

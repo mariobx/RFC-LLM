@@ -35,10 +35,34 @@ def main():
         default=None,
         help="Model identifier for Pydantic constrained semantic extraction",
     )
+    parser.add_argument(
+        "--visualize",
+        "-v",
+        action="store_true",
+        help="Launch the live web dashboard visualizer on localhost",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Web port for the live visualizer dashboard (default: 8080)",
+    )
 
     args = parser.parse_args()
     rfc_file = Path(args.rfc_path)
     output_dir = Path(args.output_dir) if args.output_dir else None
+
+    if args.visualize:
+        import webbrowser
+        from src.visualizer.server import run_visualizer_in_background
+
+        run_visualizer_in_background(port=args.port)
+        url = f"http://127.0.0.1:{args.port}"
+        print(f"\n[VISUALIZER] Live Synthesis Studio active at: {url}")
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
 
     summary = run_rfc_translation_pipeline(
         rfc_file_path=rfc_file,

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RFC-LLM Synthesis Studio</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #121826;
+      --border: #1f293d;
+      --accent: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.2);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --code-bg: #0b0f19;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand .badge {
+      font-size: 0.75rem;
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 9999px;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      font-weight: 600;
+    }
+    .meta-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.85rem;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+    .status-pill.idle { background: #374151; color: #d1d5db; }
+    .status-pill.running { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
+    .status-pill.success { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+    .status-pill.failed { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+
+    /* Stepper Bar */
+    .stepper {
+      display: flex;
+      background: #0f1523;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      gap: 12px;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .step-card {
+      flex: 1;
+      min-width: 170px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .step-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+    .step-card.completed {
+      border-color: var(--success);
+    }
+    .step-card.failed {
+      border-color: var(--danger);
+    }
+    .step-num {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .step-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .step-detail {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* Main Workspace */
+    .workspace {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 150px);
+      overflow: hidden;
+    }
+
+    /* Left: Events / Self-Healing */
+    .left-panel {
+      width: 42%;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      background: #0c101c;
+    }
+    .panel-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .event-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .event-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 0.82rem;
+    }
+    .event-card.repair {
+      border-left: 3px solid var(--warning);
+      background: #191c28;
+    }
+    .event-card.cycle {
+      border-left: 3px solid #ec4899;
+      background: #231626;
+    }
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .event-time {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+    }
+
+    /* Right: Code & Artifacts */
+    .right-panel {
+      width: 58%;
+      display: flex;
+      flex-direction: column;
+      background: var(--code-bg);
+    }
+    .tab-bar {
+      display: flex;
+      background: #101625;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      padding: 10px 18px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .tab-content {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+      position: relative;
+    }
+    pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.6;
+      color: #e5e7eb;
+    }
+    .graph-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: white;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand">
+      <h1>RFC-LLM Synthesis Studio</h1>
+      <span class="badge">MITRE CPSA 4.4.9</span>
+    </div>
+    <div class="meta-bar">
+      <div id="rfc-id-label">Target: <strong id="rfc-name">Awaiting Input...</strong></div>
+      <div class="status-pill idle" id="pipeline-status">IDLE</div>
+    </div>
+  </header>
+
+  <!-- 6-Stage Horizontal Stepper -->
+  <div class="stepper">
+    <div class="step-card" id="step-1">
+      <span class="step-num">Stage 1</span>
+      <span class="step-title">Intake & Gate</span>
+      <span class="step-detail" id="step-1-detail">Waiting</span>
+    </div>
+    <div class="step-card" id="step-2">
+      <span class="step-num">Stage 2</span>
+      <span class="step-title">Semantic Extr</span>
+      <span class="step-detail" id="step-2-detail">Waiting</span>
+    </div>
+    <div class="step-card" id="step-3">
+      <span class="step-num">Stage 3 & 4</span>
+      <span class="step-title">Scheme Emitter</span>
+      <span class="step-detail" id="step-3-detail">Waiting</span>
+    </div>
+    <div class="step-card" id="step-5">
+      <span class="step-num">Stage 5</span>
+      <span class="step-title">Roletran Check</span>
+      <span class="step-detail" id="step-5-detail">Waiting</span>
+    </div>
+    <div class="step-card" id="step-6">
+      <span class="step-num">Stage 6</span>
+      <span class="step-title">MITRE Solver</span>
+      <span class="step-detail" id="step-6-detail">Waiting</span>
+    </div>
+  </div>
+
+  <!-- Workspace Panels -->
+  <div class="workspace">
+    <!-- Left: Event Stream & Diagnostics -->
+    <div class="left-panel">
+      <div class="panel-header">
+        <span>Execution Trace & Self-Healing</span>
+        <span id="repair-badge" style="display:none; color:var(--warning);">Max Attempts: 50</span>
+      </div>
+      <div class="event-feed" id="event-feed">
+        <div class="event-card">
+          <div class="event-header">
+            <span>System Ready</span>
+            <span class="event-time">--:--:--</span>
+          </div>
+          <div>Visualizer listening for live pipeline events...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Code, AST, and Interactive Proofs -->
+    <div class="right-panel">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('scm')">CPSA Scheme (.scm)</button>
+        <button class="tab-btn" onclick="switchTab('ast')">Pydantic AST</button>
+        <button class="tab-btn" onclick="switchTab('slice')">RFC Slice</button>
+        <button class="tab-btn" onclick="switchTab('graph')">Shapes Graph (SVG)</button>
+      </div>
+
+      <div class="tab-content" id="tab-scm">
+        <pre><code id="code-scm">; Generated CPSA Scheme model will appear here...</code></pre>
+      </div>
+
+      <div class="tab-content" id="tab-ast" style="display:none;">
+        <pre><code id="code-ast">// Pydantic JSON AST will appear here...</code></pre>
+      </div>
+
+      <div class="tab-content" id="tab-slice" style="display:none;">
+        <pre><code id="code-slice">Verbatim RFC sliced text will appear here...</code></pre>
+      </div>
+
+      <div class="tab-content" id="tab-graph" style="display:none;">
+        <div id="graph-container" style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">
+          Interactive MITRE CPSA shapes graph will render here upon successful verification.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client JavaScript -->
+  <script>
+    let activeTab = 'scm';
+
+    function switchTab(tabId) {
+      activeTab = tabId;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      
+      const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.innerText.toLowerCase().includes(tabId));
+      if (targetBtn) targetBtn.classList.add('active');
+
+      const targetContent = document.getElementById(`tab-${tabId}`);
+      if (targetContent) targetContent.style.display = 'block';
+    }
+
+    function updateStep(stageNum, status, detail) {
+      const stepEl = document.getElementById(`step-${stageNum}`);
+      if (!stepEl) return;
+      stepEl.classList.remove('active', 'completed', 'failed');
+      if (status === 'running') stepEl.classList.add('active');
+      else if (status === 'success') stepEl.classList.add('completed');
+      else if (status === 'failed') stepEl.classList.add('failed');
+
+      if (detail) {
+        const detailEl = document.getElementById(`step-${stageNum}-detail`);
+        if (detailEl) detailEl.innerText = detail;
+      }
+    }
+
+    function addEventCard(evt) {
+      const feed = document.getElementById('event-feed');
+      const card = document.createElement('div');
+      card.className = 'event-card';
+
+      const timeStr = new Date(evt.timestamp * 1000).toLocaleTimeString();
+      let headerText = evt.event_type;
+      let bodyText = JSON.stringify(evt.data, null, 2);
+
+      if (evt.event_type === 'pipeline_started') {
+        headerText = `Pipeline Started: ${evt.data.rfc_id}`;
+        document.getElementById('rfc-name').innerText = evt.data.rfc_file || evt.data.rfc_id;
+        const pill = document.getElementById('pipeline-status');
+        pill.className = 'status-pill running';
+        pill.innerText = 'SYNTHESIZING';
+      } else if (evt.event_type === 'stage_started') {
+        headerText = `Stage ${evt.stage}: ${evt.data.stage_name || ''}`;
+        updateStep(evt.stage, 'running', 'Running...');
+      } else if (evt.event_type === 'stage_completed') {
+        headerText = `Stage ${evt.stage} Completed`;
+        updateStep(evt.stage, 'success', 'Passed');
+        if (evt.data.ast) {
+          document.getElementById('code-ast').innerText = JSON.stringify(evt.data.ast, null, 2);
+        }
+        if (evt.data.scm_path) {
+          fetch(`/api/artifact?path=${encodeURIComponent(evt.data.scm_path)}`)
+            .then(r => r.text())
+            .then(txt => document.getElementById('code-scm').innerText = txt);
+        }
+      } else if (evt.event_type === 'repair_attempt') {
+        card.classList.add('repair');
+        if (evt.data.cycle_detected) card.classList.add('cycle');
+        headerText = `[Stage ${evt.stage} Repair] Attempt ${evt.data.attempt}/${evt.data.max_attempts}`;
+        bodyText = `Diagnostic: ${evt.data.diagnostic}\nCycle Detected: ${evt.data.cycle_detected ? 'YES (Jitter Active)' : 'NO'}`;
+        updateStep(evt.stage, 'running', `Repair ${evt.data.attempt}/${evt.data.max_attempts}`);
+      } else if (evt.event_type === 'pipeline_completed') {
+        headerText = 'Formal Verification Succeeded!';
+        const pill = document.getElementById('pipeline-status');
+        pill.className = 'status-pill success';
+        pill.innerText = 'VERIFIED';
+        updateStep(6, 'success', `Shapes: ${evt.data.shapes_count}`);
+
+        if (evt.data.shapes_xhtml) {
+          const container = document.getElementById('graph-container');
+          container.innerHTML = `<iframe class="graph-frame" src="/api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
+        }
+      } else if (evt.event_type === 'pipeline_failed') {
+        headerText = 'Pipeline Halted';
+        const pill = document.getElementById('pipeline-status');
+        pill.className = 'status-pill failed';
+        pill.innerText = 'FAILED';
+      }
+
+      card.innerHTML = `
+        <div class="event-header">
+          <span>${headerText}</span>
+          <span class="event-time">${timeStr}</span>
+        </div>
+        <pre style="font-size:0.75rem; color:#d1d5db;">${bodyText}</pre>
+      `;
+
+      feed.prepend(card);
+    }
+
+    // Connect SSE
+    const evtSource = new EventSource('/api/events');
+    evtSource.onmessage = function(e) {
+      try {
+        const evt = JSON.parse(e.data);
+        addEventCard(evt);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    // Load initial history
+    fetch('/api/history')
+      .then(r => r.json())
+      .then(history => {
+        history.forEach(addEventCard);
+      });
+  </script>
+</body>
+</html>
