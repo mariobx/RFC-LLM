@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# RFC-LLM Command-line Runner
+# Automatically configures PYTHONPATH and invokes the project virtual environment.
+
+set -e
+
+REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+export PYTHONPATH="${REPO_ROOT}:${PYTHONPATH}"
+
+if [ ! -f "${REPO_ROOT}/.venv/bin/python" ]; then
+    echo "Error: Virtual environment not found at ${REPO_ROOT}/.venv" >&2
+    exit 1
+fi
+
+exec "${REPO_ROOT}/.venv/bin/python" "${REPO_ROOT}/src/pipeline.py" "$@"
