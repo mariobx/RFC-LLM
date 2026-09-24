@@ -99,12 +99,31 @@ class CPSAProtocolRole(BaseModel):
 
         trace_form = ["trace"] + [event.to_cpsa_json() for event in self.trace]
 
+        # Extract all tokens appearing in trace and channel annotations to satisfy roletran constraints
+        def _extract_tokens(item: Any, out: Set[str]):
+            if isinstance(item, str):
+                out.add(item)
+            elif isinstance(item, (list, tuple)):
+                for x in item:
+                    _extract_tokens(x, out)
+            elif isinstance(item, dict):
+                for x in item.values():
+                    _extract_tokens(x, out)
+
+        trace_tokens: Set[str] = set()
+        _extract_tokens(trace_form, trace_tokens)
+        reserved_ops = {"pubk", "privk", "invk", "ltk", "cat", "enc", "hash", "trace", "send", "recv"}
+
         role_form: List[Any] = ["defrole", self.role_name, vars_form, trace_form]
 
         if self.unique_originating:
-            role_form.append(["uniq-orig"] + self.unique_originating)
+            valid_uo = [v for v in self.unique_originating if v in trace_tokens]
+            if valid_uo:
+                role_form.append(["uniq-orig"] + valid_uo)
         if self.unique_generated:
-            role_form.append(["uniq-gen"] + self.unique_generated)
+            valid_ug = [v for v in self.unique_generated if v in trace_tokens]
+            if valid_ug:
+                role_form.append(["uniq-gen"] + valid_ug)
         if self.non_originating:
             role_form.append(["non-orig"] + self.non_originating)
         if self.pen_non_originating:
@@ -118,11 +137,28 @@ class CPSAProtocolRole(BaseModel):
         if self.facts:
             role_form.append(["facts"] + self.facts)
 
-        # Procedural roletran annotations
+        # Procedural roletran annotations: every input/output term must be tied to trace variables
         if self.inputs:
-            role_form.append(["inputs"] + self.inputs)
+            valid_inputs = []
+            for inp in self.inputs:
+                inp_tokens: Set[str] = set()
+                _extract_tokens(inp, inp_tokens)
+                var_tokens = inp_tokens - reserved_ops
+                if var_tokens and var_tokens.issubset(trace_tokens):
+                    valid_inputs.append(inp)
+            if valid_inputs:
+                role_form.append(["inputs"] + valid_inputs)
+
         if self.outputs:
-            role_form.append(["outputs"] + self.outputs)
+            valid_outputs = []
+            for out in self.outputs:
+                out_tokens: Set[str] = set()
+                _extract_tokens(out, out_tokens)
+                var_tokens = out_tokens - reserved_ops
+                if var_tokens and var_tokens.issubset(trace_tokens):
+                    valid_outputs.append(out)
+            if valid_outputs:
+                role_form.append(["outputs"] + valid_outputs)
 
         if self.comment:
             role_form.append(["comment", f'"{self.comment}"'])

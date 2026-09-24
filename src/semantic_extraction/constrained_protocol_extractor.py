@@ -54,9 +54,10 @@ CPSA Model Architecture Requirements:
        ["invk", key] for the inverse of an asymmetric key variable
        ["ltk", name1, name2] for long-term shared symmetric keys
        ["exp", ["gen"], x] for Diffie-Hellman powers
-   - inputs: List of terms known prior to execution required to execute the role (e.g. channel "ch", principal names, held private keys or pre-shared keys).
-   - outputs: List of terms output or returned upon successful handshake completion (e.g. established nonces, shared secrets).
-   - unique_originating: Nonces or keys uniquely originated / generated fresh by this role.
+   - inputs: List of terms known prior to execution required to execute the role (e.g. channel "ch", held private keys, or pre-shared keys). CRITICAL: In CPSA roletran, every variable in "inputs" MUST actually appear in the role trace! Never include principal names in inputs if they are not sent or received in the trace.
+   - Symmetric encryption keys: In CPSA basic algebra, any symmetric key used in ["enc", payload, key] must be declared with sort "skey" (never "data" or "text").
+   - outputs: List of terms output or returned upon successful handshake completion (e.g. established nonces, shared secrets). Every variable in outputs must also appear in the trace.
+   - unique_originating: Nonces or keys uniquely originated / generated fresh by this role. All fresh terms sent in initial messages must be declared here.
 
 3. Analysis Preskeletons:
    - For the primary roles, construct point-of-view CPSAPreskeleton instances:

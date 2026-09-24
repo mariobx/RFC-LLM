@@ -36,12 +36,19 @@ class VisualizerServer:
         self.app.router.add_static("/output", SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR, show_index=True)
 
     def _on_bus_event(self, event: PipelineEvent):
-        """Dispatches an event from the pipeline event bus to all connected web clients."""
-        for q in list(self._sse_clients):
-            try:
-                q.put_nowait(event)
-            except Exception:
-                pass
+        """Dispatches an event from the pipeline event bus to all connected web clients thread-safely."""
+        if hasattr(self, "loop") and self.loop and self.loop.is_running():
+            for q in list(self._sse_clients):
+                try:
+                    self.loop.call_soon_threadsafe(q.put_nowait, event)
+                except Exception:
+                    pass
+        else:
+            for q in list(self._sse_clients):
+                try:
+                    q.put_nowait(event)
+                except Exception:
+                    pass
 
     async def handle_index(self, request: web.Request) -> web.Response:
         """Serves the main single-page visualizer dashboard."""
@@ -128,6 +135,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     def _target():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        server.loop = loop
         runner = web.AppRunner(server.app)
         loop.run_until_complete(runner.setup())
         site = web.TCPSite(runner, host, port)

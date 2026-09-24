@@ -33,13 +33,17 @@ You are given a failing CPSAProtocolSpecification, the verbatim RFC exchange tex
 Your task is to identify the precise defect causing the compiler or solver failure and return a corrected CPSAProtocolSpecification.
 
 Common Diagnostics & Fixes:
-1. "Received term cannot be fully destructured":
+1. "Undeclared variable <var>":
+   - A variable is declared in "inputs", "outputs", or "unique_originating", but does NOT occur anywhere in the role's trace events!
+   - Fix: Remove the variable from "inputs", "outputs", and "unique_originating". In CPSA roletran, every variable in inputs/outputs/uniq-orig must actually appear in a trace send or recv.
+2. "Cannot build <term>":
+   - A role attempts to send a term before it has been generated ("unique_originating"), received, or passed as an input ("inputs").
+   - Or, a symmetric encryption key in ["enc", payload, key] was mistakenly declared as "data" instead of "skey".
+   - Fix: Change key sort to "skey". Add fresh originating terms to "unique_originating". Add known parameters or channels to "inputs".
+3. "Received term cannot be fully destructured":
    - A role receives an encrypted message or hash, but lacks the necessary decryption key or preimage in its "inputs".
    - Fix: Ensure the role's "inputs" list includes the required key (e.g. held private key or shared secret) to decrypt the incoming payload.
-2. "Transmitted term cannot be built from inputs and previous terms":
-   - A role attempts to send a variable, nonce, or key before it has been generated, passed as an input, or received.
-   - Fix: Add the variable to "inputs", declare it as "uniq-orig", or adjust event sequence.
-3. Unprovable / Unrealized Preskeleton Skeletons:
+4. Unprovable / Unrealized Preskeleton Skeletons:
    - Preskeleton is missing necessary secrecy assumptions ("non-orig" for uncompromised private keys).
    - Nonces lack freshness assumptions ("uniq-orig").
    - Fix: Declare uncompromised keys under "non_originating" and fresh nonces under "unique_originating".
