@@ -1,9 +1,20 @@
-"""Protocol Syntax Tree and CPSA Intermediate Representation (IR)."""
-
-from typing import Any, Dict, List, Literal, Optional, Union
+import re
+from typing import Any, Dict, List, Literal, Optional, Union, Set
 from pydantic import BaseModel, Field
 
 from src.intermediate_representation.algebraic_sorts import CPSASortEnum
+
+
+def sanitize_cpsa_symbol(sym: str) -> str:
+    """Sanitizes an identifier to conform strictly to CPSA S-expression symbol grammar.
+    CPSA allows: alphanumeric and +-*/<=>!?$:%_&~^.
+    Periods (.), spaces, and other punctuation are strictly forbidden in unquoted atoms.
+    """
+    if not sym:
+        return "prot"
+    s = re.sub(r'[\.\s]+', '-', sym)
+    s = re.sub(r'[^a-zA-Z0-9+\-*/<=>!?$:%_&~^]', '', s)
+    return s.strip('-') or "prot"
 
 
 class CPSAVariableDeclaration(BaseModel):
@@ -132,7 +143,7 @@ class CPSAProtocolRole(BaseModel):
         _extract_tokens(trace_form, trace_tokens)
         reserved_ops = {"pubk", "privk", "invk", "ltk", "cat", "enc", "hash", "trace", "send", "recv"}
 
-        role_form: List[Any] = ["defrole", self.role_name, vars_form, trace_form]
+        role_form: List[Any] = ["defrole", sanitize_cpsa_symbol(self.role_name), vars_form, trace_form]
 
         if self.unique_originating:
             valid_uo = [v for v in self.unique_originating if v in trace_tokens]
@@ -197,9 +208,9 @@ class CPSAStrandInstance(BaseModel):
     )
 
     def to_cpsa_json(self) -> List[Any]:
-        strand_form: List[Any] = ["defstrandmax", self.role_name]
+        strand_form: List[Any] = ["defstrandmax", sanitize_cpsa_symbol(self.role_name)]
         for role_var, term_val in self.variable_bindings.items():
-            strand_form.append([role_var, term_val])
+            strand_form.append([sanitize_cpsa_symbol(role_var), term_val])
         return strand_form
 
 
@@ -246,7 +257,7 @@ class CPSAPreskeleton(BaseModel):
     comment: Optional[str] = None
 
     def to_cpsa_json(self) -> List[Any]:
-        skel_form: List[Any] = ["defskeleton", self.protocol_name]
+        skel_form: List[Any] = ["defskeleton", sanitize_cpsa_symbol(self.protocol_name)]
 
         if self.variables:
             sort_to_vars: Dict[str, List[str]] = {}
@@ -306,7 +317,8 @@ class CPSAProtocolSpecification(BaseModel):
         herald_text = self.herald_comment or f"{self.protocol_name} Protocol Verification Suite"
         payload.append(["herald", f'"{herald_text}"'])
 
-        prot_form: List[Any] = ["defprotocol", self.protocol_name, self.message_algebra]
+        clean_proto_name = sanitize_cpsa_symbol(self.protocol_name)
+        prot_form: List[Any] = ["defprotocol", clean_proto_name, self.message_algebra]
         for role in self.roles:
             prot_form.append(role.to_cpsa_json())
         payload.append(prot_form)
