@@ -259,7 +259,8 @@ def run_rfc_translation_pipeline(
             roletran_res = verify_role_executability(scm_path)
         except Exception as repair_err:
             logger.error("Self-healing repair exception on attempt %d: %s", attempt, repair_err)
-            break
+            time.sleep(2)
+            continue
 
     if not roletran_res.is_executable:
         elapsed = time.time() - start_time
@@ -343,7 +344,8 @@ def run_rfc_translation_pipeline(
                         logger.warning("Repaired spec failed roletran executability: %s", roletran_res.error_diagnostic)
                 except Exception as repair_err:
                     logger.error("Build self-healing exception on attempt %d: %s", build_attempt, repair_err)
-                    break
+                    time.sleep(2)
+                    continue
             else:
                 break
 

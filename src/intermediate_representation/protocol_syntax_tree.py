@@ -97,7 +97,25 @@ class CPSAProtocolRole(BaseModel):
         for sort_val, var_names in sort_to_vars.items():
             vars_form.append(var_names + [sort_val])
 
-        trace_form = ["trace"] + [event.to_cpsa_json() for event in self.trace]
+        akey_vars = {v.name for v in self.variables if v.sort.value == "akey"}
+
+        def _normalize_term(term: Any) -> Any:
+            if isinstance(term, list):
+                if len(term) == 2 and term[0] == "pubk" and isinstance(term[1], str) and term[1] in akey_vars:
+                    return term[1]
+                if len(term) == 2 and term[0] == "privk" and isinstance(term[1], str) and term[1] in akey_vars:
+                    return ["invk", term[1]]
+                return [_normalize_term(x) for x in term]
+            return term
+
+        normalized_events = []
+        for event in self.trace:
+            evt_json = event.to_cpsa_json()
+            if len(evt_json) >= 2:
+                evt_json[-1] = _normalize_term(evt_json[-1])
+            normalized_events.append(evt_json)
+
+        trace_form = ["trace"] + normalized_events
 
         # Extract all tokens appearing in trace and channel annotations to satisfy roletran constraints
         def _extract_tokens(item: Any, out: Set[str]):
@@ -145,7 +163,7 @@ class CPSAProtocolRole(BaseModel):
                 _extract_tokens(inp, inp_tokens)
                 var_tokens = inp_tokens - reserved_ops
                 if var_tokens and var_tokens.issubset(trace_tokens):
-                    valid_inputs.append(inp)
+                    valid_inputs.append(_normalize_term(inp))
             if valid_inputs:
                 role_form.append(["inputs"] + valid_inputs)
 
@@ -156,7 +174,7 @@ class CPSAProtocolRole(BaseModel):
                 _extract_tokens(out, out_tokens)
                 var_tokens = out_tokens - reserved_ops
                 if var_tokens and var_tokens.issubset(trace_tokens):
-                    valid_outputs.append(out)
+                    valid_outputs.append(_normalize_term(out))
             if valid_outputs:
                 role_form.append(["outputs"] + valid_outputs)
 

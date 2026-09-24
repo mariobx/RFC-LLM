@@ -47,6 +47,12 @@ Common Diagnostics & Fixes:
    - Preskeleton is missing necessary secrecy assumptions ("non-orig" for uncompromised private keys).
    - Nonces lack freshness assumptions ("uniq-orig").
    - Fix: Declare uncompromised keys under "non_originating" and fresh nonces under "unique_originating".
+5. "Expecting a name":
+   - An asymmetric key constructor like ["pubk", key] or ["privk", key] was passed an asymmetric key variable (sort "akey") instead of a principal identifier (sort "name").
+   - Fix: In CPSA, if an asymmetric key variable 'k' is declared with sort "akey", use 'k' and ["invk", 'k'] directly without wrapping in "pubk" or "privk". "pubk" and "privk" only accept variables of sort "name".
+6. "Uniquely originating value ... does not originate in trace":
+   - A variable declared under "unique_originating" is only transmitted inside a ["hash", ...] one-way digest, or is never transmitted.
+   - Fix: Remove the variable from "unique_originating". In CPSA, atoms cannot originate inside a one-way hash.
 
 Return ONLY the repaired, valid CPSAProtocolSpecification matching the requested JSON schema."""
 
@@ -89,6 +95,11 @@ def repair_protocol_specification(
             "or adjust preskeleton non-originating/unique-originating assumptions) to escape this cycle."
         )
 
+    # Truncate verbatim slice to concise context to preserve token quota across multiple repair passes
+    slice_snippet = verbatim_slice[:3000]
+    if len(verbatim_slice) > 3000:
+        slice_snippet += "\n... [Remaining RFC specification text truncated for compiler repair pass] ..."
+
     user_prompt = f"""Failing Protocol: {failing_spec.protocol_name}
 Failure Stage: {failure_stage}
 Compiler Diagnostic / Error:
@@ -97,8 +108,8 @@ Compiler Diagnostic / Error:
 MITRE CPSA Reference Guidance (Helper Only - Explains syntax rules and failure mechanisms):
 {guidance_text}
 
-Verbatim RFC Exchange Specification (SOLE GROUND TRUTH for protocol messages and keys):
-{verbatim_slice}
+Verbatim RFC Exchange Specification (Excerpt for repair context):
+{slice_snippet}
 
 Current Failing CPSA Specification (JSON):
 {failing_spec.model_dump_json(indent=2)}{cycle_warning}
@@ -111,15 +122,27 @@ Provide the complete repaired CPSAProtocolSpecification resolving the error with
     system_prompt = f"{REPAIR_SYSTEM_PROMPT}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_str}"
 
     llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=temp)
-    response = litellm.completion(
-        **llm_kwargs,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        response_format={"type": "json_object"},
-        timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
-    )
+    response = None
+    for retry_idx in range(4):
+        try:
+            response = litellm.completion(
+                **llm_kwargs,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format={"type": "json_object"},
+                timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+            )
+            break
+        except Exception as exc:
+            err_msg = str(exc)
+            if ("429" in err_msg or "Quota exceeded" in err_msg or "RateLimitError" in err_msg) and retry_idx < 3:
+                wait_sec = 30 * (retry_idx + 1)
+                logger.warning("Quota rate limit reached during repair pass. Waiting %ds before retry: %s", wait_sec, exc)
+                time.sleep(wait_sec)
+            else:
+                raise
 
     content = response.choices[0].message.content
     try:
