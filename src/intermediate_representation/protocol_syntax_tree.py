@@ -1,6 +1,6 @@
 import re
 from typing import Any, Dict, List, Literal, Optional, Union, Set
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from src.intermediate_representation.algebraic_sorts import CPSASortEnum
 
@@ -15,6 +15,32 @@ def sanitize_cpsa_symbol(sym: str) -> str:
     s = re.sub(r'[\.\s]+', '-', sym)
     s = re.sub(r'[^a-zA-Z0-9+\-*/<=>!?$:%_&~^]', '', s)
     return s.strip('-') or "prot"
+
+
+def normalize_cpsa_term(term: Any, akey_vars: Optional[Set[str]] = None) -> Any:
+    """Recursively validates and normalizes message terms into valid CPSA 4.4.9 operators."""
+    if isinstance(term, list):
+        if not term:
+            return term
+        new_list = list(term)
+        op = new_list[0]
+        if isinstance(op, str):
+            # Normalize common foreign crypto keywords (ProVerif/Tamarin/etc.)
+            if op in ("aenc", "senc", "asym_enc", "sym_enc"):
+                new_list[0] = "enc"
+            elif op in ("mac", "hmac"):
+                new_list[0] = "hash"
+            elif op == "sign":
+                new_list[0] = "enc"
+
+        if akey_vars and len(new_list) == 2 and isinstance(new_list[1], str) and new_list[1] in akey_vars:
+            if new_list[0] == "pubk":
+                return new_list[1]
+            if new_list[0] == "privk":
+                return ["invk", new_list[1]]
+
+        return [normalize_cpsa_term(x, akey_vars) for x in new_list]
+    return term
 
 
 class CPSAVariableDeclaration(BaseModel):
@@ -38,6 +64,11 @@ class CPSATraceEvent(BaseModel):
         description="Term payload: atom string, integer, or nested operator tree",
     )
     description: Optional[str] = Field(default=None, description="Semantic description of the message event (e.g. Client sends ClientHello)")
+
+    @field_validator("message_term", mode="before")
+    @classmethod
+    def validate_and_normalize_term(cls, v: Any) -> Any:
+        return normalize_cpsa_term(v)
 
     def to_cpsa_json(self) -> List[Any]:
         if self.direction in ["load", "stor"]:
@@ -114,20 +145,11 @@ class CPSAProtocolRole(BaseModel):
 
         akey_vars = {v.name for v in self.variables if v.sort.value == "akey"}
 
-        def _normalize_term(term: Any) -> Any:
-            if isinstance(term, list):
-                if len(term) == 2 and term[0] == "pubk" and isinstance(term[1], str) and term[1] in akey_vars:
-                    return term[1]
-                if len(term) == 2 and term[0] == "privk" and isinstance(term[1], str) and term[1] in akey_vars:
-                    return ["invk", term[1]]
-                return [_normalize_term(x) for x in term]
-            return term
-
         normalized_events = []
         for event in self.trace:
             evt_json = event.to_cpsa_json()
             if len(evt_json) >= 2:
-                evt_json[-1] = _normalize_term(evt_json[-1])
+                evt_json[-1] = normalize_cpsa_term(evt_json[-1], akey_vars)
             normalized_events.append(evt_json)
 
         trace_form = ["trace"] + normalized_events
@@ -178,7 +200,7 @@ class CPSAProtocolRole(BaseModel):
                 _extract_tokens(inp, inp_tokens)
                 var_tokens = inp_tokens - reserved_ops
                 if var_tokens and var_tokens.issubset(trace_tokens):
-                    valid_inputs.append(_normalize_term(inp))
+                    valid_inputs.append(normalize_cpsa_term(inp, akey_vars))
             if valid_inputs:
                 role_form.append(["inputs"] + valid_inputs)
 
@@ -189,7 +211,7 @@ class CPSAProtocolRole(BaseModel):
                 _extract_tokens(out, out_tokens)
                 var_tokens = out_tokens - reserved_ops
                 if var_tokens and var_tokens.issubset(trace_tokens):
-                    valid_outputs.append(_normalize_term(out))
+                    valid_outputs.append(normalize_cpsa_term(out, akey_vars))
             if valid_outputs:
                 role_form.append(["outputs"] + valid_outputs)
 

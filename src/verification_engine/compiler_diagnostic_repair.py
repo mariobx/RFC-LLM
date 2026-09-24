@@ -56,8 +56,41 @@ Common Diagnostics & Fixes:
 7. Variable Naming & Metadata Integrity:
    - Preserve all descriptive, domain-specific identifiers (e.g. "client_identity", "server_identity", "client_random", "premaster_secret"). Do NOT downgrade them to single-letter or toy abbreviations like 'a', 'b', 'init', 'resp', 'k'.
    - Preserve and update the 'description' and 'rfc_field' metadata fields.
+8. NEVER Emit Foreign Operator "aenc" or "senc":
+   - CPSA message algebra has NO "aenc" or "senc" operator!
+   - In CPSA, ALL encryption (both symmetric and asymmetric) strictly uses "enc": ["enc", payload, key].
+   - If encrypting with a public key, use ["enc", payload, ["pubk", name]] or ["enc", payload, key]. NEVER write "aenc".
 
 Return ONLY the repaired, valid CPSAProtocolSpecification matching the requested JSON schema."""
+
+
+def clean_rag_diagnostic_query(diagnostic: str, failure_stage: str) -> str:
+    """Extracts a domain-level RAG query from raw compiler diagnostics,
+    stripping specific code fragments, variables, and S-expressions."""
+    import re
+    if "Cannot build" in diagnostic:
+        return "roletran Cannot build term trace origination unique-orig inputs"
+    if "Keyword" in diagnostic and "unknown" in diagnostic:
+        return "CPSA message algebra operators enc hash cat pubk privk invk"
+    if "Expecting a name" in diagnostic:
+        return "pubk privk sort name akey asymmetric key inverse invk"
+    if "Undeclared variable" in diagnostic:
+        return "roletran inputs outputs undeclared variable trace"
+    if "does not originate" in diagnostic:
+        return "uniq-orig origination trace hash digest non-orig"
+    if "Bad char in atom" in diagnostic:
+        return "symbol atom character grammar rules alphanumeric"
+    if "Sort not recognized" in diagnostic:
+        return "order-sorted algebra sorts name text data skey akey"
+    if "Received term cannot be" in diagnostic:
+        return "roletran recv decryption destructuring inputs key"
+
+    # Strip out any parenthesized code snippets e.g. (cat (enc ...))
+    cleaned = re.sub(r'\(.*?\)', '', diagnostic)
+    cleaned = re.sub(r'["\':]', '', cleaned)
+    tokens = [t for t in cleaned.split() if len(t) > 2]
+    concise = " ".join(tokens[:6])
+    return f"CPSA {failure_stage} {concise} syntax manual error rule fix"
 
 
 def repair_protocol_specification(
@@ -77,7 +110,7 @@ def repair_protocol_specification(
     retriever = _get_retriever()
     if retriever:
         try:
-            rag_query = f"{error_diagnostic} CPSA manual syntax error rule fix"
+            rag_query = clean_rag_diagnostic_query(error_diagnostic, failure_stage)
             hits = retriever.search(rag_query, top_k=2, mode="hybrid", rerank=False)
             retrieved_meta = []
             for idx, chunk in enumerate(hits, 1):
