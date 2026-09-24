@@ -165,7 +165,12 @@ def run_rfc_translation_pipeline(
     with open(slice_file, "w", encoding="utf-8") as f:
         f.write(verbatim_slice)
 
-    GLOBAL_EVENT_BUS.emit("slice_ready", sections=target_sections, line_count=slice_lines_count)
+    GLOBAL_EVENT_BUS.emit(
+        "slice_ready",
+        sections=target_sections,
+        line_count=slice_lines_count,
+        slice_path=str(slice_file),
+    )
 
     # -------------------------------------------------------------------------
     # STAGE 2: Constrained Extraction
@@ -224,7 +229,7 @@ def run_rfc_translation_pipeline(
     attempt = 0
     seen_roletran_hashes = set()
 
-    max_roletran_attempts = min(3, SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS)
+    max_roletran_attempts = SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS
     while not roletran_res.is_executable and attempt < max_roletran_attempts:
         attempt += 1
         current_hash = hashlib.sha256(protocol_ast.model_dump_json().encode()).hexdigest()
@@ -317,9 +322,16 @@ def run_rfc_translation_pipeline(
                     last_build_err,
                 )
                 try:
+                    combined_diagnostic = last_build_err
+                    if not roletran_res.is_executable and roletran_res.error_diagnostic:
+                        combined_diagnostic = (
+                            f"MITRE CPSA make / solver failure:\n{last_build_err}\n\n"
+                            f"Pre-flight Roletran Executability Diagnostic:\n{roletran_res.error_diagnostic}"
+                        )
+
                     protocol_ast = repair_protocol_specification(
                         failing_spec=protocol_ast,
-                        error_diagnostic=last_build_err,
+                        error_diagnostic=combined_diagnostic,
                         verbatim_slice=verbatim_slice,
                         failure_stage="solver",
                         model=active_repair_model,

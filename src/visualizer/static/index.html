@@ -405,6 +405,12 @@
       } else if (evt.event_type === 'slice_ready') {
         typeLabel = 'SLICE_EXTRACTED';
         bodyText = `Sections: ${JSON.stringify(evt.data.sections)}\nLine count: ${evt.data.line_count}`;
+        if (evt.data && evt.data.slice_path) {
+          fetch(`/api/artifact?path=${encodeURIComponent(evt.data.slice_path)}`)
+            .then(r => r.text())
+            .then(txt => { document.getElementById('code-slice').innerText = txt; })
+            .catch(() => {});
+        }
       } else if (evt.event_type === 'repair_attempt') {
         item.classList.add('repair');
         if (evt.data.cycle_detected) item.classList.add('cycle');
