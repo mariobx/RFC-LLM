@@ -60,10 +60,11 @@ CPSA Model Architecture Requirements:
    - unique_originating: Nonces or keys uniquely originated / generated fresh by this role. All fresh terms sent in initial messages must be declared here.
 
 3. Analysis Preskeletons:
+   - Always provide a descriptive "herald_comment" summarizing the protocol and analysis goal.
    - For the primary roles, construct point-of-view CPSAPreskeleton instances:
-     * strands: instantiation of the role strand with full trace height.
-     * non_originating: private keys or long-term secrets assumed uncompromised by the penetrator (e.g. ["privk", "Principal_Name"] or ["invk", "key_var"]).
-     * unique_originating: fresh terms generated in this scenario.
+     * strands: instantiation of the role strand with variable bindings (the compiler uses "defstrandmax" to instantiate maximal role trace).
+     * non_originating: private keys or long-term secrets assumed uncompromised by the penetrator (e.g. ["privk", "s"] or ["invk", "ks"]).
+     * unique_originating: fresh nonces or secrets generated in this scenario.
 
 Return ONLY a valid JSON object matching the requested CPSAProtocolSpecification schema."""
 

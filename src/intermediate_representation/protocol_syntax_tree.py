@@ -187,14 +187,17 @@ class CPSAProtocolRole(BaseModel):
 class CPSAStrandInstance(BaseModel):
     """Instantiation of a role strand within a preskeleton."""
     role_name: str = Field(..., description="Name of the instantiated role")
-    trace_length: int = Field(..., description="Number of executed trace steps (1 to trace height)")
+    trace_length: Optional[int] = Field(
+        default=None,
+        description="Trace height (optional; defstrandmax is always used to evaluate full strand)",
+    )
     variable_bindings: Dict[str, Union[str, List[Any]]] = Field(
         default_factory=dict,
         description="Mapping from role variable identifier to instantiated skeleton term",
     )
 
     def to_cpsa_json(self) -> List[Any]:
-        strand_form: List[Any] = ["defstrand", self.role_name, self.trace_length]
+        strand_form: List[Any] = ["defstrandmax", self.role_name]
         for role_var, term_val in self.variable_bindings.items():
             strand_form.append([role_var, term_val])
         return strand_form
@@ -299,8 +302,9 @@ class CPSAProtocolSpecification(BaseModel):
         """Converts the specification into a sequence of top-level CPSA JSON forms."""
         payload: List[List[Any]] = []
 
-        if self.herald_comment:
-            payload.append(["herald", f'"{self.herald_comment}"'])
+        # Every SCM file MUST have a herald declaration per MITRE CPSA manual
+        herald_text = self.herald_comment or f"{self.protocol_name} Protocol Verification Suite"
+        payload.append(["herald", f'"{herald_text}"'])
 
         prot_form: List[Any] = ["defprotocol", self.protocol_name, self.message_algebra]
         for role in self.roles:
