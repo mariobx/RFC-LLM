@@ -35,17 +35,29 @@ Your task is to analyze the provided verbatim RFC specification text and extract
 CPSA Model Architecture Requirements:
 1. Message Algebra: Select "basic" for symmetric/asymmetric protocols, or "diffie-hellman" if modular exponentiation or Diffie-Hellman groups are used.
 2. Roles: For every communicating principal, create a CPSAProtocolRole:
+   - Variable Naming & Metadata (STRICT ENFORCEMENT):
+     * NEVER use cryptic, single-letter, or abbreviated identifiers (e.g. forbid 'c', 's', 'k', 'prem', 'crand', 'a', 'b', 'n1', 'n2').
+     * ALWAYS use full, self-explanatory semantic identifiers directly reflecting the RFC:
+       - Principal identities: e.g. "client_identity", "server_identity" (sort: "name")
+       - Fresh nonces/tokens: e.g. "client_random", "server_random" (sort: "text")
+       - Secrets/payloads: e.g. "premaster_secret", "client_finished_mac" (sort: "data")
+       - Symmetric keys: e.g. "session_key", "master_secret_key" (sort: "skey")
+       - Asymmetric keys: e.g. "server_public_key", "client_public_key" (sort: "akey")
+       - Communication channels: e.g. "handshake_channel" (sort: "chan")
+     * ALWAYS populate the 'description' field for every variable explaining its semantic purpose.
+     * ALWAYS populate the 'rfc_field' with the exact RFC structure or message name (e.g. "ClientHello.random", "EncryptedPreMasterSecret").
    - Declare all variables with appropriate CPSA sorts:
      * "name": principal identifiers
      * "text": fresh nonces and tokens
      * "data": arbitrary secrets, premaster secrets, or session payloads
-     * "skey": symmetric encryption keys
+     * "skey": symmetric encryption keys (any key used in ["enc", ..., key] for symmetric crypto MUST be sort "skey")
      * "akey": asymmetric key variables
-     * "chan": communication channels (always declare a channel variable, such as "ch")
+     * "chan": communication channels (always declare a channel variable, e.g. "handshake_channel")
      * "rndx" / "expt": Diffie-Hellman exponents
    - Trace events: Ordered sequence of directional message transmissions:
      * direction: "send" or "recv"
-     * channel: "ch"
+     * channel: e.g. "handshake_channel"
+     * description: human-readable explanation of this trace step (e.g. "Client sends ClientHello with client_random")
      * message_term: term tree representation, using operators:
        ["enc", term1, ..., key] for encryption
        ["hash", term1, ...] for one-way digests
@@ -54,16 +66,16 @@ CPSA Model Architecture Requirements:
        ["invk", key] for the inverse of an asymmetric key variable
        ["ltk", name1, name2] for long-term shared symmetric keys
        ["exp", ["gen"], x] for Diffie-Hellman powers
-   - inputs: List of terms known prior to execution required to execute the role (e.g. channel "ch", held private keys, or pre-shared keys). CRITICAL: In CPSA roletran, every variable in "inputs" MUST actually appear in the role trace! Never include principal names in inputs if they are not sent or received in the trace.
-   - Symmetric encryption keys: In CPSA basic algebra, any symmetric key used in ["enc", payload, key] must be declared with sort "skey" (never "data" or "text").
+   - inputs: List of terms known prior to execution required to execute the role (e.g. channel "handshake_channel", held private keys, or pre-shared keys). CRITICAL: In CPSA roletran, every variable in "inputs" MUST actually appear in the role trace! Never include principal names in inputs if they are not sent or received in the trace.
    - outputs: List of terms output or returned upon successful handshake completion (e.g. established nonces, shared secrets). Every variable in outputs must also appear in the trace.
    - unique_originating: Nonces or keys uniquely originated / generated fresh by this role. All fresh terms sent in initial messages must be declared here.
 
 3. Analysis Preskeletons:
    - Always provide a descriptive "herald_comment" summarizing the protocol and analysis goal.
    - For the primary roles, construct point-of-view CPSAPreskeleton instances:
+     * description: describe the security goal (e.g. "Verification of premaster_secret secrecy and server authentication from client POV")
      * strands: instantiation of the role strand with variable bindings (the compiler uses "defstrandmax" to instantiate maximal role trace).
-     * non_originating: private keys or long-term secrets assumed uncompromised by the penetrator (e.g. ["privk", "s"] or ["invk", "ks"]).
+     * non_originating: private keys or long-term secrets assumed uncompromised by the penetrator (e.g. ["privk", "server_identity"] or ["invk", "server_public_key"]).
      * unique_originating: fresh nonces or secrets generated in this scenario.
 
 Return ONLY a valid JSON object matching the requested CPSAProtocolSpecification schema."""

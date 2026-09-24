@@ -53,6 +53,9 @@ Common Diagnostics & Fixes:
 6. "Uniquely originating value ... does not originate in trace":
    - A variable declared under "unique_originating" is only transmitted inside a ["hash", ...] one-way digest, or is never transmitted.
    - Fix: Remove the variable from "unique_originating". In CPSA, atoms cannot originate inside a one-way hash.
+7. Variable Naming & Metadata Integrity:
+   - Preserve all descriptive, domain-specific identifiers (e.g. "client_identity", "server_identity", "client_random", "premaster_secret"). Do NOT downgrade them to single-letter or toy abbreviations like 'a', 'b', 'init', 'resp', 'k'.
+   - Preserve and update the 'description' and 'rfc_field' metadata fields.
 
 Return ONLY the repaired, valid CPSAProtocolSpecification matching the requested JSON schema."""
 

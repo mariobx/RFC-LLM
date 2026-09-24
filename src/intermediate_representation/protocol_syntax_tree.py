@@ -19,8 +19,10 @@ def sanitize_cpsa_symbol(sym: str) -> str:
 
 class CPSAVariableDeclaration(BaseModel):
     """Declaration of a typed variable in a role or skeleton."""
-    name: str = Field(..., description="Alphanumeric variable identifier")
+    name: str = Field(..., description="Semantic alphanumeric identifier (e.g. client_random, server_identity)")
     sort: CPSASortEnum = Field(..., description="Declared CPSA message algebra sort")
+    description: Optional[str] = Field(default=None, description="Detailed explanation of what this variable represents in the RFC")
+    rfc_field: Optional[str] = Field(default=None, description="Exact RFC field name or section mapping (e.g. ClientHello.random)")
 
     def to_cpsa_json(self) -> List[str]:
         return [self.name, self.sort.value]
@@ -35,6 +37,7 @@ class CPSATraceEvent(BaseModel):
         ...,
         description="Term payload: atom string, integer, or nested operator tree",
     )
+    description: Optional[str] = Field(default=None, description="Semantic description of the message event (e.g. Client sends ClientHello)")
 
     def to_cpsa_json(self) -> List[Any]:
         if self.direction in ["load", "stor"]:
@@ -54,6 +57,7 @@ class CPSATraceEvent(BaseModel):
 class CPSAProtocolRole(BaseModel):
     """Specification of a principal's behavior in a protocol."""
     role_name: str = Field(..., description="Identifier for the participant role")
+    description: Optional[str] = Field(default=None, description="Detailed explanation of the principal's role in the protocol")
     variables: List[CPSAVariableDeclaration] = Field(..., description="Variables declared within the role scope")
     trace: List[CPSATraceEvent] = Field(..., description="Ordered sequence of message events")
     inputs: List[Union[str, List[Any]]] = Field(
@@ -217,6 +221,7 @@ class CPSAStrandInstance(BaseModel):
 class CPSAPreskeleton(BaseModel):
     """Point-of-view preskeleton to be formally analyzed by CPSA."""
     protocol_name: str = Field(..., description="Target protocol identifier matching a declared defprotocol")
+    description: Optional[str] = Field(default=None, description="Formal security objective or point-of-view scenario being verified")
     variables: List[CPSAVariableDeclaration] = Field(
         default_factory=list,
         description="Variables appearing across strands in the skeleton",
