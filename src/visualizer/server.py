@@ -129,8 +129,19 @@ class VisualizerServer:
 def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     """Starts the visualizer server in a background daemon thread."""
     import threading
+    import socket
+    import time
 
-    server = VisualizerServer(host=host, port=port)
+    def _is_port_available(p: int) -> bool:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex((host, p)) != 0
+
+    actual_port = port
+    while not _is_port_available(actual_port) and actual_port < port + 20:
+        actual_port += 1
+
+    server = VisualizerServer(host=host, port=actual_port)
+    server.port = actual_port
 
     def _target():
         loop = asyncio.new_event_loop()
@@ -138,11 +149,12 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         server.loop = loop
         runner = web.AppRunner(server.app)
         loop.run_until_complete(runner.setup())
-        site = web.TCPSite(runner, host, port)
+        site = web.TCPSite(runner, host, actual_port)
         loop.run_until_complete(site.start())
-        logger.info("Visualizer server active at http://%s:%d", host, port)
+        logger.info("Visualizer server active at http://%s:%d", host, actual_port)
         loop.run_forever()
 
     t = threading.Thread(target=_target, daemon=True)
     t.start()
+    time.sleep(0.15)
     return server

@@ -82,10 +82,21 @@ def main():
         help="Model identifier for RAG self-healing compiler diagnostic repair",
     )
     parser.add_argument(
+        "--no-visualize",
+        action="store_true",
+        help="Disable the live web dashboard visualizer (enabled by default)",
+    )
+    parser.add_argument(
         "--visualize",
         "-v",
         action="store_true",
-        help="Launch the live web dashboard visualizer on localhost",
+        help="Ensure live web dashboard visualizer is enabled",
+    )
+    parser.add_argument(
+        "--keep-alive",
+        type=int,
+        default=0,
+        help="Seconds to keep visualizer server running after completion in non-interactive mode",
     )
     parser.add_argument(
         "--port",
@@ -147,18 +158,25 @@ def main():
         print(f"Error: Invalid target path: {target}", file=sys.stderr)
         sys.exit(1)
 
-    # 2. Launch Visualizer if Requested
-    if args.visualize:
+    # 2. Launch Visualizer (Default Enabled)
+    enable_visualizer = not args.no_visualize
+    monitor_url = None
+    if enable_visualizer:
         import webbrowser
         from src.visualizer.server import run_visualizer_in_background
 
-        run_visualizer_in_background(port=args.port)
-        url = f"http://127.0.0.1:{args.port}"
-        print(f"\n[VISUALIZER] Live Synthesis Studio active at: {url}")
         try:
-            webbrowser.open(url)
-        except Exception:
-            pass
+            server = run_visualizer_in_background(port=args.port)
+            monitor_url = f"http://127.0.0.1:{server.port}"
+            print(f"\n{'='*70}")
+            print(f" [LIVE MONITOR] Active at: {monitor_url}")
+            print(f"{'='*70}\n")
+            try:
+                webbrowser.open(monitor_url)
+            except Exception:
+                pass
+        except Exception as e:
+            print(f"[WARN] Could not launch live monitor: {e}")
 
     # 3. Execution Loop
     output_base_dir = Path(args.output_dir) if args.output_dir else None
@@ -189,13 +207,24 @@ def main():
                 print("\n[SUCCESS] Synthesis & Formal Verification Completed!")
                 print(f"Protocol: {summary.protocol_name}")
                 print(f"Verified Shapes XHTML: {summary.build_artifacts.shapes_graph_xhtml_path}")
-                sys.exit(0)
             elif summary.roletran_passed:
                 print(f"\n[PARTIAL] Roletran passed, but MITRE build failed: {summary.error_message}")
-                sys.exit(1)
             else:
                 print(f"\n[HALTED] Pipeline stopped: {summary.error_message}")
-                sys.exit(2)
+
+            if enable_visualizer and monitor_url:
+                print(f"\n[LIVE MONITOR] View execution trace and shapes at: {monitor_url}")
+                if sys.stdin.isatty():
+                    try:
+                        input("[LIVE MONITOR] Press Enter to exit (server remains live until keypress)... ")
+                    except (EOFError, KeyboardInterrupt):
+                        pass
+                elif args.keep_alive > 0:
+                    import time
+                    print(f"[LIVE MONITOR] Keeping server active for {args.keep_alive}s...")
+                    time.sleep(args.keep_alive)
+
+            sys.exit(0 if summary.build_successful else (1 if summary.roletran_passed else 2))
 
     # 4. Batch Summary Report
     print(f"\n{'='*70}")
@@ -217,6 +246,18 @@ def main():
         print(f"• Solver Failed        : {solver_failed}")
     print(f"• Run Metrics Logged   : {SYSTEM_CONFIG.LOGS_DIR / 'pipeline_runs.csv'}")
     print(f"{'='*70}\n")
+
+    if enable_visualizer and monitor_url:
+        print(f"[LIVE MONITOR] Batch dashboard active at: {monitor_url}")
+        if sys.stdin.isatty():
+            try:
+                input("[LIVE MONITOR] Press Enter to exit (server remains live until keypress)... ")
+            except (EOFError, KeyboardInterrupt):
+                pass
+        elif args.keep_alive > 0:
+            import time
+            print(f"[LIVE MONITOR] Keeping server active for {args.keep_alive}s...")
+            time.sleep(args.keep_alive)
 
 
 if __name__ == "__main__":
