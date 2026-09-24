@@ -168,3 +168,67 @@ def test_compiler_diagnostic_repair_patches_spec(monkeypatch, tmp_path: Path, un
     res = verify_role_executability(scm_path)
     assert res.is_executable is True
 
+
+def test_cpsa_term_desugaring_and_validation():
+    """Verify that foreign operators are desugared and unknown operators are strictly rejected."""
+    # 1. Foreign operator desugaring: aenc, senc, sign -> enc; mac, hmac -> hash
+    event = CPSATraceEvent(
+        direction="send",
+        channel="ch",
+        message_term=["aenc", ["mac", "secret", "tag"], "pubkey"],
+    )
+    assert event.message_term == ["enc", ["hash", "secret", "tag"], "pubkey"]
+
+    # 2. Unknown operator rejection
+    with pytest.raises(ValueError, match="Unknown operator keyword 'foreign_op'"):
+        CPSATraceEvent(
+            direction="send",
+            channel="ch",
+            message_term=["foreign_op", "payload"],
+        )
+
+
+def test_cpsa_operator_arity_enforcement():
+    """Verify that operator arities from MITRE CPSA Tables 10.3 and 10.5 are strictly enforced."""
+    # (enc) requires at least 2 arguments: payload + key
+    with pytest.raises(ValueError, match="Operator 'enc' at 'term' expects at least 2 arguments"):
+        from src.intermediate_representation.cpsa_grammar import validate_cpsa_term_syntax
+        validate_cpsa_term_syntax(["enc", "payload_only"])
+
+    # (invk) requires exactly 1 argument
+    with pytest.raises(ValueError, match="Operator 'invk' at 'term' expects exactly 1 arguments"):
+        from src.intermediate_representation.cpsa_grammar import validate_cpsa_term_syntax
+        validate_cpsa_term_syntax(["invk", "key1", "key2"])
+
+    # (ltk) requires exactly 2 arguments
+    with pytest.raises(ValueError, match="Operator 'ltk' at 'term' expects exactly 2 arguments"):
+        from src.intermediate_representation.cpsa_grammar import validate_cpsa_term_syntax
+        validate_cpsa_term_syntax(["ltk", "key1"])
+
+
+def test_basic_algebra_forbids_diffie_hellman_operators():
+    """Verify that protocol with 'basic' algebra rejects Diffie-Hellman operators in trace or declarations."""
+    # exp operator under basic algebra must fail
+    with pytest.raises(ValueError, match="Diffie-Hellman operator 'exp'"):
+        CPSAProtocolSpecification(
+            protocol_name="dh_in_basic",
+            message_algebra="basic",
+            roles=[
+                CPSAProtocolRole(
+                    role_name="client",
+                    variables=[
+                        CPSAVariableDeclaration(name="ch", sort=CPSASortEnum.CHAN),
+                        CPSAVariableDeclaration(name="x", sort=CPSASortEnum.DATA),
+                    ],
+                    trace=[
+                        CPSATraceEvent(
+                            direction="send",
+                            channel="ch",
+                            message_term=["exp", "gen", "x"],
+                        ),
+                    ],
+                )
+            ],
+        )
+
+

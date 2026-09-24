@@ -1,8 +1,43 @@
 import re
-from typing import Any, Dict, List, Literal, Optional, Union, Set
-from pydantic import BaseModel, Field, field_validator
+from typing import Annotated, Any, Dict, List, Literal, Optional, Set, Union
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    AfterValidator,
+    Field,
+    WithJsonSchema,
+    field_validator,
+    model_validator,
+)
 
 from src.intermediate_representation.algebraic_sorts import CPSASortEnum
+from src.intermediate_representation.cpsa_grammar import (
+    CPSA_ALL_OPERATORS,
+    CPSA_TERM_JSON_SCHEMA,
+    CPSATopLevelKeyword,
+    CPSAMessageAlgebra,
+    CPSARoleKeyword,
+    CPSASkeletonKeyword,
+    CPSATraceAction,
+    CPSATraceAnnotation,
+    desugar_term_tree,
+    validate_cpsa_term_syntax,
+)
+
+
+def _validate_cpsa_term(v: Any) -> Any:
+    validate_cpsa_term_syntax(v, algebra="diffie-hellman")
+    return v
+
+
+# Strongly-typed CPSA term AST: enforces canonical syntax, algebra compatibility,
+# and operator arity while providing an explicit enum/grammar JSON schema to LLMs.
+CPSATerm = Annotated[
+    Union[str, int, List[Any]],
+    BeforeValidator(desugar_term_tree),
+    AfterValidator(_validate_cpsa_term),
+    WithJsonSchema(CPSA_TERM_JSON_SCHEMA),
+]
 
 
 def sanitize_cpsa_symbol(sym: str) -> str:
@@ -19,28 +54,18 @@ def sanitize_cpsa_symbol(sym: str) -> str:
 
 def normalize_cpsa_term(term: Any, akey_vars: Optional[Set[str]] = None) -> Any:
     """Recursively validates and normalizes message terms into valid CPSA 4.4.9 operators."""
-    if isinstance(term, list):
-        if not term:
-            return term
-        new_list = list(term)
-        op = new_list[0]
-        if isinstance(op, str):
-            # Normalize common foreign crypto keywords (ProVerif/Tamarin/etc.)
-            if op in ("aenc", "senc", "asym_enc", "sym_enc"):
-                new_list[0] = "enc"
-            elif op in ("mac", "hmac"):
-                new_list[0] = "hash"
-            elif op == "sign":
-                new_list[0] = "enc"
-
+    desugared = desugar_term_tree(term)
+    if isinstance(desugared, list):
+        if not desugared:
+            return desugared
+        new_list = list(desugared)
         if akey_vars and len(new_list) == 2 and isinstance(new_list[1], str) and new_list[1] in akey_vars:
             if new_list[0] == "pubk":
                 return new_list[1]
             if new_list[0] == "privk":
                 return ["invk", new_list[1]]
-
         return [normalize_cpsa_term(x, akey_vars) for x in new_list]
-    return term
+    return desugared
 
 
 class CPSAVariableDeclaration(BaseModel):
@@ -56,19 +81,14 @@ class CPSAVariableDeclaration(BaseModel):
 
 class CPSATraceEvent(BaseModel):
     """A directional communication or state event over an optional channel."""
-    direction: Literal["send", "recv", "load", "stor"] = Field(..., description="Trace event action")
+    direction: CPSATraceAction = Field(..., description="Trace event action: send, recv, load, stor")
     channel: Optional[str] = Field(default="ch", description="Channel variable identifier")
     location: Optional[str] = Field(default=None, description="Memory location variable for stateful load/stor events")
-    message_term: Union[str, int, List[Any]] = Field(
+    message_term: CPSATerm = Field(
         ...,
-        description="Term payload: atom string, integer, or nested operator tree",
+        description="Term payload: atom string, integer, or nested operator tree conforming strictly to CPSA 4.4.9 grammar",
     )
     description: Optional[str] = Field(default=None, description="Semantic description of the message event (e.g. Client sends ClientHello)")
-
-    @field_validator("message_term", mode="before")
-    @classmethod
-    def validate_and_normalize_term(cls, v: Any) -> Any:
-        return normalize_cpsa_term(v)
 
     def to_cpsa_json(self) -> List[Any]:
         if self.direction in ["load", "stor"]:
@@ -91,27 +111,27 @@ class CPSAProtocolRole(BaseModel):
     description: Optional[str] = Field(default=None, description="Detailed explanation of the principal's role in the protocol")
     variables: List[CPSAVariableDeclaration] = Field(..., description="Variables declared within the role scope")
     trace: List[CPSATraceEvent] = Field(..., description="Ordered sequence of message events")
-    inputs: List[Union[str, List[Any]]] = Field(
+    inputs: List[CPSATerm] = Field(
         default_factory=list,
         description="Input parameters required for execution (channels, pre-shared keys, initial parameters)",
     )
-    outputs: List[Union[str, List[Any]]] = Field(
+    outputs: List[CPSATerm] = Field(
         default_factory=list,
         description="Return parameters yielded upon successful execution",
     )
-    unique_originating: List[Union[str, List[Any]]] = Field(
+    unique_originating: List[CPSATerm] = Field(
         default_factory=list,
         description="Terms originating uniquely in this role (uniq-orig)",
     )
-    unique_generated: List[Union[str, List[Any]]] = Field(
+    unique_generated: List[CPSATerm] = Field(
         default_factory=list,
         description="Terms generated uniquely in this role (uniq-gen)",
     )
-    non_originating: List[Union[str, List[Any]]] = Field(
+    non_originating: List[CPSATerm] = Field(
         default_factory=list,
         description="Keys assumed never compromised/originating in this role (non-orig)",
     )
-    pen_non_originating: List[Union[str, List[Any]]] = Field(
+    pen_non_originating: List[CPSATerm] = Field(
         default_factory=list,
         description="Penetrator non-originating terms (pen-non-orig)",
     )
@@ -154,7 +174,6 @@ class CPSAProtocolRole(BaseModel):
 
         trace_form = ["trace"] + normalized_events
 
-        # Extract all tokens appearing in trace and channel annotations to satisfy roletran constraints
         def _extract_tokens(item: Any, out: Set[str]):
             if isinstance(item, str):
                 out.add(item)
@@ -167,16 +186,26 @@ class CPSAProtocolRole(BaseModel):
 
         trace_tokens: Set[str] = set()
         _extract_tokens(trace_form, trace_tokens)
-        reserved_ops = {"pubk", "privk", "invk", "ltk", "cat", "enc", "hash", "trace", "send", "recv"}
+        reserved_ops = {"pubk", "privk", "invk", "ltk", "cat", "enc", "hash", "trace", "send", "recv"}.union(CPSA_ALL_OPERATORS)
+
+        def _term_vars_in_trace(term: Any) -> bool:
+            if isinstance(term, str):
+                return term in trace_tokens
+            if isinstance(term, (list, tuple)):
+                term_tokens: Set[str] = set()
+                _extract_tokens(term, term_tokens)
+                var_tokens = term_tokens - reserved_ops
+                return bool(var_tokens and var_tokens.issubset(trace_tokens))
+            return True
 
         role_form: List[Any] = ["defrole", sanitize_cpsa_symbol(self.role_name), vars_form, trace_form]
 
         if self.unique_originating:
-            valid_uo = [v for v in self.unique_originating if v in trace_tokens]
+            valid_uo = [v for v in self.unique_originating if _term_vars_in_trace(v)]
             if valid_uo:
                 role_form.append(["uniq-orig"] + valid_uo)
         if self.unique_generated:
-            valid_ug = [v for v in self.unique_generated if v in trace_tokens]
+            valid_ug = [v for v in self.unique_generated if _term_vars_in_trace(v)]
             if valid_ug:
                 role_form.append(["uniq-gen"] + valid_ug)
         if self.non_originating:
@@ -228,9 +257,9 @@ class CPSAStrandInstance(BaseModel):
         default=None,
         description="Trace height (optional; defstrandmax is always used to evaluate full strand)",
     )
-    variable_bindings: Dict[str, Union[str, List[Any]]] = Field(
+    variable_bindings: Dict[str, CPSATerm] = Field(
         default_factory=dict,
-        description="Mapping from role variable identifier to instantiated skeleton term",
+        description="Mapping from role variable identifier to instantiated skeleton term conforming to CPSA grammar",
     )
 
     def to_cpsa_json(self) -> List[Any]:
@@ -249,23 +278,23 @@ class CPSAPreskeleton(BaseModel):
         description="Variables appearing across strands in the skeleton",
     )
     strands: List[CPSAStrandInstance] = Field(..., description="Role strands active in this execution scenario")
-    non_originating: List[Union[str, List[Any]]] = Field(
+    non_originating: List[CPSATerm] = Field(
         default_factory=list,
         description="Keys or secrets assumed never compromised/originating (non-orig)",
     )
-    pen_non_originating: List[Union[str, List[Any]]] = Field(
+    pen_non_originating: List[CPSATerm] = Field(
         default_factory=list,
         description="Penetrator non-originating terms (pen-non-orig)",
     )
-    unique_originating: List[str] = Field(
+    unique_originating: List[CPSATerm] = Field(
         default_factory=list,
         description="Nonces or secrets assumed fresh and unique across strands (uniq-orig)",
     )
-    unique_generated: List[str] = Field(
+    unique_generated: List[CPSATerm] = Field(
         default_factory=list,
         description="Uniquely generated terms (uniq-gen)",
     )
-    listeners: List[Union[str, List[Any]]] = Field(
+    listeners: List[CPSATerm] = Field(
         default_factory=list,
         description="Terms to verify secrecy for via listener strands (deflistener)",
     )
@@ -325,9 +354,9 @@ class CPSAPreskeleton(BaseModel):
 class CPSAProtocolSpecification(BaseModel):
     """Complete protocol specification and verification suite."""
     protocol_name: str = Field(..., description="Unique protocol identifier")
-    message_algebra: Literal["basic", "diffie-hellman"] = Field(
+    message_algebra: CPSAMessageAlgebra = Field(
         default="basic",
-        description="CPSA message algebra selection",
+        description="CPSA message algebra selection: basic or diffie-hellman",
     )
     roles: List[CPSAProtocolRole] = Field(..., description="Protocol participant role specifications")
     skeletons: List[CPSAPreskeleton] = Field(
@@ -335,6 +364,32 @@ class CPSAProtocolSpecification(BaseModel):
         description="Analysis preskeletons / points of view",
     )
     herald_comment: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_algebra_consistency(self) -> "CPSAProtocolSpecification":
+        """Ensures Diffie-Hellman operators are strictly forbidden under 'basic' message algebra."""
+        if self.message_algebra == "basic":
+            for role in self.roles:
+                for evt in role.trace:
+                    validate_cpsa_term_syntax(
+                        evt.message_term,
+                        algebra="basic",
+                        path=f"role[{role.role_name}].trace",
+                    )
+                for term in role.inputs + role.outputs + role.non_originating + role.unique_originating:
+                    validate_cpsa_term_syntax(
+                        term,
+                        algebra="basic",
+                        path=f"role[{role.role_name}].declarations",
+                    )
+            for skel in self.skeletons:
+                for listener in skel.listeners:
+                    validate_cpsa_term_syntax(
+                        listener,
+                        algebra="basic",
+                        path=f"skeleton[{skel.protocol_name}].listener",
+                    )
+        return self
 
     def to_cpsa_json_payload(self) -> List[List[Any]]:
         """Converts the specification into a sequence of top-level CPSA JSON forms."""
