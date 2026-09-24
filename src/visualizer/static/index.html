@@ -245,6 +245,90 @@
       border: none;
       background: #ffffff;
     }
+
+    /* RAG Tab Styles */
+    .rag-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .rag-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .rag-purpose {
+      font-weight: 700;
+      color: var(--color-purple);
+      text-transform: uppercase;
+      font-family: var(--mono);
+      font-size: 10px;
+      border: 1px solid var(--border-color);
+      padding: 1px 6px;
+      background: var(--bg-base);
+    }
+    .rag-query-box {
+      background: var(--bg-code);
+      border: 1px solid var(--border-color);
+      padding: 8px 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--color-blue);
+      line-height: 1.45;
+      word-break: break-all;
+    }
+    .rag-chunks-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .rag-chunk-card {
+      background: var(--bg-base);
+      border: 1px solid var(--border-color);
+      padding: 8px 10px;
+      font-size: 11px;
+    }
+    .rag-chunk-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      font-family: var(--mono);
+      font-size: 10px;
+    }
+    .rag-chunk-id {
+      background: #1f6feb22;
+      color: var(--color-blue);
+      border: 1px solid #1f6feb66;
+      padding: 1px 5px;
+      font-weight: 700;
+    }
+    .rag-chunk-source {
+      color: var(--text-muted);
+    }
+    .rag-chunk-title {
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+    .rag-chunk-snippet {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #8b949e;
+      background: #06090e;
+      padding: 6px 8px;
+      border: 1px solid #21262d;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
@@ -311,6 +395,7 @@
         <button class="tab active" onclick="switchTab('scm')">CPSA Scheme (.scm)</button>
         <button class="tab" onclick="switchTab('ast')">Pydantic AST (JSON)</button>
         <button class="tab" onclick="switchTab('slice')">RFC Sliced Text</button>
+        <button class="tab" id="tab-btn-rag" onclick="switchTab('rag')">RAG Knowledge</button>
         <button class="tab" onclick="switchTab('graph')">Verified Shapes (SVG)</button>
       </div>
 
@@ -322,6 +407,13 @@
       </div>
       <div class="tab-viewport" id="tab-slice" style="display:none;">
         <pre><code id="code-slice">Verbatim RFC section slice will appear here...</code></pre>
+      </div>
+      <div class="tab-viewport" id="tab-rag" style="display:none; padding:12px; overflow-y:auto;">
+        <div id="rag-feed" style="display:flex; flex-direction:column; gap:10px;">
+          <div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
+            RAG queries and retrieved manual chunks will stream here in real time...
+          </div>
+        </div>
       </div>
       <div class="tab-viewport" id="tab-graph" style="display:none; padding:0; height:100%;">
         <div id="graph-container" style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-family:var(--mono); font-size:11px;">
@@ -411,6 +503,11 @@
             .then(txt => { document.getElementById('code-slice').innerText = txt; })
             .catch(() => {});
         }
+      } else if (evt.event_type === 'rag_retrieval') {
+        typeLabel = 'RAG_GROUNDING';
+        const chkCount = (evt.data && evt.data.chunks) ? evt.data.chunks.length : 0;
+        bodyText = `Purpose: ${evt.data.purpose || 'RAG Retrieval'}\nQuery: ${evt.data.query || ''}\nRetrieved: ${chkCount} chunks`;
+        renderRagEvent(evt);
       } else if (evt.event_type === 'repair_attempt') {
         item.classList.add('repair');
         if (evt.data.cycle_detected) item.classList.add('cycle');
@@ -450,6 +547,52 @@
 
       feed.appendChild(item);
       feed.scrollTop = feed.scrollHeight;
+    }
+
+    let ragFirstEvent = true;
+    function renderRagEvent(evt) {
+      const feed = document.getElementById('rag-feed');
+      if (!feed) return;
+      if (ragFirstEvent) {
+        feed.innerHTML = '';
+        ragFirstEvent = false;
+      }
+
+      const card = document.createElement('div');
+      card.className = 'rag-card';
+
+      const timeStr = new Date(evt.timestamp * 1000).toLocaleTimeString([], { hour12: false });
+      const purpose = (evt.data && evt.data.purpose) || 'RAG Retrieval';
+      const query = (evt.data && evt.data.query) || '';
+      const chunks = (evt.data && evt.data.chunks) || [];
+
+      let chunksHtml = '';
+      chunks.forEach((chk) => {
+        chunksHtml += `
+          <div class="rag-chunk-card">
+            <div class="rag-chunk-meta">
+              <span class="rag-chunk-id">Chunk #${chk.chunk_id}</span>
+              <span class="rag-chunk-source">${chk.source_file || 'Manual'}</span>
+            </div>
+            <div class="rag-chunk-title">${chk.title || ''}</div>
+            <div class="rag-chunk-snippet">${chk.snippet || ''}</div>
+          </div>
+        `;
+      });
+
+      card.innerHTML = `
+        <div class="rag-card-header">
+          <span class="rag-purpose">${purpose}</span>
+          <span>${timeStr}</span>
+        </div>
+        <div class="rag-query-box"><strong>Query:</strong> ${query}</div>
+        <div class="rag-chunks-container">
+          <div style="font-size:10px; color:var(--text-muted); font-family:var(--mono);">Retrieved Grounding Chunks (${chunks.length}):</div>
+          ${chunksHtml}
+        </div>
+      `;
+
+      feed.prepend(card);
     }
 
     // 1. Initial history fetch

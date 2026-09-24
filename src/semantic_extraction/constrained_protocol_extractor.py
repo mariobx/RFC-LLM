@@ -98,11 +98,27 @@ def extract_protocol_specification(
         try:
             rag_query = f"{protocol_name} protocol message exchange encryption keys nonces"
             hits = retriever.search(rag_query, top_k=2, mode="hybrid", rerank=False)
+            retrieved_meta = []
             for idx, chunk in enumerate(hits, 1):
+                chunk_id = chunk.get("chunk_id") or chunk.get("id") or idx
                 chunk_title = chunk.get("title") or chunk.get("breadcrumb") or f"Pattern {idx}"
                 chunk_source = chunk.get("source_file") or chunk.get("source") or "MITRE Manual"
                 chunk_text = chunk.get("text") or chunk.get("content") or ""
                 rag_context_blocks.append(f"--- Reference {idx}: {chunk_title} ({chunk_source}) ---\n{chunk_text[:800]}")
+                retrieved_meta.append({
+                    "chunk_id": str(chunk_id),
+                    "title": chunk_title,
+                    "source_file": chunk_source,
+                    "snippet": chunk_text[:280].strip() + ("..." if len(chunk_text) > 280 else ""),
+                })
+            from src.pipeline_events import GLOBAL_EVENT_BUS
+            GLOBAL_EVENT_BUS.emit(
+                "rag_retrieval",
+                stage=2,
+                purpose="Protocol Extraction Grounding",
+                query=rag_query,
+                chunks=retrieved_meta,
+            )
         except Exception as e:
             logger.warning("RAG retrieval failed during extraction: %s", e)
 
