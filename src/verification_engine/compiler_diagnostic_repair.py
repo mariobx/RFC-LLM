@@ -68,32 +68,51 @@ Return ONLY the repaired, valid CPSAProtocolSpecification matching the requested
 
 
 def clean_rag_diagnostic_query(diagnostic: str, failure_stage: str) -> str:
-    """Extracts a domain-level RAG query from raw compiler diagnostics,
-    stripping specific code fragments, variables, and S-expressions."""
+    """Extracts a clean, authoritative domain-level RAG query from raw compiler diagnostics,
+    stripping specific code fragments, variables, local file paths, line numbers, and S-expressions."""
     import re
-    if "Cannot build" in diagnostic:
-        return "roletran Cannot build term trace origination unique-orig inputs"
-    if "Keyword" in diagnostic and "unknown" in diagnostic:
-        return "CPSA message algebra operators enc hash cat pubk privk invk"
-    if "Expecting a name" in diagnostic:
-        return "pubk privk sort name akey asymmetric key inverse invk"
-    if "Undeclared variable" in diagnostic:
-        return "roletran inputs outputs undeclared variable trace"
-    if "does not originate" in diagnostic:
-        return "uniq-orig origination trace hash digest non-orig"
-    if "Bad char in atom" in diagnostic:
-        return "symbol atom character grammar rules alphanumeric"
-    if "Sort not recognized" in diagnostic:
-        return "order-sorted algebra sorts name text data skey akey"
-    if "Received term cannot be" in diagnostic:
-        return "roletran recv decryption destructuring inputs key"
+    diag_lower = diagnostic.lower()
 
-    # Strip out any parenthesized code snippets e.g. (cat (enc ...))
-    cleaned = re.sub(r'\(.*?\)', '', diagnostic)
-    cleaned = re.sub(r'["\':]', '', cleaned)
-    tokens = [t for t in cleaned.split() if len(t) > 2]
-    concise = " ".join(tokens[:6])
-    return f"CPSA {failure_stage} {concise} syntax manual error rule fix"
+    if "cannot build" in diag_lower:
+        return "roletran Cannot build term trace origination unique-orig inputs"
+    if "uniquely originating value in input" in diag_lower:
+        return "roletran uniq-orig variable in inputs origination conflict"
+    if "keyword" in diag_lower and "unknown" in diag_lower:
+        return "CPSA message algebra operators enc hash cat pubk privk invk"
+    if "identifier" in diag_lower and "unknown" in diag_lower:
+        return "CPSA solver unknown identifier undeclared variable vars defskeleton defstrand"
+    if "unbound variable" in diag_lower:
+        return "CPSA solver unbound variable undeclared variable vars defskeleton defrole"
+    if "expecting a name" in diag_lower:
+        return "pubk privk sort name akey asymmetric key inverse invk"
+    if "undeclared variable" in diag_lower:
+        return "roletran inputs outputs undeclared variable trace"
+    if "does not originate" in diag_lower:
+        return "uniq-orig origination trace hash digest non-orig"
+    if "bad char in atom" in diag_lower:
+        return "symbol atom character grammar rules alphanumeric hyphen"
+    if "sort not recognized" in diag_lower or ("sort" in diag_lower and "unknown" in diag_lower):
+        return "order-sorted algebra sorts name text data skey akey"
+    if "received term cannot be" in diag_lower or "destructured" in diag_lower:
+        return "roletran recv decryption destructuring inputs key private"
+    if "no shapes" in diag_lower:
+        return "CPSA skeleton unrealized shape search dead path assumptions"
+
+    # Aggressive sanitizer for arbitrary/unmatched compiler diagnostics:
+    # 1. Strip build orchestrator prefixes and make boilerplate
+    cleaned = re.sub(r'MITRE build failed for [^:]+:\s*', '', diagnostic, flags=re.IGNORECASE)
+    cleaned = re.sub(r'make(\[\d+\])?:.*', '', cleaned)
+    # 2. Strip local file paths and file:line:col patterns (e.g. tls_1_2.scm:72:6:)
+    cleaned = re.sub(r'[a-zA-Z0-9_\-\./]+\.(scm|txt|xhtml|mk|hs|pl)(:\d+:\d+)?:?', '', cleaned)
+    # 3. Strip parenthesized code snippets e.g. (cat (enc ...))
+    cleaned = re.sub(r'\(.*?\)', '', cleaned)
+    cleaned = re.sub(r'["\':*#\n\r]', ' ', cleaned)
+    # 4. Extract domain words, avoiding digits, hex, or build noise
+    tokens = [t for t in cleaned.split() if len(t) > 2 and not t.isdigit() and t.lower() not in {"error", "exit", "code", "failed", "build"}]
+    concise = " ".join(tokens[:5])
+    if concise:
+        return f"CPSA {failure_stage} {concise} syntax manual error rule fix"
+    return f"CPSA {failure_stage} syntax manual error rule fix"
 
 
 def repair_protocol_specification(

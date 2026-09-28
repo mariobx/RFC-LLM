@@ -271,3 +271,22 @@ def test_ensure_three_point_of_view_skeletons():
     assert updated.skeletons[2].listeners == ["s"]
 
 
+def test_clean_rag_diagnostic_query_sanitization():
+    """Verify that compiler error messages strip local paths, line numbers, and output clean domain queries."""
+    from src.verification_engine.compiler_diagnostic_repair import clean_rag_diagnostic_query
+
+    # Test solver unbound identifier error from make output
+    make_err = "MITRE build failed for tls_1_2_shapes.xhtml: tls_1_2.scm:72:6: Identifier server_hello_done unknown\nmake: *** [cpsa4.mk:8: tls_1_2.txt] Error 1"
+    q1 = clean_rag_diagnostic_query(make_err, "solver")
+    assert "tls_1_2" not in q1
+    assert "shapes.xhtml" not in q1
+    assert "unknown identifier" in q1 or "undeclared variable" in q1
+
+    # Test roletran Cannot build error
+    roletran_err = "Cannot build (cat client_random session_id)"
+    q2 = clean_rag_diagnostic_query(roletran_err, "roletran")
+    assert "Cannot build" in q2
+    assert "unique-orig" in q2
+    assert "client_random" not in q2
+
+
