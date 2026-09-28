@@ -232,3 +232,42 @@ def test_basic_algebra_forbids_diffie_hellman_operators():
         )
 
 
+def test_ensure_three_point_of_view_skeletons():
+    """Verify that ensure_three_point_of_view_skeletons guarantees distinct pure POV and secrecy skeletons."""
+    from src.semantic_extraction.constrained_protocol_extractor import ensure_three_point_of_view_skeletons
+
+    spec = CPSAProtocolSpecification(
+        protocol_name="test_proto",
+        roles=[
+            CPSAProtocolRole(
+                role_name="client",
+                variables=[CPSAVariableDeclaration(name="s", sort=CPSASortEnum.DATA)],
+                trace=[CPSATraceEvent(direction="send", message_term="s")],
+                unique_originating=["s"],
+            ),
+            CPSAProtocolRole(
+                role_name="server",
+                variables=[CPSAVariableDeclaration(name="s", sort=CPSASortEnum.DATA)],
+                trace=[CPSATraceEvent(direction="recv", message_term="s")],
+            ),
+        ],
+        skeletons=[
+            CPSAPreskeleton(
+                protocol_name="test_proto",
+                strands=[CPSAStrandInstance(role_name="client", variable_bindings={"s": "s"})],
+                listeners=["s"],
+            )
+        ],
+    )
+
+    updated = ensure_three_point_of_view_skeletons(spec)
+    assert len(updated.skeletons) == 3
+    # Skeletons 1 & 2 must be pure POV skeletons without listeners
+    assert updated.skeletons[0].strands[0].role_name == "client"
+    assert updated.skeletons[0].listeners == []
+    assert updated.skeletons[1].strands[0].role_name == "server"
+    assert updated.skeletons[1].listeners == []
+    # Skeleton 3 must be a secrecy listener skeleton
+    assert updated.skeletons[2].listeners == ["s"]
+
+

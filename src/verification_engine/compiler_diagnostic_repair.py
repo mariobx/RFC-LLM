@@ -43,10 +43,13 @@ Common Diagnostics & Fixes:
 3. "Received term cannot be fully destructured":
    - A role receives an encrypted message or hash, but lacks the necessary decryption key or preimage in its "inputs".
    - Fix: Ensure the role's "inputs" list includes the required key (e.g. held private key or shared secret) to decrypt the incoming payload.
-4. Unprovable / Unrealized Preskeleton Skeletons:
-   - Preskeleton is missing necessary secrecy assumptions ("non-orig" for uncompromised private keys).
-   - Nonces lack freshness assumptions ("uniq-orig").
-   - Fix: Declare uncompromised keys under "non_originating" and fresh nonces under "unique_originating".
+4. Preskeleton Architecture (MANDATORY 3-SKELETON SEPARATION):
+   - CRITICAL: Never put 'deflistener' inside pure POV skeletons! A listener on an uncompromised secret causes CPSA to abort without displaying the completed bilateral protocol handshake shape.
+   - Separate into 3 distinct skeletons:
+     * Skeleton 1: Initiator / Client POV (defstrandmax initiator, listeners: [])
+     * Skeleton 2: Responder / Server POV (defstrandmax responder, listeners: [])
+     * Skeleton 3: Secrecy POV (defstrandmax + deflistener for the secret)
+   - Preserve uncompromised private keys under "non_originating" and fresh nonces under "unique_originating".
 5. "Expecting a name":
    - An asymmetric key constructor like ["pubk", key] or ["privk", key] was passed an asymmetric key variable (sort "akey") instead of a principal identifier (sort "name").
    - Fix: In CPSA, if an asymmetric key variable 'k' is declared with sort "akey", use 'k' and ["invk", 'k'] directly without wrapping in "pubk" or "privk". "pubk" and "privk" only accept variables of sort "name".
@@ -204,6 +207,8 @@ Provide the complete repaired CPSAProtocolSpecification resolving the error with
         data = json_repair.loads(content)
 
     repaired_spec = CPSAProtocolSpecification.model_validate(data)
+    from src.semantic_extraction.constrained_protocol_extractor import ensure_three_point_of_view_skeletons
+    repaired_spec = ensure_three_point_of_view_skeletons(repaired_spec)
 
     logger.info("Repair pass completed for '%s'", repaired_spec.protocol_name)
     return repaired_spec
