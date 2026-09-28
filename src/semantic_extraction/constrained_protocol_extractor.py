@@ -75,7 +75,11 @@ CPSA Model Architecture Requirements:
    - outputs: List of terms output or returned upon successful handshake completion (e.g. established nonces, shared secrets). Every variable in outputs must also appear in the trace.
    - unique_originating: Nonces or keys uniquely originated / generated fresh by this role. All fresh terms sent in initial messages must be declared here.
 
-3. Analysis Preskeletons (MANDATORY 3-SKELETON ARCHITECTURE):
+3. Primary Secrecy & Confidentiality Goals:
+   - Semantically identify the core confidential terms established or negotiated by the protocol (e.g. established session keys, premaster secrets, tickets, or authentication tokens) based on the RFC's security goals.
+   - Populate "primary_secrecy_goals" with these terms (e.g. ["premaster_secret"] or ["session_key"]).
+
+4. Analysis Preskeletons (MANDATORY 3-SKELETON ARCHITECTURE):
    CRITICAL: Never put 'deflistener' in the primary POV skeletons! In CPSA, a skeleton with a listener on an uncompromised secret terminates as dead/unrealized and CANNOT display the realized two-party protocol handshake shape.
    You MUST generate 3 distinct point-of-view CPSAPreskeleton instances:
    - Skeleton 1 (Initiator / Client POV - Shape Realization & Authentication):
@@ -93,7 +97,7 @@ CPSA Model Architecture Requirements:
    - Skeleton 3 (Confidentiality / Secrecy POV):
      * description: "Secrecy Verification: tests whether penetrator can learn the established secret"
      * strands: [defstrandmax for client or server role]
-     * listeners: [the core established secret/payload, e.g. "premaster_secret"]
+     * listeners: [the primary secret chosen in primary_secrecy_goals, e.g. "premaster_secret"]
      * non_originating: uncompromised private/long-term keys
      * unique_originating: fresh nonces / secrets
 
@@ -251,40 +255,40 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
             )
             new_pure_skeletons.append(new_skel)
 
-    # Guarantee at least one secrecy verification skeleton if a secret exists
+    # Guarantee at least one secrecy verification skeleton if a secret was semantically identified by the LLM
     final_skeletons = new_pure_skeletons
     if secrecy_skeletons:
         final_skeletons.extend(secrecy_skeletons)
     else:
-        # Pick secret to listen for
-        secret_term = existing_listeners[0] if existing_listeners else None
-        if not secret_term:
+        # Determine the secrecy target strictly from the LLM's semantic output:
+        # Priority 1: Listeners chosen by the LLM in existing skeletons
+        # Priority 2: Terms designated in spec.primary_secrecy_goals by the LLM
+        secret_targets = existing_listeners or spec.primary_secrecy_goals
+        if secret_targets:
+            chosen_secret = secret_targets[0]
+            # Bind to the principal that originates or establishes this secret
+            originating_role = spec.roles[0]
             for r in spec.roles:
-                for v in r.variables:
-                    if v.sort.value == "data" and ("secret" in v.name.lower() or "key" in v.name.lower() or "data" in v.name.lower()):
-                        secret_term = v.name
-                        break
-                if secret_term:
+                if any(chosen_secret == uo or (isinstance(uo, str) and uo == chosen_secret) for uo in r.unique_originating):
+                    originating_role = r
                     break
 
-        if secret_term:
-            primary_role = spec.roles[0]
-            bindings = {v.name: v.name for v in primary_role.variables}
-            skel_vars = [CPSAVariableDeclaration(name=v.name, sort=v.sort) for v in primary_role.variables]
+            bindings = {v.name: v.name for v in originating_role.variables}
+            skel_vars = [CPSAVariableDeclaration(name=v.name, sort=v.sort) for v in originating_role.variables]
             sec_skel = CPSAPreskeleton(
                 protocol_name=spec.protocol_name,
-                description=f"Secrecy Verification: tests secrecy of {secret_term}",
+                description=f"Secrecy Verification: tests confidentiality of {chosen_secret}",
                 variables=skel_vars,
                 strands=[
                     CPSAStrandInstance(
-                        role_name=primary_role.role_name,
+                        role_name=originating_role.role_name,
                         variable_bindings=bindings,
                     )
                 ],
                 non_originating=dedup_non_orig,
-                unique_originating=list(primary_role.unique_originating),
-                listeners=[secret_term],
-                comment=f"Secrecy Point of View: Listener on {secret_term}",
+                unique_originating=list(originating_role.unique_originating),
+                listeners=[chosen_secret],
+                comment=f"Secrecy Point of View: Listener on {chosen_secret}",
             )
             final_skeletons.append(sec_skel)
 

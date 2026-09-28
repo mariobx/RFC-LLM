@@ -270,6 +270,34 @@ def test_ensure_three_point_of_view_skeletons():
     # Skeleton 3 must be a secrecy listener skeleton
     assert updated.skeletons[2].listeners == ["s"]
 
+    # Test case 2: LLM specifies primary_secrecy_goals with an arbitrary name not matching any keywords/regex
+    spec_semantic = CPSAProtocolSpecification(
+        protocol_name="test_proto_semantic",
+        primary_secrecy_goals=["arbitrary_token"],
+        roles=[
+            CPSAProtocolRole(
+                role_name="alice",
+                variables=[CPSAVariableDeclaration(name="arbitrary_token", sort=CPSASortEnum.DATA)],
+                trace=[CPSATraceEvent(direction="send", message_term="arbitrary_token")],
+                unique_originating=["arbitrary_token"],
+            ),
+            CPSAProtocolRole(
+                role_name="bob",
+                variables=[CPSAVariableDeclaration(name="arbitrary_token", sort=CPSASortEnum.DATA)],
+                trace=[CPSATraceEvent(direction="recv", message_term="arbitrary_token")],
+            ),
+        ],
+        skeletons=[],
+    )
+    updated_semantic = ensure_three_point_of_view_skeletons(spec_semantic)
+    assert len(updated_semantic.skeletons) == 3
+    assert updated_semantic.skeletons[0].strands[0].role_name == "alice"
+    assert updated_semantic.skeletons[0].listeners == []
+    assert updated_semantic.skeletons[1].strands[0].role_name == "bob"
+    assert updated_semantic.skeletons[1].listeners == []
+    assert updated_semantic.skeletons[2].listeners == ["arbitrary_token"]
+    assert updated_semantic.skeletons[2].strands[0].role_name == "alice"
+
 
 def test_clean_rag_diagnostic_query_sanitization():
     """Verify that compiler error messages strip local paths, line numbers, and output clean domain queries."""

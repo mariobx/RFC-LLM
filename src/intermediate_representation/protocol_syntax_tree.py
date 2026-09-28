@@ -359,6 +359,13 @@ class CPSAProtocolSpecification(BaseModel):
         description="CPSA message algebra selection: basic or diffie-hellman",
     )
     roles: List[CPSAProtocolRole] = Field(..., description="Protocol participant role specifications")
+    primary_secrecy_goals: List[CPSATerm] = Field(
+        default_factory=list,
+        description=(
+            "Primary confidential terms (e.g. established session keys, premaster secrets, shared tokens) "
+            "semantically identified by the LLM from the RFC whose confidentiality must be verified via listener strands."
+        ),
+    )
     skeletons: List[CPSAPreskeleton] = Field(
         default_factory=list,
         description="Analysis preskeletons / points of view",
@@ -369,6 +376,12 @@ class CPSAProtocolSpecification(BaseModel):
     def validate_algebra_consistency(self) -> "CPSAProtocolSpecification":
         """Ensures Diffie-Hellman operators are strictly forbidden under 'basic' message algebra."""
         if self.message_algebra == "basic":
+            for term in self.primary_secrecy_goals:
+                validate_cpsa_term_syntax(
+                    term,
+                    algebra="basic",
+                    path="primary_secrecy_goals",
+                )
             for role in self.roles:
                 for evt in role.trace:
                     validate_cpsa_term_syntax(
