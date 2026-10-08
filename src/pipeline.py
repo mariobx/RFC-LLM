@@ -82,6 +82,12 @@ def main():
         help="Model identifier for RAG self-healing compiler diagnostic repair",
     )
     parser.add_argument(
+        "--query-model",
+        type=str,
+        default=None,
+        help="Model identifier for RAG query formulation / conceptual abstraction",
+    )
+    parser.add_argument(
         "--no-visualize",
         action="store_true",
         help="Disable the live web dashboard visualizer (enabled by default)",
@@ -185,6 +191,7 @@ def main():
     active_router_model = args.router_model or args.model or SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL
     active_extraction_model = args.extraction_model or args.model or SYSTEM_CONFIG.DEFAULT_EXTRACTION_MODEL
     active_repair_model = args.repair_model or args.model or SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL
+    active_query_model = args.query_model or args.model or SYSTEM_CONFIG.DEFAULT_QUERY_MODEL
 
     for idx, rfc_file in enumerate(rfc_files, 1):
         if total_files > 1:
@@ -198,6 +205,7 @@ def main():
             router_model=active_router_model,
             extraction_model=active_extraction_model,
             repair_model=active_repair_model,
+            query_model=active_query_model,
         )
         results.append(summary)
 

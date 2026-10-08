@@ -46,10 +46,13 @@ class SystemEnvironmentConfig(BaseSettings):
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
+    NOUS_API_KEY: Optional[str] = os.getenv("NOUS_API_KEY")
+    NOUS_API_BASE: str = os.getenv("NOUS_API_BASE", "https://inference-api.nousresearch.com/v1")
     OLLAMA_API_BASE: str = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
 
     # LLM Settings (Defaults read from MODEL_NAME or LLM_*_MODEL env vars)
     DEFAULT_MODEL: str = os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite")
+    DEFAULT_QUERY_MODEL: str = os.getenv("LLM_QUERY_MODEL", os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite"))
     DEFAULT_ROUTER_MODEL: str = os.getenv("LLM_ROUTER_MODEL", os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite"))
     DEFAULT_EXTRACTION_MODEL: str = os.getenv("LLM_EXTRACTION_MODEL", os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite"))
     DEFAULT_REPAIR_MODEL: str = os.getenv("LLM_REPAIR_MODEL", os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite"))
@@ -64,7 +67,13 @@ class SystemEnvironmentConfig(BaseSettings):
     def get_llm_kwargs(self, model_name: str, temperature: Optional[float] = None) -> Dict[str, Any]:
         """Returns provider-specific arguments (API keys, base URLs, sampling) for LiteLLM."""
         kwargs: Dict[str, Any] = {"model": model_name}
-        if model_name.startswith("ollama/"):
+        if model_name.startswith("nous/") or model_name.startswith("nousresearch/"):
+            target_model = model_name.split("/", 1)[1]
+            kwargs["model"] = f"openai/{target_model}"
+            kwargs["api_base"] = self.NOUS_API_BASE
+            if self.NOUS_API_KEY:
+                kwargs["api_key"] = self.NOUS_API_KEY
+        elif model_name.startswith("ollama/"):
             kwargs["api_base"] = self.OLLAMA_API_BASE
         elif model_name.startswith("gemini/"):
             if self.GEMINI_API_KEY:

@@ -67,52 +67,62 @@ Common Diagnostics & Fixes:
 Return ONLY the repaired, valid CPSAProtocolSpecification matching the requested JSON schema."""
 
 
-def clean_rag_diagnostic_query(diagnostic: str, failure_stage: str) -> str:
-    """Extracts a clean, authoritative domain-level RAG query from raw compiler diagnostics,
-    stripping specific code fragments, variables, local file paths, line numbers, and S-expressions."""
+DIAGNOSTIC_QUERY_SYSTEM_PROMPT = """You are a formal verification compiler diagnostic analyst for MITRE CPSA 4.4.9 (Cryptographic Protocol Shapes Analyzer).
+Your task is to analyze a compiler/solver diagnostic error and formulate a concise, targeted search query (3 to 6 words) to retrieve the relevant formal rules from the MITRE CPSA reference manual.
+
+CRITICAL INSTRUCTIONS FOR RETRIEVAL PRECISION:
+1. ABSTRACT CONCRETE IDENTIFIERS:
+   NEVER include protocol-specific variable names, role names, file paths, line numbers, or literals from the error (e.g. forbid 'client_random', 'session_id', 'tls_1_2', 'premaster_secret', 'server_hello_done', '.scm:72:6').
+   Abstract them into formal CPSA grammar, algebra, or roletran concepts (e.g. 'roletran term origination trace inputs', 'defskeleton vars declaration binding', 'order-sorted algebra sort mismatch', 'asymmetric key sort rules').
+2. OUTPUT FORMAT:
+   Output strictly the plain text search query (3 to 6 words). Do NOT include quotes, explanations, markdown, or punctuation."""
+
+
+def fallback_sanitize_diagnostic_query(diagnostic: str, failure_stage: str) -> str:
+    """Fallback sanitizer for compiler diagnostics when LLM query formulation is unavailable,
+    stripping file paths, line numbers, and Make boilerplate."""
     import re
-    diag_lower = diagnostic.lower()
-
-    if "cannot build" in diag_lower:
-        return "roletran Cannot build term trace origination unique-orig inputs"
-    if "uniquely originating value in input" in diag_lower:
-        return "roletran uniq-orig variable in inputs origination conflict"
-    if "keyword" in diag_lower and "unknown" in diag_lower:
-        return "CPSA message algebra operators enc hash cat pubk privk invk"
-    if "identifier" in diag_lower and "unknown" in diag_lower:
-        return "CPSA solver unknown identifier undeclared variable vars defskeleton defstrand"
-    if "unbound variable" in diag_lower:
-        return "CPSA solver unbound variable undeclared variable vars defskeleton defrole"
-    if "expecting a name" in diag_lower:
-        return "pubk privk sort name akey asymmetric key inverse invk"
-    if "undeclared variable" in diag_lower:
-        return "roletran inputs outputs undeclared variable trace"
-    if "does not originate" in diag_lower:
-        return "uniq-orig origination trace hash digest non-orig"
-    if "bad char in atom" in diag_lower:
-        return "symbol atom character grammar rules alphanumeric hyphen"
-    if "sort not recognized" in diag_lower or ("sort" in diag_lower and "unknown" in diag_lower):
-        return "order-sorted algebra sorts name text data skey akey"
-    if "received term cannot be" in diag_lower or "destructured" in diag_lower:
-        return "roletran recv decryption destructuring inputs key private"
-    if "no shapes" in diag_lower:
-        return "CPSA skeleton unrealized shape search dead path assumptions"
-
-    # Aggressive sanitizer for arbitrary/unmatched compiler diagnostics:
-    # 1. Strip build orchestrator prefixes and make boilerplate
     cleaned = re.sub(r'MITRE build failed for [^:]+:\s*', '', diagnostic, flags=re.IGNORECASE)
     cleaned = re.sub(r'make(\[\d+\])?:.*', '', cleaned)
-    # 2. Strip local file paths and file:line:col patterns (e.g. tls_1_2.scm:72:6:)
     cleaned = re.sub(r'[a-zA-Z0-9_\-\./]+\.(scm|txt|xhtml|mk|hs|pl)(:\d+:\d+)?:?', '', cleaned)
-    # 3. Strip parenthesized code snippets e.g. (cat (enc ...))
     cleaned = re.sub(r'\(.*?\)', '', cleaned)
     cleaned = re.sub(r'["\':*#\n\r]', ' ', cleaned)
-    # 4. Extract domain words, avoiding digits, hex, or build noise
-    tokens = [t for t in cleaned.split() if len(t) > 2 and not t.isdigit() and t.lower() not in {"error", "exit", "code", "failed", "build"}]
+    tokens = [t for t in cleaned.split() if len(t) > 2 and not t.isdigit() and t.lower() not in {"error", "exit", "code", "failed"}]
     concise = " ".join(tokens[:5])
     if concise:
         return f"CPSA {failure_stage} {concise} syntax manual error rule fix"
     return f"CPSA {failure_stage} syntax manual error rule fix"
+
+
+def formulate_rag_diagnostic_query(diagnostic: str, failure_stage: str, model: Optional[str] = None) -> str:
+    """Uses a dedicated LLM call to formulate a targeted conceptual query for the MITRE CPSA manual,
+    purging concrete variable names and local file paths. Falls back to deterministic sanitization if offline."""
+    query_model = model or SYSTEM_CONFIG.DEFAULT_QUERY_MODEL
+    try:
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(query_model, temperature=0.0)
+        user_prompt = f"Failure Stage: {failure_stage}\nCompiler Diagnostic:\n{diagnostic}"
+        resp = litellm.completion(
+            **llm_kwargs,
+            messages=[
+                {"role": "system", "content": DIAGNOSTIC_QUERY_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            timeout=10,
+        )
+        content = resp.choices[0].message.content
+        if content:
+            query = " ".join(content.strip().strip('"').strip("'").split())
+            if query:
+                return query
+    except Exception as exc:
+        logger.warning("LLM diagnostic query generation failed (%s), using fallback sanitizer", exc)
+
+    return fallback_sanitize_diagnostic_query(diagnostic, failure_stage)
+
+
+def clean_rag_diagnostic_query(diagnostic: str, failure_stage: str, model: Optional[str] = None) -> str:
+    """Legacy alias routing to LLM query formulation."""
+    return formulate_rag_diagnostic_query(diagnostic, failure_stage, model=model)
 
 
 def repair_protocol_specification(
@@ -121,6 +131,7 @@ def repair_protocol_specification(
     verbatim_slice: str,
     failure_stage: Literal["roletran", "solver"],
     model: Optional[str] = None,
+    query_model: Optional[str] = None,
     cycle_detected: bool = False,
 ) -> CPSAProtocolSpecification:
     """Uses RAG-guided diagnostic repair to patch a failing CPSAProtocolSpecification."""
@@ -132,7 +143,7 @@ def repair_protocol_specification(
     retriever = _get_retriever()
     if retriever:
         try:
-            rag_query = clean_rag_diagnostic_query(error_diagnostic, failure_stage)
+            rag_query = formulate_rag_diagnostic_query(error_diagnostic, failure_stage, model=query_model)
             hits = retriever.search(rag_query, top_k=2, mode="hybrid", rerank=False)
             retrieved_meta = []
             for idx, chunk in enumerate(hits, 1):

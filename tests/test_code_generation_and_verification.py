@@ -299,22 +299,34 @@ def test_ensure_three_point_of_view_skeletons():
     assert updated_semantic.skeletons[2].strands[0].role_name == "alice"
 
 
+def test_nous_portal_llm_kwargs_routing():
+    """Verify that nous/ prefixed models are mapped to OpenAI-compatible Nous inference endpoints."""
+    from src.system_config import SYSTEM_CONFIG
+
+    kwargs_claude = SYSTEM_CONFIG.get_llm_kwargs("nous/anthropic/claude-3.5-sonnet")
+    assert kwargs_claude["model"] == "openai/anthropic/claude-3.5-sonnet"
+    assert kwargs_claude["api_base"] == "https://inference-api.nousresearch.com/v1"
+
+    kwargs_deepseek = SYSTEM_CONFIG.get_llm_kwargs("nous/deepseek/deepseek-chat")
+    assert kwargs_deepseek["model"] == "openai/deepseek/deepseek-chat"
+    assert kwargs_deepseek["api_base"] == "https://inference-api.nousresearch.com/v1"
+
+
 def test_clean_rag_diagnostic_query_sanitization():
     """Verify that compiler error messages strip local paths, line numbers, and output clean domain queries."""
-    from src.verification_engine.compiler_diagnostic_repair import clean_rag_diagnostic_query
+    from src.verification_engine.compiler_diagnostic_repair import fallback_sanitize_diagnostic_query
 
     # Test solver unbound identifier error from make output
     make_err = "MITRE build failed for tls_1_2_shapes.xhtml: tls_1_2.scm:72:6: Identifier server_hello_done unknown\nmake: *** [cpsa4.mk:8: tls_1_2.txt] Error 1"
-    q1 = clean_rag_diagnostic_query(make_err, "solver")
+    q1 = fallback_sanitize_diagnostic_query(make_err, "solver")
     assert "tls_1_2" not in q1
     assert "shapes.xhtml" not in q1
-    assert "unknown identifier" in q1 or "undeclared variable" in q1
+    assert ".scm" not in q1
 
     # Test roletran Cannot build error
     roletran_err = "Cannot build (cat client_random session_id)"
-    q2 = clean_rag_diagnostic_query(roletran_err, "roletran")
+    q2 = fallback_sanitize_diagnostic_query(roletran_err, "roletran")
     assert "Cannot build" in q2
-    assert "unique-orig" in q2
     assert "client_random" not in q2
 
 
