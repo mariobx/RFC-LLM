@@ -81,3 +81,5 @@ timestamp,rfc_id,is_eligible,protocol_name,selected_sections,sliced_lines_count,
 2026-10-08 17:55:08,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.112,
 2026-10-08 17:55:27,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
 2026-10-08 17:55:27,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.115,
+2026-10-08 17:58:34,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
+2026-10-08 17:58:34,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.115,

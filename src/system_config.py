@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 import litellm
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 # Suppress third-party LiteLLM verbosity, debug info, and deprecation warnings
@@ -51,11 +52,11 @@ class SystemEnvironmentConfig(BaseSettings):
     OLLAMA_API_BASE: str = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
 
     # LLM Settings (Defaults read from MODEL_NAME or LLM_*_MODEL env vars)
-    DEFAULT_MODEL: str = os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite")
-    DEFAULT_QUERY_MODEL: str = os.getenv("LLM_QUERY_MODEL", os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite"))
-    DEFAULT_ROUTER_MODEL: str = os.getenv("LLM_ROUTER_MODEL", os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite"))
-    DEFAULT_EXTRACTION_MODEL: str = os.getenv("LLM_EXTRACTION_MODEL", os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite"))
-    DEFAULT_REPAIR_MODEL: str = os.getenv("LLM_REPAIR_MODEL", os.getenv("MODEL_NAME", "gemini/gemini-3.5-flash-lite"))
+    DEFAULT_MODEL: str = os.getenv("MODEL_NAME") or "gemini/gemini-3.5-flash-lite"
+    DEFAULT_QUERY_MODEL: str = os.getenv("LLM_QUERY_MODEL") or os.getenv("MODEL_NAME") or "gemini/gemini-3.5-flash-lite"
+    DEFAULT_ROUTER_MODEL: str = os.getenv("LLM_ROUTER_MODEL") or os.getenv("MODEL_NAME") or "gemini/gemini-3.5-flash-lite"
+    DEFAULT_EXTRACTION_MODEL: str = os.getenv("LLM_EXTRACTION_MODEL") or os.getenv("MODEL_NAME") or "gemini/gemini-3.5-flash-lite"
+    DEFAULT_REPAIR_MODEL: str = os.getenv("LLM_REPAIR_MODEL") or os.getenv("MODEL_NAME") or "gemini/gemini-3.5-flash-lite"
 
     # Timeouts & Limits
     SUBPROCESS_TIMEOUT_SECONDS: int = 60
@@ -63,6 +64,20 @@ class SystemEnvironmentConfig(BaseSettings):
     MAX_REPAIR_ATTEMPTS: int = 50
 
     model_config = {"env_file": ".env", "extra": "ignore"}
+
+    @model_validator(mode="after")
+    def resolve_empty_models(self) -> "SystemEnvironmentConfig":
+        fallback = (self.DEFAULT_MODEL or "").strip() or "gemini/gemini-3.5-flash-lite"
+        self.DEFAULT_MODEL = fallback
+        if not (self.DEFAULT_QUERY_MODEL or "").strip():
+            self.DEFAULT_QUERY_MODEL = fallback
+        if not (self.DEFAULT_ROUTER_MODEL or "").strip():
+            self.DEFAULT_ROUTER_MODEL = fallback
+        if not (self.DEFAULT_EXTRACTION_MODEL or "").strip():
+            self.DEFAULT_EXTRACTION_MODEL = fallback
+        if not (self.DEFAULT_REPAIR_MODEL or "").strip():
+            self.DEFAULT_REPAIR_MODEL = fallback
+        return self
 
     def get_llm_kwargs(self, model_name: str, temperature: Optional[float] = None) -> Dict[str, Any]:
         """Returns provider-specific arguments (API keys, base URLs, sampling) for LiteLLM."""
