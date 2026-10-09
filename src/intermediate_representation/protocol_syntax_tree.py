@@ -200,12 +200,22 @@ class CPSAProtocolRole(BaseModel):
 
         role_form: List[Any] = ["defrole", sanitize_cpsa_symbol(self.role_name), vars_form, trace_form]
 
-        if self.unique_originating:
-            valid_uo = [v for v in self.unique_originating if _term_vars_in_trace(v)]
+        rndx_vars = {v.name for v in self.variables if v.sort.value in ("rndx", "expt")}
+        effective_uo = []
+        auto_ug = list(self.unique_generated)
+        for term in self.unique_originating:
+            if isinstance(term, str) and term in rndx_vars:
+                if term not in auto_ug:
+                    auto_ug.append(term)
+            else:
+                effective_uo.append(term)
+
+        if effective_uo:
+            valid_uo = [v for v in effective_uo if _term_vars_in_trace(v)]
             if valid_uo:
                 role_form.append(["uniq-orig"] + valid_uo)
-        if self.unique_generated:
-            valid_ug = [v for v in self.unique_generated if _term_vars_in_trace(v)]
+        if auto_ug:
+            valid_ug = [v for v in auto_ug if _term_vars_in_trace(v)]
             if valid_ug:
                 role_form.append(["uniq-gen"] + valid_ug)
         if self.non_originating:
@@ -334,10 +344,20 @@ class CPSAPreskeleton(BaseModel):
             skel_form.append(["non-orig"] + self.non_originating)
         if self.pen_non_originating:
             skel_form.append(["pen-non-orig"] + self.pen_non_originating)
-        if self.unique_originating:
-            skel_form.append(["uniq-orig"] + self.unique_originating)
-        if self.unique_generated:
-            skel_form.append(["uniq-gen"] + self.unique_generated)
+        skel_rndx = {v.name for v in self.variables if v.sort.value in ("rndx", "expt")}
+        effective_skel_uo = []
+        auto_skel_ug = list(self.unique_generated)
+        for term in self.unique_originating:
+            if isinstance(term, str) and (term in skel_rndx or "exponent" in term.lower() or term.endswith("_dh") or term.endswith("_exp")):
+                if term not in auto_skel_ug:
+                    auto_skel_ug.append(term)
+            else:
+                effective_skel_uo.append(term)
+
+        if effective_skel_uo:
+            skel_form.append(["uniq-orig"] + effective_skel_uo)
+        if auto_skel_ug:
+            skel_form.append(["uniq-gen"] + auto_skel_ug)
         if self.precedes:
             skel_form.append(["precedes"] + self.precedes)
         if self.priority:
@@ -410,7 +430,10 @@ class CPSAProtocolSpecification(BaseModel):
 
         # Every SCM file MUST have a herald declaration per MITRE CPSA manual
         herald_text = self.herald_comment or f"{self.protocol_name} Protocol Verification Suite"
-        payload.append(["herald", f'"{herald_text}"'])
+        if self.message_algebra == "diffie-hellman":
+            payload.append(["herald", f'"{herald_text}"', ["algebra", "diffie-hellman"]])
+        else:
+            payload.append(["herald", f'"{herald_text}"'])
 
         clean_proto_name = sanitize_cpsa_symbol(self.protocol_name)
         prot_form: List[Any] = ["defprotocol", clean_proto_name, self.message_algebra]

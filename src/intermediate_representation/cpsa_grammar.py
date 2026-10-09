@@ -44,6 +44,8 @@ CPSARoleKeyword = Literal[
     "trace",
     "inputs",
     "outputs",
+    "params",
+    "returns",
     "non-orig",
     "pen-non-orig",
     "uniq-orig",
@@ -221,7 +223,7 @@ CPSA_DESUGAR_MAP: Dict[str, str] = {
 
 
 def desugar_term_tree(term: Any) -> Any:
-    """Recursively desugars foreign/hallucinated crypto operators to canonical CPSA primitives."""
+    """Recursively desugars foreign/hallucinated crypto operators and dictionary nodes to canonical CPSA primitives."""
     if isinstance(term, list):
         if not term:
             return term
@@ -230,6 +232,18 @@ def desugar_term_tree(term: Any) -> Any:
         if isinstance(op, str) and op in CPSA_DESUGAR_MAP:
             new_list[0] = CPSA_DESUGAR_MAP[op]
         return [desugar_term_tree(x) for x in new_list]
+    if isinstance(term, dict):
+        # Extract atomic identifier name from dictionary variable representation
+        for key in ("name", "variable", "identifier", "var", "id", "atom", "field", "val", "value"):
+            if key in term and isinstance(term[key], str):
+                return term[key]
+        if "term" in term:
+            return desugar_term_tree(term["term"])
+        if "args" in term and isinstance(term.get("op"), str):
+            return desugar_term_tree([term["op"]] + term["args"])
+        for v in term.values():
+            if isinstance(v, str):
+                return v
     return term
 
 

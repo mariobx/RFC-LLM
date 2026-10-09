@@ -59,7 +59,7 @@ class SystemEnvironmentConfig(BaseSettings):
     DEFAULT_REPAIR_MODEL: str = os.getenv("LLM_REPAIR_MODEL") or os.getenv("MODEL_NAME") or "gemini/gemini-3.5-flash-lite"
 
     # Timeouts & Limits
-    SUBPROCESS_TIMEOUT_SECONDS: int = 60
+    SUBPROCESS_TIMEOUT_SECONDS: int = 180
     ROLETRAN_TIMEOUT_SECONDS: int = 15
     MAX_REPAIR_ATTEMPTS: int = 50
 

@@ -43,7 +43,15 @@ INELIGIBLE for CPSA:
 - Static data formats, ASN.1 management information bases, XML schemas, or database definitions.
 - Administrative memos, requirements catalogs, problem statements, or surveys without message flows.
 
-Return ONLY a valid JSON object matching the requested schema."""
+CRITICAL: Return a populated JSON instance, NOT the schema definition.
+Example output format:
+{
+  "is_cryptographic_protocol": true,
+  "protocol_name": "Protocol Name",
+  "participating_principals": ["Alice", "Bob"],
+  "has_keys_or_nonces": true,
+  "rationale": "Clear concise justification"
+}"""
 
 
 def evaluate_protocol_applicability(
