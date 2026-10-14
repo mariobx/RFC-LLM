@@ -1,0 +1,1999 @@
+{
+  "config_sha256": "10152fd99d36e28bb50f2c66dce51138bd09e955649ccd41bf1877f96a2f73d2",
+  "delta_of_this_sync": {
+    "added": [
+      ".gitignore",
+      "LICENSE",
+      "README.md",
+      "docs/ARCHITECTURE.md",
+      "docs/CPSA_KEYWORD_REFERENCE.md",
+      "docs/INTERMEDIATE_REPRESENTATION.md",
+      "docs/MASTER_BLUEPRINT.md",
+      "docs/QUICKSTART_AND_OPERATIONS.md",
+      "docs/README.md",
+      "docs/TIERED_MODEL_ROUTING.md",
+      "docs/VERIFICATION_AND_SELF_HEALING.md",
+      "logs/.gitignore",
+      "logs/pipeline_runs.csv",
+      "pytest.ini",
+      "refrences/chunks/all_references_clean.md",
+      "refrences/chunks/code_examples.jsonl",
+      "refrences/chunks/embeddings.npy",
+      "refrences/chunks/embeddings_meta.json",
+      "refrences/chunks/manual_chunks.jsonl",
+      "refrences/cpsa-protocol-modeling/SKILL.md",
+      "refrences/cpsa-protocol-modeling/manuals/CPSA4_User_Manual.md",
+      "refrences/cpsa-protocol-modeling/manuals/CPSA_Comprehensive_Guide.md",
+      "refrences/cpsa-protocol-modeling/manuals/CPSA_Design.md",
+      "refrences/cpsa-protocol-modeling/manuals/CPSA_Goals_and_Security.md",
+      "refrences/cpsa-protocol-modeling/manuals/CPSA_Primer.md",
+      "refrences/cpsa-protocol-modeling/manuals/CPSA_Specification.md",
+      "refrences/cpsa-protocol-modeling/manuals/Dolev_Yao_Model_Paper.md",
+      "refrences/cpsa-protocol-modeling/manuals/INDEX.md",
+      "refrences/cpsa-protocol-modeling/manuals/Role_Translations.md",
+      "refrences/cpsa-protocol-modeling/pdf_manual/CPSA4ManualRefrence.md",
+      "refrences/cpsa-protocol-modeling/references/algebra-and-macros.md",
+      "refrences/cpsa-protocol-modeling/references/cpsa-4.4.9-keyword-and-grammar-spec.md",
+      "refrences/cpsa-protocol-modeling/references/declarations.md",
+      "refrences/cpsa-protocol-modeling/references/goals-and-skeletons.md",
+      "refrences/cpsa-protocol-modeling/references/reading-output.md",
+      "refrences/cpsa-protocol-modeling/references/roletran-and-compiler-diagnostics.md",
+      "refrences/cpsa-protocol-modeling/references/state.md",
+      "refrences/cpsa-protocol-modeling/references/termination.md",
+      "refrences/cpsa-protocol-modeling/templates/single-procedure(scm_file_in_txt).txt",
+      "refrences/internet/examples_scm/DH_hack.scm",
+      "refrences/internet/examples_scm/ab.scm",
+      "refrences/internet/examples_scm/abc.scm",
+      "refrences/internet/examples_scm/aik.scm",
+      "refrences/internet/examples_scm/atomic-open-closed.scm",
+      "refrences/internet/examples_scm/attest.scm",
+      "refrences/internet/examples_scm/auth-enc.scm",
+      "refrences/internet/examples_scm/auth-hash.scm",
+      "refrences/internet/examples_scm/blanchet-strandmax.scm",
+      "refrences/internet/examples_scm/blanchet.scm",
+      "refrences/internet/examples_scm/bug_example.scm",
+      "refrences/internet/examples_scm/cert_lang.scm",
+      "refrences/internet/examples_scm/chan-envelope.scm",
+      "refrences/internet/examples_scm/chan-perrig-song.scm",
+      "refrences/internet/examples_scm/chan-unilateral.scm",
+      "refrences/internet/examples_scm/chan-yahalom-role-decl.scm",
+      "refrences/internet/examples_scm/chan-yahalom.scm",
+      "refrences/internet/examples_scm/commitment.scm",
+      "refrences/internet/examples_scm/comp_test.scm",
+      "refrences/internet/examples_scm/completeness-test.scm",
+      "refrences/internet/examples_scm/crushing.scm",
+      "refrences/internet/examples_scm/dass_simple.scm",
+      "refrences/internet/examples_scm/denning-sacco.scm",
+      "refrences/internet/examples_scm/deorig_contract.scm",
+      "refrences/internet/examples_scm/deorig_mesg.scm",
+      "refrences/internet/examples_scm/deorig_simple.scm",
+      "refrences/internet/examples_scm/dh-ca_hack.scm",
+      "refrences/internet/examples_scm/dh_encrypt_hack.scm",
+      "refrences/internet/examples_scm/dh_group_sig.scm",
+      "refrences/internet/examples_scm/dh_group_sig_auth_failure.scm",
+      "refrences/internet/examples_scm/dh_mim_hack.scm",
+      "refrences/internet/examples_scm/dhnsl_hack.scm",
+      "refrences/internet/examples_scm/dhstatic-state.scm",
+      "refrences/internet/examples_scm/disclosure.scm",
+      "refrences/internet/examples_scm/doorsep.scm",
+      "refrences/internet/examples_scm/doorsep2invk.scm",
+      "refrences/internet/examples_scm/encsig.scm",
+      "refrences/internet/examples_scm/envelope.scm",
+      "refrences/internet/examples_scm/epmo-hash.scm",
+      "refrences/internet/examples_scm/epmo-key-hash.scm",
+      "refrences/internet/examples_scm/epmo.scm",
+      "refrences/internet/examples_scm/epmo_acctnum-key-hash.scm",
+      "refrences/internet/examples_scm/expand.scm",
+      "refrences/internet/examples_scm/facts.scm",
+      "refrences/internet/examples_scm/factvar.scm",
+      "refrences/internet/examples_scm/ffgg.scm",
+      "refrences/internet/examples_scm/fluffy_draft03_gske.scm",
+      "refrences/internet/examples_scm/fragile_pruning.scm",
+      "refrences/internet/examples_scm/goals.scm",
+      "refrences/internet/examples_scm/goalsvar.scm",
+      "refrences/internet/examples_scm/hashtest-key-hash.scm",
+      "refrences/internet/examples_scm/hashtest.scm",
+      "refrences/internet/examples_scm/incompleteness_example.scm",
+      "refrences/internet/examples_scm/isoreject-corrected.scm",
+      "refrences/internet/examples_scm/isoreject.scm",
+      "refrences/internet/examples_scm/kelly1.scm",
+      "refrences/internet/examples_scm/kerberos.scm",
+      "refrences/internet/examples_scm/lemmas.scm",
+      "refrences/internet/examples_scm/locn_envelope.scm",
+      "refrences/internet/examples_scm/missing_contraction.scm",
+      "refrences/internet/examples_scm/neq_test.scm",
+      "refrences/internet/examples_scm/neuman-stubblebine.scm",
+      "refrences/internet/examples_scm/no_contraction.scm",
+      "refrences/internet/examples_scm/non_transforming.scm",
+      "refrences/internet/examples_scm/nonaug-prune.scm",
+      "refrences/internet/examples_scm/ns-l.scm",
+      "refrences/internet/examples_scm/ns-rebinding.scm",
+      "refrences/internet/examples_scm/ns.scm",
+      "refrences/internet/examples_scm/nsl3.scm",
+      "refrences/internet/examples_scm/nslsk.scm",
+      "refrences/internet/examples_scm/open-closed-multiloc.scm",
+      "refrences/internet/examples_scm/open-closed-tag.scm",
+      "refrences/internet/examples_scm/open-closed.scm",
+      "refrences/internet/examples_scm/or.scm",
+      "refrences/internet/examples_scm/ordered.scm",
+      "refrences/internet/examples_scm/orderedvar.scm",
+      "refrences/internet/examples_scm/pca.scm",
+      "refrences/internet/examples_scm/pen-non-orig-test.scm",
+      "refrences/internet/examples_scm/pfs-via-pubkey.scm",
+      "refrences/internet/examples_scm/pkinit.scm",
+      "refrences/internet/examples_scm/preprocess.scm",
+      "refrences/internet/examples_scm/print.scm",
+      "refrences/internet/examples_scm/prottrans.scm",
+      "refrences/internet/examples_scm/pruning1.scm",
+      "refrences/internet/examples_scm/puzzle_example.scm",
+      "refrences/internet/examples_scm/reflect.scm",
+      "refrences/internet/examples_scm/renamings.scm",
+      "refrences/internet/examples_scm/role_uniq.scm",
+      "refrences/internet/examples_scm/rule-node.scm",
+      "refrences/internet/examples_scm/rule-order.scm",
+      "refrences/internet/examples_scm/rules.scm",
+      "refrences/internet/examples_scm/scep-tls-dh-broken.scm",
+      "refrences/internet/examples_scm/scep-tls-dh-fixed.scm",
+      "refrences/internet/examples_scm/sdls-auth-enc-full-payload.scm",
+      "refrences/internet/examples_scm/sdls-auth-enc-logic.scm",
+      "refrences/internet/examples_scm/sdls-auth-full-payload.scm",
+      "refrences/internet/examples_scm/sdls-auth-logic.scm",
+      "refrences/internet/examples_scm/sdls-enc-logic.scm",
+      "refrences/internet/examples_scm/sdls-ep-challenge-auth.scm",
+      "refrences/internet/examples_scm/sdls-ep-challenge-authenc.scm",
+      "refrences/internet/examples_scm/sdls-ep-challenge.scm",
+      "refrences/internet/examples_scm/sdls-ep-key-activation-auth.scm",
+      "refrences/internet/examples_scm/sdls-ep-key-activation-authenc.scm",
+      "refrences/internet/examples_scm/sdls-ep-key-activation.scm",
+      "refrences/internet/examples_scm/sdls-ep-otar-auth.scm",
+      "refrences/internet/examples_scm/sdls-ep-otar-authenc.scm",
+      "refrences/internet/examples_scm/sdls-ep-otar-transmission.scm",
+      "refrences/internet/examples_scm/sdls-ep-sa-rekey-auth.scm",
+      "refrences/internet/examples_scm/sdls-ep-sa-rekey-authenc.scm",
+      "refrences/internet/examples_scm/sdls-ep-sa-rekey.scm",
+      "refrences/internet/examples_scm/sdls-ep-sa-start-auth.scm",
+      "refrences/internet/examples_scm/sdls-ep-sa-start-authenc.scm",
+      "refrences/internet/examples_scm/sdls-ep-sa-start.scm",
+      "refrences/internet/examples_scm/sigenc.scm",
+      "refrences/internet/examples_scm/sorted_epmo_acctnum.scm",
+      "refrences/internet/examples_scm/sts.scm",
+      "refrences/internet/examples_scm/sts_non_role.scm",
+      "refrences/internet/examples_scm/sts_weakened_reflect.scm",
+      "refrences/internet/examples_scm/subatomic-open-closed-test-genrule.scm",
+      "refrences/internet/examples_scm/subatomic-open-closed.scm",
+      "refrences/internet/examples_scm/sync_locn_envelope.scm",
+      "refrences/internet/examples_scm/sync_locn_envelope_no_auth.scm",
+      "refrences/internet/examples_scm/targetterms1.scm",
+      "refrences/internet/examples_scm/targetterms2.scm",
+      "refrences/internet/examples_scm/targetterms6.scm",
+      "refrences/internet/examples_scm/targetterms8.scm",
+      "refrences/internet/examples_scm/thisthat.scm",
+      "refrences/internet/examples_scm/tickle-unique.scm",
+      "refrences/internet/examples_scm/timestamping.scm",
+      "refrences/internet/examples_scm/trust-anchor.scm",
+      "refrences/internet/examples_scm/ugen-at.scm",
+      "refrences/internet/examples_scm/ugo.scm",
+      "refrences/internet/examples_scm/uncarried_keys.scm",
+      "refrences/internet/examples_scm/unilateral.scm",
+      "refrences/internet/examples_scm/uniq-at.scm",
+      "refrences/internet/examples_scm/uniq-gen-test.scm",
+      "refrences/internet/examples_scm/uo.scm",
+      "refrences/internet/examples_scm/wang-hash.scm",
+      "refrences/internet/examples_scm/wang-key-hash.scm",
+      "refrences/internet/examples_scm/weird.scm",
+      "refrences/internet/examples_scm/wonthull.scm",
+      "refrences/internet/examples_scm/wonthull2.scm",
+      "refrences/internet/examples_scm/wonthull3.scm",
+      "refrences/internet/examples_scm/woolam.scm",
+      "refrences/internet/examples_scm/yahalom-6.3.6.scm",
+      "refrences/internet/examples_scm/yahalom-forward.scm",
+      "refrences/internet/examples_scm/yahalom.scm",
+      "refrences/internet/examples_scm/yes-or-no.scm",
+      "refrences/internet/guides_markdown/caves_attestation_protocol_cpsa.txt",
+      "refrences/internet/guides_markdown/cpsa.cabal.txt",
+      "refrences/internet/guides_markdown/cpsa4manual.txt",
+      "refrences/internet/guides_markdown/cpsa4roletran.md",
+      "refrences/internet/guides_markdown/cpsa_cribsheet.md",
+      "refrences/internet/guides_markdown/cpsa_index.md",
+      "refrences/internet/guides_markdown/cpsadesign.txt",
+      "refrences/internet/guides_markdown/cpsafoundation.txt",
+      "refrences/internet/guides_markdown/cpsagoals.txt",
+      "refrences/internet/guides_markdown/cpsaintroslides.txt",
+      "refrences/internet/guides_markdown/cpsaprimer.txt",
+      "refrences/internet/guides_markdown/cpsaspec.txt",
+      "refrences/internet/guides_markdown/cpsauser.md",
+      "refrences/internet/guides_markdown/doghmi_guttman_thayer_searching_for_shapes.txt",
+      "refrences/internet/guides_markdown/formal_support_standardizing_protocols_state.txt",
+      "refrences/internet/guides_markdown/guttman_protocol_composition_auth_tests.txt",
+      "refrences/internet/guides_markdown/hackage_cpsa_overview.md",
+      "refrences/internet/guides_markdown/hybrid_analysis_protocols_with_state_cpsa.txt",
+      "refrences/internet/guides_markdown/ramsdell_deducing_security_goals_cpsa.txt",
+      "refrences/internet/guides_markdown/readme.md",
+      "refrences/internet/guides_markdown/roletran.txt",
+      "refrences/internet/guides_markdown/security_theorems_via_model_theory.txt",
+      "refrences/internet/manifest.json",
+      "refrences/internet/papers_pdf/caves_attestation_protocol_cpsa.pdf",
+      "refrences/internet/papers_pdf/cpsa4manual.pdf",
+      "refrences/internet/papers_pdf/cpsa_cribsheet.pdf",
+      "refrences/internet/papers_pdf/cpsadesign.pdf",
+      "refrences/internet/papers_pdf/cpsafoundation.pdf",
+      "refrences/internet/papers_pdf/cpsagoals.pdf",
+      "refrences/internet/papers_pdf/cpsaintroslides.pdf",
+      "refrences/internet/papers_pdf/cpsaprimer.pdf",
+      "refrences/internet/papers_pdf/cpsaspec.pdf",
+      "refrences/internet/papers_pdf/doghmi_guttman_thayer_searching_for_shapes.pdf",
+      "refrences/internet/papers_pdf/formal_support_standardizing_protocols_state.pdf",
+      "refrences/internet/papers_pdf/guttman_protocol_composition_auth_tests.pdf",
+      "refrences/internet/papers_pdf/hybrid_analysis_protocols_with_state_cpsa.pdf",
+      "refrences/internet/papers_pdf/ramsdell_deducing_security_goals_cpsa.pdf",
+      "refrences/internet/papers_pdf/roletran.pdf",
+      "refrences/internet/papers_pdf/security_theorems_via_model_theory.pdf",
+      "refrences/manual/cpsa4manual.pdf",
+      "refrences/manual/cpsa4manual.txt",
+      "refrences/manual/cpsa4manual_clean.md",
+      "refrences/reports/benchmark_results.json",
+      "refrences/reports/benchmark_results_golden_benchmark_2.json",
+      "refrences/reports/embedding_clusters.html",
+      "refrences/reports/evaluate_rag.py",
+      "refrences/reports/figures/fig1_recall_progression.png",
+      "refrences/reports/figures/fig2_category_mrr.png",
+      "refrences/reports/figures/fig3_latency_pareto.png",
+      "refrences/reports/figures/fig4_rank_distribution.png",
+      "refrences/reports/figures/fig5_complementarity.png",
+      "refrences/reports/figures_golden_benchmark_2/fig1_recall_progression.png",
+      "refrences/reports/figures_golden_benchmark_2/fig2_category_mrr.png",
+      "refrences/reports/figures_golden_benchmark_2/fig3_latency_pareto.png",
+      "refrences/reports/figures_golden_benchmark_2/fig4_rank_distribution.png",
+      "refrences/reports/figures_golden_benchmark_2/fig5_complementarity.png",
+      "refrences/reports/golden_benchmark.jsonl",
+      "refrences/reports/golden_benchmark_2.json",
+      "refrences/reports/plot_clusters.py",
+      "refrences/reports/rag_evaluation_report.pdf",
+      "refrences/reports/rag_evaluation_report.tex",
+      "refrences/run_rag_pipeline.sh",
+      "refrences/scripts/01_extract_chunks.py",
+      "refrences/scripts/02_extract_code_examples.py",
+      "refrences/scripts/03_query_rag.py",
+      "refrences/scripts/04_build_embeddings.py",
+      "refrences/scripts/05_enrich_doc_chunks.py",
+      "requirements.txt",
+      "rfc-llm",
+      "src/__init__.py",
+      "src/code_generation/cpsa_json_serializer.py",
+      "src/code_generation/cpsa_scheme_emitter.py",
+      "src/document_ingestion/handshake_section_router.py",
+      "src/document_ingestion/protocol_applicability_gate.py",
+      "src/document_ingestion/rfc_header_filter.py",
+      "src/document_ingestion/rfc_toc_parser.py",
+      "src/document_ingestion/verbatim_section_slicer.py",
+      "src/intermediate_representation/algebraic_sorts.py",
+      "src/intermediate_representation/cpsa_grammar.py",
+      "src/intermediate_representation/protocol_syntax_tree.py",
+      "src/logging_config.py",
+      "src/main_pipeline_orchestrator.py",
+      "src/pipeline.py",
+      "src/pipeline_events.py",
+      "src/semantic_extraction/constrained_protocol_extractor.py",
+      "src/system_config.py",
+      "src/verification_engine/compiler_diagnostic_repair.py",
+      "src/verification_engine/mitre_build_orchestrator.py",
+      "src/verification_engine/roletran_executability_gate.py",
+      "src/visualizer/__init__.py",
+      "src/visualizer/server.py",
+      "src/visualizer/static/index.html",
+      "tests/test_code_generation_and_verification.py",
+      "tests/test_document_ingestion.py",
+      "tests/test_main_pipeline_orchestrator.py",
+      "tests/test_visualizer_and_events.py"
+    ],
+    "deleted": [],
+    "modified": []
+  },
+  "files": {
+    ".gitignore": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "7e8cb1f31e97db54c176aea5300cf6a1690697748f9a57ce925ddad4fb31c4bf",
+      "size_bytes": 5334,
+      "status": "included"
+    },
+    "LICENSE": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "a1896ff9a99692480f0643696eaff7aa6828079456a32fe914a9ac33a9332867",
+      "size_bytes": 1068,
+      "status": "included"
+    },
+    "README.md": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "e42c1b3fbe10ed419f1ac212a0f073100a63c5444b7dd10a1bd9fd6cae652561",
+      "size_bytes": 49,
+      "status": "included"
+    },
+    "docs/ARCHITECTURE.md": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "ef433de1f6581ea65ca4036e38adc6f0c3817f28c3d5f8f32f1bcac39fd9ecc9",
+      "size_bytes": 8437,
+      "status": "included"
+    },
+    "docs/CPSA_KEYWORD_REFERENCE.md": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "9b1415adf58d12de1497d8f859889e93d1b67c7d0bcd83b8f86486c7d5b77b46",
+      "size_bytes": 15247,
+      "status": "included"
+    },
+    "docs/INTERMEDIATE_REPRESENTATION.md": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "396f4853787ecbb1c570b8293e6b40d502a3fd9c063d9f897650bdb3ed3f1a95",
+      "size_bytes": 8855,
+      "status": "included"
+    },
+    "docs/MASTER_BLUEPRINT.md": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "9ab736f5de9f2ced0f4a31b5c8c4d4e6862a80128819a4cd13195990faf89d0f",
+      "size_bytes": 16944,
+      "status": "included"
+    },
+    "docs/QUICKSTART_AND_OPERATIONS.md": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "1d33d431aaab8622a63b40f3d0d5c7f869caba9b21b59380f6cbfca7f3789bf4",
+      "size_bytes": 6835,
+      "status": "included"
+    },
+    "docs/README.md": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "d4e1b52af164f1cfea0c7d65c267888d78904924cb2692202bf8aad21f9dd892",
+      "size_bytes": 4525,
+      "status": "included"
+    },
+    "docs/TIERED_MODEL_ROUTING.md": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "379f7f91d08aa3ee5972a93582753803201ab7fe4ce86a53d83af2b6fce5bd4a",
+      "size_bytes": 6377,
+      "status": "included"
+    },
+    "docs/VERIFICATION_AND_SELF_HEALING.md": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "3e8560f56c54152dd879b2526979c4b6b03723e81c20aae31bf2db773f53e8c1",
+      "size_bytes": 7666,
+      "status": "included"
+    },
+    "logs/.gitignore": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "46b6b3b94a187516f4478544dcb4004d13281cf79add6b554df1962cff266b22",
+      "size_bytes": 64,
+      "status": "included"
+    },
+    "logs/pipeline_runs.csv": {
+      "bundle": "(tier4)",
+      "sha256": "1603d82b69e2f587ebf7b84b6342bbb1340beb3a17566f7545b2f0879f5b0a53",
+      "size_bytes": 11090,
+      "status": "summarized"
+    },
+    "pytest.ini": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "b160d82f7811555051f8966d8e02750a985227c1d022208c784e606946f2eada",
+      "size_bytes": 42,
+      "status": "included"
+    },
+    "refrences/chunks/all_references_clean.md": {
+      "bundle": "(tier4)",
+      "sha256": "6e972f0f4ba82a1a2ae257aa1f51b36c7b72e39812b234c9647f0f82d7ae706d",
+      "size_bytes": 1354289,
+      "status": "summarized"
+    },
+    "refrences/chunks/code_examples.jsonl": {
+      "bundle": "(tier4)",
+      "sha256": "62749a3c49a92d5b28301525dbea17db3112907ff2696ab5d6f16853f1cc7858",
+      "size_bytes": 608115,
+      "status": "summarized"
+    },
+    "refrences/chunks/embeddings.npy": {
+      "bundle": "(tier4)",
+      "sha256": "a7bc788569273c9cdaf3cc9433af74e1337dc34e48d7695a6fd529c03ee476bd",
+      "size_bytes": 4380800,
+      "status": "summarized"
+    },
+    "refrences/chunks/embeddings_meta.json": {
+      "bundle": "(tier4)",
+      "sha256": "f876588e416eb5d4747a1d5bcc7ee92e1879746af4784a2b9d7f536cd23ea98c",
+      "size_bytes": 355829,
+      "status": "summarized"
+    },
+    "refrences/chunks/manual_chunks.jsonl": {
+      "bundle": "(tier4)",
+      "sha256": "2daeb853aa48c186fcb8a08294951fdf281947a8beeb4c5dfa537fe9438a7768",
+      "size_bytes": 2495267,
+      "status": "summarized"
+    },
+    "refrences/cpsa-protocol-modeling/SKILL.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "f9dbe9ad071ddea97ad31064a02cb875762d300e6692eb23d760251a7cb84851",
+      "size_bytes": 27628,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/manuals/CPSA4_User_Manual.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "8536a06c9658b277ca72a5192ba76e5d4e11251931501aa669e26a4bb887f2dd",
+      "size_bytes": 245243,
+      "status": "summarized"
+    },
+    "refrences/cpsa-protocol-modeling/manuals/CPSA_Comprehensive_Guide.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "86bb8c0f775d9f92f651fd4aeb039da6563a653ac776ac352858dbd3e25af383",
+      "size_bytes": 190478,
+      "status": "summarized"
+    },
+    "refrences/cpsa-protocol-modeling/manuals/CPSA_Design.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "d3a9961faa2a19c7a4aac014cd49e106fe0cff818035c749fcae8b89d57a2314",
+      "size_bytes": 57158,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/manuals/CPSA_Goals_and_Security.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "12b9d0a074fd92a6336f5f2a1498b16642aeddf589ad98aa2dbab4437e88d05a",
+      "size_bytes": 31665,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/manuals/CPSA_Primer.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "ab1cfd6310666f654ff6fc84da0ea3c21acd4d7cdd71090bf3b62fc2139e194c",
+      "size_bytes": 70751,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/manuals/CPSA_Specification.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "658ae80d2ba4c4247589900e58c9ae5142e6e3cf9dc8abd44c4741e23d6037bd",
+      "size_bytes": 103664,
+      "status": "summarized"
+    },
+    "refrences/cpsa-protocol-modeling/manuals/Dolev_Yao_Model_Paper.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "f3b6a15e18ab7f0466145f5f7c35a4950e46fcc8c52d73df13a8952cbe47f16f",
+      "size_bytes": 74293,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/manuals/INDEX.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "94091ccb37181b12a6dad2c427f19f17883341623b0cf12a58ebcc6c6400dadf",
+      "size_bytes": 1583,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/manuals/Role_Translations.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "7506fa3c09a36a444801db4a3bcbef750f4f4da104da9976f984216803fc1ef0",
+      "size_bytes": 39748,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/pdf_manual/CPSA4ManualRefrence.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "bbaff3167e653b0a2d499a2ec2ea8ae92455bd9ed94b043f9abf74b4d86372f2",
+      "size_bytes": 25253,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/references/algebra-and-macros.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "cdd941475ceba31c3e21d6d3b1da6a4eda1cac063e5f30384837d418b09f3437",
+      "size_bytes": 3524,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/references/cpsa-4.4.9-keyword-and-grammar-spec.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "9b1415adf58d12de1497d8f859889e93d1b67c7d0bcd83b8f86486c7d5b77b46",
+      "size_bytes": 15247,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/references/declarations.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "243df357076eb01c4754ee38a934b691a013cd0b5c53cb44a4a738284ccbf972",
+      "size_bytes": 3251,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/references/goals-and-skeletons.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "4dbdf7dac552f317b24b3693f10f46e34fe4399a2ca29eba13a2620e04992ec7",
+      "size_bytes": 3788,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/references/reading-output.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "1e9b1c714d4dbabd7b45f3bb123a5e933b44a19a153ce1a69bf42e7d1a4443dd",
+      "size_bytes": 2620,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/references/roletran-and-compiler-diagnostics.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "3e8560f56c54152dd879b2526979c4b6b03723e81c20aae31bf2db773f53e8c1",
+      "size_bytes": 7666,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/references/state.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "42040f1ef6bde9476b675deee8d079f3c3437927551667f63d10d97da49637fd",
+      "size_bytes": 2572,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/references/termination.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "9966e6ff230e20804721520d3acb203eaae0ed45cdebbc44ad33f74d8a74c335",
+      "size_bytes": 3201,
+      "status": "included"
+    },
+    "refrences/cpsa-protocol-modeling/templates/single-procedure(scm_file_in_txt).txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "4e847fbd18e653f43a0940baaf417dd1f9d9d7dda7d9237b9f0184e5ccdbb441",
+      "size_bytes": 1455,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/DH_hack.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "1dd27362fe4bfefd37b90e60fedfc7986f9d322c34eda43722b05d3b0cb51a1d",
+      "size_bytes": 2461,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/ab.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "1e3d93f7a82d1addb454984ddbe53a8f4d3c2064ef9222eb9d83986e66b2954d",
+      "size_bytes": 657,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/abc.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "67394bb261094395ad2a86991dfd0315a6539eb3fb655cd18cc635fbd3f2b766",
+      "size_bytes": 761,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/aik.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "de3554177295e0e6498b6c7a0f4a2daf49eb37df5583bb80b05033a5a1bc76fe",
+      "size_bytes": 1017,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/atomic-open-closed.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "0aca95d4c3583a1ce13e26e74c6fce549c97e25a1b90a7e1eedab5260c6205d4",
+      "size_bytes": 10663,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/attest.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "fc0ffff10b774943eddf8eaaddcd55e043505d5eee49136d63450441d0cea6fc",
+      "size_bytes": 5115,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/auth-enc.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "f2ddbb62150b8b198eb022bd496d51dee93da68cf5662c0902a41f89204d5c8b",
+      "size_bytes": 416,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/auth-hash.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "58e88956cdec72f02f5330bece91b8bd88495889f22e3716c07770353f622e5e",
+      "size_bytes": 381,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/blanchet-strandmax.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "5caa67bbda5b2043d65776e6d40813436998a8c63921cc7eb7ce97643661231a",
+      "size_bytes": 4002,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/blanchet.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "2f16c32a28d38c7c61b20fc88c1c729408734fbd1af7bd245746b785e2023c26",
+      "size_bytes": 2661,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/bug_example.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "68f92ca2c76a1e4b385436e33f415677b91ff32d6c32529be312911363ec2944",
+      "size_bytes": 1176,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/cert_lang.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "f2199b4592dcee0714c94f51a123640a8020092fe86c2bc73f64198ab7418ecd",
+      "size_bytes": 1450,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/chan-envelope.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "34a633cf224a47e2a207536a1e05ae0eb79ddf0c0bf0cc1775100057e78a6502",
+      "size_bytes": 6610,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/chan-perrig-song.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "28d099dc459d09b3f5c8c604d35f17440adce5a9d2db2f950996cbd5952661eb",
+      "size_bytes": 1034,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/chan-unilateral.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "65050edbf09cc264eb00c9b937fe78534206256509a491f36be66d36c21fe0a8",
+      "size_bytes": 1284,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/chan-yahalom-role-decl.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "01f7233171d93907627c624a110ebeeae4bf1a3a4f458ae2750db013249c9288",
+      "size_bytes": 2221,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/chan-yahalom.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "e3d108aed772b53cad2270d4b54187d2bb759489c8d339b4546577db5062ef8e",
+      "size_bytes": 4420,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/commitment.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "505c140833d9c87f0b13ebab068ee7a596fea2e01d8c0bd6ee39a65f4ba5430b",
+      "size_bytes": 1517,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/comp_test.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "6fb561c2b5797f40343027b21bfb1db5545e8b087ff684bd15b31285ac9eeff8",
+      "size_bytes": 4785,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/completeness-test.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "32ffa577d5f7a4bc3253ec3aaf437ae46f95846add697397346b8ed863ca968d",
+      "size_bytes": 1552,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/crushing.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "9c7657aaef7924dea94881983231835da85d283f56956698d061ac4c70b503e2",
+      "size_bytes": 862,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/dass_simple.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "48d05f30a4f45434e598368c1aba4e56c487cef31f9e97471176a278b82b388d",
+      "size_bytes": 2190,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/denning-sacco.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "5550b730f87a4d7ab7675a946f7e7e9d2030b0bd1f70a515796fb942c8fd40f1",
+      "size_bytes": 850,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/deorig_contract.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "d2b82fe71e945d0b595a56020ad538ac970377850e05c7f39a83c65fd5860389",
+      "size_bytes": 1142,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/deorig_mesg.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "9455450b46ca400d5c1f99c7918c80f3fe2a212c506b78e58ed3a45e3730bdb9",
+      "size_bytes": 478,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/deorig_simple.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "61d250e40a22e719ff89cbdaabcb52362eccbab4ef17f98ae1622f96916a7c06",
+      "size_bytes": 954,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/dh-ca_hack.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "f94fc6424084788887aecdff86294673caede6c1402584915fbd55bcce6a40aa",
+      "size_bytes": 2025,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/dh_encrypt_hack.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "7cc99c4130f6ade7d5be0772c3bbfe192809249412c9297b73a39336d62e0718",
+      "size_bytes": 1478,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/dh_group_sig.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "27fb57e12cbf6dac53643cf529e397bba1df1b49b2aa5c64897881333ebbe298",
+      "size_bytes": 1672,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/dh_group_sig_auth_failure.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "7aef504be50ec16625ba2b174346c8f1be58537fd52fb1e4d31d974a9f3cac94",
+      "size_bytes": 1480,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/dh_mim_hack.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "40710e381d8762fa7740f58d2eb5bd1f0e582606e64147539817173e3b1a95f3",
+      "size_bytes": 1002,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/dhnsl_hack.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "1988a950f6f8e560cf98cc417587fc362e69f82607c83bb143173fb8eec0273e",
+      "size_bytes": 1356,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/dhstatic-state.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "a49573f51e24fe38e7eb7edd5a6bf2ef254d36cad649cf76ac538d6f3eb4112f",
+      "size_bytes": 2015,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/disclosure.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "03f8b49cc6ebc4ae57d50f5c922b4efc152c1e44c7c26e92b06fef03a1a74c62",
+      "size_bytes": 978,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/doorsep.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "b727325455f4ae2ffe51c48ddbe24a01031917ac419d80e34e3f2266d133cc09",
+      "size_bytes": 829,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/doorsep2invk.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "7fe92d6d7c55653bcf9d585241b440ffee9236e5ae12475450d00349287a794c",
+      "size_bytes": 1046,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/encsig.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "480f80c2eea19041fe151c2bf3b981551e732ab62ed35b5e203b887fb46b6c8b",
+      "size_bytes": 1503,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/envelope.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "0c2f85eb6f6b08ce1f382d22d57c3a922118e0c59e5842a9e8de6389a9f6f489",
+      "size_bytes": 6746,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/epmo-hash.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "57d5e38dc720f581de83ab8adb9738dcf54e59d94f2467b04ead3be13adb1bc5",
+      "size_bytes": 2729,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/epmo-key-hash.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "f779124fc6feb8e765575a0bc30864525751c8ac6f2741aea02e46e6f6a86021",
+      "size_bytes": 2801,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/epmo.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "619a6b134674b774b227c90bd85cd837a889a85ac7f485e141b55869ecb30749",
+      "size_bytes": 2853,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/epmo_acctnum-key-hash.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "9590f59d584400cca0b16efe88d8c260f2a37b6b16cf2162b0964611ed0aaab3",
+      "size_bytes": 3840,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/expand.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "80a54a16b03e6f850f16d25f913cdd0b1e7425340bd00190ba37799ecba75423",
+      "size_bytes": 324,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/facts.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "e6a2686168e7afae7ea3624e8648434423e55f8638410c47a88fb65e16b34314",
+      "size_bytes": 2449,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/factvar.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "fb9d3f74d9e3267cff0541cb5d9848c06d38da54432e011be4bd1a79bea2e007",
+      "size_bytes": 703,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/ffgg.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "5b0ba3591e9d0f43c647625029e7c77c2b8e6e0e8897e29d9144863b767ac105",
+      "size_bytes": 670,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/fluffy_draft03_gske.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "c6039262563d00c45433d1cf1a1383128bdc5fdefa3cb8093cd7c41736df845a",
+      "size_bytes": 3614,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/fragile_pruning.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "5c19c39ed0449de3a2fdd37452b6ccc868503994c4c37d391fee5f5c85ef67ed",
+      "size_bytes": 1258,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/goals.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "b1ae1766178a449b5c0d7aa72ee985ad974d79c568b559b6353f3322f12b5a1d",
+      "size_bytes": 7652,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/goalsvar.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "0d26a1fa46e241a969d2dc07c2f7c976278511a5bad7fde487dbb5d69be52b3b",
+      "size_bytes": 6861,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/hashtest-key-hash.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "a9914930ffa50126ffc0ecb4ca0c9b89b9704bc389fbbbc7cbeba147424e8aac",
+      "size_bytes": 457,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/hashtest.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "3ff3a8f0d1ccec9715a2b6575f1014c29e25c2c653b60534a9c79aac04c5abb2",
+      "size_bytes": 451,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/incompleteness_example.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "d6fcb0502d3d7d323e4cbd50ace5713ce0ed9d3dff7b3e193ad67c1e6045f2b5",
+      "size_bytes": 659,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/isoreject-corrected.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "caf4ace8ece37846d2a7be9052d74038ddca51376317b58c7ce3578a203305fa",
+      "size_bytes": 624,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/isoreject.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "9280d47d1adc22c79946d78b937df43f3b16c58f8679831055f1da53c8079196",
+      "size_bytes": 569,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/kelly1.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "757b6d34a380c3ff7bf568eb09e2d9cb0052cdc714207f35668b93d47a82aaf6",
+      "size_bytes": 2181,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/kerberos.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "63adf8e0bcea76310f1350144f749b7cd0f2203186e6db344fb74a63cf6c406d",
+      "size_bytes": 1337,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/lemmas.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "c815266aaa578365985804cd32464a8e6553c4a0475b3066c3789b87df237d74",
+      "size_bytes": 1699,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/locn_envelope.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "b76bdb322e9dc7b5e31f063c1d92435c9a035769fa7df4400abfb4387469fb3f",
+      "size_bytes": 8248,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/missing_contraction.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "327190aada4876d7b68e308991293eb3b4a9d70a73dd089f1722b280834aef27",
+      "size_bytes": 1882,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/neq_test.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "0602413ce18efe280a043bd102bc7164a00161fb6bf7b2abf000913d055fc2c3",
+      "size_bytes": 714,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/neuman-stubblebine.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "c2208789c13a4575d3bd1c135ae8da5b9d6d92d0bcdb512d04654c7f508dccf4",
+      "size_bytes": 1259,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/no_contraction.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "1607933100261f85f977f1c2d486dec470e185e8d563503ad50ff6d914a8189b",
+      "size_bytes": 387,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/non_transforming.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "ec45277f12c7fda2b60dc1844b2e73c329945ac1a0e8d58176298367ffff5c28",
+      "size_bytes": 986,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/nonaug-prune.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "5274cf847e16ea502c86d0a62d511199449dcadd77855f2296402e27cc921c21",
+      "size_bytes": 1188,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/ns-l.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "1eebc4fe0c3f5588acbb467a41114acb599c2ffb2ad5675b64c911907d2b8d36",
+      "size_bytes": 1043,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/ns-rebinding.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "f9af085a3c0b42d21a527ad1a77e7bddfddde84e6da1f4fdbf35f00ac31fcf81",
+      "size_bytes": 2806,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/ns.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "436649066c0e3cbae02f7d303e71d3bb47e4803896af1d4344eac7a5fa09fb3a",
+      "size_bytes": 1027,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/nsl3.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "8bc8612a71fd913668a75bdbc62c3fe81d2a716f6f03d1c8a5bb28018e3cf56e",
+      "size_bytes": 1525,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/nslsk.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "139b149a6a6874506d0d5e6a1b42220bd1cf0b31d1046435b18f7ce4aad5b528",
+      "size_bytes": 1281,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/open-closed-multiloc.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "06aac6425c95fb7d7b655bbfa9e060201be41df2c33712a74ff65f6a8f38b9a4",
+      "size_bytes": 4561,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/open-closed-tag.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "077b13ff8584cec2f1abfc72ebba89f1fa8262a70da42848b5e5c64c054b7b0f",
+      "size_bytes": 3915,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/open-closed.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "ffb860449ac3f17f841db84fe3b439ce5513c8fdfb9fb222a3e48ec07471bc28",
+      "size_bytes": 4934,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/or.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "8bdc4e82cc5e54fdb94f5aa1caa494ef05171a14ae461a08a7d52ac64def2d40",
+      "size_bytes": 890,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/ordered.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "c0c9185c45bfcad63a9d885b896d95b931dc138fd7ebc02f05b408ce761cf98c",
+      "size_bytes": 759,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/orderedvar.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "aa7cdc6a61075c5699d467623e4e6f8118d96a2c54031f61379c6eb8700b50a6",
+      "size_bytes": 765,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/pca.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "298053fef26331b7ebf1e0ad729e0347080a066df8d508ffa2eb41616c9688ec",
+      "size_bytes": 1128,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/pen-non-orig-test.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "43ea68bd790c2de60d3d322680a9feb8b7d51fe3ccda60ce2e575fce71c17762",
+      "size_bytes": 794,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/pfs-via-pubkey.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "49b7b5024629972bbce329b88a3e6ed90f870b129508714ad2b9a4128f9bd8af",
+      "size_bytes": 1185,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/pkinit.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "424045fb7b6f5b356a2b9ce56afe5da9c9d035434c8d5e3a78a5eb72ffd260c1",
+      "size_bytes": 689,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/preprocess.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "85f407700b4e821e9497eb4f398eb2b9ccd3cd3228b7f0d26f59d7fb4681d8d1",
+      "size_bytes": 862,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/print.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "5461454e4b179d6d674a712c9f5b40e86b24107050d145489f9da80d94fe4425",
+      "size_bytes": 456,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/prottrans.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "506c69f729362abb722a31a1e50df28f7308d3fa83c427916098be2b4cb08893",
+      "size_bytes": 2903,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/pruning1.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "6c32b763e3f24f04ba62d21e1b737339697ef130c15ac4dc0d4104659d9dbc3f",
+      "size_bytes": 1408,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/puzzle_example.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "9786d9060676298f9dfd0eafa37766540395ac65dabce914e2f09f43b89c441d",
+      "size_bytes": 2129,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/reflect.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "d28cf47172291decf6863c367cf81323b7ec3f322d3f614d4ea06572c6d2e309",
+      "size_bytes": 663,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/renamings.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "26877988b9f124b396f350283a40a4a54126d9e236cca9dd6d208a8391d18e7a",
+      "size_bytes": 933,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/role_uniq.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "44cb41cd7701958c0d21b3ad660bae38cb33ebe0fc4f7b4e111ddd1c56ef6778",
+      "size_bytes": 1612,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/rule-node.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "d623459ea1e4aded33a6eaa51feac63dc00b1363e03018d35e9a453527399763",
+      "size_bytes": 1871,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/rule-order.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "02735c6e55ef862fb0f626bf0f0fded48b6e99b26da36cf740b48cce2a2120e0",
+      "size_bytes": 350,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/rules.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "2761f75fd5bd6efe1c37c9477a2cf5d0ccfa460412a4adb9775a3b2ee2aa8cb5",
+      "size_bytes": 1606,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/scep-tls-dh-broken.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "b1818bb80bb32909d0c3a42a572c1f62ea9e12dd9c299a1b175c3b125e1e42f7",
+      "size_bytes": 4795,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/scep-tls-dh-fixed.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "f58ff6535265c75a268cc24a4290b097b4c7ca0244ca5e19909dad4d96e48d92",
+      "size_bytes": 4875,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-auth-enc-full-payload.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "ca74511ed9c27ce4e8961c258499ab94005cfc84792f5aa6210d72e3861b16ca",
+      "size_bytes": 10703,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-auth-enc-logic.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "8f15c79e0913f3544537396bd8d3206a2ee3c735024ca0a98c85a6bb937ff36f",
+      "size_bytes": 2523,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-auth-full-payload.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "3a36093acaf5dc26706828fe68538b45c5402a7bbd0ec4bfeec5c231764faa1f",
+      "size_bytes": 10085,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-auth-logic.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "69e52ed30db52b5ca35ef6512b968f6ddb6ef0e7b1f6143ad03eefa68df3824f",
+      "size_bytes": 3062,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-enc-logic.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "ab76741609f5067f7a61ea87281a1ddfe4eb17efe7452831f138f72d92ea9247",
+      "size_bytes": 2807,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-challenge-auth.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "350ed2a1d1d929b716e9487ce9aa237ffed6ebcdbf9f5a1a878dc6cb5fdda726",
+      "size_bytes": 2724,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-challenge-authenc.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "d4e5673b3ddccfa776cb47703b7bfb92af34f06b65e5c1e2be8f7355f0505afe",
+      "size_bytes": 3059,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-challenge.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "312adef361d959086a9550ef6fec358c2f404f8a729ee3f2ecbbd05d43af2e93",
+      "size_bytes": 1310,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-key-activation-auth.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "a6bc99dd2efc2232195d1a2f569c7039128792e1d84aba0168dd5d0dd208dc14",
+      "size_bytes": 1788,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-key-activation-authenc.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "6367eb4a2d125796088d73a574b3dd0c4b5dc0586d9ec9eae80c3e895a8d2ba9",
+      "size_bytes": 2083,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-key-activation.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "8e5407169d35dc0967f8d0020510d3f3301df6bc48308ac82b730c6edd345aa8",
+      "size_bytes": 828,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-otar-auth.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "3361496cd8924a2f94eef4245bdc7bf90772acea80f19a96bb1866bac093d73f",
+      "size_bytes": 2546,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-otar-authenc.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "9c21a336cca31ef02a3a52de6c6ef99fa8f1c3bb31de7a0c6b0f8f14169a94dd",
+      "size_bytes": 2841,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-otar-transmission.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "c6cab6fa329ea00d031f4cb2894bdb2c7cc23e0eeb15889c1b9b3d98a72b7b48",
+      "size_bytes": 1725,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-sa-rekey-auth.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "efa36900f119662150c4a04bea0893315cf810a23f86c396e6a198f72571b985",
+      "size_bytes": 2413,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-sa-rekey-authenc.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "161329f435d815d8af0664fcb3151705151cb606400de58dcd49d6cb64b7629f",
+      "size_bytes": 2708,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-sa-rekey.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "f4d29e1126d66f4a312ede1d19358ef2c6f91b78758fc157b55dfb51fb9be51f",
+      "size_bytes": 1413,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-sa-start-auth.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "176085a6c5c20589bb7b1f22685a5b8fbefdaca48f6c3c40e49f5f6a986d7021",
+      "size_bytes": 1817,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-sa-start-authenc.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "61c0b0266d5cec233fc97a1f58a71ea1403505ffc786b6ae65ebdfb9b3ea8bb4",
+      "size_bytes": 2111,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sdls-ep-sa-start.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "db963aab66d94effacfd60f66d17f96c7be8e88b27d3df27d6b8bfd54bd5c896",
+      "size_bytes": 1122,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sigenc.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "7de7f622deba3ea0d25d659c9c63dd3a38bb4641873157c17897d2ab768d5bd1",
+      "size_bytes": 1503,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sorted_epmo_acctnum.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "3e81474246f0596ac3ff53f0909de7b49529f72b15e9ab6e90b79a5e42d7b41f",
+      "size_bytes": 3385,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sts.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "f4cba59e4388748eb5873db0efe0d412f8c04168cf4cd1bdf4f0c2945fdbc05e",
+      "size_bytes": 2302,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sts_non_role.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "1b34a75f590eddd83603bfe0722423de768132c7c89e57ede92ed3eae7a11357",
+      "size_bytes": 2638,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sts_weakened_reflect.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "c639a40306a423cb95a5a7c20a84b28a9d255ac31028cfc705b5691a5e6e3c7f",
+      "size_bytes": 2308,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/subatomic-open-closed-test-genrule.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "819efab85760b11c2cdcd445cd035090c28bc94d9e5cf673b6a4fb8bef17e773",
+      "size_bytes": 8635,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/subatomic-open-closed.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "eae2ff6d0a483c2d9832bde5e10f88cbcc5119486cb36f570fbbc78b593007cd",
+      "size_bytes": 4741,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sync_locn_envelope.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "c0dfe134ad6c1e242a00f4a017fb63be88643c37f2c20eea2ee58f763f185b42",
+      "size_bytes": 9827,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/sync_locn_envelope_no_auth.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "e234dfddd0b0804b8715cff656209a0c41d8843057a0b72128d7d9d69a835950",
+      "size_bytes": 9397,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/targetterms1.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "c2c1a27820ba39e30012f04fcac178172bc74650490667931ab44c5d3dc4a8eb",
+      "size_bytes": 566,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/targetterms2.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "1910a7315f4365f10a7247662ecf8865d8e11eef18b65207dad08946ab8708c8",
+      "size_bytes": 1307,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/targetterms6.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "4a93026b8f2e44a93c37bb7e6660520b9d546a78ec02620cd5e2e657d5b35c1f",
+      "size_bytes": 2204,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/targetterms8.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "25e015e831772f511ef44fbca045b3f2e48ebf41b114c5a27abb0cf13f660f77",
+      "size_bytes": 2280,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/thisthat.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "ff8fb574f088759a6e704c837d3955c5e3995f70a229346d1b80ae9922f3304c",
+      "size_bytes": 909,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/tickle-unique.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "7a2222c13440a99e2be859bd8c225332854e6552fe8f517816dfb440c59a3d0b",
+      "size_bytes": 866,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/timestamping.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "82003a7aeb200faa5c91ee4a4ccc6a15212377859ceacddd1f472243fa7a1ca0",
+      "size_bytes": 1468,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/trust-anchor.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "29e4593099181dde6c7d093d9b365526ad9770358111f390313875ac39788859",
+      "size_bytes": 523,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/ugen-at.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "b5797b5eddf5791c42dfba1aec6b8815c549656d6b8b42a6774e0f64d52b3f2d",
+      "size_bytes": 1295,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/ugo.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "a9bb4281d911a708ec7482fcb3c90f60db5c6b1e51ceccb956fc0ab6167c80ad",
+      "size_bytes": 2830,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/uncarried_keys.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "f8f5a1fac5e95dca043d98a5cc1491e45cf2db7a0bab6fd99b3ce7cf1f1e7db7",
+      "size_bytes": 964,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/unilateral.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "3f30672cadd0cecc59d6b2ababc7cabea0c9fcfea1e2fa68787bf43a3785fee9",
+      "size_bytes": 2355,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/uniq-at.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "d8ec10d3158a875df38d78242336b80d71429984be079b80b65afb4f83f0f051",
+      "size_bytes": 1298,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/uniq-gen-test.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "863bc5bd5cfd35eff7e96e64d2351cfbcef8de49186dd4b64cd34f617d633f6c",
+      "size_bytes": 859,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/uo.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "4e212592b42d3eeeafee64860cde7653b3548553a09b619ff90aa4eb375975b0",
+      "size_bytes": 700,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/wang-hash.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "e49573e42a15c033fd0e25bdc57eb9c6de4694e7cdbec2ab39c472e4e540a05e",
+      "size_bytes": 12518,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/wang-key-hash.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "362536a1eb348962895d34ef6a6ea7700035c8a696977bb5aed12488abda5dcb",
+      "size_bytes": 12513,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/weird.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "c90e3b9beb583f60bed8ec390b046f2e85e53e4c522883037e71c91c41267667",
+      "size_bytes": 1353,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/wonthull.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "2e7e04acefd577a9e3e398256c4638d6c1d3a64a39833035b3641b204eb946be",
+      "size_bytes": 1127,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/wonthull2.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "ec51d8d163d64d0459b62655593d536d65025b2806333594ddd0d743071d00bd",
+      "size_bytes": 1063,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/wonthull3.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "37101d7ff334a9796d9f1c0b6e5541ccebfdaca9e7a8670954d0faced750ffa9",
+      "size_bytes": 907,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/woolam.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "9b5ddc1d5e38811e77d29c81313d1bfc3cff17128c31e22afa494b9b7c4c5817",
+      "size_bytes": 677,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/yahalom-6.3.6.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "6ad926c80e4791a40e7be39464b45c271948f84edc21d3b71d7b2391a65654d8",
+      "size_bytes": 1738,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/yahalom-forward.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "06698f095963108f1f2592f2daacc5ec1687a25d561267ab933f457936da45bb",
+      "size_bytes": 1229,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/yahalom.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "e403b0a15ffb43139717558c8cc0e7922878a29736dd1bc0b3194cf8ba35dd7e",
+      "size_bytes": 1038,
+      "status": "included"
+    },
+    "refrences/internet/examples_scm/yes-or-no.scm": {
+      "bundle": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "sha256": "44271b6e83a9007c03f40385b5b51e00b16c38b8bc84781ae9b15b29ce08d61c",
+      "size_bytes": 1335,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/caves_attestation_protocol_cpsa.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "faa24fc5df67d865b7636914095eaa9270c75af3f91c22b3da9e2fb654117dc8",
+      "size_bytes": 96736,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/cpsa.cabal.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "87e8047785166ad7b8e356dcedc355ff03a601dda74449ad24b48f050d0a90b6",
+      "size_bytes": 23307,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/cpsa4manual.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "c4b5a2f533cd2ebbde4fe63f77cec0ddde820eabdcbd42904f1939ab29b29a47",
+      "size_bytes": 245730,
+      "status": "summarized"
+    },
+    "refrences/internet/guides_markdown/cpsa4roletran.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "73e76f3632c6210b422dfc3bdccef34aa7fcaa5b35fcd96e09fa6eedeff59870",
+      "size_bytes": 7516,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/cpsa_cribsheet.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "c754963d36009a84f32bacd939d864360bd3b5cbbeaf0f13b55c06b032b41ddf",
+      "size_bytes": 4172,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/cpsa_index.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "63de7979a2469270e425b9720ed63c0a021c5af0b6e0f71375318ef44f9434ea",
+      "size_bytes": 5803,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/cpsadesign.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "14df5f7f6d9d7be5d96b0e53f26ea79c6181453017a2231d694c519c15869a35",
+      "size_bytes": 58430,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/cpsafoundation.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "597b9243743f0901ae0b7d449f90383c77c6b8fdb2dc05c2ed109704409dd1f9",
+      "size_bytes": 23071,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/cpsagoals.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "e1417eb94a3f0b45712256349afc80c8c8963ae8454d1ef856bf29726fb9f6f5",
+      "size_bytes": 32111,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/cpsaintroslides.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "cce004031ed4287b45553276dbd5d071736a352febc54c516e9f37fdc881ca8f",
+      "size_bytes": 8843,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/cpsaprimer.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "5953cf0f5a352866a841dce0a523e14ce93e94efc79e594907f37b2579551621",
+      "size_bytes": 71810,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/cpsaspec.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "ae0738d2827308a4801760cdae62891b5b7c8d54a13c57fcfe48ddc7d7fa35d8",
+      "size_bytes": 106266,
+      "status": "summarized"
+    },
+    "refrences/internet/guides_markdown/cpsauser.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "1505ade240c09674293f09b8ef4c30d060d2f6884647b9014ccf3852a615d99c",
+      "size_bytes": 50225,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/doghmi_guttman_thayer_searching_for_shapes.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "ae2b7fb34c7aaf79fbbc77b672c187fd64a1f0a6648a56617c2ca3e7a46e36df",
+      "size_bytes": 100808,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/formal_support_standardizing_protocols_state.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "9f07ee6f7a7beffc785be03026977d9c6c1dc40bef07b2689fca58f81a1d6261",
+      "size_bytes": 78784,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/guttman_protocol_composition_auth_tests.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "2632a67bbc11b52a7f97df7fbfcc8d5cb1420723960ff71e6804aee8cd0f38f2",
+      "size_bytes": 82277,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/hackage_cpsa_overview.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "be6fbdcf372d891be6026b0329ee73f92a9f580f2bb141110ad54c69271c2eda",
+      "size_bytes": 10478,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/hybrid_analysis_protocols_with_state_cpsa.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "fb789f13894ad76f94b7d6d1cb0cfbe1458a1ccab7f6c36d52c497c9149ebdd7",
+      "size_bytes": 52287,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/ramsdell_deducing_security_goals_cpsa.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "e7cf14593c72cbe1c1fb79cc9e11ceeb45f2972730decb6ee22578436915f884",
+      "size_bytes": 42365,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/readme.md": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "6c18f13fc5586934e68b014d464687a8b80d37bf3cfe70a5a2e67fafdf60175b",
+      "size_bytes": 11,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/roletran.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "15299af30aa2f7ad95fa733a5f7157131ed34de2c9cd1cd48bdd337236be5b71",
+      "size_bytes": 39642,
+      "status": "included"
+    },
+    "refrences/internet/guides_markdown/security_theorems_via_model_theory.txt": {
+      "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "sha256": "7f3ae0614fad0c55360b1af180b1c97e696a3dc117c85f12021ef1458389d3d7",
+      "size_bytes": 56407,
+      "status": "included"
+    },
+    "refrences/internet/manifest.json": {
+      "bundle": "(tier4)",
+      "sha256": "72b39763ea98dcfc68d27675ef759eb1bd589dee557f3ef8fc8363aae01f1334",
+      "size_bytes": 48147,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/caves_attestation_protocol_cpsa.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "e8e1b8c81aa6486253b6f2ada42d5b3e309cd821f635cfaba56fb1bec1a7d802",
+      "size_bytes": 304068,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/cpsa4manual.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "3972946cab267c870fdf4e9d0a9227684708d4e4117ec33bb2c61b000d0b3148",
+      "size_bytes": 1367913,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/cpsa_cribsheet.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "fd6244ca88bdff5f3b4f148b453e79628d98504e9b5a7990dbd2f6d6661c00d5",
+      "size_bytes": 126687,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/cpsadesign.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "1e51560b0eafb4e70876b71a5bae4ac82379b8eb606ff923be670da2e1b7e1a3",
+      "size_bytes": 285517,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/cpsafoundation.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "057935693de1ba54b5fb5afa1cfbf5f13486435b4ddd43363fc8fb38691f2f3a",
+      "size_bytes": 220658,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/cpsagoals.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "6769dd2328db8c9a79f1d0985abf01b125554ae791d4fa152cad90e3852de826",
+      "size_bytes": 231618,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/cpsaintroslides.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "47d2a6ad1980775225b7ec38e101170c94f5e3c7aba9e53b64bd8cdabc7d1fa6",
+      "size_bytes": 101194,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/cpsaprimer.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "d09216dec45eeb4b3687abb22ad36267039c809dcabdc0ebafd0ef5ec2ec03b1",
+      "size_bytes": 300071,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/cpsaspec.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "13f724a89c79ae0531d2b72139710dd9896bf9c5941615e50c6b27b7e4d0ca29",
+      "size_bytes": 439682,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/doghmi_guttman_thayer_searching_for_shapes.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "3ec90a313bb1e92c9d12b5c076d3385377c2751ad61ca9022ade03bb40b5632f",
+      "size_bytes": 367692,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/formal_support_standardizing_protocols_state.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "64a9b9e87a8112220c0025b2cfb3a1238a089aa77cfc10dd0695e9ff419f0cdd",
+      "size_bytes": 311039,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/guttman_protocol_composition_auth_tests.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "ae3335a24af3bbd567ff19c8093a571e44a64c853b63b968f70cf17fc8ec46f0",
+      "size_bytes": 306827,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/hybrid_analysis_protocols_with_state_cpsa.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "8e404a6f1e38453349a141aff021a7b53fc6c5f772b47af2439bffddcf8cb53c",
+      "size_bytes": 228725,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/ramsdell_deducing_security_goals_cpsa.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "d5af63b32b1f76f419035de785b1840202309e4d8acccc883e2256784294f83d",
+      "size_bytes": 191645,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/roletran.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "9d1441048dd7438ffe6174267572616432611593ac4c740343323b7c1c534f99",
+      "size_bytes": 466585,
+      "status": "summarized"
+    },
+    "refrences/internet/papers_pdf/security_theorems_via_model_theory.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "6e7aa201fa43828cea6874e87e1681b034b83e5d647de1eabecb98ca9c5db4d1",
+      "size_bytes": 168110,
+      "status": "summarized"
+    },
+    "refrences/manual/cpsa4manual.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "e77bdbec3e279a06305136ffdd86777efb7bf1997ae539a584d143285e75da73",
+      "size_bytes": 1368272,
+      "status": "summarized"
+    },
+    "refrences/manual/cpsa4manual.txt": {
+      "bundle": "(tier4)",
+      "sha256": "5bc0605ec81202afc3ddf5354871161c2b6b720ed3e9c191cf35e8f9cd9cc647",
+      "size_bytes": 223564,
+      "status": "summarized"
+    },
+    "refrences/manual/cpsa4manual_clean.md": {
+      "bundle": "(tier4)",
+      "sha256": "da0748d039a9bfdf7834b90b51d802828b10c9f8d5a4f835f4270ea88c3a4eb7",
+      "size_bytes": 262853,
+      "status": "summarized"
+    },
+    "refrences/reports/benchmark_results.json": {
+      "bundle": "(tier4)",
+      "sha256": "de051397896e8b6f44864d24486cfda1a181b1ed8cc8f321e9a329168fc7c46e",
+      "size_bytes": 9209,
+      "status": "summarized"
+    },
+    "refrences/reports/benchmark_results_golden_benchmark_2.json": {
+      "bundle": "(tier4)",
+      "sha256": "615ee33729e7bd106da6e04f4573e1a264e21016cf04c733cc3dfcb5643ea0e8",
+      "size_bytes": 9125,
+      "status": "summarized"
+    },
+    "refrences/reports/embedding_clusters.html": {
+      "bundle": "(tier4)",
+      "sha256": "9d84b96167e4b28549eb937b0ee87c90c90ca6f651d4fedcfb5cb248651b5a27",
+      "size_bytes": 1643878,
+      "status": "summarized"
+    },
+    "refrences/reports/evaluate_rag.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "43ff894da40f13b5fd47f99898dfbffbd4382bafedab98bb2c15b8c323cec145",
+      "size_bytes": 26392,
+      "status": "included"
+    },
+    "refrences/reports/figures/fig1_recall_progression.png": {
+      "bundle": "(tier4)",
+      "sha256": "e615ffaa770c973fb6a81c1dd12659401829d4a7bf9ab381b72e9e9313a0ba23",
+      "size_bytes": 214617,
+      "status": "summarized"
+    },
+    "refrences/reports/figures/fig2_category_mrr.png": {
+      "bundle": "(tier4)",
+      "sha256": "18b3740b81e32c36e92a49e8315642165ee525ba5031e6ae5690843de546751e",
+      "size_bytes": 139681,
+      "status": "summarized"
+    },
+    "refrences/reports/figures/fig3_latency_pareto.png": {
+      "bundle": "(tier4)",
+      "sha256": "92915b8a72eb0ad50e1de1fc55a61e95551dfdc7cb9e7007b6e36abbd60d24be",
+      "size_bytes": 220430,
+      "status": "summarized"
+    },
+    "refrences/reports/figures/fig4_rank_distribution.png": {
+      "bundle": "(tier4)",
+      "sha256": "1943eb98a3c3375b07272a44a7f2c8a7a27a1106130e0dd134ab73ceeef9bf0d",
+      "size_bytes": 125529,
+      "status": "summarized"
+    },
+    "refrences/reports/figures/fig5_complementarity.png": {
+      "bundle": "(tier4)",
+      "sha256": "994a60e3e39c6bf2510033b25befa130d3cd565fec4595cbb6c4a9f4478c5749",
+      "size_bytes": 118566,
+      "status": "summarized"
+    },
+    "refrences/reports/figures_golden_benchmark_2/fig1_recall_progression.png": {
+      "bundle": "(tier4)",
+      "sha256": "366c9f57632c00826a9ce904eb62ea9931e89d2b0fb1f3232420867b59353dda",
+      "size_bytes": 232141,
+      "status": "summarized"
+    },
+    "refrences/reports/figures_golden_benchmark_2/fig2_category_mrr.png": {
+      "bundle": "(tier4)",
+      "sha256": "1bf2f8aa63495ee3074d2959059ebc08251083c58b250449fe2c28b4ab56a7b2",
+      "size_bytes": 140974,
+      "status": "summarized"
+    },
+    "refrences/reports/figures_golden_benchmark_2/fig3_latency_pareto.png": {
+      "bundle": "(tier4)",
+      "sha256": "8a0d69e21a816923f1b9912006deee45aea650d4aa5c04bfbd0dcad4e8a0773a",
+      "size_bytes": 195057,
+      "status": "summarized"
+    },
+    "refrences/reports/figures_golden_benchmark_2/fig4_rank_distribution.png": {
+      "bundle": "(tier4)",
+      "sha256": "5de6f91d609e9291ef3ddabae05aaec8e74962f9ecf0b946c82276a7b932863e",
+      "size_bytes": 126744,
+      "status": "summarized"
+    },
+    "refrences/reports/figures_golden_benchmark_2/fig5_complementarity.png": {
+      "bundle": "(tier4)",
+      "sha256": "4cdf120351256f4e846d3ebf85ca43319826c909ace0896ac171c70ca860e96c",
+      "size_bytes": 127099,
+      "status": "summarized"
+    },
+    "refrences/reports/golden_benchmark.jsonl": {
+      "bundle": "(tier4)",
+      "sha256": "2d78f2765640cb9381457dbd2b9c719d15e158bbfa5ee6c3e9943677b3297029",
+      "size_bytes": 69870,
+      "status": "summarized"
+    },
+    "refrences/reports/golden_benchmark_2.json": {
+      "bundle": "(tier4)",
+      "sha256": "43422ed605ade13d14c719fb4712aefe435f659f749f30ba8112a6824ee4c045",
+      "size_bytes": 79570,
+      "status": "summarized"
+    },
+    "refrences/reports/plot_clusters.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "8ef9166c5e297a37f69c4c31828f0c85130f40c5b5f51915f4754defd2fc759d",
+      "size_bytes": 50218,
+      "status": "included"
+    },
+    "refrences/reports/rag_evaluation_report.pdf": {
+      "bundle": "(tier4)",
+      "sha256": "39cdb201eb94a035c8f0b25f64079d1869e029531c8a0bc5ef5feb029e9e83fa",
+      "size_bytes": 877207,
+      "status": "summarized"
+    },
+    "refrences/reports/rag_evaluation_report.tex": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "8a0c8f6ee0767939a4c008089f5e6b998faee390a5ce8cfbc02142c1d7c4f00a",
+      "size_bytes": 6508,
+      "status": "included"
+    },
+    "refrences/run_rag_pipeline.sh": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "1c48f0d10d912e8d598f08cf6955ad29200673ed922a11984db4da6a03f42c6b",
+      "size_bytes": 2338,
+      "status": "included"
+    },
+    "refrences/scripts/01_extract_chunks.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "8f2e9bcd7fa7471008410be4e30495607b44ae012de9a74249ed953e6816e077",
+      "size_bytes": 26622,
+      "status": "included"
+    },
+    "refrences/scripts/02_extract_code_examples.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "15d8adabeeb7af405a2999d2e2bf91392e6f15085e89fe0fa64c5d3286ec7830",
+      "size_bytes": 23434,
+      "status": "included"
+    },
+    "refrences/scripts/03_query_rag.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "108c13835a784442ce95e3ab3cf157d64895f678f5ad913b19efe8cec015fa3f",
+      "size_bytes": 18960,
+      "status": "included"
+    },
+    "refrences/scripts/04_build_embeddings.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "4ddfc900a6ae40a21ac7057ee1e895a6c3ea98b1ac3082bb2d34de29f59e209d",
+      "size_bytes": 10690,
+      "status": "included"
+    },
+    "refrences/scripts/05_enrich_doc_chunks.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "741a60e69395a85422ebad83fdba7f357812f641b0124b3aaef914eb6107ed8e",
+      "size_bytes": 8091,
+      "status": "included"
+    },
+    "requirements.txt": {
+      "bundle": "00_ARCHITECTURE_AND_INDEX.md",
+      "sha256": "bba9594e006d9586d52b90e23ad4136b815ec39143dbc3c24732e71b19a56d6e",
+      "size_bytes": 226,
+      "status": "included"
+    },
+    "rfc-llm": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "a642cacf2f9849af77f704a3c363e1beb0efd0a8cb4f29bd7b05ef0ab772717e",
+      "size_bytes": 480,
+      "status": "included"
+    },
+    "src/__init__.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "5304a7d0e9d59687b0acdffd91ec33e52a2252def1f65c7e9f305fa9dadd7f5c",
+      "size_bytes": 121,
+      "status": "included"
+    },
+    "src/code_generation/cpsa_json_serializer.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "160a2e59151d5ba45f0a078c7958a3afe34eb0c125cfa571a4b697e829216225",
+      "size_bytes": 1523,
+      "status": "included"
+    },
+    "src/code_generation/cpsa_scheme_emitter.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "83c8ec48f76248e688b1ed8d1c480320f48c0cb0148bbc6f48341259b050400c",
+      "size_bytes": 2582,
+      "status": "included"
+    },
+    "src/document_ingestion/handshake_section_router.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "b6c5b4826e9dd9f6d183563de0998ac28434d39aacddcbec7abc8c4867583c39",
+      "size_bytes": 5078,
+      "status": "included"
+    },
+    "src/document_ingestion/protocol_applicability_gate.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "e9de96901377ea4689685a5f5c9a42cc90bc7f4e8b6873bd378607fd9986a21c",
+      "size_bytes": 5506,
+      "status": "included"
+    },
+    "src/document_ingestion/rfc_header_filter.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "5d03adfe9e432d517d47281173cda26ff965fdd53bef127447662bfa56452b7c",
+      "size_bytes": 4756,
+      "status": "included"
+    },
+    "src/document_ingestion/rfc_toc_parser.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "dead8f2df65f1cb67e80ee62d3e0bc294d3339985ffb63cae100eddccaef03ca",
+      "size_bytes": 5311,
+      "status": "included"
+    },
+    "src/document_ingestion/verbatim_section_slicer.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "4fda265d4a4d2e725ff9956a67fa5bd61cd3873a87dcf03564949b91fc79b553",
+      "size_bytes": 4099,
+      "status": "included"
+    },
+    "src/intermediate_representation/algebraic_sorts.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "b07a02fb462fb036be0e8e0940e6241a0eb41f8fbbdbe1c41e8292a36546c1d0",
+      "size_bytes": 1142,
+      "status": "included"
+    },
+    "src/intermediate_representation/cpsa_grammar.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "fcb3115fcfe3a858851224db8205a84fa9ff2e10aa1c1334255c48418720428c",
+      "size_bytes": 11591,
+      "status": "included"
+    },
+    "src/intermediate_representation/protocol_syntax_tree.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "0feeb7e97cfd96d5f9ce7c772804105c89cf8f86a56e4c4ee5459a9dcdda2244",
+      "size_bytes": 18846,
+      "status": "included"
+    },
+    "src/logging_config.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "e6303bce3dae0ca99314a7df2181d8d3fe58a8463173d9b3816095235798a410",
+      "size_bytes": 5709,
+      "status": "included"
+    },
+    "src/main_pipeline_orchestrator.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "9144ac2fae8c49be10eb71b084f62cdd271a575921e4bd19dae51b4ec56d1df4",
+      "size_bytes": 18832,
+      "status": "included"
+    },
+    "src/pipeline.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "c1cf9ce2374bb21e729f21558105f79ccd7ca2f595118c0b6a1f7940c9263980",
+      "size_bytes": 10322,
+      "status": "included"
+    },
+    "src/pipeline_events.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "2d908a3ad54e0ac32ab8864f6247b3f1d98719823399dc91460cfb229032da8b",
+      "size_bytes": 2501,
+      "status": "included"
+    },
+    "src/semantic_extraction/constrained_protocol_extractor.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "e78b45a0cb266e3229b50befdbccb5f2be5c03d70823193398b115945b5a2c2a",
+      "size_bytes": 17366,
+      "status": "included"
+    },
+    "src/system_config.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "087e83d9e0d468d72102906347014068cba565fc3773f7e1949581f7a1b5863a",
+      "size_bytes": 5377,
+      "status": "included"
+    },
+    "src/verification_engine/compiler_diagnostic_repair.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "27b470b4d99c08ee6f6b1ba3952b59e1f9ea264e10d3a0af51f90fb2f56bf418",
+      "size_bytes": 13732,
+      "status": "included"
+    },
+    "src/verification_engine/mitre_build_orchestrator.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "ae19df718b6d74b963931a99d1727ae8056ffea72443d61a899e9efad5f92fd3",
+      "size_bytes": 5732,
+      "status": "included"
+    },
+    "src/verification_engine/roletran_executability_gate.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "08032193b650b62450bc630459aa58ffbdbe0054c146505c1b3874c672f404da",
+      "size_bytes": 5135,
+      "status": "included"
+    },
+    "src/visualizer/__init__.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "b5ef0fe4ac5a96a4c30f898e83030118b61ca02a2432718c4fc83faed4f3f9d9",
+      "size_bytes": 67,
+      "status": "included"
+    },
+    "src/visualizer/server.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "e377cb5b737c49f12c4c19e3bbab22b594b31e42ef97b2732cb9cb1c276b8880",
+      "size_bytes": 6003,
+      "status": "included"
+    },
+    "src/visualizer/static/index.html": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "57cd7359c23fa99d803a3a615998d8e219fe0c5bd9b42b6af091725919b4a114",
+      "size_bytes": 20491,
+      "status": "included"
+    },
+    "tests/test_code_generation_and_verification.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "827647dc908b27e0255a7b6d34049a3dc8bf22501db5c01d901670afa1e0605e",
+      "size_bytes": 14526,
+      "status": "included"
+    },
+    "tests/test_document_ingestion.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "38caae01f6fb31cfd8c137666ac1b8d901d13fd0dcd9f78cb78d22bcc7a1c28f",
+      "size_bytes": 3379,
+      "status": "included"
+    },
+    "tests/test_main_pipeline_orchestrator.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "e585514ba572c2e45fb046b5f7ae5aeb5f8911bb487d854556fba4c5e364897e",
+      "size_bytes": 5765,
+      "status": "included"
+    },
+    "tests/test_visualizer_and_events.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "9833d4b0fe7a50ce663344f2c1aa9ce3f7c3b8afd0ee2733b22f104fb9e94c20",
+      "size_bytes": 3810,
+      "status": "included"
+    }
+  },
+  "generated_at": "2026-10-14 16:18:38 UTC",
+  "git": {
+    "branch": "main",
+    "commit": "f572f106cef2cd0a63765971a6349c65fde06f90",
+    "subject": "docs: add comprehensive architecture specification and CPSA keyword reference suite"
+  },
+  "previous_git": {}
+}

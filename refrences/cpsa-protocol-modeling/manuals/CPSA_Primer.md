@@ -1,0 +1,1488 @@
+# CPSA Primer: Core Concepts and Foundations
+
+                               CPSA Primer
+              John D. Ramsdell   Joshua D. Guttman
+                      The MITRE Corporation
+                        CPSA Version 4.4.8
+                               February 27, 2026
+
+
+
+Contents
+
+## 1 Introduction                                                                         4
+
+
+
+## 2 Overview                                                                             5
+
+
+
+## 3 BCA Messages                                                                         6
+
+
+
+## 4 Protocols                                                                            8
+
+
+
+## 5 Executions                                                                           9
+
+
+
+## 6 Skeletons                                                                          13
+
+
+
+## 7 Listeners                                                                          16
+
+
+
+## 8 Authentication Tests                                                               17
+
+
+
+## 9 Generalization                                                                     18
+
+    © 2010 The MITRE Corporation. Permission to copy without fee all or part of
+this material is granted provided that the copies are not made or distributed for direct
+commercial advantage, this copyright notice and the title of the publication and its date
+appear, and notice in given that copying is by permission of The MITRE Corporation.
+
+
+
+
+
+
+## 10 Skeletons                                                               19
+
+   10.1 Semantic Errors in the Input . . . . . . . . . . . . . . . . . . . 20
+   10.2 Needham-Schroeder Input . . . . . . . . . . . . . . . . . . . . 21
+
+
+## 11 Output                                                              22
+
+   11.1 Needham-Schroeder Output . . . . . . . . . . . . . . . . . . . 24
+
+
+## 12 Security Goals and Rules                                                 27
+
+
+
+## 13 Macros                                                                   27
+
+
+
+## 14 Includes                                                                 28
+
+
+
+## 15 Algebra Signature Extensions                                             28
+
+
+
+## 16 Advice                                                                   30
+
+
+
+## 17 Formula Extraction                                                       31
+
+
+A BCA Syntax Reference                                                      31
+
+B Omitted Executions                                                        32
+
+
+List of Figures
+   1    Needham-Schroeder Initiator and Responder Roles . . . . . .          8
+   2    Needham-Schroeder Responder Role . . . . . . . . . . . . . .         8
+   3    Needham-Schroeder Intended Run . . . . . . . . . . . . . . . .      12
+   4    Needham-Schroeder Penetrated . . . . . . . . . . . . . . . . .      13
+   5    Components of Skeletons . . . . . . . . . . . . . . . . . . . . .   14
+   6    Needham-Schroeder Shape (KA−1 uncompromised, N2 fresh) . .          16
+   7    Annotated cpsa Output . . . . . . . . . . . . . . . . . . . . .     23
+   8    Needham-Schroeder Shape (Initiator Point of View) . . . . . .       26
+
+
+List of Tables
+   1    Lang Field Syntax . . . . . . . . . . . . . . . . . . . . . . . . 29
+   2    cpsa Syntax . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+
+
+
+3   cpsa Syntax Continued . . . . . . . . . . . . . . . . . . . . . 34
+
+
+
+
+
+
+## 1    Introduction
+
+Analyzing a cryptographic protocol means finding out what security
+properties—essentially, authentication and secrecy properties—are true in
+all its possible executions. Protocol analysis is hard because an adversary
+can often manipulate the regular, law-abiding participants. The adversary
+may be able to manipulate the regular participants into an unexpected exe-
+cution, breaking a secrecy or authentication property that the protocol was
+intended to ensure.
+    cpsa, The Cryptographic Protocol Shapes Analyzer, is a software tool.
+Given a protocol definition and some assumptions about executions, it at-
+tempts to produce descriptions of all possible executions of the protocol com-
+patible with the assumptions. Naturally, there are infinitely many possible
+executions of a useful protocol, since different participants can run it with
+varying parameters, and the participants can run it repeatedly.
+    However, for many naturally occurring protocols, there are only finitely
+many of these runs that are essentially different. Indeed, there are frequently
+very few, often just one or two, even in cases where the protocol is flawed.
+We call these essentially different executions the shapes of the protocol. Au-
+thentication and secrecy properties are easy to “read off” from the shapes,
+as are attacks and anomalies.
+    The purpose of this document is to provide the background required to
+make effective use of a cpsa software distribution. In particular, the advice
+in Section 16 is essential reading.
+    The cpsa program reads a sequence of problem descriptions, and prints
+the steps it used to solve each problem. Each input problem contains some
+initial behavior, together with assumptions about some uncompromised keys
+and freshly chosen values. cpsa discovers what shapes are compatible with
+this problem description. Normally, the initial behavior is a local run of
+one participant, so that the problem is to see what possible executions exist
+from that participant’s “point of view.” The analysis reveals what the other
+participants must have done, given the first participant’s view.
+    The shapes analysis is performed within a pure Dolev-Yao model [3].
+cpsa’s search is based on a high-level algorithm that was claimed to be com-
+plete, i.e. every shape can in fact be found in a finite number of steps [2, 5].
+Further theoretical work showed classes of executions that are not found by
+the algorithm, however it also showed that every omitted execution requires
+an unnatural interpretation of a protocol’s roles. Hence the algorithm is
+
+
+complete relative to natural role semantics. Appendix B discusses omitted
+executions.
+
+
+
+## 2    Overview
+
+A cpsa release includes several programs, an analyzer, and various tools used
+to interpret the results. The analyzer, cpsa, provides support for several al-
+gebras, one of which is the Basic Crypto Algebra. Programs that assist in
+the interpretation of results are cpsashapes and cpsagraph. The analyzer
+prints the steps it used to solve each problem. The cpsashapes program
+extracts the shapes discovered by an analyzer run. The cpsagraph pro-
+gram graphs both forms of output using Scalable Vector Graphics (svg). A
+standards-compliant browser such as FireFox or Safari displays the generated
+diagrams.
+    The expected work flow follows. An analysis problem is entered using an
+ordinary text editor, preferably one with support for Lisp syntax. Problem
+statement errors in the input are detected by running the analyzer. Many
+error reports are of the form that allow editors such as Emacs to move its
+cursor to location of the problem.
+    There are two classes of problem statement errors: syntax and semantic
+errors. Correcting syntax errors is straightforward, but correcting semantic
+errors requires an understanding of the core data structures. Section 10.1
+describes their correction.
+    Once the problem statement errors have been eliminated, the analyzer
+should produce useful output as a text document. The text document con-
+tains each step used to derive a shape from a problem statement. It is
+common to filter the output using the cpsashapes program, and look only
+at the computed shapes associated with each problem statement.
+    The cpsagraph program is applied to the output to produce a more read-
+able, hyperlinked xhtml document that can be displayed in a standards-
+compliant web browser. The cpsa User Guide contains the up-to-date de-
+scription of cpsagraph generated documents. The guide is also the place to
+find command-line usage information for all programs in a release. The user
+guide is an xhtml document delivered with the software.
+    The cpsa program uses S-expressions for both input and output. S-
+expression is an abbreviation for a Symbolic Expression of Lisp fame, and is
+described in Appendix A.
+
+
+
+    The input may optionally start with a herald form. The form contains
+a title for the run and an association list. The association list allows options
+normally specified on the command line to be specified within an input file.
+In the following example, the herald form specifies a strand bound of 12 in a
+way that is equivalent to the command line option --bound=12.
+
+      (herald Needham-Schroeder (bound 12))
+
+    The body of the input consists of two forms: protocol definitions and
+initial behavior descriptions. The exact details of both forms depend on
+the message algebra specified by the protocol. Protocols that specify basic
+as their algebra get an implementation of the Basic Crypto Algebra (bca)
+described in the next section. A complete grammar for cpsa input with bca
+protocols is displayed in Table 2 on Page 33.
+
+
+
+## 3    BCA Messages
+
+Each message exchanged in a protocol is represented by a term. Terms rep-
+resent atomic values such as text objects, principal names, and asymmetric
+and symmetric keys. They also represent values composed from other values
+via encryption and concatenation.
+    A sort system is used to classify terms. A cpsa message algebra is an
+order-sorted algebra [4] with restrictions, hence the use of the word sort
+instead of type. Other aspects of cpsa’s use of order-sorted algebras is
+beyond the scope of this paper.
+    The sorts that correspond to the atomic values are the base sorts—for
+bca they are text, data, name, akey, and skey. The non-base sort is mesg.
+Every term is of sort mesg, and every one of the other sorts is a subsort
+of mesg.
+    The simplest term is a variable, which syntactically is a symbol as de-
+scribed in Appendix A. Internally, each variable has a sort, so the sort of
+each variable in the input must be declared in a vars form, such as:
+
+```scheme
+                  (vars (t text) (n name) (k akey)).
+```
+
+   Asymmetric keys come in pairs related by the invk operator. If t is a
+term of sort akey, so is (invk t). Furthermore, (invk (invk t)) is equated
+with t. A name can be used to identify an asymmetric key pair using the
+
+
+pubk and privk operators, as in (pubk n) and (privk n)—the latter is
+interpreted as (invk (pubk n)). A name may be associated with more
+than one key using the binary form of pubk, where the first argument is a
+quoted constant, as in (pubk "sig" n) and (pubk "enc" n). Two names
+can be used to identify a long term symmetric key with the ltk operator.
+    Terms formed from base sorted variables, and the operators invk, pubk,
+privk, and ltk are called atoms, because each one represents an atomic
+value. A key property of an atom is that the receiver of an atom carried in
+a message term cannot decompose the atom into parts. For example, the
+reception of a message that consists of the atom (invk k) does not allow its
+receiver to deduce k. Within this document, S-expression syntax will often,
+for the sake of readability, be replaced by the traditional notation for terms.
+Thus (invk k) will be written as K −1 , and (pubk n) as KN .
+    The terms in this algebra are freely generated from the atoms, tags, con-
+catenation, encryption, and hashing. A tag is a quoted constant. The con-
+catenation of terms t and t′ is t, t′ in traditional infix notation and (cat t t′ )
+in S-expression syntax. The comma operator is right associative and (cat a
+b c d) is equivalent to (cat a (cat b (cat c d))). Given t, the term to
+be protected, and key term k, the encryption of t using k is {|t|}k in tradi-
+tional notation and (enc t k) in S-expression syntax. The term represents
+asymmetric encryption when the key is of sort akey, otherwise it represents
+symmetric encryption. Additionally, (enc a b c d k) is equivalent to (enc
+(cat a b c d) k). Given t, the term to be hashed, its hash is #t in tradi-
+tional notation and (hash t) in S-expression syntax. cpsa treats a hashed
+term as if it were an encryption in which the term that is hashed is the
+encryption key. As with encryption, (hash a b c d) is equivalent to hash
+(cat a b c d)). Figure 2 on Page 8 contains examples of bca message
+terms. Also see term in Table 2, Appendix A.
+    A message term carries a subterm of the message if the possession of the
+right set of keys allows the extraction of the subterm. The carries relation is
+the least relation such that (1) t carries t, (2) {|t0 |}t1 carries t if t0 carries t,
+and (3) t0 , t1 carries t if t0 or t1 carries t. As noted above, the message k −1
+does not carry k. Also, {|t|}k does not carry k unless (anomalously) t carries k.
+
+
+
+
+
+            init     {|N1 , A|}KB             {|N1 , A|}KB    resp
+
+             •       {|N1 , N2 |}KA          {|N1 , N2 |}KA    •
+
+             •       {|N2 |}KB                   {|N2 |}KB     •
+
+       Figure 1: Needham-Schroeder Initiator and Responder Roles
+
+```scheme
+     (defrole resp (vars (b a name) (n2 n1 text))
+       (trace (recv (enc n1 a (pubk b)))
+              (send (enc n1 n2 (pubk a)))
+              (recv (enc n2 (pubk b)))))
+```
+
+
+                 Figure 2: Needham-Schroeder Responder Role
+
+
+## 4    Protocols
+
+A protocol defines the patterns of allowed behavior for non-adversarial partic-
+ipants. In other words, the behavior of each participant must be an instance
+of some protocol template, called a role. Figure 1 displays the roles that
+make up the Needham-Schroeder protocol.
+    In S-expression syntax, a protocol is a named set of roles and is defined
+by the defprotocol form. See protocol in Table 2, Appendix A.
+```scheme
+                           (defprotocol ns basic
+                             (defrole init . . . )
+                             (defrole resp . . . ))
+```
+
+    The name of this protocol (id) is ns, and the second identifier (alg)
+names the message algebra in use. The identifier for the Basic Crypto Algebra
+is basic.
+    A role has a name, a declared set of variables, and a trace that provides a
+template for the behavior of its instances. A trace is a non-empty sequence
+of message events, either a message reception or a transmission. An inbound
+message with term t is −t in text and (recv t) in S-expression syntax. An
+outbound term is +t in text and (send t) in S-expression syntax. The
+Needham-Schroeder responder’s role in S-expression syntax is in Figure 2.
+
+
+
+    A message may optionally be transferred on a channel using the syntax
+(send c t) and (recv c t), where c is a variable of sort chan. A chan-
+nel may be authenticated or confidential or both. The semantics of using
+channels for messaging will be explained in the next section.
+    Zero-based indexing is used though out this document and in the source
+code it describes. Within the document, a finite sequence is a function from
+an initial segment of the natural numbers. Angle brackets are used for se-
+quence construction. Thus ⟨3, 2, 99⟩ = {0 7→ 3, 1 7→ 2, 2 7→ 99}, and the
+responder’s trace is ⟨−{|N1 , A|}KB , +{|N1 , N2 |}KA , −{|N2 |}KB ⟩. The length of
+a sequence x is |x|.
+    A term originates in a trace if it is carried in some event and the first
+term in which it is carried is an outbound term. A term is acquired by a
+trace if it first occurs in an inbound term and is also carried by that term.
+    Some atoms in a role have special properties. An atom may be declared
+to be non-originating with the non-orig form or the pen-non-orig form
+and uniquely originating with the uniq-orig form. A channel variable may
+be declared to be authenticated with the auth form, and confidential with
+the conf form. The declarations make assertions about instances of a role,
+assertions that will be defined after role instantiation is explained.
+    Every variable that occurs in each term declared to be non-originating
+must occur in some term in the trace, and the term must not be carried by
+any term in the trace. Every variable that occurs in each term declared to
+be penetrator non-originating must occur in some term in the trace, but the
+term may be carried by some term in a trace. Each term declared to be
+uniquely originating must originate in the trace. Each variable of sort mesg
+must be acquired in the trace.
+
+
+
+## 5     Executions
+
+A protocol analysis problem is specified by a skeleton. Some background
+information is presented before details of a problem specification is given.
+    A skeleton describes a set of executions of a protocol. They specify the
+local behavior of participants and their interactions via message-passing. A
+definition of an execution is presented for the case in which protocols declare
+no terms to be non-originating or uniquely originating, and then is later
+amended. The executions are a representation of the strand space notion of
+bundle.
+
+
+
+    A strand represents a principal executing a single local session of a proto-
+col role. The sequence of events that describes the session is patterned after
+a prefix of its role’s trace. In the context of a protocol, a strand’s trace is
+represented by an instance, a triple consisting of a role name, a height, and a
+map from role variables to terms. The length of the described sequence is the
+instance’s height, and must be positive and no greater than the length of the
+associated role’s trace. The map is the instance’s environment. The domain
+of the map is the set of variables that occur in the events in the prefix of the
+role’s trace of the same length as the instance’s height.
+    An example of an instance of the Needham-Schroeder responder role is:
+
+           (defstrand resp 2 (b a) (a b) (n1 n1) (n2 n2))
+
+The trace associated with this instance is:
+
+                        ⟨−{|N1 , B|}KA , +{|N1 , N2 |}KB ⟩.
+
+    The position of a event in the instance’s trace is its index in the sequence,
+and in this example, the position of −{|N1 , B|}KA is zero.
+    In addition to a protocol, a component of an execution is a collection of
+local sessions. An instance cannot be used to identify one session, because
+two principals may engage in the same pattern of message passing. Instead, a
+sequence of instances is used as a component of an execution, and a strand is
+represented by an index that selects an instance from the sequence. In other
+words, each principal executing a local session is represented by a natural
+number less than the length of the sequence of instances, and its behavior is
+described by the instance found using its representation.
+    A node is a pair of natural numbers that identifies an event within a
+sequence of instances. The first integer is the strand, and the second is the
+position of the event within the strand’s trace. A node with an inbound term
+is a reception node, and one with an outbound term is a transmission node.
+Given a sequence i, its nodes are:
+
+                       {(s, p) | s < |i|, p < height(i(s))}.
+
+    The remaining component of an execution is a binary relation between
+transmission nodes and reception nodes, where each pair of nodes in the re-
+lation agree on their message term. The relation specifies message transmis-
+sions between strands. The nodes of the graph associated with an execution
+
+
+are the nodes in the sequence of instances, and the edges include the ones in
+the relation. Additionally, the following strand succession edges are included:
+
+              {((s, p), (s, p + 1)) | s < |i|, p + 1 < height(i(s))}.
+
+Executions with cyclic graphs are omitted from consideration, because they
+violate causality. The transitive irreflexive ≺ is the transitive closure of the
+graph’s edges, and n0 ≺ n1 asserts that the message event at n0 precedes the
+one at n1 .
+    The node relation of an execution satisfies one additional property. For
+each reception node in its sequence, there exists a unique transmission node,
+related to it by the communication ordering. In other words, the relation
+must be a function. Informally, this property ensures that every message
+reception is accounted for by the activity of a principal that is part of the
+execution. Figure 3 shows the intended execution of the Needham-Schroeder
+Protocol. The node graph of an execution is a bundle.
+    A set of runs of the protocol is associated with each execution. A vari-
+able is associated with an execution if the variable occurs in the range of an
+environment in some instance. To derive a run from an execution, a sub-
+stitution that maps each variable associated with the execution to a ground
+term is applied to the execution. cpsa message algebras do not contain the
+constants required to name all the ground terms. For most sorts, the identity
+of a particular ground term is irrelevant to the analysis. Message tags are
+the only exception to this rule. For this reason, cpsa message algebras are
+free algebras, but not initial algebras.
+    Strands in executions represent both adversarial and non-adversarial be-
+haviors. A strand that is an instance of a protocol role is non-adversarial,
+and is called regular. A strand that represents adversarial behavior is called
+a penetrator strand.
+    The roles that define adversary behavior codify the basic abilities that
+make up the Dolev-Yao model. They include transmitting an atom such as
+a name or a key; transmitting a tag; transmitting an encrypted message af-
+ter receiving its plain text and the key; and transmitting a plain text after
+receiving ciphertext and its decryption key. The adversary can also concate-
+nate two messages, or separate the pieces of a concatenated message. Since a
+penetrator strand that encrypts or decrypts must receive the key as one of its
+inputs, keys used by the adversary—compromised keys—have always been
+transmitted by some participant. The adversary may transmit a message
+
+
+                                 {|N1 , A|}KB
+                      init                         resp
+                                {|N1 , N2 |}KA
+                        •                            •
+                                  {|N2 |}KB
+                        •                            •
+
+```scheme
+     (vars (n1 n2 text) (a b name))
+     (defstrand init 3 (n1 n1) (n2 n2) (a a) (b b))
+     (defstrand resp 3 (n2 n2) (n1 n1) (b b) (a a))
+     (precedes ((0 0) (1 0)) ((1 1) (0 1)) ((0 2) (1 2)))
+```
+
+
+                Figure 3: Needham-Schroeder Intended Run
+
+on a channel when the channel is not authenticated, and the adversary may
+receive a message on a channel when the channel is not confidential.
+     Figure 4 shows a penetrated execution of the Needham-Schroeder Pro-
+tocol. Strand space theory would decompose the penetrator behavior into
+multiple strands; instead the description of the penetrator has been simplified
+by the use of an artificially constructed role pen.
+     A non-originating term is an atom that is carried by no message, and it or
+its inverse is the key of an encryption in some message. Each non-originating
+term is a key that is not compromised, as the penetrator has no access to
+the key.
+     A penetrator non-originating term is an atom that is forbidden from being
+originated on a penetrator strand in an execution.
+     A uniquely originating term is an atom that originates on exactly one
+strand in the execution. The correct behavior of some protocols depends
+on the fact that its executions include only ones in which some terms are
+uniquely originating—each term’s provenance is one node. Implementations
+of these protocols can ensure unique origination of a term by freshly gener-
+ating a nonce for the component of the message it represents.
+     A channel is authenticated if only regular strands transmit messages on
+it. A channel is confidential if only regular strands receive messages on it.
+     Occasionally, protocol roles designate some terms to be non-originating
+or uniquely originating. Consider the prefix of the trace of a role associated
+with some instance. When a uniquely originating role term is carried in the
+
+
+
+                  {|N1 , A|}KP
+         A                            P
+                                                {|N1 , A|}KB
+                                      •                            B
+                  {|N1 , N2 |}KA
+         •                                                          •
+                    {|N2 |}KP
+         •                            •
+                                                 {|N2 |}KB
+                                      •                             •
+
+                 Figure 4: Needham-Schroeder Penetrated
+
+
+prefix, the instance’s environment maps it to a term that must originate in
+the instance’s strand. Furthermore, when the variables in a non-originating
+role term occur in the prefix, the instance’s environment maps that term to
+one that must not be carried by any message term in the execution. The
+mapping of a non-originating role term can be conditioned on the height of
+the instance. A role non-origination assumption of the form (3 a) asserts
+that a will not be mapped into an instance unless its height is at least three.
+Penetrator non-originating atoms are similar. Section 16 provides advice on
+when to add non-origination or unique origination assumptions to roles.
+
+
+
+## 6    Skeletons
+
+A skeleton represents regular behavior that might make up part of an ex-
+ecution. The components of a skeleton are similar to an execution. The
+components of a skeleton include a protocol, a sequence of instances, and a
+binary relation between transmission nodes and reception nodes within the
+sequence. Unlike an execution, the strands in a skeleton specify only regular
+behavior. Furthermore, the pair of nodes in the relation need not agree on
+their message term. Two nodes are related if the transmitting node precedes
+the reception node, as an execution it represents may include nodes between
+the related transmission and reception nodes.
+    The final five additional components of a skeleton are a set of non-
+originating terms, a set of penetrator non-originating terms, a set of uniquely
+originating terms, a set of authenticated channels, and a set of confidential
+
+
+```scheme
+     (defskeleton protocol variables
+        ...                ; Instance sequence
+        (precedes ...)     ; Node orderings
+        (non-orig ...)     ; Non-originating terms
+        (pen-non-orig ...) ; Penetrator non-originating terms
+        (uniq-orig ...))   ; Uniquely originating terms
+        (auth ...))        ; Authenticated channels
+        (conf ...))        ; Confidential channels
+```
+
+
+                     Figure 5: Components of Skeletons
+
+channels. To be a skeleton, each uniquely originating term must originate in
+at most one strand in the skeleton, and each non-originating term must never
+be carried by some event in the skeleton and every variable that occurs in
+the term must occur in some event. For a penetrator non-originating term,
+is suffices that every variable that occurs in the term must occur in some
+event. Furthermore, for each uniquely originating term that originates in the
+skeleton, the node relation must ensure that reception nodes that carry the
+term follow the node of its origination. Figure 5 shows the components in
+the S-expression representation of a skeleton.
+    Two skeletons are equivalent if there is a permutation of the strands in
+one skeleton that when applied to its sequence and its node relation, produces
+the other skeleton. Two skeletons are also equivalent if they differ only by
+a systematic, sort-preserving renaming of their variables, excluding variables
+that occur in the domains of environments—the role variables. The trace of
+a strand is used for the comparison, so role names need not match.
+    A skeleton is normalized by performing a transitive reduction on its node
+relation. The transitive reduction of an ordering is the minimal ordering
+such that both orderings have the same transitive closure. Here, communi-
+cation orderings implied by transitive closure are removed. Two skeletons
+are equivalent if their normalized forms are equivalent.
+    One special skeleton is associated with each execution. It summarizes
+the regular behavior of the execution. It is derived from the execution by
+enriching its node relation to contain all node orderings implied by transitive
+closure, deleting all strands and nodes that refer to penetrator behavior, and
+then performing the transitive reduction on the resulting node relation. The
+set of uniquely originating terms is the set of terms that originate on exactly
+
+
+one strand in the execution, and are carried in a term of a regular strand.
+The set of non-originating terms is the union of two sets. One set contains
+each term that is used as an encryption or decryption key in some term in
+the execution, but is not carried by any term. The other set contains the
+terms specified by non-origination assumptions in roles. If a realized skeleton
+instance maps all of the variables that occur in one of its non-originating role
+terms, the mapped term is a member of the skeleton’s set of non-originating
+terms. A skeleton is realized if it summarizes the behavior of some execution.
+    Skeletons are a central concept in the cpsa algorithm because they cap-
+ture the notion that the details of penetrator behavior are irrelevant to the
+analysis. From the perspective of regular behavior, all that is needed is a
+description of the messages that can be derived by the penetrator at a given
+reception node of a regular strand. In a realized skeleton, some combination
+of penetrator behavior and regular behavior derives the message at every
+reception node. The skeleton’s node relation specifies the transmission nodes
+that provide messages available to the penetrator for message derivations.
+The rules for message derivation are algebra specific. If the message deriva-
+tion rules imply a message at a reception node in a skeleton is derivable, the
+node is realized.
+    A skeleton with an unrealized node might be related to another skeleton
+with additional regular behavior that makes the original node realized. A
+skeleton with additional regular behavior is called a refinement.
+    A skeleton A structurally refines B if the transitive closure of the graph
+associated with B is a subgraph of the one associated with A, the event at
+corresponding nodes agree, the set of uniquely originating terms of B is a
+subset of the ones in A, the set of non-originating terms of B is a subset of
+the ones in A, and a uniquely originating term that originates in B originates
+at the corresponding node in A. Penetrator non-originating assumptions are
+similar to non-originating assumptions.
+    A skeleton A message refines B if A and B agree on all but the terms in
+the range of each strand’s environment and its non-originating and uniquely
+originating terms, and there is a substitution that maps each term in B to its
+related term in A. Similar to structural refinement, a uniquely originating
+term that originates in B originates at the same node in the image of B.
+    A skeleton A refines B if A is equivalent to a skeleton that structurally
+or message refines B.1 Each skeleton describes the realized skeletons that
+      A skeleton A refines B if there is a homomorphism from B to A as defined in [2].
+
+
+
+                   {|N1 , A|}KC                       {|N1 , A|}KB
+        init                                                             resp
+                  {|N1 , N2 |}KA                      {|N1 , N2 |}KA
+          •                               ≻                               •
+                    {|N2 |}KC                           {|N2 |}KB
+          •                               ≺                               •
+
+    Figure 6: Needham-Schroeder Shape (KA−1 uncompromised, N2 fresh)
+
+
+refine it. A skeleton is dead if no realized skeleton refines it. A diagram of a
+skeleton is in Figure 6.
+    The cpsa algorithm computes realized skeletons from unrealized skele-
+tons by identifying an unrealized node, and computing the skeletons that
+refine the unrealized skeleton by making the target node realized.
+
+
+
+## 7     Listeners
+
+In addition to the roles specified in a protocol, for each term t, a regular
+strand may be an instance of the listener role with the trace lsn(t) = ⟨−t, +t⟩.
+There are no non-originating or uniquely originating terms associated with
+a listener role.
+    A listener strand is used in a skeleton to assert that an atom t is available
+on its own to the adversary, unprotected by encryption. For example, to
+test if the protocol keeps a term t from the adversary, one adds a strand
+that listens for t. The term is protected if the resulting skeleton is dead.
+Otherwise, the cpsa analyzer program will find a refined realized skeleton
+that shows how the adversary accesses t.
+    A listener instance in S-expression syntax follows. See strand in Table 2,
+Appendix A.
+                                (deflistener term)
+The cpsa programs generate the associated listener role and hide it on out-
+put. Listener role names are absent in all forms of output, one indication
+that a strand is an instance of a listener role.
+The implementation avoids the complexities of directly representing homomorphisms by
+composing structural and message refinement with equivalence checks, as is done in this
+chapter.
+
+
+
+
+## 8    Authentication Tests
+
+Authentication tests [6] guide the search for skeletons that refine one with
+an unrealized node into ones in which it is realized. There are three types
+of authentication tests, nonce, encryption, and channel tests. In all cases,
+an unrealized node is selected, called the test node. A term carried by the
+inbound message at the test node is identified as the critical term. A critical
+term is one that occurs in a message context, the construction of which cannot
+be explained by the regular behavior in the current skeleton or by penetrator
+behavior. An authentication test determines the additional regular behavior
+required to refine a skeleton into ones in which the test node is realized.
+    The critical term in a nonce test is a uniquely originating term, the nonce.
+It is freshly generated by one regular participant in each run of the protocol.
+A nonce is unguessable by both regular and adversarial participants except
+when it is received in an unprotected context.
+    A reception node’s outbound predecessors is the set of messages sent by
+transmission nodes that precede the reception node, as given by the transitive
+closure of its skeleton’s node ordering relation. Suppose every occurrence of
+the nonce in the outbound predecessors of the test node is within a context
+protected by encryption, but the critical term in the test node occurs outside
+of all of those encryptions. Clearly, another participant was able to decrypt
+one of the test node’s outbound predecessors. The set of encryptions that
+protects a critical term in a test node’s outbound predecessors is called its
+escape set.
+    There are three ways to refine a skeleton to account for the decryption:
+regular augmentation, listener augmentation, and contraction. For regular
+augmentation, an instance of a protocol role is added to the skeleton. The fi-
+nal transmission node of the strand is called a transforming node. The strand
+is selected for augmentation because relative to the test node’s outbound pre-
+decessors, the transforming node’s message shows the strand performed the
+decryption.
+    Sometimes, a regular augmentation is immediately followed by merging
+the new strand into another. This is called a displacement. It occurs when
+simply adding the strand creates a redundancy.
+    The penetrator can expose the critical term if it has access to any of the
+decryption keys used to protect it in the escape set. For listener augmen-
+tation, an instance of a listener role listening to one decryption key used to
+protect the critical term is added, and the skeleton’s communication ordering
+
+
+relation is updated to record the fact that the listener’s transmission node
+precedes the test node. If the resulting skeleton is not dead, the decryption
+can be explained by penetrator behavior.
+    For a contraction, a message refining substitution is found that equates
+two or more atoms. Sometimes, the key used to protect the critical term can
+be equated with one used in previous messages, thus vacuously explaining
+the decryption of the critical term.
+    The critical term in an encryption test is an encryption. When the en-
+cryption key is unavailable, the encryption is unguessable. Whenever the
+unavailability of the encryption key can be established, the methods used to
+refine skeletons with nonce tests apply. Additionally, an instance of a listener
+role listening for the critical term’s encryption key is added. If the resulting
+skeleton is not dead, the encryption can be explained by penetrator behavior.
+    The critical term in a channel test is an authenticated channel and a term.
+cpsa uses regular augmentation to create a matching term transmitted on
+the channel.
+
+
+
+## 9    Generalization
+
+Repeated use of authentication tests either produce realized skeletons or
+show that a skeleton is dead. The next step in the algorithm is to make each
+realized skeleton into a shape, using the process of generalization.
+    Realized skeleton A generalizes realized skeleton B if A refines the origin
+problem specification, and B refines A. Furthermore, A may not combine
+strands in B. The shape associated with a realized skeleton is its maximally
+generalized realized skeleton. The shapes of a protocol capture all the es-
+sentially different executions possible for the protocol consistent with the
+initial behavior specification. Figure 6 shows the shape associated with the
+Needham-Schroeder Protocol from the point of view of a responder strand.
+    A different fixed set of operations is used to transform a realized skeleton
+into a shape: deletion, weakening, separation, and forgetting. If an opera-
+tion succeeds, it produces a more general realized skeleton, one that is not
+equivalent to the starting skeleton. If no operations succeeds, the skeleton is
+a shape.
+    For deletion, a node and all nodes that follow it in a strand are deleted,
+and the resulting skeleton is checked to see if it generalized the starting
+skeleton. The operation is tried for each node in the starting skeleton until
+
+
+
+there is a success.
+    If deletion fails, a skeleton is weakened by deleting one element of the
+communication ordering, then checking the result to see if it generalized the
+starting skeleton. The operation is tried for each communication ordering in
+the starting skeleton until there is a success.
+    If weakening fails, origination assumption forgetting is tried by deleting
+each term in the non-originating set that is not specified by a role. This
+is followed by deleting each term in the uniquely originating set that is not
+specified by a role.
+    If origination assumption forgetting fails, variable separation is tried.
+Sometimes a more general skeleton can be found by replacing some occur-
+rences of one variable by a fresh variable. To separate a variable, the collec-
+tion of places at which the variable occurs in the range of all environments is
+generated, and a fresh variable is substituted for the variable at a subset of
+these places. All possibilities are tried until a more general skeleton is found.
+    Sometimes a shape is derived from another shape by collapsing two strands
+in a shape. Collapsing might produce an unrealized skeleton, so authentica-
+tion tests apply.
+
+
+
+## 10      Skeletons
+
+With this background, the defskeleton form in Table 2, Appendix A is
+explained. The key object in cpsa input and output is a skeleton, but an
+object with weaker properties is allowed for the initial problem statement.
+A preskeleton is a skeleton except that terms in the uniquely originating set
+may originate in more than one strand. Furthermore, the node relation of
+a preskeleton need not imply that a node that carries a uniquely originat-
+ing term is after the node of its origination. A preskeleton that cannot be
+immediately converted into a skeleton is erroneous, and an error message is
+issued.
+    Referring to skeleton in Table 2, the id in the skeleton form names a
+protocol. It refers to the most recent protocol definition of that name which
+precedes the skeleton form. The id in the strand form names a role. The
+integer in the strand form gives the height of the strand. The sequence of
+pairs of terms in the strand form specify an environment used to construct
+the messages in a strand from its role’s trace. The first term is interpreted
+using the role’s variables and the second term uses the skeleton’s variables.
+
+
+
+The environment used to produce the strand’s trace is derived by matching
+the second term using the first term as a pattern.
+    The precedes form specifies members of the node relation. The first
+integer in a node identifies the strand using the order in which strands are
+defined in the defskeleton form.
+    A variable may occur in more then one role within a protocol. The reader
+performs a renaming so as to ensure these occurrences do not overlap. Fur-
+thermore, the maplets used to specify a strand need not specify how to map
+every role variable. The reader inserts missing mappings, and renames every
+skeleton variable that also occurs in a role of its protocol. The sort of every
+skeleton variable that occurs in the non-orig, pen-non-orig, uniq-orig,
+auth, or conf lists or in a maplet must be declared, using the vars form.
+    The prot-alist, role-alist, and skel-alist productions are Lisp
+style association lists, that is, lists of key-value pairs, where every key is
+a symbol. Key-value pairs with unrecognized keys are ignored, and are avail-
+able for use by other tools. On output, unrecognized key-value pairs are
+preserved when printing protocols, but elided when printing skeletons, with
+the exception of the comment key.
+
+
+### 10.1     Semantic Errors in the Input
+
+The error messages generated for syntax errors are informative, however the
+ones generated for semantic errors are less so. A role might be rejected
+because it is not well-formed. A role is not well-formed if (1) there is a term
+declared to be uniquely originating that does not originate in the trace, (2)
+there is a term declared to be non-originating that is carried by some term
+in the trace, a variable occurs in the term that does not occur in the trace,
+or the declaration of the term included a height, and a variable occurs in the
+term that does not occur in the prefix of the trace of the given height, or
+(3) a variable of sort mesg is not acquired in the trace. The error message
+might not indicate which condition caused the rejection.
+    Similarly, a skeleton might be rejected because it is not well-formed. A
+skeleton is not well-formed if (1) the first node in a node pair refers to an
+inbound term, or the second node refers to an outbound term, (2) the node
+ordering contains cycles, (3) a term declared to be uniquely originating, is
+not carried by any term, (4) an instance maps a uniquely originating role
+term to a term that does not originate in the instance’s strand, or (5) a
+term declared to be non-originating is carried by a term in some strand, or
+
+
+a variable occurs in the term that does not occur in any strand. Once again,
+the error message might not indicate which condition caused the rejection.
+
+
+### 10.2    Needham-Schroeder Input
+
+This section contains the verbatim input of the running example used
+throughout this paper. The use of an editor that pretty-prints S-expressions
+is recommended.
+
+;;; Hey Emacs, use -*- mode:scheme -*-
+(herald "Needham-Schroeder Public-Key Protocol"
+        (comment "This protocol contains a man-in-the-middle"
+                 "attack discovered by Galvin Lowe."))
+
+   An S-expression version of Figure 1 follows.
+
+```scheme
+(defprotocol ns basic
+  (defrole init
+    (vars (a b name) (n1 n2 text))
+    (trace
+     (send (enc n1 a (pubk b)))
+     (recv (enc n1 n2 (pubk a)))
+     (send (enc n2 (pubk b)))))
+  (defrole resp
+    (vars (b a name) (n2 n1 text))
+    (trace
+     (recv (enc n1 a (pubk b)))
+     (send (enc n1 n2 (pubk a)))
+     (recv (enc n2 (pubk b))))))
+```
+
+    The protocol is analyzed from the point of view of a complete run of one
+instance of an initiator role.
+
+```scheme
+(defskeleton ns
+  (vars (a b name) (n1 text))
+  (defstrand init 3 (a a) (b b) (n1 n1))
+  (non-orig (privk b) (privk a))
+  (uniq-orig n1))
+```
+
+
+
+
+## 11     Output
+
+The cpsa output format has been designed so that it can be reused as in-
+put. All skeletons in the output are normalized skeletons, with the possible
+exception of an initial preskeleton, the one used to state a problem. If an ini-
+tial preskeleton cannot be converted into a skeleton, an error is immediately
+signaled.
+    For each skeleton, a cpsa analyzer computes a set of skeletons that refine
+it using a fixed set of operations based on authentication tests. The immedi-
+ate descendants of a skeleton are called its cohort. A member of the cohort
+that is equivalent to a previously seen skeleton is replaced by that skeleton.
+Thus the skeletons in an analysis form a directed acyclic graph. All but one
+skeleton has a single parent, and one skeleton can be a member of several
+cohorts.
+    The operations above either produce realized skeletons or show that a
+skeleton is dead. The next step in the algorithm is to make each realized
+skeleton into a shape, using the process of generalization. Although the set
+of shapes is in some sense the answer to the problem, an understanding of
+the operations used to generate the shapes can be very informative. The
+remainder of this section describes the annotations in the output that allow
+for an understanding of each step of the analysis.
+    On output, key-value pairs are added to each skeleton’s association list,
+skel-alist. Every skeleton in the output is labeled with a unique identifier
+with (label integer). A skeleton has (parent integer) if it is a member
+of the cohort of the identified parent. A skeleton has (seen integer+)
+when members of its cohort are equivalent to previously seen skeletons. A
+skeleton lists its unrealized nodes with (unrealized node∗). The traces
+associated with each strand is given by the (traces . . . ) form.
+    Figure 7 shows a skeleton generated during an analysis of the Needham-
+Schroeder Protocol from the point of view of an initiator strand. It is labeled
+as 1. It’s parent is labeled 0. It has one child, and that child has not been
+seen before. It is unrealized.
+    The operation used to derive a skeleton is recorded with
+(operation test kind term node term∗), where test is the au-
+thentication test encryption-test, nonce-test, or channel-test; kind is
+(added-strand id integer), (displaced integer integer id integer),
+(contracted maplet∗), or (added-listener term); term is the critical
+term; node in the test node; and the remaining terms specify the escape
+
+
+```scheme
+(defskeleton ns
+  (vars (n1 n2 n2-0 text) (a b name))
+  (defstrand init 3 (n1 n1) (n2 n2) (a a) (b b))
+  (defstrand resp 2 (n2 n2-0) (n1 n1) (b b) (a a))
+  (precedes ((0 0) (1 0)) ((1 1) (0 1)))
+  (non-orig (privk a) (privk b))
+  (uniq-orig n1)
+  (operation nonce-test (added-strand resp 2) n1 (0 1)
+    (enc n1 a (pubk b)))
+  (traces
+    ((send (enc n1 a (pubk b))) (recv (enc n1 n2 (pubk a)))
+      (send (enc n2 (pubk b))))
+    ((recv (enc n1 a (pubk b)))
+      (send (enc n1 n2-0 (pubk a)))))
+  (label 1)
+  (parent 0)
+  (unrealized (0 1))
+  (comment "1 in cohort - 1 not yet seen"))
+```
+
+
+                 Figure 7: Annotated cpsa Output
+
+
+
+
+
+set. When the operation kind is added strand, the instance’s role name
+and height are provided. For kind displaced, the first number is the strand
+being merged, the second number is the strand it was merged into, and
+the remaining give the new instance’s role name and height. For kind
+added-listener, a term is provided. For kind contracted, the substitution
+is provided. When a substitution refers to a variable not in the skeleton,
+its name is unpredictable. For generalization, the operation is recorded as
+(operation generalization method), where method is one of deleted
+node, weakened node-pair, separated term, or forgot term. Shapes
+can be collapsed leading to new shapes. For shape collapsing, the operation
+is recorded as (operation collapsed integer integer), where the two
+integers identify the strands merged.
+    The skeleton in Figure 7 was generated as a result of a nonce test, by
+augmenting the starting skeleton with a responder strand of length two. The
+critical term is n1, the test node is (0 1), and the escape set has one element.
+    When the operation kind is added strand, it is possible that the number
+of strands in the skeleton and its parent are the same. In this case, cpsa
+has found a way to produce a more concise representation of the skeleton by
+merging two strands.
+
+
+### 11.1     Needham-Schroeder Output
+
+This section contains the verbatim output of the running example used
+throughout this paper. A run starts by displaying the program’s version
+number.
+
+(herald "Needham-Schroeder Public-Key Protocol"
+  (comment "This protocol contains a man-in-the-middle"
+    "attack discovered by Galvin Lowe."))
+
+(comment "CPSA 4.4.8")
+(comment "All input read")
+
+   An S-expression version of Figure 1 follows.
+
+```scheme
+(defprotocol ns basic
+  (defrole init
+    (vars (a b name) (n1 n2 text))
+    (trace (send (enc n1 a (pubk b)))
+```
+
+
+      (recv (enc n1 n2 (pubk a))) (send (enc n2 (pubk b)))))
+```scheme
+  (defrole resp
+    (vars (b a name) (n2 n1 text))
+    (trace (recv (enc n1 a (pubk b)))
+      (send (enc n1 n2 (pubk a)))
+      (recv (enc n2 (pubk b))))))
+```
+
+    The protocol is analyzed from the point of view of a complete run of one
+instance of an initiator role.
+
+```scheme
+(defskeleton ns
+  (vars (n1 n2 text) (a b name))
+  (defstrand init 3 (n1 n1) (n2 n2) (a a) (b b))
+  (non-orig (privk a) (privk b))
+  (uniq-orig n1)
+  (traces
+    ((send (enc n1 a (pubk b))) (recv (enc n1 n2 (pubk a)))
+      (send (enc n2 (pubk b)))))
+  (label 0)
+  (unrealized (0 1))
+  (comment "1 in cohort - 1 not yet seen"))
+```
+
+   A nonce test justifies adding an instance of part of a reponder role.
+
+```scheme
+(defskeleton ns
+  (vars (n1 n2 n2-0 text) (a b name))
+  (defstrand init 3 (n1 n1) (n2 n2) (a a) (b b))
+  (defstrand resp 2 (n2 n2-0) (n1 n1) (b b) (a a))
+  (precedes ((0 0) (1 0)) ((1 1) (0 1)))
+  (non-orig (privk a) (privk b))
+  (uniq-orig n1)
+  (operation nonce-test (added-strand resp 2) n1 (0 1)
+    (enc n1 a (pubk b)))
+  (traces
+    ((send (enc n1 a (pubk b))) (recv (enc n1 n2 (pubk a)))
+      (send (enc n2 (pubk b))))
+    ((recv (enc n1 a (pubk b)))
+      (send (enc n1 n2-0 (pubk a)))))
+```
+
+
+
+                {|N1 , A|}KB                   {|N1 , A|}KB
+       init                         ≺                           resp
+                {|N1 , N2 |}KA                 {|N1 , N2 |}KA
+         •                          ≻                            •
+                  {|N2 |}KB
+         •
+
+      Figure 8: Needham-Schroeder Shape (Initiator Point of View)
+
+
+  (label 1)
+  (parent 0)
+  (unrealized (0 1))
+  (comment "1 in cohort - 1 not yet seen"))
+  A nonce test justifies a contraction that produces the one and only shape.
+The shape is also displayed in Figure 8.
+```scheme
+(defskeleton ns
+  (vars (n1 n2 text) (a b name))
+  (defstrand init 3 (n1 n1) (n2 n2) (a a) (b b))
+  (defstrand resp 2 (n2 n2) (n1 n1) (b b) (a a))
+  (precedes ((0 0) (1 0)) ((1 1) (0 1)))
+  (non-orig (privk a) (privk b))
+  (uniq-orig n1)
+  (operation nonce-test (contracted (n2-0 n2)) n1 (0 1)
+    (enc n1 n2 (pubk a)) (enc n1 a (pubk b)))
+  (traces
+    ((send (enc n1 a (pubk b))) (recv (enc n1 n2 (pubk a)))
+      (send (enc n2 (pubk b))))
+    ((recv (enc n1 a (pubk b)))
+      (send (enc n1 n2 (pubk a)))))
+  (label 2)
+  (parent 1)
+  (unrealized)
+  (shape))
+   The following phrase means cpsa is finished with this problem—its ex-
+```
+hausted its to do list.
+(comment "Nothing left to do")
+
+
+
+## 12      Security Goals and Rules
+
+Another way to specify a problem statement is with a security goal. A
+security goal a sentence in first-order logic. It asserts that if some properties
+hold for a skeleton, then some other properties must hold for all shapes
+computed by CPSA starting with the skeleton. Security goals can be used
+to formally state authentication and secrecy goals of a protocol.
+    The defgoal form is used to pose an analysis problem with a sentence
+instead of a skeleton. CPSA extracts a point of view skeleton from the
+antecedent of the formula and then analyzes it. When it prints a shape, it
+checks to see if the shape satisfies the conclusion of the security goal. See [8]
+for details.
+    Each protocol may include a small collection of rules. A rule is a sentence
+in the goal language. A rule is an axiom added to a protocol. cpsa uses the
+axiom as a rewrite rule to derive zero or more new skeletons from a skeleton
+produced during a cohort step. Rules are described in [8]. The grammar of
+security goals and rules is in Table 3.
+
+
+
+## 13      Macros
+
+After reading the input, cpsa expands macros before in analyzing the results.
+A macro definition is a top-level form.
+
+      (defmacro (name arg∗ ) body)
+
+    The cpsa program expands all calls to macros in non-macro defining S-
+expressions using the macros that have been defined previously. A macro
+definition can be used to expand a call if the first element of a list matches
+the name of the macro, and the length of the remaining elements in the
+list matches the length of the macro’s argument list. When two macros
+definitions are applicable, the last definition takes precedence. The cpsa
+program omits macro definitions from its output.
+    After expanding a list, elements of the list of the form (^ · · · ) are
+spliced into the output. Thus (a ^(b c) d) becomes (a b c d) after macro
+expansion.
+
+
+
+
+
+
+## 14     Includes
+
+While performing macro expansion, cpsa includes other source files with the
+top-level include form,
+      (include file)
+where file is a string.
+
+
+
+## 15     Algebra Signature Extensions
+
+The signature of the message algebra used by cpsa is extensible. There are
+two forms of extensibility provided by cpsa. Users can add operations for
+encryption, tupling, and hashing; and add sorts for atomic data.
+    A common extension is to add tupling operations to message algebras.
+Previously, complex protocols often made use of tagged concatenation to en-
+code a tagged sequence of messages. In cpsa, concatenation is implemented
+as sequences of pairing operations. Thus, the expression for a certificate body
+of the form
+      (cat "cert-body" dn serial-no pub-key)
+is syntax for
+      (cat "cert-body" (cat dn (cat serial-no pub-key)))
+   Algebra extensions are declared using the lang key in the protocol’s as-
+sociation list, at the end of a protocol. For the certificate body example,
+```scheme
+      (defprotocol cert basic
+        ...
+        (lang (cert-body (tupl 3))))
+```
+adds one tupling operation so that the example above can be written as
+      (cert-body dn serial-no pub-key)
+cpsa represents this form internally as a sequence of messages with a dis-
+tinguished mark. This representation is more efficient as compared with the
+tagged concatenation representation.
+    The syntax of a lang declaration is given in Table 1. There are eight
+kinds of ways that cpsa algebras can be extended.
+
+
+          lang ← (lang ldecl∗)
+         ldecl ← (symbol+ kind)
+          kind ← atom | akey | hash | (tupl integer)
+               | enc | senc | aenc | sign
+
+
+                    Table 1: Lang Field Syntax
+
+• An atomic sort is added to the algebra when a symbol is declared to
+  be of kind atom. If dollar is declared to be an atomic sort, then
+  (price dollar) in a var form declares price to be of sort dollar.
+
+• An atomic sort is also added to the algebra when a symbol is declared
+  to be of kind akey. However, in addition to adding the sort, cpsa adds
+  the equation (x−1 )−1 = x for variables of the new sort.
+
+• A unary operation is added to the algebra when a symbol is declared
+  to be of kind hash. As with the default hash operation, the adversary
+  cannot extract the contents of the hash.
+
+• An n-ary operation is added to the algebra when a symbol is declared
+  to be of kind (tupl n). As with concatenation, the adversary can
+  construct and extract contents of tuples. Constraint: n > 0.
+
+• A binary operation is added to the algebra when a symbol is declared to
+  be of kind enc. As with the default encryption operation, the adversary
+  cannot extract contents of the encryption without access to the inverse
+  of the key.
+
+• A symbol of kind senc is just like one of kind enc except that the key
+  supplied when it is applied must be symmetric, that is, the sort of the
+  key must not be asymmetric.
+
+• A symbol of kind aenc is just like one of kind enc except that the key
+  supplied when it is applied must be asymmetric, but not the inverse
+  applied to an asymmetric key.
+
+• A symbol of kind sign is just like one of kind enc except that the key
+  supplied when it is applied must be the inverse applied to an asymmet-
+  ric key.
+
+
+
+## 16     Advice
+
+This section contains advice derived from using cpsa. When specifying cpsa
+input, one must decide when to specify terms as uniquely originating or non-
+originating in a role, and when to specifying them in the initial skeleton. If a
+fresh value is generated by all programs that implement a role in a protocol,
+the term that represents the fresh value should be assumed to be uniquely
+originating in the role. Otherwise, unique origination assumptions should be
+specified in the initial skeleton.
+    Adding non-origination assumptions to a role can lead to an excessively
+weak protocol analysis, i.e. an analysis relative to an unrealistically narrow
+assumption. Placing non-origination assumptions in the initial skeleton is
+preferred whenever possible.
+    The Basic Crypto Algebra has two text-like sorts, text and data. For
+some protocols, message fields that carry uniquely originating data cannot be
+carried by other text-like fields. To ensure cpsa does not explore skeletons
+in which uniquely originating data is carried in fields with predictable values,
+the convention is to use the sort data for uniquely originating data, and sort
+text for the other fields.
+    When looking at the output, try extracting the shapes first. If the shapes
+only version of the output does not answer your questions, try studying the
+output that contains intermediate skeletons.
+    When cpsa generates an unexpected intermediate skeleton, study its
+operation field (see Page 11). Usually, the unexpected intermediate skeletons
+of interest have been generated as a result of an authentication test. Section 8
+explains how to interpret an operation field for an authentication test.
+    When using cpsa for protocol design, focus on authentication tests. For
+each iteration of the design, search for the most informative unexpected
+intermediate skeleton. That skeleton is likely to suggest a missing origination
+assumption, or the redesign of some message term included in the operation
+field.
+    There are situations in which origination assumptions are not justified
+for initial segments of runs of a protocol, but are required to show that
+complete runs of the protocol have certain expected shapes. In this case, the
+progressive refinement analysis technique is used. The initial segments of runs
+are analyzed with only the origination assumptions justified initially. A shape
+associated with a partial run may justify additional origination assumptions.
+For example, a strand in a partial run may send its next message only after a
+
+
+trust decision is made, and the implication of the decision is that the strand
+infers that some key is uncompromised. In this case, the shape with the new
+origination assumption and additional regular behavior is supplied as input
+to cpsa, thereby refining the original problem.
+    As there is no guarantee that cpsa is bug free, you may come upon input
+that causes non-termination. As a result, whenever you run the program
+unattended, you should limit its memory usage. To get output that can be
+visualized, specify a step count and/or a strand bound so that cpsa has the
+chance to abort the run in a fashion that generates graphable output. Of
+course, sending us input that causes erroneous behavior will help us improve
+cpsa.
+
+
+
+## 17      Formula Extraction
+
+The cpsasas program extracts a formula in the language of order-sorted first-
+order logic for each problem and its shapes from a cpsa run. The formula
+is called a shape analysis sentence [7]. The formula is satisfied in all realized
+skeletons when cpsa finds all the shapes for the problem. The details of
+formula extraction are presented in Appendix B of The cpsa Specification [9].
+
+
+Acknowledgement
+Jonathan K. Millen provided valuable feedback as our first cpsa user and on
+a draft of this document.
+
+
+A      BCA Syntax Reference
+The complete syntax for the analyzer using the Basic Crypto Algebra is
+shown in Tables 2 and 3. The start grammar symbol is file, and the terminal
+grammar symbols are: (, ), symbol, string, integer, and the constants
+set in typewriter font. The language used for stating security goals is in
+Table 3. The goal language adds the sort symbol node.
+    The alist, prot-alist, role-alist, skel-alist, and goal-alist pro-
+ductions are Lisp style association lists, that is, lists of key-value pairs, where
+every key is a symbol. Key-value pairs with unrecognized keys are ignored,
+and are available for use by other tools. On output, unrecognized key-value
+
+
+pairs are preserved when printing protocols, but elided when printing skele-
+tons.
+    The contents of a file can be interpreted as a sequence of S-expressions.
+The S-expressions used are restricted so that most dialects of Lisp can read
+them, and characters within symbols and strings never need quoting. Every
+list is proper. An S-expression atom is either a symbol, an integer, or
+a string. The characters that make up a symbol are the letters, the dig-
+its, and the special characters in “-*/<=>!?:$%_&~^+”. A symbol may not
+begin with a digit or a sign followed by a digit. The characters that make
+up a string are the printing characters omitting double quote and backslash,
+except when double quote and backslash are escaped using the backslash
+character. Double quotes delimit a string. A comment begins with a semi-
+colon, or is an S-expression list at top-level that starts with the comment
+symbol.
+
+
+B     Omitted Executions
+When given some initial behavior, the cpsa program discovers what shapes
+are compatible with it. Early work claimed that the cpsa algorithm would
+generate every shape in a finite number of steps [2, 5]. Further theoreti-
+cal work showed classes of executions that are not found by the algorithm,
+however it also showed that every omitted execution requires an unnatural
+interpretation of a protocol’s roles. Hence the algorithm is complete relative
+to natural role semantics. We present an example of a protocol that has a
+shape missed by cpsa.
+    The protocol has an initiator role and a responder role.
+
+               init    {|N |}K                {|N1 |}K   resp
+
+                •      N                           N2      •
+
+   Observe that a natural interpretation of N2 in the responder role is that
+a binding for it is known when an instance of the role begins execution.
+   Consider a scenario in which there is an instance of the initiator role
+where N is freshly generated and K −1 is uncompromised. cpsa will find no
+shapes compatible with the scenario, however what follows is.
+
+
+
+
+      file   ←   herald? form+
+  herald     ←   (herald title alist)
+    title    ←   symbol | string
+    form     ←   comment | protocol | skeleton | goal
+comment      ←   (comment . . . )
+protocol     ←   (defprotocol id alg role+ rule∗ prot-alist)
+        id   ←   symbol
+      alg    ←   symbol
+    role     ←   (defrole id vars trace role-alist)
+     vars    ←   (vars decl∗)
+    decl     ←   (id+ sort)
+     sort    ←   text | data | name | skey | akey | mesg | chan
+   trace     ←   (trace event+)
+   event     ←   (send id? term) | (recv id? term)
+    term     ←   id | akey | (ltk id id) | string | (cat term+)
+             |   (enc term+ term) | (hash term+)
+     akey    ←   id | (invk id) | (pubk id) | (privk akey)
+             |   (pubk id string) | (privk id string)
+role-alist   ←   (non-orig ht-term∗) role-alist
+             |   (pen-non-orig ht-term∗) role-alist
+             |   (uniq-orig term∗) role-alist
+             |   (conf id∗) role-alist
+             |   (auth id∗) role-alist
+  ht-term    ←   term | (integer term)
+     rule    ←   (defrule id sentence rule-alist)
+rule-alist   ←   ...
+prot-alist   ←   (lang ldecl∗) prot-alist | . . .
+    ldecl    ←   (symbol+ kind)
+      kind   ←   atom | akey | hash | (tupl integer)
+                 enc | senc | aenc | sign
+
+
+                     Table 2: cpsa Syntax
+
+
+
+
+
+  skeleton    ←    (defskeleton id vars
+                        strand+ skel-alist)
+    strand    ←    (defstrand id integer maplet∗)
+              |    (deflistener term)
+    maplet    ←    (term term)
+ skel-alist   ←    (non-orig term∗) skel-alist
+              |    (pen-non-orig term∗) skel-alist
+              |    (uniq-orig term∗) skel-alist
+              |    (conf id∗) skel-alist
+              |    (auth id∗) skel-alist
+              |    (facts fact∗) skel-alist
+              |    (precedes node-pair∗) skel-alist | . . .
+  node-pair   ←    (node node)
+      node    ←    (integer integer)
+      fact    ←    (id fterm∗)
+     fterm    ←    term | integer
+
+       goal   ←    (defgoal id sentence+ goal-alist)
+   sentence   ←    (forall (decl∗) implication)
+implication   ←    (implies antecedent conclusion)
+ conclusion   ←    (false) | existential | (or existential∗)
+existential   ←    (exists (decl∗) antecedent) | antecedent
+antecedent    ←    atomic | (and atomic∗)
+     atomic   ←    (p roleid svar hgt)
+              |    (p roleid param svar term)
+              |    (prec svar pos svar pos)
+              |    (non term) | (pnon term)
+              |    (uniq term) | (uniq-at term svar pos)
+              |    (conf id) | (auth id)
+              |    (fact id term∗) | (= term term)
+     roleid   ←    string
+        hgt   ←    integer
+        pos   ←    integer
+       svar   ←    id
+     param    ←    string
+
+
+                  Table 3: cpsa Syntax Continued
+
+
+                                  {|N |}K
+                      init                        resp
+
+                       •             N             •
+
+Yet this shape requires that the message for N2 in an instance the responder
+role be obtained from its first message reception—an unnatural interpretation
+of the responder role.
+
+
+References
+[1] Edsger W. Dijkstra. Why numbering should start at zero. http://www.
+    cs.utexas.edu/users/EWD/transcriptions/EWD08xx/EWD831.html,
+    August 1982.
+
+[2] Shaddin F. Doghmi, Joshua D. Guttman, and F. Javier Thayer. Search-
+    ing for shapes in cryptographic protocols. In Tools and Algorithms
+    for Construction and Analysis of Systems (TACAS), number 4424 in
+    LNCS, pages 523–538. Springer, March 2007. Extended version at
+    http://eprint.iacr.org/2006/435.
+
+[3] Daniel Dolev and Andrew Yao. On the security of public-key protocols.
+    IEEE Transactions on Information Theory, 29:198–208, 1983.
+
+[4] Joseph A. Goguen and Jose Meseguer. Order-sorted algebra I: Equational
+    deduction for multiple inheritance, overloading, exceptions and partial
+    operations. Theoretical Computer Science, 105(2):217–273, 1992.
+
+[5] Joshua D. Guttman. Shapes: Surveying crypto protocol runs. In
+    Veronique Cortier and Steve Kremer, editors, Formal Models and Tech-
+    niques for Analyzing Security Protocols, volume 5 of Cryptology and In-
+    formation Security Series. IOS Press, 2011.
+
+[6] Joshua D. Guttman and F. Javier Thayer. Authentication tests and the
+    structure of bundles. Theor. Comput. Sci., 283(2):333–380, 2002.
+
+[7] John D. Ramsdell. Deducing security goals from shape analysis sentences.
+    The MITRE Corporation, April 2012. http://arxiv.org/abs/1204.
+    0480.
+
+
+
+[8] John D. Ramsdell. CPSA Security Goals and Rules. The MITRE Cor-
+    poration, 2015. In https://github.com/mitre/cpsaexp source distri-
+    bution, doc directory.
+
+[9] John D. Ramsdell, Joshua D. Guttman, Moses D. Liskov, and Paul D.
+    Rowe. The CPSA Specification: A Reduction System for Searching for
+    Shapes in Cryptographic Protocols. The MITRE Corporation, 2009. In
+    https://github.com/mitre/cpsaexp source distribution, doc directory.
+
+
+
+
+
+Index
+acquired, 9                    outbound, 8
+authenticated channel, 9       outbound predecessors, 17
+authenticated channel, 12
+                               penetrator, 11
+carries, 7                     penetrator non-origination, 12
+cohort, 22                     position, 10
+comments, 32                   preskeleton, 19
+confidential channel, 9, 12    protocol, 8
+critical term, 17
+                               realized skeleton, 15
+encryption test, 17            reception node, 10
+environment, 10                refinement, 15
+escape set, 17                 regular, 11
+                               role, 8
+generalization, 18             rule, 27
+goal, security, 27
+                               security goal, 27
+height, 10                     shape, 18
+herald form, 6                 skeleton, 13, 19
+inbound, 8                     sort, 6
+includes, 28                   strand, 10
+indexing, zero-based, 9        strand succession edges, 11
+instance, 10                   test node, 17
+label, 22                      transitive reduction, 14
+lang field, 28                 transmission node, 10
+listeners, 16                  tuple, 28
+
+macros, 27                     unique origination, 12
+
+node, 10                       well-formed role, 20
+non-origination, 12            well-formed skeleton, 20
+nonce test, 17                 zero-based indexing, 9
+operation, 22
+operator, 6
+origination, 9
+

@@ -1,0 +1,49 @@
+;;; Template: one procedure, two roles, one goal, two points of view.
+;;; Replace SPEC-REF with real clause numbers and pages. Delete this line.
+
+(herald "PROTOCOL NAME"
+  (comment "SPEC document, section X.Y.Z pp.N-M"))
+
+;; Message template. Leading tag keeps this from unifying with other cats.
+(defmacro (some_pdu field1 field2)
+  (cat "pdu" "tag:VALUE" field1 field2))
+
+(defprotocol my-protocol basic
+
+  ;; Initiator.  SPEC-REF
+  (defrole ground
+    (vars (field1 field2 sometype) (k skey))
+    (trace
+      (send (some_pdu field1 field2)))
+    (uniq-orig field1))
+
+  ;; Recipient.  SPEC-REF
+  (defrole satellite
+    (vars (field1 field2 sometype) (k skey))
+    (trace
+      (recv (some_pdu field1 field2))))
+
+  (lang (sometype atom))
+
+  (comment "Whether a reply PDU exists: cite the clause."))
+
+;; State the expected verdict BEFORE running.
+(defgoal my-protocol
+  (forall ((responder strd) (field1 sometype))
+    (implies
+      (and (p "satellite" responder 1)
+           (p "satellite" "field1" responder field1))
+      (exists ((initiator strd))
+        (and (p "ground" initiator 1)
+             (p "ground" "field1" initiator field1)))))
+  (comment "What this establishes, in one sentence"))
+
+(defskeleton my-protocol
+  (vars (field1 sometype))
+  (defstrandmax satellite (field1 field1))
+  (comment "Recipient's view"))
+
+(defskeleton my-protocol
+  (vars (field1 sometype))
+  (defstrandmax ground (field1 field1))
+  (comment "Initiator's view"))

@@ -1,0 +1,150 @@
+{
+  "schema_version": "1.0.0",
+  "project_name": "RFC-LLM",
+  "description": "Declarative, file-agnostic context bundling configuration for packaging RFC-LLM source code, executables, tests, domain knowledge, and documentation into plain-text Markdown bundles optimized for LLM Notebook ingestion.",
+  "settings": {
+    "output_dir": "notebook_context/bundles",
+    "state_file": "notebook_context/manifest_state.json",
+    "max_file_size_kb": 100,
+    "include_extensionless_executables": true,
+    "auto_detect_shebangs": true,
+    "include_untracked_unignored": true,
+    "prepend_delta_changelog": true,
+    "generate_ast_symbol_registry": true,
+    "generate_summarized_assets_inventory": true,
+    "encoding": "utf-8"
+  },
+  "global_excludes": [
+    ".git/**",
+    ".venv/**",
+    "venv/**",
+    "env/**",
+    "__pycache__/**",
+    "**/__pycache__/**",
+    "*.pyc",
+    "*.pyo",
+    "*.pyd",
+    "*.so",
+    ".pytest_cache/**",
+    ".mypy_cache/**",
+    ".ruff_cache/**",
+    ".env",
+    "**/.env",
+    ".env.*",
+    "output/**",
+    "all_RFCs/**",
+    "**/all_RFCs/**",
+    "notebook_context/**",
+    "*.log",
+    "**/*.log"
+  ],
+  "bundles": [
+    {
+      "name": "00_ARCHITECTURE_AND_INDEX.md",
+      "title": "RFC-LLM Master Index, Architecture & Project Configuration",
+      "description": "Tier 1 — Master repository index, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.",
+      "tier": "Tier 1 — Architecture, Documentation & Project Configs",
+      "is_master_index": true,
+      "include_globs": [
+        "README.md",
+        "LICENSE",
+        "requirements.txt",
+        "pytest.ini",
+        ".gitignore",
+        "logs/.gitignore",
+        "docs/**/*.md"
+      ],
+      "explicit_files": [
+        "README.md",
+        "LICENSE",
+        "requirements.txt",
+        "pytest.ini",
+        ".gitignore",
+        "logs/.gitignore"
+      ]
+    },
+    {
+      "name": "01_CORE_SOURCE_AND_CLI.md",
+      "title": "RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints",
+      "description": "Tier 2 — Complete core synthesis pipeline (`src/`), including RFC document ingestion, order-sorted message algebra intermediate representation (IR), DSPy/RAG constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, live web visualizer, and the root `rfc-llm` CLI entrypoint.",
+      "tier": "Tier 2 — Core Source Code & CLI Entrypoints",
+      "is_master_index": false,
+      "include_globs": [
+        "src/**/*.py",
+        "src/**/*.html",
+        "src/**/*.css",
+        "src/**/*.js"
+      ],
+      "explicit_files": [
+        "rfc-llm"
+      ]
+    },
+    {
+      "name": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "title": "Operational RAG Scripts, Evaluation Harnesses & Test Suites",
+      "description": "Tier 3 — Operational RAG chunking/embedding/enrichment pipeline scripts (`refrences/scripts/`), shell pipeline runner (`refrences/run_rag_pipeline.sh`), retrieval evaluation and clustering scripts (`refrences/reports/`), LaTeX report source, and the complete pytest unit and integration test suite (`tests/`).",
+      "tier": "Tier 3 — Operational Scripts, Pipelines & Test Suites",
+      "is_master_index": false,
+      "include_globs": [
+        "tests/**/*.py",
+        "refrences/scripts/**/*.py",
+        "refrences/scripts/**/*.sh",
+        "refrences/*.sh",
+        "refrences/reports/*.py",
+        "refrences/reports/*.tex"
+      ],
+      "explicit_files": [
+        "refrences/run_rag_pipeline.sh"
+      ]
+    },
+    {
+      "name": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
+      "title": "CPSA 4.4.9 Domain Modeling References, Manuals & Guides",
+      "description": "Tier 1/3 Domain Reference — Curated CPSA 4.4.9 protocol modeling skill definitions, grammar and roletran references, Dolev-Yao theoretical guides, and transcribed CPSA documentation under the max file size threshold.",
+      "tier": "Tier 1/3 — Domain Reference Documentation & Modeling Guides",
+      "is_master_index": false,
+      "include_globs": [
+        "refrences/cpsa-protocol-modeling/SKILL.md",
+        "refrences/cpsa-protocol-modeling/references/**/*.md",
+        "refrences/cpsa-protocol-modeling/templates/**/*",
+        "refrences/cpsa-protocol-modeling/pdf_manual/**/*.md",
+        "refrences/cpsa-protocol-modeling/manuals/*.md",
+        "refrences/internet/guides_markdown/*.md",
+        "refrences/internet/guides_markdown/*.txt"
+      ],
+      "explicit_files": []
+    },
+    {
+      "name": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
+      "title": "Official MITRE CPSA Scheme (.scm) Protocol Examples Corpus",
+      "description": "Tier 3 Reference Corpus — Complete collection of 148 official MITRE CPSA `.scm` protocol specifications, heralds, macros, defroles, and security goals used for few-shot RAG grounding and grammar verification.",
+      "tier": "Tier 3 — Domain Reference Code Corpus (.scm)",
+      "is_master_index": false,
+      "include_globs": [
+        "refrences/internet/examples_scm/**/*.scm"
+      ],
+      "explicit_files": []
+    }
+  ],
+  "summarized_assets": {
+    "description": "Tier 4 — Heavy, binary, or generated artifacts excluded from raw text dumping and summarized with metadata, line/record counts, and lightweight schema previews.",
+    "patterns": [
+      "logs/*.csv",
+      "refrences/chunks/*.npy",
+      "refrences/chunks/*.json",
+      "refrences/chunks/*.jsonl",
+      "refrences/chunks/*.md",
+      "refrences/internet/manifest.json",
+      "refrences/internet/papers_pdf/*.pdf",
+      "refrences/manual/*.pdf",
+      "refrences/manual/*.txt",
+      "refrences/manual/*.md",
+      "refrences/reports/*.json",
+      "refrences/reports/*.jsonl",
+      "refrences/reports/*.html",
+      "refrences/reports/*.pdf",
+      "refrences/reports/figures/*.png",
+      "refrences/reports/figures_golden_benchmark_2/*.png"
+    ]
+  }
+}

@@ -1,0 +1,761 @@
+# CPSA Security Goals and Invariant Queries
+
+             CPSA Security Goals and Rules
+              Joshua D. Guttman and John D. Ramsdell
+                      The MITRE Corporation
+                        CPSA Version 4.4.8
+                               February 27, 2026
+
+
+
+Contents
+
+## 1 Introduction                                                                         3
+
+
+
+## 2 Syntax                                                                               6
+
+
+
+## 3 Semantics                                                                            8
+
+
+
+## 4 Examples                                                           10
+
+  4.1 Needham-Schroeder Responder . . . . . . . . . . . . . . . . . 10
+  4.2 A Needham-Schroeder Secrecy Goal . . . . . . . . . . . . . . . 12
+
+
+## 5 The Rest of the Story                                                           12
+
+  5.1 Shape Analysis Sentences            . . . . . . . . . . . . . . . . . . . . 14
+
+
+## 6 Rules                                                                     15
+
+  6.1 Facts . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+  6.2 DoorSEP . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+
+
+
+    © 2010 The MITRE Corporation. Permission to copy without fee all or part of
+this material is granted provided that the copies are not made or distributed for direct
+commercial advantage, this copyright notice and the title of the publication and its date
+appear, and notice in given that copying is by permission of The MITRE Corporation.
+
+
+
+List of Figures
+  1   Needham-Schroeder Initiator and Responder Roles . . . . . .             4
+  2   Needham-Schroeder Initiator Point of View . . . . . . . . . . .         5
+  3   Needham-Schroeder Responder Point of View . . . . . . . . .            11
+  4   Needham-Schroeder Secrecy Goal . . . . . . . . . . . . . . . .         12
+  5   Two Initiator Authentication Goals . . . . . . . . . . . . . . .       13
+  6   Initiator Shape Analysis Sentence . . . . . . . . . . . . . . . .      14
+  7   DoorSEP Protocol . . . . . . . . . . . . . . . . . . . . . . . .       16
+  8   DoorSEP Weakness . . . . . . . . . . . . . . . . . . . . . . . .       17
+  9   Door Simple Example Protocol . . . . . . . . . . . . . . . . .         18
+
+
+List of Tables
+  1   Predicates . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    7
+
+
+
+
+
+
+## 1     Introduction
+
+Analyzing a cryptographic protocol means finding out what security
+properties—essentially, authentication and secrecy properties—are true in
+all its possible executions.
+    Given a protocol definition and some assumptions about executions, cpsa
+attempts to produce descriptions of all possible executions of the protocol
+compatible with the assumptions. Naturally, there are infinitely many pos-
+sible executions of a useful protocol, since different participants can run it
+with varying parameters, and the participants can run it repeatedly.
+    However, for many naturally occurring protocols, there are only finitely
+many of these runs that are essentially different. Indeed, there are frequently
+very few, often just one or two, even in cases where the protocol is flawed. We
+call these essentially different executions the shapes of the protocol. Authen-
+tication and secrecy properties are easy to “read off” from the shapes, as are
+attacks and anomalies, according to the introduction in the cpsa Primer [4].
+    But how easy is it to read off authentication and secrecy properties? What
+precisely is it that an expert sees? This paper describes cpsa’s support for
+reasoning about security goals using first-order logic. With security goals
+expressed in first-order logic, intuition is replaced by determining if a formula
+is true in all executions of the protocol.
+    This treatment of security goals relies heavily on a branch of first-order
+logic called model theory. It deals with the relationship between descriptions
+in first-order languages and the structures that satisfy these descriptions. In
+our case, the structures are skeletons that denote a collection of executions
+of a protocol. This paper attempts to describe the language of security goals
+and its structures without requiring the reader to have studied model theory.
+    The model theoretical foundation of this approach to security goals ap-
+pears in [1]. A practical use of security goals in protocol standardization is
+described in [2]. The precise semantics of the goal language is in [5, Ap-
+pendix C]. The syntax of security goals appears in [4, Table 2].
+    The distribution in which this paper is included contains the sample in-
+put cpsa file goals.scm. It contains the examples in this paper. You are
+encouraged to run the examples and examine the output while reading this
+paper.
+    The cpsa Primer [4] is a prerequisite for reading this paper. In particular,
+the Needham-Schroeder Protocol in Section 10 is reanalyzed using security
+goals here. The roles are displayed in Figure 1.
+
+
+   init     {|N1 , A|}KB          {|N1 , A|}KB    resp
+
+     •      {|N1 , N2 |}KA       {|N1 , N2 |}KA    •
+
+     •      {|N2 |}KB                {|N2 |}KB     •
+
+```scheme
+          (defprotocol ns basic
+            (defrole init
+              (vars (a b name) (n1 n2 text))
+              (trace
+               (send (enc n1 a (pubk b)))
+               (recv (enc n1 n2 (pubk a)))
+               (send (enc n2 (pubk b)))))
+            (defrole resp
+              (vars (b a name) (n2 n1 text))
+              (trace
+               (recv (enc n1 a (pubk b)))
+               (send (enc n1 n2 (pubk a)))
+               (recv (enc n2 (pubk b))))))
+```
+
+Figure 1: Needham-Schroeder Initiator and Responder Roles
+
+
+
+
+
+```scheme
+(defgoal ns                ; Goal
+  (forall ((b name) (n1 text) (z0 strd))
+    (implies
+      (and (p "init" z0 3) (p "init" "n1" z0 n1)
+        (p "init" "b" z0 b) (non (privk b)) (uniq n1))
+      (exists ((z1 strd))
+        (and (p "resp" z1 2) (p "resp" "b" z1 b))))))
+```
+
+```scheme
+(defskeleton ns            ; Point of view skeleton
+  (vars (a b name) (n1 n2 text))
+  (defstrand init 3 (a a) (b b) (n1 n1) (n2 n2))
+  (non-orig (privk b))
+  (uniq-orig n1))
+```
+
+                {|N1 , A|}KB                 {|N1 , A|}KB
+      init                         ≺                           resp
+               {|N1 , N2 |}KA                {|N1 , N2′ |}KA
+       •                           ≻                             •
+                 {|N2 |}KB
+       •
+
+```scheme
+(defskeleton ns            ; Shape
+  (vars (n1 n2 text) (a b name))
+  (defstrand init 3 (n1 n1) (n2 n2) (a a) (b b))
+  (defstrand resp 2 (n2 n2-0) (n1 n1) (b b) (a a))
+  (precedes ((0 0) (1 0)) ((1 1) (0 1)))
+  (non-orig (privk b))
+  (uniq-orig n1)
+  (satisfies yes))
+```
+
+
+           Figure 2: Needham-Schroeder Initiator Point of View
+
+
+
+
+
+    The protocol is analyzed from the point of view of a complete run of
+one instance of the initiator role. The input security goal, followed by the
+point of view skeleton it generates and the shape produced by cpsa, are
+shown in Figure 2. The syntax and semantics of the goal will be explained
+later. Roughly speaking, it asserts that if a realized skeleton contains a full
+length initiator strand, its private key is uncompromised, and it uniquely
+generates n1, then the skeleton will contain a responder strand that agrees
+with the initiator on the name b. The shape produced by cpsa contains
+the annotation (satisfies yes). This indicates that its structure satisfies
+the description given by the security goal. It will be explained later why the
+properties of cpsa allows us to conclude that this goal is true in all executions
+of the protocol, and therefore conclude that the Needham-Schroeder protocol
+achieves this authentication goal.
+
+
+
+## 2     Syntax
+
+To be precise, a security goal is an order-sorted first-order logic sentence
+in a restricted form. The sentence in Figure 2 has the form shared by all
+security goals. It is a universally quantified implication. The antecedent is
+a conjunction of atomic formulas. For this sentence, the conclusion is an
+existentially quantified conjunction of atomic formulas, but in general, the
+conclusion is a disjunction of existentially quantified conjunctions of atomic
+formulas. In what follows, (false) is a synonym for the empty disjunction,
+(or).
+
+         goal     ←    (defgoal prot sent+ comments)
+         sent     ←    (forall (decl∗) (implies antec concl))
+        concl     ←    (false) | existl | (or existl∗)
+        existl    ←    (exists (decl∗) antec) | antec
+        antec     ←    atomic | (and atomic+)
+
+    Variables are declared as they are for roles and skeletons with one excep-
+tion, there is a new sort symbol strd for strands. Notice that in the sentence
+in Figure 2, variables z0 and z1 have sort strd. Every universally quantified
+variable must occur in the antecedent of the implication.
+    The signature as been expanded to include the natural numbers. A nat-
+ural number has sort nat.
+
+
+
+ Symbol                 Sort          Description
+ p role             strd × nat        Role strand length
+ p role param      strd × mesg        Role parameter
+ prec         strd × nat × strd × nat Precedes
+ non                   atom           Non-origination
+ pnon                  atom           Penetrator non-origination
+ uniq                  atom           Unique origination
+ uniq-at        atom × strd × nat     Unique origination on strand
+ auth                  chan           Authenticated channel
+ conf                  chan           Confidential channel
+ =                    all × all       Equality
+
+
+                              Table 1: Predicates
+
+    The predicates used to construct an atomic formula (atomic) are listed in
+Table 1. There are two classes of predicates, protocol specific and protocol
+independent predicates, and two kinds of protocol specific predicates, role
+strand length and role parameter predicates. Protocol specific predicates are
+distinguished from protocol independent predicates by beginning with the
+symbol p.
+    The first line of the table gives the syntax of a role strand length predicate.
+It contains two tokens, p and a string that names a role. That is, for role r,
+there is a role strand length predicate, p r. Thus (p "init" z0 3) is an
+atomic formula using the role strand length predicate for length 3 in the
+init role of the protocol in Figure 1.
+    The second line gives the syntax of a role parameter predicate. It con-
+tains three tokens, p, a string that names a role, and a string that names a
+role variable. For role r, there is role parameter predicate for each variable
+declared by r. Thus (p "init" "n1" z0 n1) is an atomic formula using the
+role parameter predicate for parameter n1 in the init role of the protocol.
+    The empty string names the listener role of a protocol. The role has the
+variable x of sort mesg as its only role variable. There are two positions in
+the listener role. Its trace is (trace (recv x) (send x)).
+    When a variable of sort strd occurs in a formula, its length must be
+specified using a role strand length formula. When an algebra variable occurs
+in a formula, its association with the parameter of some role must be specified
+using a role parameter formula.
+
+
+
+## 3     Semantics
+
+In a defgoal sentence, the antecedent specifies the point of view skeleton.
+We focus on the antecedent. In the example,
+
+       (defstrand init 3 (a a) (b b) (n1 n1) (n2 n2))
+
+is extracted from
+
+       (and (p "init" z0 3)
+         (p "init" "n1" z0 n1) (p "init" "b" z0 b)).
+
+Notice that cpsa adds a binding for a and n2 just as it does had
+
+       (defstrand init 3 (b b) (n1 n1))
+
+been given as input.
+    Our aim now is to specify how to decide if a security goal is true in all
+possible executions of a protocol. A skeleton defines a set of executions that
+contain the skeleton’s structure. We say a skeleton satisfies a formula if the
+skeleton contains all of the structure specified by the formula. To decide
+if a skeleton satisfies a formula, we decide if it satisfies each of its atomic
+formulas, and combine the results using the rules of first-order logic.
+    Atomic formula (p "init" z0 3) is called a role strand length formula.
+A skeleton k satisfies the formula if z0 maps to a strand s in k such that
+
+    1. the trace of strand s in k has a length greater than 2, and
+
+    2. the trace when truncated to length 3 is an instance of the init role.
+
+Consider the shape in Figure 2. It satisfies (p "init" z0 3) when z0 maps
+to 0.
+    Atomic formula (p "init" "n1" z0 n1) is called a role parameter for-
+mula. A skeleton k satisfies the formula if z0 maps to strand s in k, n1 first
+occurs in at position i in the trace of the init role, and n1 maps to a message
+algebra term t in k such that
+
+    1. the trace of strand s in k has a length greater than i,
+
+    2. the trace truncated to length i + 1 is an instance of the init role, and
+
+
+
+  3. the truncated trace is compatible with mapping the init role’s "n1" role
+     variable to t.
+
+The shape in Figure 2 satisfies (p "init" "n1" z0 n1) when z0 maps to 0
+and n1 maps to the message algebra term n1.
+   Collectively, a skeleton satisfies the formula
+
+     (and (p "init" z0 3)
+          (p "init" "a" z0 a) (p "init" "b" z0 b)
+          (p "init" "n1" z0 n1) (p "init" "n2" z0 n2))
+
+if the skeleton contains the structure specified by
+
+     (defstrand init 3 (a a) (b b) (n1 n1) (n2 n2)).
+
+   The antecedent in Figure 2 contains two origination assertions. The for-
+mula (non (privk b)) is extracted as (privk b). A skeleton k satisfies
+the formula if b maps to a message algebra term t in k such that k assumes
+that t is non-originating. The unique origination formula for n1 is similarly
+extracted.
+   Putting it all together, the mapping
+
+                 {n1 7→ n1, n2 7→ n2, a 7→ a, b 7→ b, z0 7→ 0}
+
+shows that the shape in Figure 2 satisfies the antecedent of the security goal.
+    The prec predicate is used to assert a node precedes another node. The
+conclusion in Figure 2 with (prec z1 1 z0 2) added is satisfied by the
+shape using the mapping z0 7→ 0 and z1 7→ 1.
+    The uniq-at predicate is used to assert not only that an atom uniquely
+originates, but also the node at which it originates. In the Figure 2 goal, the
+(uniq n1) formula could have been replaced by (uniq-at n1 z0 0). The
+extracted point of view skeleton is the same.
+    Recall that our aim in analyzing a protocol is to find out what security
+goals are true in all of its possible executions. We are interested in runs of
+cpsa that show that when every shape satisfies a goal, it is true in every
+execution.
+    When cpsa performs a shape analysis, every shape it generates refines
+the input skeleton. Skeleton refinement is defined in [4, Section 6]. The
+definition makes precise the notion of structure containment, as skeleton A
+refines skeleton B if and only if A contains the structure of skeleton B.
+
+
+    The skeleton k0 extracted from the antecedent of a security goal has the
+property that a skeleton refines k0 if and only if it satisfies the antecedent.
+A skeleton with this property is called the characteristic skeleton of the
+antecedent.
+    Given a goal Φ, consider a shape analysis starting from the characteris-
+tic skeleton k0 of its antecedent. Assume cpsa finds shapes k1 , . . . , kn and
+that cpsa determines that each ki satisfies Φ. Consider the executions that
+contain the structure in k0 . cpsa tells us that each execution is in the exe-
+cutions that contain the structure of some ki . Furthermore, because k0 is a
+characteristic skeleton, each ki satisfies the antecedent of Φ. Executions that
+do not contain the structure in k0 do not satisfy the antecedent. Therefore, Φ
+is true in all executions of the protocol and maximally informative.
+
+
+
+## 4     Examples
+
+This section contains examples of both authentication and secrecy goals.
+The first example shows the feedback the user receives when a shape does
+not satisfy a security goal. The second example shows how to use a listener
+to state a secrecy goal.
+
+
+### 4.1    Needham-Schroeder Responder
+
+Figure 3 contains an analysis of Needham-Schroeder from the point of view
+of a complete run of the responder under the assumption that the responder’s
+private key is uncompromised and the nonce it generates uniquely originates.
+    The conclusion of the goal asserts that in an execution compatible with
+the point of view, there must be an initiator strand that agrees with the
+responder strand on the name b. The shape produced by cpsa is a coun-
+terexample to this assertion. Because of this, cpsa annotates the shape with
+
+      (satisfies (no (a a) (b b) (n2 n2) (z0 0))).
+
+The annotation includes a variable mapping for the shape that satisfies the
+antecedent of the goal but does not satisfy its conclusion. The reason the
+shape does not satisfy the goal is because the mapping (b b) maps the
+initiator’s b parameter to b, not b-0 as is required to model the shape.
+    Galvin Lowe identified this authentication failure in Needham-Schroeder
+and provided a fix. In the Needham-Schroeder-Lowe Protocol, the name b
+
+
+```scheme
+(defgoal ns                ; Goal
+  (forall ((a b name) (n2 text) (z0 strd))
+    (implies
+      (and (p "resp" z0 3) (p "resp" "n2" z0 n2)
+        (p "resp" "a" z0 a) (p "resp" "b" z0 b)
+        (non (privk a)) (uniq n2))
+      (exists ((z1 strd))
+        (and (p "init" z1 2) (p "init" "b" z1 b))))))
+```
+
+```scheme
+(defskeleton ns            ; Point of view skeleton
+  (vars (a b name) (n1 n2 text))
+  (defstrand resp 3 (a a) (b b) (n1 n1) (n2 n2))
+  (non-orig (privk a))
+  (uniq-orig n2))
+```
+
+              {|N1 , A|}KB                {|N1 , A|}KB′
+      resp                                                 init
+             {|N1 , N2 |}KA               {|N1 , N2 |}KA
+       •                        ≺                           •
+               {|N2 |}KB                   {|N2 |}KB′
+       •                        ≻                           •
+
+```scheme
+(defskeleton ns            ; Shape
+  (vars (n1 n2 text) (a b b-0 name))
+  (defstrand resp 3 (n2 n2) (n1 n1) (b b) (a a))
+  (defstrand init 3 (n1 n1) (n2 n2) (a a) (b b-0))
+  (precedes ((0 1) (1 1)) ((1 2) (0 2)))
+  (non-orig (privk a))
+  (uniq-orig n2)
+  (satisfies (no (a a) (b b) (n2 n2) (z0 0))))
+```
+
+
+        Figure 3: Needham-Schroeder Responder Point of View
+
+
+
+
+
+```scheme
+      (defgoal ns
+        (forall ((a b name) (n1 text) (z0 z1 strd))
+          (implies
+            (and (p "init" z0 3) (p "init" "n1" z0 n1)
+              (p "init" "a" z0 a) (p "init" "b" z0 b)
+              (p "" z1 1) (p "" "x" z1 n1) ; Listener
+              (non (privk a)) (non (privk b))
+              (uniq n1))
+            (false))))
+```
+
+
+                Figure 4: Needham-Schroeder Secrecy Goal
+
+is included within the encryption in second message of both roles. With this
+modification, the shape found by cpsa satisfies the security goal in Figure 3,
+so Needham-Schroeder-Lowe achieves this authentication goal.
+
+
+### 4.2    A Needham-Schroeder Secrecy Goal
+
+Figure 4 contains an analysis of Needham-Schroeder from the point of view
+of a complete run of the initiator under the assumption that the responder’s
+and its peer’s private keys are uncompromised and the nonce n1 it generates
+uniquely originates. Futhermore, the point of view asserts that the nonce is
+leaked using a listener.
+
+      (p "" z1 1) (p "" "x" z1 n1)           ; Listener
+
+   cpsa finds no shapes, so Needham-Schroeder achieves this secrecy goal
+and does not leak n1.
+
+
+
+## 5     The Rest of the Story
+
+The examples in the previous section demonstrate the typical way security
+goals are analyzed with cpsa. However, there are more features that may
+be useful.
+   A defgoal form may contain more than one sentence. See Figure 5 for
+an example. When presented with more than one sentence, cpsa extracts
+the point of view skeleton from the first sentence.
+
+
+```scheme
+     (defgoal ns
+       (forall ((a b name) (n text) (z0 strd))
+         (implies
+           (and (p "init" z0 2) (p "init" "n1" z0 n)
+             (p "init" "a" z0 a) (p "init" "b" z0 b)
+             (non (privk a)) (non (privk b)) (uniq n))
+           (exists ((z1 strd))
+             (and (p "resp" z1 2) (p "resp" "b" z1 b)))))
+       (forall ((a b name) (n text) (z0 strd))
+         (implies
+           (and (p "init" z0 2) (p "init" "n1" z0 n)
+             (p "init" "a" z0 a) (p "init" "b" z0 b)
+             (non (privk a)) (non (privk b)) (uniq n))
+           (exists ((z1 strd))
+             (and (p "resp" z1 2) (p "resp" "a" z1 a))))))
+```
+
+
+               Figure 5: Two Initiator Authentication Goals
+
+    It is wise to ensure that the antecedent in every sentence is identical.
+When cpsa performs satisfaction-checking on sentence Φ, it only determines
+if each shape it finds is satisfied. If the point of view skeleton is not the
+characteristic skeleton of the antecedent of Φ, the fact that all skeletons
+satisfy Φ cannot be used to conclude that Φ is true in all executions of the
+protocol.
+    cpsa performs satisfaction-checking when an input skeleton in annotated
+with one or more security goals. The annotation uses the goals key.
+
+```scheme
+     (defskeleton
+        ...
+        (goals sent+))
+```
+
+
+   The program cpsasas, discussed in the next section, can be used to
+generate a formula with an antecedent such that the input skeleton is the
+characteristic skeleton of the antecedent.
+
+
+
+
+
+```scheme
+(defgoal ns
+  (forall ((n1 n2 text) (b a name) (z strd))
+    (implies
+      (and (p "init" z 3) (p "init" "n1" z n1)
+        (p "init" "n2" z n2) (p "init" "a" z a)
+        (p "init" "b" z b) (non (privk b)) (uniq-at n1 z 0))
+      (exists ((n2-0 text) (z-0 strd))
+        (and (p "resp" z-0 2) (p "resp" "n2" z-0 n2-0)
+          (p "resp" "n1" z-0 n1) (p "resp" "b" z-0 b)
+          (p "resp" "a" z-0 a) (prec z 0 z-0 0)
+          (prec z-0 1 z 1))))))
+```
+
+
+                Figure 6: Initiator Shape Analysis Sentence
+
+
+### 5.1    Shape Analysis Sentences
+
+A shape analysis sentence expresses all that can be learned from a run of
+cpsa as a security goal. If a security goal can be derived from a shape
+analysis sentence, then the protocol achieves the security goal, that is, the
+goal is true in all executions of the protocol.
+    The program cpsasas extracts shape analysis sentences from the output
+of cpsa. Consider the first example in this paper (Figure 2), which is in the
+sample file goals.scm. To generate a maximally informative security goal
+from the initiator point of view with ghci and Make.hs, type
+      $ ghci Make.hs
+      *Make> sas "goals"
+When using GNU make, type “make goals sas.text”. The resulting shape
+analysis sentence is displayed in Figure 6.
+   A shape analysis sentences asserts that either a realized skeleton does
+not satisfy its antecedent or it satisfies one or more of the disjuncts in its
+conclusion. cpsa has been designed so that this assertion is true. Therefore,
+every shape analysis sentence is true in all executions.
+   A security goal is true in all executions if it can be derived from a shape
+analysis sentence [3]. In practice, theorem-proving using shape analysis sen-
+tences is rarely employed. It’s clumsy and it requires too much expertise. The
+main use of cpsasas is for generating a formula that is edited to become a
+desired security goal.
+
+
+
+## 6     Rules
+
+Support for rules was introduced in version 4.1 of cpsa.
+   Each protocol includes a small collection of rules. A rule is a sentence in
+the goal language presented in Section 2. Rules are defined after the roles of
+a protocol are defined. The syntax of a rule follows.
+
+              rule    ←   (defrule name sent comments)
+
+    A rule is an axiom added to a protocol. cpsa uses the axiom as a rewrite
+rule to derive zero or more new skeletons from a skeleton produced during a
+step. An example of a protocol with a rule is in Figure 9 on Page 18.
+    The trust rule states that when CPSA finds a person strand of length
+at least one, and the inverse of it’s p parameter is non-originating, CPSA
+should assume the inverse of it’s d parameter is non-originating.
+
+
+### 6.1    Facts
+
+Each skeleton includes a small database of facts. A fact is a named relation
+among fact terms. A fact term is either a strand of the skeleton or an algebra
+term. A set of facts is defined anywhere after strands are defined using the
+facts form. The syntax of facts follows.
+
+                      facts ← (facts fact∗)
+                       fact ← (symbol fterm∗)
+                     fterm ← mesg | nat
+
+   For example, in a skeleton, a user may want to note that strand 0 owns
+the private key for a by assuming.
+
+                      (facts (owns 0 (privk a)))
+
+    Facts are most useful when combined with rules. Here is an example of
+their combination. Suppose a point of view skeleton has two names, a and b,
+and the problem is modeling a situation in which the two names are known
+to differ. To enforce this constraint, add
+                            (facts (neq a b))
+to the point of view skeleton and the neq rule below to the protocol.
+
+
+                        person                               door
+                      {|{|K|}P −1 |}D                    {|{|K|}P −1 |}D
+               •                            /                              /•
+                         {|T |}K                            {|T |}K         
+  Fresh: K     •o                                    o                      •    Fresh: T
+                                                                            
+               •
+                            T           /                      T           /•
+
+
+                            Figure 7: DoorSEP Protocol
+
+      (defrule neq
+        (forall ((a mesg))
+          (implies
+            (fact neq a a)
+            (false))))
+
+
+### 6.2    DoorSEP
+
+As a motivating scenario consider the Door Simple Example Protocol
+(DoorSEP), derived from an expository protocol that was designed to have
+a weakness. Despite this, the protocol achieves the needs of an application,
+given a trust assumption.
+    Imagine a door D which is equipped with a badge reader, and a person P
+equipped with a badge. When the person swipes the badge, the protocol
+executes. Principals such as doors or persons are identified by the public
+parts of their key pairs, with D−1 and P −1 being the corresponding private
+keys. We write {|M |}K for the encryption of message M with key K. We
+represent digital signatures {|M |}P −1 as if they were the result of encrypting
+with P ’s private key.
+    P initiates the exchange by creating a fresh symmetric key K, signing
+it, and sending it to the door D encrypted with the door’s public key. D
+extracts the symmetric key after checking the signature, freshly generates
+a token T , and sends it—encrypted with the symmetric key—back to P .
+P demonstrates they are authorized to enter by decrypting the token and
+sending it as plaintext to the door. The two roles of DoorSEP are shown in
+Fig. 7, where each vertical column displays the behavior of one of the roles.
+The cpsa4 encoding of the roles is in Figure 9.
+    cpsa finds an undesirable execution of DoorSEP. Assume the person’s
+
+
+              person                                                 door
+                        {|{|K|}P −1 |}C            {|{|K|}P −1 |}D
+                 •                        / ···                      /•
+                                                       {|T |}K         
+                                               o                      •
+                                                                       
+                                                         T           /•
+
+                       Uncompromised: P            Fresh: K, T
+
+                        Figure 8: DoorSEP Weakness
+
+private key P −1 is uncompromised and the door has received the token it
+sent out. Then cpsa finds that P freshly created the symmetric key K.
+However, nothing ensures that the person meant to open door D. If P ever
+initiates a run with a compromised door C, the adversary can perform a
+man-in-the-middle attack, decrypting using the compromised key C −1 and
+re-encrypting with D’s public key, as elided in the · · · in Fig. 8. To verify
+this result with cpsa4, remove the trust axiom in the doorsep protocol in
+doc/rules.scm and run cpsa4. Thus, without additional assumptions, the
+door cannot authenticate the person requesting entry.
+    But possibly we can trust the person to swipe her badge only in front of
+doors our organization controls. And we can we ensure that our doors have
+uncompromised private keys. If so, then the adversary cannot exercise the
+flaw.
+    We regard this as a trust assumption, and we can express it as an axiom:
+
+Trust Assumption 1 If an uncompromised signing key P −1 is used to pre-
+pare an instance of the first DoorSEP message, then its owning principal has
+ensured that the selected door D has an uncompromised private key.
+
+The responsibility for ensuring the truth of this axiom may be split between
+P and the organization controlling D. P makes sure to swipe her badge
+only at legitimate doors of the organization’s buildings. The organization
+maintains a security posture that protects the corresponding private keys.
+Is DoorSEP good enough, assuming the trust axiom? Add the trust
+axiom back to the doorsep protocol in doc/rules.scm and see. You should
+find that the protocol does its job; namely, ensuring that the door opens only
+when an authorized person requests it to open.
+
+
+
+```scheme
+(defprotocol doorsep basic
+  (defrole person
+    (vars (d p akey) (k skey) (t text))
+    (trace
+     (send (enc (enc k (invk p)) d))
+     (recv (enc t k))
+     (send t)))
+  (defrole door
+    (vars (d p akey) (k skey) (t text))
+    (trace
+     (recv (enc (enc k (invk p)) d))
+     (send (enc t k))
+     (recv t)))
+  (defrule trust
+    (forall ((z strd) (p d akey))
+            (implies
+             (and (p "person" z 1)
+                  (p "person" "p" z p)
+                  (p "person" "d" z d)
+                  (non (invk p)))
+             (non (invk d))))
+    (comment "The trust rule"))
+  (comment "Doorsep protocol using unnamed asymmetric keys"))
+```
+
+```scheme
+(defskeleton doorsep
+  (vars (p akey))
+  (defstrand door 3 (p p))
+  (non-orig (invk p))
+  (comment "Analyze from the doors’s perspective"))
+```
+
+
+              Figure 9: Door Simple Example Protocol
+
+
+
+
+
+References
+[1] Joshua D. Guttman. Establishing and preserving protocol security goals.
+    Journal of Computer Security, 22(2):201–267, 2014.
+
+[2] Joshua D. Guttman, Moses D. Liskov, and Paul D. Rowe. Security goals
+    and evolving standards. In Liqun Chen and Chris Mitchell, editors, Se-
+    curity Standardization Research, volume 8839 of LNCS, pages 93–110.
+    Springer, December 2014.
+
+[3] John D. Ramsdell. Deducing security goals from shape analysis sentences.
+    The MITRE Corporation, April 2012. http://arxiv.org/abs/1204.
+    0480.
+
+[4] John D. Ramsdell and Joshua D. Guttman. CPSA Primer. The MITRE
+    Corporation, 2009. In https://github.com/mitre/cpsaexp source dis-
+    tribution, doc directory.
+
+[5] John D. Ramsdell, Joshua D. Guttman, Moses D. Liskov, and Paul D.
+    Rowe. The CPSA Specification: A Reduction System for Searching for
+    Shapes in Cryptographic Protocols. The MITRE Corporation, 2009. In
+    https://github.com/mitre/cpsaexp source distribution, doc directory.
+
+
+
+
