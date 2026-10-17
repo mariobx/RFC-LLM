@@ -4,7 +4,7 @@ import re
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from src.logging_config import get_pipeline_logger
+from rfc_llm.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("header_filter")
 

@@ -10,8 +10,8 @@ from pydantic import (
     model_validator,
 )
 
-from src.intermediate_representation.algebraic_sorts import CPSASortEnum
-from src.intermediate_representation.cpsa_grammar import (
+from rfc_llm.intermediate_representation.algebraic_sorts import CPSASortEnum
+from rfc_llm.intermediate_representation.cpsa_grammar import (
     CPSA_ALL_OPERATORS,
     CPSA_TERM_JSON_SCHEMA,
     CPSATopLevelKeyword,

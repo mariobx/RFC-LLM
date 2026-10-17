@@ -4,9 +4,9 @@ import json
 from typing import Literal, Optional
 import litellm
 
-from src.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
-from src.system_config import SYSTEM_CONFIG
-from src.logging_config import get_pipeline_logger
+from rfc_llm.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
+from rfc_llm.system_config import SYSTEM_CONFIG
+from rfc_llm.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("diagnostic_repair")
 
@@ -158,7 +158,7 @@ def repair_protocol_specification(
                     "source_file": chunk_source,
                     "snippet": chunk_text[:280].strip() + ("..." if len(chunk_text) > 280 else ""),
                 })
-            from src.pipeline_events import GLOBAL_EVENT_BUS
+            from rfc_llm.pipeline_events import GLOBAL_EVENT_BUS
             GLOBAL_EVENT_BUS.emit(
                 "rag_retrieval",
                 stage=5 if failure_stage == "roletran" else 6,
@@ -237,7 +237,7 @@ Provide the complete repaired CPSAProtocolSpecification resolving the error with
         data = json_repair.loads(content)
 
     repaired_spec = CPSAProtocolSpecification.model_validate(data)
-    from src.semantic_extraction.constrained_protocol_extractor import ensure_three_point_of_view_skeletons
+    from rfc_llm.semantic_extraction.constrained_protocol_extractor import ensure_three_point_of_view_skeletons
     repaired_spec = ensure_three_point_of_view_skeletons(repaired_spec)
 
     logger.info("Repair pass completed for '%s'", repaired_spec.protocol_name)

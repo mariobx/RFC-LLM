@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 from typing import List, Set
 
-from src.system_config import SYSTEM_CONFIG
-from src.main_pipeline_orchestrator import run_rfc_translation_pipeline, PipelineExecutionSummary
+from rfc_llm.system_config import SYSTEM_CONFIG
+from rfc_llm.main_pipeline_orchestrator import run_rfc_translation_pipeline, PipelineExecutionSummary
 
 
 def natural_rfc_sort_key(file_path: Path):
@@ -169,7 +169,7 @@ def main():
     monitor_url = None
     if enable_visualizer:
         import webbrowser
-        from src.visualizer.server import run_visualizer_in_background
+        from rfc_llm.visualizer.server import run_visualizer_in_background
 
         try:
             server = run_visualizer_in_background(port=args.port)

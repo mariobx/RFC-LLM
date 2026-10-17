@@ -1,3 +1,5 @@
+from typing import List
+from typing import List
 """Comprehensive Structured Logging Subsystem for RFC-LLM Pipeline."""
 
 import logging
@@ -5,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from src.system_config import SYSTEM_CONFIG
+from rfc_llm.system_config import SYSTEM_CONFIG
 
 
 class PipelineConsoleFormatter(logging.Formatter):
