@@ -4,9 +4,9 @@ import pytest
 import shutil
 from pathlib import Path
 
-from src.system_config import SYSTEM_CONFIG
-from src.intermediate_representation.algebraic_sorts import CPSASortEnum
-from src.intermediate_representation.protocol_syntax_tree import (
+from rfc_llm.system_config import SYSTEM_CONFIG
+from rfc_llm.intermediate_representation.algebraic_sorts import CPSASortEnum
+from rfc_llm.intermediate_representation.protocol_syntax_tree import (
     CPSAVariableDeclaration,
     CPSATraceEvent,
     CPSAProtocolRole,
@@ -14,9 +14,9 @@ from src.intermediate_representation.protocol_syntax_tree import (
     CPSAPreskeleton,
     CPSAProtocolSpecification,
 )
-from src.code_generation.cpsa_scheme_emitter import emit_cpsa_scheme
-from src.verification_engine.roletran_executability_gate import verify_role_executability
-from src.verification_engine.mitre_build_orchestrator import execute_mitre_make_build
+from rfc_llm.code_generation.cpsa_scheme_emitter import emit_cpsa_scheme
+from rfc_llm.verification_engine.roletran_executability_gate import verify_role_executability
+from rfc_llm.verification_engine.mitre_build_orchestrator import execute_mitre_make_build
 
 
 @pytest.fixture
@@ -145,7 +145,7 @@ def test_compiler_diagnostic_repair_patches_spec(monkeypatch, tmp_path: Path, un
     """Test that repair engine retrieves manual guidance and returns an executable specification."""
     import copy
     from unittest.mock import MagicMock
-    from src.verification_engine.compiler_diagnostic_repair import repair_protocol_specification
+    from rfc_llm.verification_engine.compiler_diagnostic_repair import repair_protocol_specification
 
     # Fix the missing decryption key in the role inputs
     repaired = copy.deepcopy(unexecutable_spec)
@@ -192,17 +192,17 @@ def test_cpsa_operator_arity_enforcement():
     """Verify that operator arities from MITRE CPSA Tables 10.3 and 10.5 are strictly enforced."""
     # (enc) requires at least 2 arguments: payload + key
     with pytest.raises(ValueError, match="Operator 'enc' at 'term' expects at least 2 arguments"):
-        from src.intermediate_representation.cpsa_grammar import validate_cpsa_term_syntax
+        from rfc_llm.intermediate_representation.cpsa_grammar import validate_cpsa_term_syntax
         validate_cpsa_term_syntax(["enc", "payload_only"])
 
     # (invk) requires exactly 1 argument
     with pytest.raises(ValueError, match="Operator 'invk' at 'term' expects exactly 1 arguments"):
-        from src.intermediate_representation.cpsa_grammar import validate_cpsa_term_syntax
+        from rfc_llm.intermediate_representation.cpsa_grammar import validate_cpsa_term_syntax
         validate_cpsa_term_syntax(["invk", "key1", "key2"])
 
     # (ltk) requires exactly 2 arguments
     with pytest.raises(ValueError, match="Operator 'ltk' at 'term' expects exactly 2 arguments"):
-        from src.intermediate_representation.cpsa_grammar import validate_cpsa_term_syntax
+        from rfc_llm.intermediate_representation.cpsa_grammar import validate_cpsa_term_syntax
         validate_cpsa_term_syntax(["ltk", "key1"])
 
 
@@ -234,7 +234,7 @@ def test_basic_algebra_forbids_diffie_hellman_operators():
 
 def test_ensure_three_point_of_view_skeletons():
     """Verify that ensure_three_point_of_view_skeletons guarantees distinct pure POV and secrecy skeletons."""
-    from src.semantic_extraction.constrained_protocol_extractor import ensure_three_point_of_view_skeletons
+    from rfc_llm.semantic_extraction.constrained_protocol_extractor import ensure_three_point_of_view_skeletons
 
     spec = CPSAProtocolSpecification(
         protocol_name="test_proto",
@@ -301,7 +301,7 @@ def test_ensure_three_point_of_view_skeletons():
 
 def test_nous_portal_llm_kwargs_routing():
     """Verify that nous/ prefixed models are mapped to OpenAI-compatible Nous inference endpoints."""
-    from src.system_config import SYSTEM_CONFIG
+    from rfc_llm.system_config import SYSTEM_CONFIG
 
     kwargs_claude = SYSTEM_CONFIG.get_llm_kwargs("nous/anthropic/claude-3.5-sonnet")
     assert kwargs_claude["model"] == "openai/anthropic/claude-3.5-sonnet"
@@ -314,7 +314,7 @@ def test_nous_portal_llm_kwargs_routing():
 
 def test_clean_rag_diagnostic_query_sanitization():
     """Verify that compiler error messages strip local paths, line numbers, and output clean domain queries."""
-    from src.verification_engine.compiler_diagnostic_repair import fallback_sanitize_diagnostic_query
+    from rfc_llm.verification_engine.compiler_diagnostic_repair import fallback_sanitize_diagnostic_query
 
     # Test solver unbound identifier error from make output
     make_err = "MITRE build failed for tls_1_2_shapes.xhtml: tls_1_2.scm:72:6: Identifier server_hello_done unknown\nmake: *** [cpsa4.mk:8: tls_1_2.txt] Error 1"

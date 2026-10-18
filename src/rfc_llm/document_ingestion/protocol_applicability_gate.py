@@ -5,9 +5,9 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 import litellm
 
-from src.document_ingestion.rfc_toc_parser import TOCSectionEntry
-from src.system_config import SYSTEM_CONFIG
-from src.logging_config import get_pipeline_logger
+from rfc_llm.document_ingestion.rfc_toc_parser import TOCSectionEntry
+from rfc_llm.system_config import SYSTEM_CONFIG
+from rfc_llm.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("applicability_gate")
 

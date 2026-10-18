@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 from typing import Any, List, Union
 
-from src.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
-from src.logging_config import get_pipeline_logger
+from rfc_llm.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
+from rfc_llm.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("json_serializer")
 
