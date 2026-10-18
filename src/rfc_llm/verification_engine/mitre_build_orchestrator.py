@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from src.system_config import SYSTEM_CONFIG
-from src.logging_config import get_pipeline_logger
+from rfc_llm.system_config import SYSTEM_CONFIG
+from rfc_llm.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("build_orchestrator")
 

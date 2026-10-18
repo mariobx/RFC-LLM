@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Set
 from aiohttp import web
 
-from src.system_config import SYSTEM_CONFIG
-from src.pipeline_events import GLOBAL_EVENT_BUS, PipelineEvent
+from rfc_llm.system_config import SYSTEM_CONFIG
+from rfc_llm.pipeline_events import GLOBAL_EVENT_BUS, PipelineEvent
 
 logger = logging.getLogger("rfc_llm.visualizer")
 

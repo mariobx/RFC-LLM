@@ -4,10 +4,10 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-from src.code_generation.cpsa_json_serializer import serialize_to_cpsa_json_string
-from src.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
-from src.system_config import SYSTEM_CONFIG
-from src.logging_config import get_pipeline_logger
+from rfc_llm.code_generation.cpsa_json_serializer import serialize_to_cpsa_json_string
+from rfc_llm.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
+from rfc_llm.system_config import SYSTEM_CONFIG
+from rfc_llm.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("scheme_emitter")
 

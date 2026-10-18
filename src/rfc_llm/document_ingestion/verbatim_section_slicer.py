@@ -3,7 +3,7 @@
 import re
 from typing import List, Optional, Tuple
 
-from src.logging_config import get_pipeline_logger
+from rfc_llm.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("section_slicer")
 

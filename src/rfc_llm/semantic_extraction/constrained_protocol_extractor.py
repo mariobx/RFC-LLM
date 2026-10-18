@@ -5,14 +5,14 @@ from typing import List, Optional
 import litellm
 from pydantic import ValidationError
 
-from src.intermediate_representation.protocol_syntax_tree import (
+from rfc_llm.intermediate_representation.protocol_syntax_tree import (
     CPSAProtocolSpecification,
     CPSAPreskeleton,
     CPSAStrandInstance,
     CPSAVariableDeclaration,
 )
-from src.system_config import SYSTEM_CONFIG
-from src.logging_config import get_pipeline_logger
+from rfc_llm.system_config import SYSTEM_CONFIG
+from rfc_llm.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("protocol_extractor")
 
@@ -136,7 +136,7 @@ def extract_protocol_specification(
                     "source_file": chunk_source,
                     "snippet": chunk_text[:280].strip() + ("..." if len(chunk_text) > 280 else ""),
                 })
-            from src.pipeline_events import GLOBAL_EVENT_BUS
+            from rfc_llm.pipeline_events import GLOBAL_EVENT_BUS
             GLOBAL_EVENT_BUS.emit(
                 "rag_retrieval",
                 stage=2,

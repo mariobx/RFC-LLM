@@ -3,11 +3,11 @@
 import pytest
 from pathlib import Path
 
-from src.system_config import SYSTEM_CONFIG
-from src.document_ingestion.rfc_header_filter import filter_rfc_header
-from src.document_ingestion.rfc_toc_parser import parse_table_of_contents
-from src.document_ingestion.verbatim_section_slicer import slice_verbatim_sections
-from src.document_ingestion.handshake_section_router import _heuristic_section_router
+from rfc_llm.system_config import SYSTEM_CONFIG
+from rfc_llm.document_ingestion.rfc_header_filter import filter_rfc_header
+from rfc_llm.document_ingestion.rfc_toc_parser import parse_table_of_contents
+from rfc_llm.document_ingestion.verbatim_section_slicer import slice_verbatim_sections
+from rfc_llm.document_ingestion.handshake_section_router import _heuristic_section_router
 
 
 @pytest.fixture
