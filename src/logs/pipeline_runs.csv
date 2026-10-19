@@ -1,4 +1,0 @@
-timestamp,rfc_id,is_eligible,protocol_name,selected_sections,sliced_lines_count,role_count,preskeleton_count,roletran_passed,solver_passed,shapes_count,duration_seconds,error_message
-2026-10-17 21:04:53,RFC2358,False,,,0,0,0,,,0,0.002,Document is too short to be a protocol (0 lines)
-2026-10-17 21:08:36,RFC2358,False,,,0,0,0,,,0,0.002,Document is too short to be a protocol (0 lines)
-2026-10-17 21:13:12,RFC2358,False,,,0,0,0,,,0,0.002,Document is too short to be a protocol (0 lines)

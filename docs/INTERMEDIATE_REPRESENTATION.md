@@ -134,9 +134,16 @@ class CPSAProtocolRole(BaseModel):
     authenticated_channels: List[str]
 ```
 
-**Roletran Serialization Invariant**:
-- In `to_cpsa_json()`, variables of sort `rndx` or `expt` found in `unique_originating` are automatically migrated to `unique_generated` (`uniq-gen`).
-- Every variable in `inputs`, `outputs`, and `unique_originating` is checked against `trace_tokens`. If a variable does not appear in the trace, it is dropped to prevent `cpsa4roletran` compilation errors.
+**Roletran & Table 10.6 Scoping Invariants**:
+- **Positional Keyword Scoping**: Preskeleton-only keywords (`strands`, `listeners`, `defstrand`, `defstrandmax`, `deflistener`, `precedes`, `leadsto`, `goal`, `goals`) are strictly rejected inside `CPSAProtocolRole`, and role-only keywords (`trace`, `inputs`, `outputs`, `params`, `returns`, `defrole`, `assume`) are strictly rejected inside `CPSAPreskeleton`.
+- **Sort Scoping**: First-order logic sorts (`strd`, `indx`, `fact`, Table 7.1) are forbidden in role/skeleton `(vars ...)` declarations (Tables 10.2 & 10.4). Under `basic` algebra, Diffie-Hellman sorts (`rndx`, `expt`, `base`) and operators (`exp`, `gen`, `mul`, `rec`, `one`, `bltk`) are strictly forbidden.
+- **Equation 10.1 Enforcement**: Variables declared with top sort `mesg` are forbidden as the encryption key (last argument) in `["enc", ..., key]`.
+- **Roletran Serialization Invariants (`to_cpsa_json()`)**:
+  1. Variables of sort `rndx` or `expt` found in `unique_originating` are automatically migrated to `unique_generated` (`uniq-gen`).
+  2. All channel variables used in `send`/`recv` events are automatically declared in `(vars ...)` with sort `chan` and included in `inputs`.
+  3. Uniquely originating/generated values (`uniq-orig` / `uniq-gen`) and compound non-key terms (`cat`, `enc`, `hash`) are stripped from `inputs`.
+  4. Input parameters (`inputs`) are stripped from `outputs` so no input is repeated as an output (`cpsa4roletran.md`).
+  5. Every variable in `inputs`, `outputs`, and `unique_originating` is verified against `trace_tokens`.
 
 ### 4.4 `CPSAPreskeleton`
 Defines an execution scenario / point of view.

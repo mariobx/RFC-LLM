@@ -258,12 +258,12 @@ Every entry defines:
 - **Semantics**: Reception of `term` from optional channel `ch`. Must be destructible.
 
 ### `load`
-- **Grammar**: `(load ch? locn term)`
-- **Semantics**: Stateful read of `term` from memory location `locn`.
+- **Grammar**: `(load locn? term)`
+- **Semantics**: Stateful read of `term` from optional memory location `locn` (sort `locn`). Never takes both a `chan` and a `locn`.
 
 ### `stor`
-- **Grammar**: `(stor ch? locn term)`
-- **Semantics**: Stateful write of `term` to memory location `locn`.
+- **Grammar**: `(stor locn? term)`
+- **Semantics**: Stateful write of `term` to optional memory location `locn` (sort `locn`). Never takes both a `chan` and a `locn`.
 
 ### `cheq`
 - **Grammar**: `(cheq id term)`
@@ -276,7 +276,7 @@ Every entry defines:
 ### `enc`
 - **Grammar**: `(enc term+ term)`
 - **Arity**: $\ge 2$.
-- **Semantics**: Encryption of 1 or more payload terms under a key. **The key is always the LAST argument**.
+- **Semantics**: Encryption of 1 or more payload terms under a key. **The key is always the LAST argument**. Per Equation 10.1, the encryption key cannot be a variable declared of sort `mesg`.
 - **Scheme**: `(enc m1 m2 k)` $\equiv \{| m_1, m_2 |\}_k$.
 - **Pydantic**: `["enc", "m1", "m2", "k"]`.
 
@@ -293,15 +293,15 @@ Every entry defines:
 - **Scheme**: `(cat m1 m2)` $\equiv (m_1, m_2)$.
 
 ### `pubk`
-- **Grammar**: `(pubk name [tag])`
+- **Grammar**: `(pubk name) | (pubk tag_string name)`
 - **Arity**: 1 or 2.
-- **Semantics**: Public key corresponding to principal `name` (optionally scoped by string `tag`).
-- **Compiler Diagnostic**: `Expecting a name` if applied to a key variable rather than a principal identifier.
+- **Semantics**: Public key corresponding to principal `name` (optionally scoped by a leading string `tag_string` per Table 10.3).
+- **Compiler Diagnostic**: `Expecting a name` if applied to a key variable rather than a principal identifier, or `Malformed pubk` if the 2-argument order `(pubk tag_string name)` is reversed.
 
 ### `privk`
-- **Grammar**: `(privk name [tag])`
+- **Grammar**: `(privk name) | (privk tag_string name)`
 - **Arity**: 1 or 2.
-- **Semantics**: Private key corresponding to principal `name`.
+- **Semantics**: Private key corresponding to principal `name` (optionally scoped by a leading string `tag_string` per Table 10.3).
 
 ### `invk`
 - **Grammar**: `(invk akey_var)`

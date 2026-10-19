@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "project_name": "RFC-LLM",
-  "description": "Declarative, file-agnostic context bundling configuration for packaging RFC-LLM source code, executables, tests, domain knowledge, and documentation into plain-text Markdown bundles optimized for LLM Notebook ingestion.",
+  "description": "Declarative, file-agnostic context bundling configuration for packaging RFC-LLM source code, executables, tests, domain knowledge, and architectural specifications into plain-text Markdown bundles optimized for Gemini and LLM Notebook ingestion.",
   "settings": {
     "output_dir": "notebook_context/bundles",
     "state_file": "notebook_context/manifest_state.json",
-    "max_file_size_kb": 100,
+    "max_file_size_kb": 600,
     "include_extensionless_executables": true,
     "auto_detect_shebangs": true,
     "include_untracked_unignored": true,
@@ -42,7 +42,7 @@
     {
       "name": "00_ARCHITECTURE_AND_INDEX.md",
       "title": "RFC-LLM Master Index, Architecture & Project Configuration",
-      "description": "Tier 1 — Master repository index, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.",
+      "description": "Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.",
       "tier": "Tier 1 — Architecture, Documentation & Project Configs",
       "is_master_index": true,
       "include_globs": [
@@ -66,17 +66,19 @@
     {
       "name": "01_CORE_SOURCE_AND_CLI.md",
       "title": "RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints",
-      "description": "Tier 2 — Complete core synthesis pipeline (`src/`), including RFC document ingestion, order-sorted message algebra intermediate representation (IR), DSPy/RAG constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, live web visualizer, and the root `rfc-llm` CLI entrypoint.",
+      "description": "Tier 2 — Complete core synthesis pipeline (`src/`), including RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, live web visualizer, root `rfc-llm` CLI entrypoint, and the benchmark EDHOC input RFC.",
       "tier": "Tier 2 — Core Source Code & CLI Entrypoints",
       "is_master_index": false,
       "include_globs": [
+        ".prompts/**/*.md",
         "src/**/*.py",
         "src/**/*.html",
         "src/**/*.css",
         "src/**/*.js"
       ],
       "explicit_files": [
-        "rfc-llm"
+        "rfc-llm",
+        "refrences/all_RFCs/rfc9528.txt"
       ]
     },
     {
@@ -100,7 +102,7 @@
     {
       "name": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
       "title": "CPSA 4.4.9 Domain Modeling References, Manuals & Guides",
-      "description": "Tier 1/3 Domain Reference — Curated CPSA 4.4.9 protocol modeling skill definitions, grammar and roletran references, Dolev-Yao theoretical guides, and transcribed CPSA documentation under the max file size threshold.",
+      "description": "Tier 1/3 Domain Reference — Curated CPSA 4.4.9 protocol modeling skill definitions, complete official MITRE User Manual and Specification, grammar and roletran references, Dolev-Yao theoretical guides, and transcribed CPSA documentation.",
       "tier": "Tier 1/3 — Domain Reference Documentation & Modeling Guides",
       "is_master_index": false,
       "include_globs": [
@@ -127,7 +129,7 @@
     }
   ],
   "summarized_assets": {
-    "description": "Tier 4 — Heavy, binary, or generated artifacts excluded from raw text dumping and summarized with metadata, line/record counts, and lightweight schema previews.",
+    "description": "Tier 4 — Heavy, binary, compiled or duplicated artifacts excluded from raw text dumping and summarized with metadata, line/record counts, and lightweight schema previews.",
     "patterns": [
       "logs/*.csv",
       "refrences/chunks/*.npy",
@@ -136,6 +138,8 @@
       "refrences/chunks/*.md",
       "refrences/internet/manifest.json",
       "refrences/internet/papers_pdf/*.pdf",
+      "refrences/internet/guides_markdown/cpsa4manual.txt",
+      "refrences/internet/guides_markdown/cpsaspec.txt",
       "refrences/manual/*.pdf",
       "refrences/manual/*.txt",
       "refrences/manual/*.md",

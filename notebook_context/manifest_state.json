@@ -1,8 +1,15 @@
 {
-  "config_sha256": "10152fd99d36e28bb50f2c66dce51138bd09e955649ccd41bf1877f96a2f73d2",
+  "config_sha256": "63297f9cf36dacb5cc9b2788e07bd5abcc82c344e577512358fbdbe937eb9aa1",
   "delta_of_this_sync": {
     "added": [
       ".gitignore",
+      ".prompts/01_applicability_gate.md",
+      ".prompts/02_section_router.md",
+      ".prompts/03_protocol_extraction.md",
+      ".prompts/04_schema_self_correction.md",
+      ".prompts/05_rag_query_formulation.md",
+      ".prompts/06_compiler_repair.md",
+      ".prompts/README.md",
       "LICENSE",
       "README.md",
       "docs/ARCHITECTURE.md",
@@ -16,6 +23,7 @@
       "logs/.gitignore",
       "logs/pipeline_runs.csv",
       "pytest.ini",
+      "refrences/all_RFCs/rfc9528.txt",
       "refrences/chunks/all_references_clean.md",
       "refrences/chunks/code_examples.jsonl",
       "refrences/chunks/embeddings.npy",
@@ -259,13 +267,16 @@
       "requirements.txt",
       "rfc-llm",
       "src/__init__.py",
+      "src/code_generation/__init__.py",
       "src/code_generation/cpsa_json_serializer.py",
       "src/code_generation/cpsa_scheme_emitter.py",
+      "src/document_ingestion/__init__.py",
       "src/document_ingestion/handshake_section_router.py",
       "src/document_ingestion/protocol_applicability_gate.py",
       "src/document_ingestion/rfc_header_filter.py",
       "src/document_ingestion/rfc_toc_parser.py",
       "src/document_ingestion/verbatim_section_slicer.py",
+      "src/intermediate_representation/__init__.py",
       "src/intermediate_representation/algebraic_sorts.py",
       "src/intermediate_representation/cpsa_grammar.py",
       "src/intermediate_representation/protocol_syntax_tree.py",
@@ -273,8 +284,12 @@
       "src/main_pipeline_orchestrator.py",
       "src/pipeline.py",
       "src/pipeline_events.py",
+      "src/prompt_loader.py",
+      "src/rag_retriever_client.py",
+      "src/semantic_extraction/__init__.py",
       "src/semantic_extraction/constrained_protocol_extractor.py",
       "src/system_config.py",
+      "src/verification_engine/__init__.py",
       "src/verification_engine/compiler_diagnostic_repair.py",
       "src/verification_engine/mitre_build_orchestrator.py",
       "src/verification_engine/roletran_executability_gate.py",
@@ -282,6 +297,7 @@
       "src/visualizer/server.py",
       "src/visualizer/static/index.html",
       "tests/test_code_generation_and_verification.py",
+      "tests/test_cpsa_scoping_and_prompts.py",
       "tests/test_document_ingestion.py",
       "tests/test_main_pipeline_orchestrator.py",
       "tests/test_visualizer_and_events.py"
@@ -294,6 +310,48 @@
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
       "sha256": "7e8cb1f31e97db54c176aea5300cf6a1690697748f9a57ce925ddad4fb31c4bf",
       "size_bytes": 5334,
+      "status": "included"
+    },
+    ".prompts/01_applicability_gate.md": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "ef0686e67d28793f6541bcac8d63bdb7c1df0012c535f4fb037f49170ae8dea1",
+      "size_bytes": 1128,
+      "status": "included"
+    },
+    ".prompts/02_section_router.md": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "9b321417e0717e751408dd151b236b58f5a4d2511711766f0ccf95395f0ed586",
+      "size_bytes": 619,
+      "status": "included"
+    },
+    ".prompts/03_protocol_extraction.md": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "336251a68d44e3f0c75e7693c3c6eb4660c82e07fb942c01295106dcc0f86e9c",
+      "size_bytes": 6372,
+      "status": "included"
+    },
+    ".prompts/04_schema_self_correction.md": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "dbec1f24f57e8ccbde3e0656cd8eb81a0a92b488ad9ea8518053a3033294370e",
+      "size_bytes": 1399,
+      "status": "included"
+    },
+    ".prompts/05_rag_query_formulation.md": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "aa54bfa015b3cc8c038bf4bb11534b8c437eec2ccef6a50267dd9a654feba304",
+      "size_bytes": 999,
+      "status": "included"
+    },
+    ".prompts/06_compiler_repair.md": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "bb4733eb6924e61070ad5f1d959afde98bf49f477fd86a328edf004d9aad015b",
+      "size_bytes": 3950,
+      "status": "included"
+    },
+    ".prompts/README.md": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "ab4cbfe7ded6e6f3e584a1d85234876ba4a59032a2147dd0df7e2c99db42e188",
+      "size_bytes": 3107,
       "status": "included"
     },
     "LICENSE": {
@@ -310,20 +368,20 @@
     },
     "docs/ARCHITECTURE.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "ef433de1f6581ea65ca4036e38adc6f0c3817f28c3d5f8f32f1bcac39fd9ecc9",
-      "size_bytes": 8437,
+      "sha256": "20006661f94b33e32d967fe0d38d842db5c6acda243027cab84498351fafe830",
+      "size_bytes": 8655,
       "status": "included"
     },
     "docs/CPSA_KEYWORD_REFERENCE.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "9b1415adf58d12de1497d8f859889e93d1b67c7d0bcd83b8f86486c7d5b77b46",
-      "size_bytes": 15247,
+      "sha256": "0dade393cca0d9fa32aa1ef61f7ca3559e1587c376ae384577889348b6df6da0",
+      "size_bytes": 15672,
       "status": "included"
     },
     "docs/INTERMEDIATE_REPRESENTATION.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "396f4853787ecbb1c570b8293e6b40d502a3fd9c063d9f897650bdb3ed3f1a95",
-      "size_bytes": 8855,
+      "sha256": "1cd7beec26d3f30c22d320ebe2c8af22f18ba61cce82e2780518b9ac2c4a86b4",
+      "size_bytes": 10035,
       "status": "included"
     },
     "docs/MASTER_BLUEPRINT.md": {
@@ -346,8 +404,8 @@
     },
     "docs/TIERED_MODEL_ROUTING.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "379f7f91d08aa3ee5972a93582753803201ab7fe4ce86a53d83af2b6fce5bd4a",
-      "size_bytes": 6377,
+      "sha256": "ee8e879cf265f64eb5d5f44f7899b65388629f129abd30fd34fe42dc613d5669",
+      "size_bytes": 7434,
       "status": "included"
     },
     "docs/VERIFICATION_AND_SELF_HEALING.md": {
@@ -372,6 +430,12 @@
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
       "sha256": "b160d82f7811555051f8966d8e02750a985227c1d022208c784e606946f2eada",
       "size_bytes": 42,
+      "status": "included"
+    },
+    "refrences/all_RFCs/rfc9528.txt": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "16b0959ee791bba5b06a4368470f8eb296ac11b84101c82b9013073ec6defe9e",
+      "size_bytes": 219195,
       "status": "included"
     },
     "refrences/chunks/all_references_clean.md": {
@@ -414,13 +478,13 @@
       "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
       "sha256": "8536a06c9658b277ca72a5192ba76e5d4e11251931501aa669e26a4bb887f2dd",
       "size_bytes": 245243,
-      "status": "summarized"
+      "status": "included"
     },
     "refrences/cpsa-protocol-modeling/manuals/CPSA_Comprehensive_Guide.md": {
       "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
       "sha256": "86bb8c0f775d9f92f651fd4aeb039da6563a653ac776ac352858dbd3e25af383",
       "size_bytes": 190478,
-      "status": "summarized"
+      "status": "included"
     },
     "refrences/cpsa-protocol-modeling/manuals/CPSA_Design.md": {
       "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
@@ -444,7 +508,7 @@
       "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
       "sha256": "658ae80d2ba4c4247589900e58c9ae5142e6e3cf9dc8abd44c4741e23d6037bd",
       "size_bytes": 103664,
-      "status": "summarized"
+      "status": "included"
     },
     "refrences/cpsa-protocol-modeling/manuals/Dolev_Yao_Model_Paper.md": {
       "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
@@ -1832,6 +1896,12 @@
       "size_bytes": 121,
       "status": "included"
     },
+    "src/code_generation/__init__.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "2290b0e6aa1d08033f8cc69fc796343d87d0bf1fc952849d7695ea7ca3d70248",
+      "size_bytes": 526,
+      "status": "included"
+    },
     "src/code_generation/cpsa_json_serializer.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
       "sha256": "160a2e59151d5ba45f0a078c7958a3afe34eb0c125cfa571a4b697e829216225",
@@ -1844,16 +1914,22 @@
       "size_bytes": 2582,
       "status": "included"
     },
+    "src/document_ingestion/__init__.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "aa0d2979b04aafb444c1e03e34e01da737c33200caa7a407d574a60630b3d104",
+      "size_bytes": 1057,
+      "status": "included"
+    },
     "src/document_ingestion/handshake_section_router.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "b6c5b4826e9dd9f6d183563de0998ac28434d39aacddcbec7abc8c4867583c39",
-      "size_bytes": 5078,
+      "sha256": "f3094c9e6cebaf2d8e57f33fe88898fda5177033512c3f31cf6f8f90ebda2b2f",
+      "size_bytes": 4957,
       "status": "included"
     },
     "src/document_ingestion/protocol_applicability_gate.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "e9de96901377ea4689685a5f5c9a42cc90bc7f4e8b6873bd378607fd9986a21c",
-      "size_bytes": 5506,
+      "sha256": "1f644a64ef5e4d6052e3231bb015e367e4080269a6137b51989b1fcac4514d05",
+      "size_bytes": 4780,
       "status": "included"
     },
     "src/document_ingestion/rfc_header_filter.py": {
@@ -1874,34 +1950,40 @@
       "size_bytes": 4099,
       "status": "included"
     },
+    "src/intermediate_representation/__init__.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "c3058f848b2c4a5e07d18c6b470be515963be06f2a624809c07d56f8562b4f62",
+      "size_bytes": 1975,
+      "status": "included"
+    },
     "src/intermediate_representation/algebraic_sorts.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "b07a02fb462fb036be0e8e0940e6241a0eb41f8fbbdbe1c41e8292a36546c1d0",
-      "size_bytes": 1142,
+      "sha256": "19264144bc10161254691f4de2d170609e354fd5a83b35346accb43611c280a6",
+      "size_bytes": 3061,
       "status": "included"
     },
     "src/intermediate_representation/cpsa_grammar.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "fcb3115fcfe3a858851224db8205a84fa9ff2e10aa1c1334255c48418720428c",
-      "size_bytes": 11591,
+      "sha256": "e9f8912d7b936f91fc7d2d9f7927f38ff049d00a80a1b6366d7a501db0848cfe",
+      "size_bytes": 14217,
       "status": "included"
     },
     "src/intermediate_representation/protocol_syntax_tree.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "0feeb7e97cfd96d5f9ce7c772804105c89cf8f86a56e4c4ee5459a9dcdda2244",
-      "size_bytes": 18846,
+      "sha256": "b2c286b7259f7014eb185871b60c55ef9e3c0a8f020063ab9bdb341c9e479a8b",
+      "size_bytes": 33282,
       "status": "included"
     },
     "src/logging_config.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "e6303bce3dae0ca99314a7df2181d8d3fe58a8463173d9b3816095235798a410",
-      "size_bytes": 5709,
+      "sha256": "0d8260df7e0e24af2f8c6e64e913c0ab78aab1e9e7b63462630c71814b37cfe6",
+      "size_bytes": 5715,
       "status": "included"
     },
     "src/main_pipeline_orchestrator.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "9144ac2fae8c49be10eb71b084f62cdd271a575921e4bd19dae51b4ec56d1df4",
-      "size_bytes": 18832,
+      "sha256": "5cdf87e79704f626415e0e3343a3e0e3a163186b0014fd33fa87fea65d4a2679",
+      "size_bytes": 21749,
       "status": "included"
     },
     "src/pipeline.py": {
@@ -1916,22 +1998,46 @@
       "size_bytes": 2501,
       "status": "included"
     },
+    "src/prompt_loader.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "ffea24233ea2204284765ccc886237c9a9f756e95f12cb349b5b9a891a609f3a",
+      "size_bytes": 4682,
+      "status": "included"
+    },
+    "src/rag_retriever_client.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "d3cdd3fb6d03ffe5b520b1784358ea299fd60934209703a18843d0e1def446b5",
+      "size_bytes": 3168,
+      "status": "included"
+    },
+    "src/semantic_extraction/__init__.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "50ca5098adb9790199f5bd4d2d8801c58763ebc0f3b2923b6374697074cbcb06",
+      "size_bytes": 392,
+      "status": "included"
+    },
     "src/semantic_extraction/constrained_protocol_extractor.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "e78b45a0cb266e3229b50befdbccb5f2be5c03d70823193398b115945b5a2c2a",
-      "size_bytes": 17366,
+      "sha256": "3981e38ea2cbf93cc0916608ec10de4dee512a45fd06aaabcaee7e864611a008",
+      "size_bytes": 11108,
       "status": "included"
     },
     "src/system_config.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "087e83d9e0d468d72102906347014068cba565fc3773f7e1949581f7a1b5863a",
-      "size_bytes": 5377,
+      "sha256": "04252dcbed05a331bf41b8e53d43869a011cda5e2e94811acefff51f495aa9d5",
+      "size_bytes": 5427,
+      "status": "included"
+    },
+    "src/verification_engine/__init__.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "03985b76b991de50a9ab4dcbea7cd0de59ea7d4047aea351147e2d48055cde3e",
+      "size_bytes": 1040,
       "status": "included"
     },
     "src/verification_engine/compiler_diagnostic_repair.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "27b470b4d99c08ee6f6b1ba3952b59e1f9ea264e10d3a0af51f90fb2f56bf418",
-      "size_bytes": 13732,
+      "sha256": "00293b30d7238b3c98d0da5b061483eddfc112a4c371204f37dda7e75a30e98c",
+      "size_bytes": 8752,
       "status": "included"
     },
     "src/verification_engine/mitre_build_orchestrator.py": {
@@ -1970,6 +2076,12 @@
       "size_bytes": 14526,
       "status": "included"
     },
+    "tests/test_cpsa_scoping_and_prompts.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "e5bd0e9a7fec1459f0ec9d34e6962fb2f38cfd52b0e44f838ecdf8484b71aad7",
+      "size_bytes": 6930,
+      "status": "included"
+    },
     "tests/test_document_ingestion.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
       "sha256": "38caae01f6fb31cfd8c137666ac1b8d901d13fd0dcd9f78cb78d22bcc7a1c28f",
@@ -1989,11 +2101,11 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-10-14 16:18:38 UTC",
+  "generated_at": "2026-10-19 21:48:59 UTC",
   "git": {
     "branch": "main",
-    "commit": "f572f106cef2cd0a63765971a6349c65fde06f90",
-    "subject": "docs: add comprehensive architecture specification and CPSA keyword reference suite"
+    "commit": "9d27f26fb814415cd38b896f11d3e94c008bc984",
+    "subject": "Refactor pipeline, externalize prompts to .prompts/, and enforce strict CPSA 4.4.9 scoping"
   },
   "previous_git": {}
 }

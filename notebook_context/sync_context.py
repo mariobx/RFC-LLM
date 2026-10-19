@@ -57,11 +57,23 @@ import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 # --------------------------------------------------------------------------
-# Paths
+# Paths & Token Metrics
 # --------------------------------------------------------------------------
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "bundle_config.json")
+
+
+def resolve_abs_path(path: str) -> str:
+    """Resolve relative, external (e.g. ../), or absolute paths cleanly against REPO_ROOT."""
+    if os.path.isabs(path):
+        return os.path.normpath(path)
+    return os.path.normpath(os.path.join(REPO_ROOT, path))
+
+
+def estimate_tokens(text: str) -> int:
+    """Fast, accurate token heuristic for code and markdown (~4 characters per token)."""
+    return max(1, len(text) // 4)
 
 # --------------------------------------------------------------------------
 # Glob -> regex translation (supports **, *, ?)
@@ -123,12 +135,49 @@ def run_git(args: List[str]) -> str:
         return ""
 
 
-def discover_files() -> List[str]:
-    """Tracked + untracked-but-not-ignored files, per git."""
+def discover_files(cfg: Optional[Dict[str, Any]] = None) -> List[str]:
+    """Tracked + untracked-but-not-ignored files, per git, plus explicit/external files."""
     out = run_git(["ls-files", "--cached", "--others", "--exclude-standard"])
     files = [f for f in out.splitlines() if f.strip()]
+
+    if cfg:
+        # 1. Discover explicit files declared across all bundles
+        for b in cfg.get("bundles", []):
+            for ef in b.get("explicit_files", []):
+                if ef not in files:
+                    abs_p = resolve_abs_path(ef)
+                    if os.path.isfile(abs_p):
+                        files.append(ef)
+
+        # 2. Discover files from external sources configured in settings
+        external_sources = cfg.get("settings", {}).get("external_sources", [])
+        for src in external_sources:
+            root = src.get("root")
+            if not root:
+                continue
+            abs_root = resolve_abs_path(root)
+            if not os.path.isdir(abs_root):
+                continue
+            globs = src.get("globs", ["**/*"])
+            excludes = src.get("excludes", [".git/**", "**/__pycache__/**"])
+            for dirpath, dirnames, filenames in os.walk(abs_root):
+                dirnames[:] = [d for d in dirnames if not matches_any(d + "/**", excludes) and not d.startswith(".")]
+                rel_dir = os.path.relpath(dirpath, abs_root)
+                for fn in filenames:
+                    rel_src = fn if rel_dir == "." else os.path.join(rel_dir, fn)
+                    if matches_any(rel_src, excludes):
+                        continue
+                    if matches_any(rel_src, globs):
+                        full_file = os.path.join(dirpath, fn)
+                        try:
+                            rel_to_repo = os.path.relpath(full_file, REPO_ROOT)
+                        except ValueError:
+                            rel_to_repo = full_file
+                        if rel_to_repo not in files:
+                            files.append(rel_to_repo)
+
     # Keep only regular files that exist on disk.
-    return sorted(f for f in files if os.path.isfile(os.path.join(REPO_ROOT, f)))
+    return sorted(set(f for f in files if os.path.isfile(resolve_abs_path(f))))
 
 
 def git_context() -> Dict[str, str]:
@@ -400,7 +449,7 @@ def _preview_binary(path: str) -> List[str]:
 
 def summarize_asset(path: str, reason: str) -> Dict[str, Any]:
     """Build a metadata + schema-preview record for a Tier 4 asset."""
-    abs_path = os.path.join(REPO_ROOT, path)
+    abs_path = resolve_abs_path(path)
     size = os.path.getsize(abs_path)
     ext = os.path.splitext(path)[1].lower()
     binary = is_binary(abs_path)
@@ -449,7 +498,7 @@ def summarize_asset(path: str, reason: str) -> Dict[str, Any]:
 # --------------------------------------------------------------------------
 
 def extract_python_symbols(rel_path: str) -> Optional[Dict[str, Any]]:
-    abs_path = os.path.join(REPO_ROOT, rel_path)
+    abs_path = resolve_abs_path(rel_path)
     text = read_text(abs_path)
     if text is None:
         return None
@@ -549,7 +598,7 @@ class SyncResult:
 
 def plan_sync(cfg: Dict[str, Any], files: List[str]) -> SyncResult:
     settings: Dict = cfg.get("settings", {})  # type: ignore[assignment]
-    max_kb: float = float(settings.get("max_file_size_kb", 100))
+    max_kb: float = float(settings.get("max_file_size_kb", 600))
     global_excludes: List[str] = cfg.get("global_excludes", [])  # type: ignore[assignment]
     bundles_cfg: List[Dict] = cfg.get("bundles", [])  # type: ignore[assignment]
     summarized_patterns: List[str] = cfg.get("summarized_assets", {}).get("patterns", [])  # type: ignore[assignment]
@@ -566,13 +615,18 @@ def plan_sync(cfg: Dict[str, Any], files: List[str]) -> SyncResult:
     if fallback_bundle is None and bundles_cfg:
         fallback_bundle = bundles_cfg[-1]["name"]
 
+    all_explicit: set[str] = set()
+    for b in bundles_cfg:
+        for ef in b.get("explicit_files", []):
+            all_explicit.add(ef)
+
     summarized_paths: List[str] = []
 
     # Pass 1 — exclusions, summarized assets, bundle matching.
     for rel in files:
-        if matches_any(rel, global_excludes):
+        if rel not in all_explicit and matches_any(rel, global_excludes):
             continue
-        abs_path = os.path.join(REPO_ROOT, rel)
+        abs_path = resolve_abs_path(rel)
         binary = is_binary(abs_path)
         size_kb = os.path.getsize(abs_path) / 1024.0
 
@@ -580,16 +634,22 @@ def plan_sync(cfg: Dict[str, Any], files: List[str]) -> SyncResult:
 
         # Which bundle (if any) claims this file?
         claimed_by: Optional[str] = None
+        claimed_bundle_cfg: Optional[Dict] = None
         for b in bundles_cfg:
             if matches_any(rel, b.get("include_globs", [])) or rel in b.get("explicit_files", []):
                 claimed_by = b["name"]
+                claimed_bundle_cfg = b
                 break
 
-        if binary or size_kb > max_kb or explicit_summarized:
+        bundle_max_kb = max_kb
+        if claimed_bundle_cfg and "max_file_size_kb" in claimed_bundle_cfg:
+            bundle_max_kb = float(claimed_bundle_cfg["max_file_size_kb"])
+
+        if binary or size_kb > bundle_max_kb or explicit_summarized:
             if binary:
                 reason = "binary file (raw bytes unsafe for text context)"
-            elif size_kb > max_kb:
-                reason = f"exceeds max_file_size_kb ({size_kb:.1f} KB > {max_kb:g} KB)"
+            elif size_kb > bundle_max_kb:
+                reason = f"exceeds max_file_size_kb ({size_kb:.1f} KB > {bundle_max_kb:g} KB)"
             else:
                 reason = "declared Tier 4 summarized asset"
             result.summarized.append(summarize_asset(rel, reason))
@@ -612,7 +672,7 @@ def plan_sync(cfg: Dict[str, Any], files: List[str]) -> SyncResult:
     if settings.get("include_extensionless_executables", True):
         still_unclassified: List[str] = []
         for rel in result.unclassified:
-            abs_path = os.path.join(REPO_ROOT, rel)
+            abs_path = resolve_abs_path(rel)
             ext = os.path.splitext(rel)[1]
             executable = is_executable(abs_path)
             shebang = settings.get("auto_detect_shebangs", True) and has_shebang(abs_path)
@@ -627,7 +687,7 @@ def plan_sync(cfg: Dict[str, Any], files: List[str]) -> SyncResult:
     # Build state records for included files.
     for bname, flist in bundle_files.items():
         for rel in sorted(flist):
-            abs_path = os.path.join(REPO_ROOT, rel)
+            abs_path = resolve_abs_path(rel)
             result.state_files[rel] = {
                 "sha256": sha256_of(abs_path),
                 "size_bytes": os.path.getsize(abs_path),
@@ -681,13 +741,14 @@ def sanitize_text(text: str) -> Tuple[str, int]:
 
 
 def render_file_section(rel: str) -> str:
-    abs_path = os.path.join(REPO_ROOT, rel)
+    abs_path = resolve_abs_path(rel)
     text = read_text(abs_path)
     if text is None:
         return ""  # should not happen; binary guard ran earlier
     text, n_sanitized = sanitize_text(text)
     digest = sha256_of(abs_path)[:12]
     lines = text.count("\n") + (1 if text and not text.endswith("\n") else 0)
+    tokens = estimate_tokens(text)
     lang = fence_lang(rel)
     fence = safe_fence(text)
     body = text.rstrip("\n")
@@ -695,7 +756,7 @@ def render_file_section(rel: str) -> str:
     out = [
         f"### `{rel}`",
         "",
-        f"*sha256:`{digest}` · {lines} lines · {os.path.getsize(abs_path)/1024:.1f} KB · lang:`{lang}`{sanitized_note}*",
+        f"*sha256:`{digest}` · {lines} lines · {os.path.getsize(abs_path)/1024:.1f} KB (~{tokens:,} tokens) · lang:`{lang}`{sanitized_note}*",
         "",
         f"{fence}{lang}",
         body,
@@ -782,13 +843,19 @@ def render_bundle(name: str, info: Dict[str, Any], result: SyncResult,
     files: List[str] = info["files"]  # type: ignore[assignment]
     is_master = bool(bcfg.get("is_master_index"))
 
+    bundle_tokens = 0
+    for rel in files:
+        txt = read_text(resolve_abs_path(rel))
+        if txt:
+            bundle_tokens += estimate_tokens(txt)
+
     out: List[str] = []
     out.append(f"# {bcfg.get('title', name)}")
     out.append("")
     out.append(f"> {bcfg.get('description', '')}")
     out.append("")
     out.append(f"*Generated: {generated_at} · Git: `{git['branch']}` @ `{git['commit'][:12]}` · "
-               f"Tier: {bcfg.get('tier', '—')} · Files: {len(files)}*")
+               f"Tier: {bcfg.get('tier', '—')} · Files: {len(files)} · Estimated Tokens: ~{bundle_tokens:,}*")
     out.append("")
 
     if is_master:
@@ -797,14 +864,34 @@ def render_bundle(name: str, info: Dict[str, Any], result: SyncResult,
         out.append(render_delta_section(delta, git, result.first_run))
         out.append("---")
         out.append("")
+        # Executive Gemini Ingestion & Grounding Guide
+        out.append("## Executive Ingestion & Grounding Guide (for LLMs / Gemini)")
+        out.append("")
+        out.append("This unified repository context is optimized for ingestion into Gemini / LLM Notebooks. Key engineering invariants:")
+        out.append("")
+        out.append("### 1. Cryptographic Protocol Shapes Analyzer (MITRE CPSA 4.4.9)")
+        out.append("- **Order-Sorted Algebras**: Follow Table 10.1–10.6 productions strictly. Protocols using Diffie-Hellman operations **must** declare `(algebra diffie-hellman)` in the top-level `herald` form.")
+        out.append("- **Exponent Origination**: In CPSA strand space semantics, exponents (`rndx`, `expt`) are never carried subterms in Dolev-Yao messages. They **must** be declared under `uniq-gen` (unique generated), **never** under `uniq-orig`.")
+        out.append("- **3-POV Preskeleton Architecture**: Pure protocol viewpoints (Initiator POV, Responder POV) must contain **zero** listener terms. Secrecy listeners belong **strictly** in dedicated confidentiality skeletons (Skeleton 3) to prevent premature pruning of realized handshake shapes.")
+        out.append("- **Pre-Flight Gates**: `cpsa4roletran` only validates `basic` crypto algebra. `diffie-hellman` protocols are pre-flight validated using `cpsa4 -l 1`.")
+        out.append("")
+        out.append("---")
+        out.append("")
         # Bundle catalog
         out.append("## Bundle Catalog")
         out.append("")
-        out.append("| Bundle | Title | Files | Tier |")
-        out.append("|---|---|---|---|")
+        out.append("| Bundle | Title | Files | Size | Estimated Tokens | Tier |")
+        out.append("|---|---|---|---|---|---|")
+        total_all_tokens = 0
         for bname, binfo in result.bundles.items():
             bc = binfo["cfg"]
-            out.append(f"| `{bname}` | {bc.get('title','')} | {len(binfo['files'])} | {bc.get('tier','—')} |")
+            b_files = binfo["files"]
+            b_toks = sum(estimate_tokens(read_text(resolve_abs_path(r)) or "") for r in b_files)
+            total_all_tokens += b_toks
+            b_size_kb = sum(os.path.getsize(resolve_abs_path(r)) for r in b_files if os.path.isfile(resolve_abs_path(r))) / 1024.0
+            out.append(f"| `{bname}` | {bc.get('title','')} | {len(b_files)} | {b_size_kb:.1f} KB | ~{b_toks:,} | {bc.get('tier','—')} |")
+        out.append("")
+        out.append(f"**Total Ingested Context Payload:** ~{total_all_tokens:,} tokens across all bundles ({(total_all_tokens/1_000_000.0)*100:.1f}% of Gemini 1M context window)")
         out.append("")
         if result.auto_detected_executables:
             out.append("## Auto-Detected Executables (shebang / extensionless)")
@@ -855,10 +942,10 @@ def render_bundle(name: str, info: Dict[str, Any], result: SyncResult,
 
 def cmd_sync(cfg: Dict, rebuild: bool) -> int:
     settings: Dict = cfg.get("settings", {})  # type: ignore[assignment]
-    out_dir = os.path.join(REPO_ROOT, str(settings.get("output_dir", "notebook_context/bundles")))
-    state_path = os.path.join(REPO_ROOT, str(settings.get("state_file", "notebook_context/manifest_state.json")))
+    out_dir = resolve_abs_path(str(settings.get("output_dir", "notebook_context/bundles")))
+    state_path = resolve_abs_path(str(settings.get("state_file", "notebook_context/manifest_state.json")))
 
-    files = discover_files()
+    files = discover_files(cfg)
     result = plan_sync(cfg, files)
 
     old_state = {} if rebuild else load_state(state_path)
@@ -871,13 +958,17 @@ def cmd_sync(cfg: Dict, rebuild: bool) -> int:
     generated_at = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     os.makedirs(out_dir, exist_ok=True)
-    written: List[Tuple[str, int, int]] = []
+    written: List[Tuple[str, int, int, float, int]] = []
+    total_tokens = 0
     for bname, binfo in result.bundles.items():
         md = render_bundle(bname, binfo, result, git, delta, generated_at)
         dest = os.path.join(out_dir, bname)
         with open(dest, "w", encoding="utf-8", newline="\n") as fp:
             fp.write(md)
-        written.append((bname, len(binfo["files"]), len(md.splitlines())))  # type: ignore[arg-type]
+        b_tokens = estimate_tokens(md)
+        total_tokens += b_tokens
+        size_kb = os.path.getsize(dest) / 1024.0
+        written.append((bname, len(binfo["files"]), len(md.splitlines()), size_kb, b_tokens))
 
     new_state = {
         "generated_at": generated_at,
@@ -891,12 +982,14 @@ def cmd_sync(cfg: Dict, rebuild: bool) -> int:
 
     # ---- console report ----
     print(f"Synced at {generated_at} | git {git['branch']}@{git['commit'][:12]}")
-    print(f"Discovered {len(files)} repo files (git ls-files, honoring .gitignore).")
+    print(f"Discovered {len(files)} repo & external files (honoring gitignore & bundle rules).")
     print()
     print("Bundles written to", os.path.relpath(out_dir, REPO_ROOT) + "/")
-    for bname, nfiles, nlines in written:
-        size_kb = os.path.getsize(os.path.join(out_dir, bname)) / 1024
-        print(f"  {bname:<42} files:{nfiles:>4}  lines:{nlines:>7}  size:{size_kb:>8.1f} KB")
+    for bname, nfiles, nlines, size_kb, b_tokens in written:
+        print(f"  {bname:<42} files:{nfiles:>4}  lines:{nlines:>7}  size:{size_kb:>8.1f} KB  tokens:~{b_tokens:>8,}")
+    print()
+    pct_1m = (total_tokens / 1_000_000.0) * 100.0
+    print(f"Total Context Payload: ~{total_tokens:,} tokens across all bundles ({pct_1m:.1f}% of Gemini 1M window)")
     print()
     n_inc = sum(1 for r in result.state_files.values() if r["status"] == "included")
     print(f"Included (full text): {n_inc} | Summarized (Tier 4): {len(result.summarized)}")
@@ -912,9 +1005,9 @@ def cmd_sync(cfg: Dict, rebuild: bool) -> int:
 
 def cmd_check(cfg: Dict) -> int:
     settings: Dict = cfg.get("settings", {})  # type: ignore[assignment]
-    state_path = os.path.join(REPO_ROOT, str(settings.get("state_file", "notebook_context/manifest_state.json")))
+    state_path = resolve_abs_path(str(settings.get("state_file", "notebook_context/manifest_state.json")))
 
-    files = discover_files()
+    files = discover_files(cfg)
     result = plan_sync(cfg, files)
     old_state = load_state(state_path)
     old_files: Dict[str, Dict] = old_state.get("files", {})  # type: ignore[assignment]

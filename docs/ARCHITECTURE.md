@@ -106,13 +106,14 @@ This system decomposes translation into seven discrete compiler stages:
   - **Diffie-Hellman Algebra**: `cpsa4roletran` does not support Diffie-Hellman exponentiation (`exp`, `gen`, `mul`). The gate branches to `~/.cabal/bin/cpsa4 -l 1 <stem>.scm`, validating role well-formedness, variable scopes, and sort rules directly.
 
 ### Stage 5: Self-Healing Diagnostic Repair
-- **File**: `src/verification_engine/compiler_diagnostic_repair.py`
+- **Files**: `src/verification_engine/compiler_diagnostic_repair.py`, `src/rag_retriever_client.py`, `src/prompt_loader.py`
+- **Prompts**: `.prompts/05_rag_query_formulation.md`, `.prompts/06_compiler_repair.md`
 - **Trigger**: Any failure in Stage 4 (roletran) or Stage 6 (CPSA build).
 - **Mechanism**:
-  1. **Cycle Detection**: MD5 hashes candidate ASTs. If an identical AST was previously generated, flags an oscillation and boosts temperature to 0.4.
-  2. **RAG Query Formulation**: `LLM_QUERY_MODEL` (Gemini Flash Lite) abstracts concrete variable names from the error string into formal CPSA manual concepts.
-  3. **Corpus Search**: Queries `manual_chunks.jsonl` using hybrid BM25 + dense retrieval for authoritative rule snippets.
-  4. **AST Mutation**: `LLM_REPAIR_MODEL` (DeepSeek-Chat) modifies the AST to fix the defect.
+  1. **Cycle Detection**: SHA-256 hashes candidate ASTs. If an identical AST was previously generated, flags an oscillation and boosts temperature to 0.4.
+  2. **RAG Query Formulation**: `LLM_QUERY_MODEL` (`nous/deepseek/deepseek-chat`) abstracts concrete variable names from the error string into formal CPSA manual concepts.
+  3. **Corpus Search**: Queries `manual_chunks.jsonl` via `src/rag_retriever_client.py` using hybrid BM25 + dense RRF retrieval for authoritative rule snippets.
+  4. **AST Mutation**: `LLM_REPAIR_MODEL` (`nous/anthropic/claude-haiku-5.5`) modifies the AST to fix the defect.
   5. **Loop**: Re-emits to Stage 3 and re-tests. Allowed up to 50 attempts before halting.
 
 ### Stage 6 & 7: Formal Verification & Shape Derivation

@@ -108,30 +108,27 @@ functional zones, classified into four tiers:
 ### Tier 1/3 — Domain knowledge → `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md`
 - `refrences/cpsa-protocol-modeling/` — SKILL.md, curated `references/`
   (grammar, declarations, goals, state, termination, roletran diagnostics),
-  templates, pdf_manual transcription, manuals ≤ 100 KB
+  templates, pdf_manual transcription, and complete official MITRE User Manual and Specification (`CPSA4_User_Manual.md`, `CPSA_Comprehensive_Guide.md`, `CPSA_Specification.md`) under the upgraded 600 KB file limit.
 - `refrences/internet/guides_markdown/` — CPSA guides and Guttman/Ramsdell
-  papers (text versions) ≤ 100 KB
+  theoretical foundation papers.
 
 ### Tier 3 — Reference corpus → `04_CPSA_SCM_EXAMPLES_CORPUS.md`
 - `refrences/internet/examples_scm/` — all 148 official MITRE CPSA `.scm`
-  protocol examples (few-shot grounding corpus)
+  protocol examples (few-shot grounding corpus).
 
 ### Tier 4 — Heavy / binary / generated (summarized, never dumped)
-47 assets ≈ 20 MB: `refrences/chunks/` (embeddings.npy 4.2 MB,
+44 assets ≈ 20 MB: `refrences/chunks/` (embeddings.npy 4.2 MB,
 manual_chunks.jsonl 2.4 MB, all_references_clean.md 1.3 MB, …), 17 PDFs under
 `papers_pdf/` + `manual/`, 10 PNG figures, `embedding_clusters.html` (1.6 MB
-rendered artifact), oversized transcribed manuals/guides (> 100 KB),
-benchmark JSON/JSONL, `logs/pipeline_runs.csv`. Each appears in the
+rendered artifact), raw text duplicate manuals, benchmark JSON/JSONL, and
+`logs/pipeline_runs.csv`. Each appears in the
 **Excluded & Heavy Assets Inventory** with size, line/record counts and a
 schema preview (CSV header + sample rows, JSON/JSONL keys, NPY shape/dtype,
 heading outlines).
 
 ### Why these split points?
-Bundle sizes target the sweet spot for Notebook ingestion: bundles 00–02 and
-04 are each < 400 KB (single-document uploads), while 03 (~1.2 MB) holds the
-domain corpus that the Notebook chunks internally. Splitting code (01) from
-scripts/tests (02) from domain knowledge (03/04) lets you refresh only what
-changed and keeps retrieval namespaces clean.
+Bundle sizes target the sweet spot for Gemini / NotebookLM ingestion:
+- Splitting code (`01`), test harnesses (`02`), CPSA formal semantics (`03`), and `.scm` examples (`04`) allows modular uploads into NotebookLM sources or a unified single-prompt upload into Google AI Studio / Gemini Advanced.
 
 ## 3. Agnostic Evolution Guide
 

@@ -1,55 +1,76 @@
 # RFC-LLM Master Index, Architecture & Project Configuration
 
-> Tier 1 — Master repository index, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
+> Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-10-14 16:18:38 UTC · Git: `main` @ `f572f106cef2` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 14*
+*Generated: 2026-10-19 21:48:59 UTC · Git: `main` @ `9d27f26fb814` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 14 · Estimated Tokens: ~20,992*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `f572f106cef2` — docs: add comprehensive architecture specification and CPSA keyword reference suite
+- **Git commit:** `9d27f26fb814` — Refactor pipeline, externalize prompts to .prompts/, and enforce strict CPSA 4.4.9 scoping
 - **First sync** — no previous manifest state; full baseline established.
+
+---
+
+## Executive Ingestion & Grounding Guide (for LLMs / Gemini)
+
+This unified repository context is optimized for ingestion into Gemini / LLM Notebooks. Key engineering invariants:
+
+### 1. Cryptographic Protocol Shapes Analyzer (MITRE CPSA 4.4.9)
+- **Order-Sorted Algebras**: Follow Table 10.1–10.6 productions strictly. Protocols using Diffie-Hellman operations **must** declare `(algebra diffie-hellman)` in the top-level `herald` form.
+- **Exponent Origination**: In CPSA strand space semantics, exponents (`rndx`, `expt`) are never carried subterms in Dolev-Yao messages. They **must** be declared under `uniq-gen` (unique generated), **never** under `uniq-orig`.
+- **3-POV Preskeleton Architecture**: Pure protocol viewpoints (Initiator POV, Responder POV) must contain **zero** listener terms. Secrecy listeners belong **strictly** in dedicated confidentiality skeletons (Skeleton 3) to prevent premature pruning of realized handshake shapes.
+- **Pre-Flight Gates**: `cpsa4roletran` only validates `basic` crypto algebra. `diffie-hellman` protocols are pre-flight validated using `cpsa4 -l 1`.
 
 ---
 
 ## Bundle Catalog
 
-| Bundle | Title | Files | Tier |
-|---|---|---|---|
-| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 14 | Tier 1 — Architecture, Documentation & Project Configs |
-| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 24 | Tier 2 — Core Source Code & CLI Entrypoints |
-| `02_RAG_SCRIPTS_AND_TESTS.md` | Operational RAG Scripts, Evaluation Harnesses & Test Suites | 13 | Tier 3 — Operational Scripts, Pipelines & Test Suites |
-| `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Domain Modeling References, Manuals & Guides | 37 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
-| `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples Corpus | 148 | Tier 3 — Domain Reference Code Corpus (.scm) |
+| Bundle | Title | Files | Size | Estimated Tokens | Tier |
+|---|---|---|---|---|---|
+| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 14 | 82.6 KB | ~20,992 | Tier 1 — Architecture, Documentation & Project Configs |
+| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 39 | 421.7 KB | ~107,909 | Tier 2 — Core Source Code & CLI Entrypoints |
+| `02_RAG_SCRIPTS_AND_TESTS.md` | Operational RAG Scripts, Evaluation Harnesses & Test Suites | 14 | 202.8 KB | ~51,906 | Tier 3 — Operational Scripts, Pipelines & Test Suites |
+| `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Domain Modeling References, Manuals & Guides | 40 | 1714.7 KB | ~432,327 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
+| `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples Corpus | 148 | 345.0 KB | ~88,246 | Tier 3 — Domain Reference Code Corpus (.scm) |
+
+**Total Ingested Context Payload:** ~701,380 tokens across all bundles (70.1% of Gemini 1M context window)
 
 ---
 
 ## Symbol & Script Registry (automated AST introspection)
 
-33 Python modules introspected with the stdlib `ast` module.
+41 Python modules introspected with the stdlib `ast` module.
 
 | Module | Docstring | Classes | Top-level Functions | CLI Arguments |
 |---|---|---|---|---|
 | `src/__init__.py` | RFC-LLM: End-to-End Synthesis of Formally Verified MITRE CPS | — | — | — |
+| `src/code_generation/__init__.py` | Code Generation package for Stages 3 & 4 CPSA JSON serializa | — | — | — |
 | `src/code_generation/cpsa_json_serializer.py` | CPSA JSON AST Serializer. | — | `serialize_to_cpsa_json`, `serialize_to_cpsa_json_string`, `write_cpsa_json_file` | — |
 | `src/code_generation/cpsa_scheme_emitter.py` | CPSA Scheme S-Expression Emitter using cpsa4json. | `CPSAJsonCompilationError` | `emit_cpsa_scheme` | — |
+| `src/document_ingestion/__init__.py` | Document Ingestion package for Stage 1 RFC filtering, TOC pa | — | — | — |
 | `src/document_ingestion/handshake_section_router.py` | Handshake Section Router for Navigating RFC Table of Content | `SectionRoutingDecision` | `route_handshake_sections`, `_heuristic_section_router` | — |
 | `src/document_ingestion/protocol_applicability_gate.py` | Protocol Applicability Gate (Tier 1 Gatekeeper). | `ProtocolApplicabilityReport` | `evaluate_protocol_applicability` | — |
 | `src/document_ingestion/rfc_header_filter.py` | RFC Header and Frontmatter Metadata Filter (Tier 0 Filter). | `HeaderFilterResult` | `filter_rfc_header` | — |
 | `src/document_ingestion/rfc_toc_parser.py` | RFC Table of Contents (TOC) Parser. | `TOCSectionEntry` | `parse_table_of_contents` | — |
 | `src/document_ingestion/verbatim_section_slicer.py` | Verbatim RFC Section Boundary Slicer. | — | `_is_rfc_page_break`, `_find_section_start`, `slice_verbatim_sections` | — |
+| `src/intermediate_representation/__init__.py` | Intermediate Representation (IR) package for MITRE CPSA 4.4. | — | — | — |
 | `src/intermediate_representation/algebraic_sorts.py` | Order-Sorted Message Algebra Sort Definitions for MITRE CPSA | `CPSASortEnum` | — | — |
-| `src/intermediate_representation/cpsa_grammar.py` | MITRE CPSA 4.4.9 Formal Grammar, Keywords, and Arity Specifi | — | `desugar_term_tree`, `validate_cpsa_term_syntax` | — |
-| `src/intermediate_representation/protocol_syntax_tree.py` | — | `CPSAVariableDeclaration`, `CPSATraceEvent`, `CPSAProtocolRole`, `CPSAStrandInstance`, `CPSAPreskeleton`, `CPSAProtocolSpecification` | `_validate_cpsa_term`, `sanitize_cpsa_symbol`, `normalize_cpsa_term` | — |
+| `src/intermediate_representation/cpsa_grammar.py` | MITRE CPSA 4.4.9 Formal Grammar, Scoped Keywords, and Arity  | — | `desugar_term_tree`, `validate_cpsa_term_syntax` | — |
+| `src/intermediate_representation/protocol_syntax_tree.py` | Strongly-Typed Intermediate Representation (AST) for MITRE C | `CPSAVariableDeclaration`, `CPSATraceEvent`, `CPSAProtocolRole`, `CPSAStrandInstance`, `CPSAPreskeleton`, `CPSAProtocolSpecification` | `_validate_cpsa_term`, `sanitize_cpsa_symbol`, `extract_term_tokens`, `normalize_cpsa_term`, `_validate_no_mesg_encryption_key`, `_is_valid_roletran_input_term` | — |
 | `src/logging_config.py` | Comprehensive Structured Logging Subsystem for RFC-LLM Pipel | `PipelineConsoleFormatter`, `PipelineMetricsCSVLogger` | `configure_pipeline_logging`, `get_pipeline_logger` | — |
-| `src/main_pipeline_orchestrator.py` | Main Pipeline Orchestrator for RFC-to-CPSA Synthesis. | `PipelineExecutionSummary` | `run_rfc_translation_pipeline` | — |
+| `src/main_pipeline_orchestrator.py` | Main Pipeline Orchestrator for RFC-to-CPSA Synthesis. | `PipelineExecutionSummary` | `_extract_rfc_abstract`, `_run_roletran_self_healing_loop`, `_run_mitre_solver_self_healing_loop`, `run_rfc_translation_pipeline` | — |
 | `src/pipeline.py` | Command-line interface for RFC-LLM synthesis pipeline suppor | — | `natural_rfc_sort_key`, `get_completed_rfc_ids`, `main` | `--output-dir`, `-o`, `--model`, `-m`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, `--no-visualize`, `--visualize` … |
 | `src/pipeline_events.py` | Event bus and streaming state dispatcher for live pipeline v | `PipelineEvent`, `PipelineEventBus` | — | — |
-| `src/semantic_extraction/constrained_protocol_extractor.py` | Constrained Protocol Semantic Extractor with RAG Grounding. | — | `_get_retriever`, `extract_protocol_specification`, `ensure_three_point_of_view_skeletons` | — |
+| `src/prompt_loader.py` | Dynamic Markdown Prompt Loader for RFC-LLM (.prompts/ direct | — | `load_prompt`, `build_schema_system_prompt` | — |
+| `src/rag_retriever_client.py` | Shared RAG Retriever Client for MITRE CPSA 4.4.9 Reference G | — | `get_cpsa_manual_retriever`, `retrieve_cpsa_manual_guidance` | — |
+| `src/semantic_extraction/__init__.py` | Semantic Extraction package for Stage 2 constrained CPSA pro | — | — | — |
+| `src/semantic_extraction/constrained_protocol_extractor.py` | Constrained Protocol Semantic Extractor with RAG Grounding. | — | `extract_protocol_specification`, `ensure_three_point_of_view_skeletons` | — |
 | `src/system_config.py` | — | `SystemEnvironmentConfig` | — | — |
-| `src/verification_engine/compiler_diagnostic_repair.py` | Compiler Diagnostic Repair Engine with RAG-Guided Self-Heali | — | `_get_retriever`, `fallback_sanitize_diagnostic_query`, `formulate_rag_diagnostic_query`, `clean_rag_diagnostic_query`, `repair_protocol_specification` | — |
+| `src/verification_engine/__init__.py` | Verification Engine package for Stages 5 & 6 roletran execut | — | — | — |
+| `src/verification_engine/compiler_diagnostic_repair.py` | Compiler Diagnostic Repair Engine with RAG-Guided Self-Heali | — | `fallback_sanitize_diagnostic_query`, `formulate_rag_diagnostic_query`, `clean_rag_diagnostic_query`, `repair_protocol_specification` | — |
 | `src/verification_engine/mitre_build_orchestrator.py` | MITRE Build Orchestrator for CPSA Verification and Visualiza | `CPSABuildArtifacts`, `CPSABuildError` | `_ensure_cpsa_makefile`, `_count_shapes_in_file`, `execute_mitre_make_build` | — |
 | `src/verification_engine/roletran_executability_gate.py` | MITRE CPSA Roletran Pre-Flight Executability Gate (<15 ms). | `RoletranVerificationResult` | `verify_role_executability` | — |
 | `src/visualizer/__init__.py` | RFC-LLM Live Visualization and Interactive Dashboard Module. | — | — | — |
@@ -62,6 +83,7 @@
 | `refrences/scripts/04_build_embeddings.py` | 04_build_embeddings.py | — | `prepare_chunk_text`, `compute_embedding_batch`, `build_embeddings`, `main` | `--chunks`, `--out-matrix`, `--out-meta`, `--provider`, `-p`, `--model`, `-m`, `--batch-size`, `-b`, `--api-key` … |
 | `refrences/scripts/05_enrich_doc_chunks.py` | Contextual Enrichment Engine for CPSA Technical Documentatio | — | `extract_ast_features`, `build_ast_summary`, `generate_header_with_retry`, `main` | — |
 | `tests/test_code_generation_and_verification.py` | Unit and Integration Tests for Code Generation and Verificat | — | `valid_unilateral_spec`, `unexecutable_spec`, `test_scheme_emitter_generates_valid_scm`, `test_roletran_gate_accepts_valid_protocol`, `test_roletran_gate_rejects_unexecutable_protocol`, `test_mitre_build_orchestrator_compiles_artifacts` … | — |
+| `tests/test_cpsa_scoping_and_prompts.py` | Unit Tests for MITRE CPSA 4.4.9 Keyword/Sort Scoping and Ext | — | `test_externalized_prompts_load_from_disk_and_fallback`, `test_logic_only_sorts_forbidden_in_role_and_skeleton_vars`, `test_diffie_hellman_sorts_forbidden_under_basic_algebra`, `test_structural_keywords_forbidden_inside_message_terms`, `test_role_and_skeleton_keyword_scoping_separation`, `test_equation_10_1_forbids_mesg_sort_as_encryption_key` … | — |
 | `tests/test_document_ingestion.py` | Unit & Integration Tests for Document Ingestion Subsystem (S | — | `tls_rfc_text`, `kerberos_rfc_text`, `mib_rfc_text`, `test_header_filter_accepts_tls`, `test_header_filter_accepts_kerberos`, `test_header_filter_rejects_mib` … | — |
 | `tests/test_main_pipeline_orchestrator.py` | Integration tests for Main Pipeline Orchestrator. | — | `mock_valid_spec`, `test_pipeline_rejects_ineligible_rfc`, `test_pipeline_e2e_successful_synthesis_and_build` | — |
 | `tests/test_visualizer_and_events.py` | Unit and integration tests for Pipeline Event Bus, Cycle Det | — | `sample_spec`, `test_pipeline_event_bus_emission_and_subscription`, `test_compiler_repair_cycle_detection_triggers_warning_and_jitter`, `test_visualizer_server_endpoints` | — |
@@ -70,7 +92,7 @@
 
 ## Excluded & Heavy Assets Inventory (Tier 4)
 
-47 assets (20.7 MB total) were **excluded from raw text dumping** and summarized below with metadata and lightweight schema previews, so the downstream LLM is aware of every dataset, embedding matrix, manual, figure and log in the repository without ingesting their bulk.
+44 assets (20.2 MB total) were **excluded from raw text dumping** and summarized below with metadata and lightweight schema previews, so the downstream LLM is aware of every dataset, embedding matrix, manual, figure and log in the repository without ingesting their bulk.
 
 ### `logs/pipeline_runs.csv`
 
@@ -84,7 +106,7 @@
 
 ### `refrences/chunks/all_references_clean.md`
 
-*1322.5 KB · 29183 lines · excluded because: exceeds max_file_size_kb (1322.5 KB > 100 KB)*
+*1322.5 KB · 29183 lines · excluded because: exceeds max_file_size_kb (1322.5 KB > 600 KB)*
 
 - Plain-text document: 29183 lines.
 - First line: `# Complete CPSA Reference Corpus (Clean Markdown)`
@@ -107,7 +129,7 @@
 
 ### `refrences/chunks/code_examples.jsonl`
 
-*593.9 KB · 148 lines · excluded because: exceeds max_file_size_kb (593.9 KB > 100 KB)*
+*593.9 KB · 148 lines · excluded because: declared Tier 4 summarized asset*
 
 - JSONL stream: 148 records.
 - Record keys: `chunk_id, chunk_type, source_file, breadcrumb, title, word_count, scenario_summary, tags, formal_metadata, text`
@@ -120,7 +142,7 @@
 
 ### `refrences/chunks/embeddings_meta.json`
 
-*347.5 KB · 11417 lines · excluded because: exceeds max_file_size_kb (347.5 KB > 100 KB)*
+*347.5 KB · 11417 lines · excluded because: declared Tier 4 summarized asset*
 
 - Top-level object with 6 keys: `model, provider, dimensions, total_chunks, created_at, chunks`
   - `model`: ollama/nomic-embed-text
@@ -132,90 +154,21 @@
 
 ### `refrences/chunks/manual_chunks.jsonl`
 
-*2436.8 KB · 1426 lines · excluded because: exceeds max_file_size_kb (2436.8 KB > 100 KB)*
+*2436.8 KB · 1426 lines · excluded because: exceeds max_file_size_kb (2436.8 KB > 600 KB)*
 
 - JSONL stream: 1426 records.
 - Record keys: `chunk_id, chunk_type, source_file, breadcrumb, title, word_count, text, context_header, ast_features`
 
-### `refrences/cpsa-protocol-modeling/manuals/CPSA4_User_Manual.md`
-
-*239.5 KB · 4762 lines · excluded because: exceeds max_file_size_kb (239.5 KB > 100 KB)*
-
-- Plain-text document: 4762 lines.
-- First line: `# CPSA 4 Official User Manual`
-- Outline (first headings):
-  - # CPSA 4 Official User Manual
-  - ## 1 Introduction                                                                         
-  - ## 2 Setup and Installation                                                               
-  - ## 3 Basic Protocol Modeling and Analysis with CPSA                                       
-  - ## 4 Algebra Features of CPSA                                                             
-  - ## 5 The CPSA Search Algorithm                                                            
-  - ## 7 Logical Security Goals and Rules                                                     
-  - ## 8 Channels and State                                                                   
-  - ## 9 Troubleshooting                                                                      
-  - ## 10 CPSA Program                                                                        
-  - ## 11 CPSA Tools                                                                          
-  - ## Chapter 1
-  - ### 1.1    Recommended reading
-  - ### 1.2    Tool components
-  - ## Chapter 2
-
-### `refrences/cpsa-protocol-modeling/manuals/CPSA_Comprehensive_Guide.md`
-
-*186.0 KB · 3776 lines · excluded because: exceeds max_file_size_kb (186.0 KB > 100 KB)*
-
-- Plain-text document: 3776 lines.
-- First line: `# Comprehensive Guide to CPSA Modeling`
-- Outline (first headings):
-  - # Comprehensive Guide to CPSA Modeling
-  - ## 1 Introduction                                                                 3
-  - ## 2 Preliminaries                                                                5
-  - ## 3 Upward and Downward Closure                                             7
-  - ## 4 Critical Path                                                               14
-  - ## 5 Fragments                                                                   18
-  - ## 6 Protocols                                                               21
-  - ## 7 Skeletons                                                                   24
-  - ## 8 Operators                                                                   34
-  - ## 9 Suites and the Setwise Reduction                                            41
-  - ## 10 Suite Completeness                                                    48
-  - ## 11 Skeletonization                                                             55
-  - ## 12 Pre-Cohort Completeness                                                     63
-  - ## 13 Enumerability                                                               77
-  - ## 1     Introduction
-
-### `refrences/cpsa-protocol-modeling/manuals/CPSA_Specification.md`
-
-*101.2 KB · 2243 lines · excluded because: exceeds max_file_size_kb (101.2 KB > 100 KB)*
-
-- Plain-text document: 2243 lines.
-- First line: `# CPSA Protocol Specification Language`
-- Outline (first headings):
-  - # CPSA Protocol Specification Language
-  - ## 1 Introduction                                                                1
-  - ## 2 Order-Sorted Message Algebras                                               3
-  - ## 3 Strand Spaces and Bundles                                                   9
-  - ## 4 Adversary Model                                                            13
-  - ## 5 Skeletons                                                                  15
-  - ## 6 Algorithms as Reduction Systems                                            24
-  - ## 7 Primitive Preskeleton Operators                                            26
-  - ## 8 Reductions on Preskeletons                                            28
-  - ## 9 Penetrator Derivable                                                   31
-  - ## 10 Carried Only Within                                                       36
-  - ## 11 Solving Authentication Tests                                            39
-  - ## 12 Collapsing and Preconditioning                                         45
-  - ## 13 Generalization                                                         46
-  - ## 14 Skeleton Reduction System                                              49
-
 ### `refrences/internet/guides_markdown/cpsa4manual.txt`
 
-*240.0 KB · 4511 lines · excluded because: exceeds max_file_size_kb (240.0 KB > 100 KB)*
+*240.0 KB · 4511 lines · excluded because: declared Tier 4 summarized asset*
 
 - Plain-text document: 4511 lines.
 - First line: `The Cryptographic Protocol Shapes Analyzer:`
 
 ### `refrences/internet/guides_markdown/cpsaspec.txt`
 
-*103.8 KB · 2167 lines · excluded because: exceeds max_file_size_kb (103.8 KB > 100 KB)*
+*103.8 KB · 2167 lines · excluded because: declared Tier 4 summarized asset*
 
 - Plain-text document: 2167 lines.
 - First line: `The CPSA Specification:`
@@ -333,14 +286,14 @@
 
 ### `refrences/manual/cpsa4manual.txt`
 
-*218.3 KB · 4795 lines · excluded because: exceeds max_file_size_kb (218.3 KB > 100 KB)*
+*218.3 KB · 4795 lines · excluded because: declared Tier 4 summarized asset*
 
 - Plain-text document: 4795 lines.
 - First line: `The Cryptographic Protocol Shapes Analyzer:`
 
 ### `refrences/manual/cpsa4manual_clean.md`
 
-*256.7 KB · 5219 lines · excluded because: exceeds max_file_size_kb (256.7 KB > 100 KB)*
+*256.7 KB · 5219 lines · excluded because: declared Tier 4 summarized asset*
 
 - Plain-text document: 5219 lines.
 - First line: `# CPSA 4 Manual (Extracted Reference)`
@@ -383,7 +336,7 @@
 
 ### `refrences/reports/embedding_clusters.html`
 
-*1605.3 KB · 733 lines · excluded because: exceeds max_file_size_kb (1605.3 KB > 100 KB)*
+*1605.3 KB · 733 lines · excluded because: exceeds max_file_size_kb (1605.3 KB > 600 KB)*
 
 - Rendered/generated HTML artifact: 733 lines.
 - <title>: CPSA Corpus Embedding Topology & Real-Time RAG Search
@@ -491,7 +444,7 @@
 
 ### `.gitignore`
 
-*sha256:`7e8cb1f31e97` · 251 lines · 5.2 KB · lang:`text`*
+*sha256:`7e8cb1f31e97` · 251 lines · 5.2 KB (~1,333 tokens) · lang:`text`*
 
 ```text
 # Byte-compiled / optimized / DLL files
@@ -751,7 +704,7 @@ refrences/reports/*200*.jsonl
 
 ### `LICENSE`
 
-*sha256:`a1896ff9a996` · 21 lines · 1.0 KB · lang:`text`*
+*sha256:`a1896ff9a996` · 21 lines · 1.0 KB (~267 tokens) · lang:`text`*
 
 ```text
 MIT License
@@ -781,7 +734,7 @@ SOFTWARE.
 
 ### `README.md`
 
-*sha256:`e42c1b3fbe10` · 2 lines · 0.0 KB · lang:`markdown`*
+*sha256:`e42c1b3fbe10` · 2 lines · 0.0 KB (~12 tokens) · lang:`markdown`*
 
 ```markdown
 # RFC-LLM
@@ -792,7 +745,7 @@ Create CPSA code from RFC's using LLMs
 
 ### `docs/ARCHITECTURE.md`
 
-*sha256:`ef433de1f658` · 151 lines · 8.2 KB · lang:`markdown`*
+*sha256:`20006661f94b` · 152 lines · 8.5 KB (~2,134 tokens) · lang:`markdown`*
 
 ````markdown
 # RFC-LLM Pipeline Architecture & Lifecycle
@@ -903,13 +856,14 @@ This system decomposes translation into seven discrete compiler stages:
   - **Diffie-Hellman Algebra**: `cpsa4roletran` does not support Diffie-Hellman exponentiation (`exp`, `gen`, `mul`). The gate branches to `~/.cabal/bin/cpsa4 -l 1 <stem>.scm`, validating role well-formedness, variable scopes, and sort rules directly.
 
 ### Stage 5: Self-Healing Diagnostic Repair
-- **File**: `src/verification_engine/compiler_diagnostic_repair.py`
+- **Files**: `src/verification_engine/compiler_diagnostic_repair.py`, `src/rag_retriever_client.py`, `src/prompt_loader.py`
+- **Prompts**: `.prompts/05_rag_query_formulation.md`, `.prompts/06_compiler_repair.md`
 - **Trigger**: Any failure in Stage 4 (roletran) or Stage 6 (CPSA build).
 - **Mechanism**:
-  1. **Cycle Detection**: MD5 hashes candidate ASTs. If an identical AST was previously generated, flags an oscillation and boosts temperature to 0.4.
-  2. **RAG Query Formulation**: `LLM_QUERY_MODEL` (Gemini Flash Lite) abstracts concrete variable names from the error string into formal CPSA manual concepts.
-  3. **Corpus Search**: Queries `manual_chunks.jsonl` using hybrid BM25 + dense retrieval for authoritative rule snippets.
-  4. **AST Mutation**: `LLM_REPAIR_MODEL` (DeepSeek-Chat) modifies the AST to fix the defect.
+  1. **Cycle Detection**: SHA-256 hashes candidate ASTs. If an identical AST was previously generated, flags an oscillation and boosts temperature to 0.4.
+  2. **RAG Query Formulation**: `LLM_QUERY_MODEL` (`nous/deepseek/deepseek-chat`) abstracts concrete variable names from the error string into formal CPSA manual concepts.
+  3. **Corpus Search**: Queries `manual_chunks.jsonl` via `src/rag_retriever_client.py` using hybrid BM25 + dense RRF retrieval for authoritative rule snippets.
+  4. **AST Mutation**: `LLM_REPAIR_MODEL` (`nous/anthropic/claude-haiku-5.5`) modifies the AST to fix the defect.
   5. **Loop**: Re-emits to Stage 3 and re-tests. Allowed up to 50 attempts before halting.
 
 ### Stage 6 & 7: Formal Verification & Shape Derivation
@@ -952,7 +906,7 @@ This system decomposes translation into seven discrete compiler stages:
 
 ### `docs/CPSA_KEYWORD_REFERENCE.md`
 
-*sha256:`9b1415adf58d` · 362 lines · 14.9 KB · lang:`markdown`*
+*sha256:`0dade393cca0` · 362 lines · 15.3 KB (~3,918 tokens) · lang:`markdown`*
 
 ````markdown
 # MITRE CPSA 4.4.9 Complete Keyword & Grammar Specification
@@ -1215,12 +1169,12 @@ Every entry defines:
 - **Semantics**: Reception of `term` from optional channel `ch`. Must be destructible.
 
 ### `load`
-- **Grammar**: `(load ch? locn term)`
-- **Semantics**: Stateful read of `term` from memory location `locn`.
+- **Grammar**: `(load locn? term)`
+- **Semantics**: Stateful read of `term` from optional memory location `locn` (sort `locn`). Never takes both a `chan` and a `locn`.
 
 ### `stor`
-- **Grammar**: `(stor ch? locn term)`
-- **Semantics**: Stateful write of `term` to memory location `locn`.
+- **Grammar**: `(stor locn? term)`
+- **Semantics**: Stateful write of `term` to optional memory location `locn` (sort `locn`). Never takes both a `chan` and a `locn`.
 
 ### `cheq`
 - **Grammar**: `(cheq id term)`
@@ -1233,7 +1187,7 @@ Every entry defines:
 ### `enc`
 - **Grammar**: `(enc term+ term)`
 - **Arity**: $\ge 2$.
-- **Semantics**: Encryption of 1 or more payload terms under a key. **The key is always the LAST argument**.
+- **Semantics**: Encryption of 1 or more payload terms under a key. **The key is always the LAST argument**. Per Equation 10.1, the encryption key cannot be a variable declared of sort `mesg`.
 - **Scheme**: `(enc m1 m2 k)` $\equiv \{| m_1, m_2 |\}_k$.
 - **Pydantic**: `["enc", "m1", "m2", "k"]`.
 
@@ -1250,15 +1204,15 @@ Every entry defines:
 - **Scheme**: `(cat m1 m2)` $\equiv (m_1, m_2)$.
 
 ### `pubk`
-- **Grammar**: `(pubk name [tag])`
+- **Grammar**: `(pubk name) | (pubk tag_string name)`
 - **Arity**: 1 or 2.
-- **Semantics**: Public key corresponding to principal `name` (optionally scoped by string `tag`).
-- **Compiler Diagnostic**: `Expecting a name` if applied to a key variable rather than a principal identifier.
+- **Semantics**: Public key corresponding to principal `name` (optionally scoped by a leading string `tag_string` per Table 10.3).
+- **Compiler Diagnostic**: `Expecting a name` if applied to a key variable rather than a principal identifier, or `Malformed pubk` if the 2-argument order `(pubk tag_string name)` is reversed.
 
 ### `privk`
-- **Grammar**: `(privk name [tag])`
+- **Grammar**: `(privk name) | (privk tag_string name)`
 - **Arity**: 1 or 2.
-- **Semantics**: Private key corresponding to principal `name`.
+- **Semantics**: Private key corresponding to principal `name` (optionally scoped by a leading string `tag_string` per Table 10.3).
 
 ### `invk`
 - **Grammar**: `(invk akey_var)`
@@ -1323,7 +1277,7 @@ Every entry defines:
 
 ### `docs/INTERMEDIATE_REPRESENTATION.md`
 
-*sha256:`396f4853787e` · 186 lines · 8.6 KB · lang:`markdown`*
+*sha256:`1cd7beec26d3` · 193 lines · 9.8 KB (~2,508 tokens) · lang:`markdown`*
 
 ````markdown
 # Formal Grammar & Intermediate Representation (IR)
@@ -1462,9 +1416,16 @@ class CPSAProtocolRole(BaseModel):
     authenticated_channels: List[str]
 ```
 
-**Roletran Serialization Invariant**:
-- In `to_cpsa_json()`, variables of sort `rndx` or `expt` found in `unique_originating` are automatically migrated to `unique_generated` (`uniq-gen`).
-- Every variable in `inputs`, `outputs`, and `unique_originating` is checked against `trace_tokens`. If a variable does not appear in the trace, it is dropped to prevent `cpsa4roletran` compilation errors.
+**Roletran & Table 10.6 Scoping Invariants**:
+- **Positional Keyword Scoping**: Preskeleton-only keywords (`strands`, `listeners`, `defstrand`, `defstrandmax`, `deflistener`, `precedes`, `leadsto`, `goal`, `goals`) are strictly rejected inside `CPSAProtocolRole`, and role-only keywords (`trace`, `inputs`, `outputs`, `params`, `returns`, `defrole`, `assume`) are strictly rejected inside `CPSAPreskeleton`.
+- **Sort Scoping**: First-order logic sorts (`strd`, `indx`, `fact`, Table 7.1) are forbidden in role/skeleton `(vars ...)` declarations (Tables 10.2 & 10.4). Under `basic` algebra, Diffie-Hellman sorts (`rndx`, `expt`, `base`) and operators (`exp`, `gen`, `mul`, `rec`, `one`, `bltk`) are strictly forbidden.
+- **Equation 10.1 Enforcement**: Variables declared with top sort `mesg` are forbidden as the encryption key (last argument) in `["enc", ..., key]`.
+- **Roletran Serialization Invariants (`to_cpsa_json()`)**:
+  1. Variables of sort `rndx` or `expt` found in `unique_originating` are automatically migrated to `unique_generated` (`uniq-gen`).
+  2. All channel variables used in `send`/`recv` events are automatically declared in `(vars ...)` with sort `chan` and included in `inputs`.
+  3. Uniquely originating/generated values (`uniq-orig` / `uniq-gen`) and compound non-key terms (`cat`, `enc`, `hash`) are stripped from `inputs`.
+  4. Input parameters (`inputs`) are stripped from `outputs` so no input is repeated as an output (`cpsa4roletran.md`).
+  5. Every variable in `inputs`, `outputs`, and `unique_originating` is verified against `trace_tokens`.
 
 ### 4.4 `CPSAPreskeleton`
 Defines an execution scenario / point of view.
@@ -1518,7 +1479,7 @@ RFC-LLM enforces `ensure_three_point_of_view_skeletons()`:
 
 ### `docs/MASTER_BLUEPRINT.md`
 
-*sha256:`9ab736f5de9f` · 279 lines · 16.5 KB · lang:`markdown`*
+*sha256:`9ab736f5de9f` · 279 lines · 16.5 KB (~4,236 tokens) · lang:`markdown`*
 
 ````markdown
 # RFC-LLM Master Blueprint: Complete Engineering Specification & Rebuild Guide
@@ -1806,7 +1767,7 @@ To rebuild the system in a fresh environment:
 
 ### `docs/QUICKSTART_AND_OPERATIONS.md`
 
-*sha256:`1d33d431aaab` · 142 lines · 6.7 KB · lang:`markdown`*
+*sha256:`1d33d431aaab` · 142 lines · 6.7 KB (~1,708 tokens) · lang:`markdown`*
 
 ````markdown
 # Quickstart & Operations Runbook
@@ -1957,7 +1918,7 @@ Outputs MRR, Recall@1, Recall@5, and Mean NDCG across BM25, Dense, Hybrid RRF-60
 
 ### `docs/README.md`
 
-*sha256:`d4e1b52af164` · 77 lines · 4.4 KB · lang:`markdown`*
+*sha256:`d4e1b52af164` · 77 lines · 4.4 KB (~1,130 tokens) · lang:`markdown`*
 
 ````markdown
 # RFC-LLM Technical Documentation
@@ -2043,7 +2004,7 @@ flowchart TD
 
 ### `docs/TIERED_MODEL_ROUTING.md`
 
-*sha256:`379f7f91d08a` · 116 lines · 6.2 KB · lang:`markdown`*
+*sha256:`ee8e879cf265` · 131 lines · 7.3 KB (~1,755 tokens) · lang:`markdown`*
 
 ````markdown
 # Tiered Model Routing & Configuration
@@ -2066,25 +2027,28 @@ RFC-LLM decouples model invocation across four specialized task tiers:
       ┌───────────────────────┬──────────────┴───────────────┬───────────────────────┐
       ▼                       ▼                              ▼                       ▼
  [Tier 1: Query]     [Tier 2: Router/Gate]        [Tier 3: Extraction]        [Tier 4: Repair]
-Gemini Flash Lite        DeepSeek-Chat              Claude Haiku 5.5            DeepSeek-Chat
- (Fast / Free)        (High Context / Low Cost)    (Strict Formal AST)        (Iterative Debug)
+  DeepSeek-Chat           DeepSeek-Chat              Claude Haiku 5.5          Claude Haiku 5.5
+(Abstract RAG Query) (High Context / Low Cost)    (Strict Formal AST)        (Iterative Repair)
 ```
 
 ---
 
-## 2. Model Task Assignments
+## 2. Model Task Assignments & Customizable Prompts (`.prompts/`)
+
+All system prompts for these four tiers are externalized in `.prompts/` and loaded dynamically at runtime via `src/prompt_loader.py`.
 
 ### 2.1 RAG Diagnostic Query Formulation (`LLM_QUERY_MODEL`)
-- **Active Model**: `gemini/gemini-3.5-flash-lite`
+- **Active Model**: `nous/deepseek/deepseek-chat`
+- **Prompt Template**: `.prompts/05_rag_query_formulation.md`
 - **CLI Flag**: `--query-model`
 - **Task**: Takes raw compiler error diagnostics from `cpsa4roletran` or `cpsa4` (e.g. `"Roletran REJECT: :6:6: Received term cannot be fully destructured"`) and abstracts them into a 3–6 word conceptual search query for the MITRE CPSA manual (e.g. `"roletran trace reception term destructuring"`).
-- **Why Gemini Flash Lite**:
-  - Near-zero latency (<400ms).
-  - Free tier quota via Google AI Studio.
-  - Excellent at conceptual abstraction without leaking concrete protocol identifiers (e.g. `client_random`, `edhoc.scm`).
+- **Why DeepSeek-Chat**:
+  - Fast, low-cost inference via Nous Portal.
+  - Strong conceptual abstraction without leaking concrete protocol identifiers (e.g. `client_random`, `edhoc.scm`).
 
 ### 2.2 TOC Router & Document Gatekeeper (`LLM_ROUTER_MODEL`)
 - **Active Model**: `nous/deepseek/deepseek-chat`
+- **Prompt Templates**: `.prompts/01_applicability_gate.md`, `.prompts/02_section_router.md`
 - **CLI Flag**: `--router-model`
 - **Tasks**:
   1. `protocol_applicability_gate.py`: Classifies whether an RFC describes an interactive security protocol.
@@ -2096,20 +2060,20 @@ Gemini Flash Lite        DeepSeek-Chat              Claude Haiku 5.5            
 
 ### 2.3 Protocol Semantic Extraction (`LLM_EXTRACTION_MODEL`)
 - **Active Model**: `nous/anthropic/claude-haiku-5.5`
+- **Prompt Templates**: `.prompts/03_protocol_extraction.md`, `.prompts/04_schema_self_correction.md`
 - **CLI Flag**: `--extraction-model`
 - **Task**: Analyzes verbatim RFC section slices (typically 200–600 lines) and constructs the complete `CPSAProtocolSpecification` AST (variables, traces, channels, 3 preskeletons).
 - **Why Claude Haiku 5.5**:
-  - Released October 7, 2026 with adaptive thinking and effort controls.
   - Superior adherence to strict negative constraints (never outputting `aenc`, never nesting dicts in message terms).
   - Eliminates syntax errors during first-pass extraction.
 
 ### 2.4 Self-Healing Compiler Repair (`LLM_REPAIR_MODEL`)
-- **Active Model**: `nous/deepseek/deepseek-chat`
+- **Active Model**: `nous/anthropic/claude-haiku-5.5`
+- **Prompt Template**: `.prompts/06_compiler_repair.md`
 - **CLI Flag**: `--repair-model`
 - **Task**: Takes a failing AST, the compiler diagnostic, and retrieved MITRE manual passages, then surgically mutates the AST to fix constructibility or scope errors.
-- **Why DeepSeek-Chat**:
-  - Outstanding code debugging performance.
-  - Multi-pass self-healing repairs can trigger 5 to 15 LLM calls per protocol; using DeepSeek keeps repair costs negligible while maintaining high convergence rates.
+- **Why Claude Haiku 5.5**:
+  - High formal methods reasoning precision and strict adherence to Pydantic AST and CPSA 4.4.9 scoping constraints during multi-pass compiler repair.
 
 ---
 
@@ -2136,14 +2100,14 @@ if model_name.startswith("nous/") or model_name.startswith("nousresearch/"):
 NOUS_API_KEY=sk-nous-...
 NOUS_API_BASE=https://inference-api.nousresearch.com/v1
 
-# Google Gemini Credentials (Free Tier)
+# Google Gemini Credentials (Optional Fallback)
 GEMINI_API_KEY=AIzaSy...
 
 # Decoupled Model Routing
-LLM_QUERY_MODEL=gemini/gemini-3.5-flash-lite
+LLM_QUERY_MODEL=nous/deepseek/deepseek-chat
 LLM_ROUTER_MODEL=nous/deepseek/deepseek-chat
 LLM_EXTRACTION_MODEL=nous/anthropic/claude-haiku-5.5
-LLM_REPAIR_MODEL=nous/deepseek/deepseek-chat
+LLM_REPAIR_MODEL=nous/anthropic/claude-haiku-5.5
 
 # Subprocess & HTTP Timeouts (Seconds)
 SUBPROCESS_TIMEOUT_SECONDS=180
@@ -2152,9 +2116,20 @@ ROLETRAN_TIMEOUT_SECONDS=30
 
 ---
 
-## 4. Fallback Hierarchy
+## 4. Local Workstation Model Endpoints (`100.77.124.9`)
 
-In `src/system_config.py`, `SystemEnvironmentConfig` validates task model assignments using a `@model_validator`:
+When running local open-weight models instead of cloud APIs, inference requests route over Tailscale to the workstation (`100.77.124.9`):
+
+| Runtime Service | Base Endpoint | OpenAI-Compatible Endpoint | Usage in RFC-LLM |
+| :--- | :--- | :--- | :--- |
+| **Desktop Ollama (Standard GPU)** | `http://100.77.124.9:11434` | `http://100.77.124.9:11434/v1` | `OLLAMA_API_BASE=http://100.77.124.9:11434` with `ollama/<model>` slugs |
+| **Strata (Strix Halo HIP)** | `http://100.77.124.9:11435` | `http://100.77.124.9:11435/v1` | OpenAI-compatible proxy (`openai/<model>` via `http://100.77.124.9:11435/v1`) |
+
+---
+
+## 5. Fallback Hierarchy
+
+In [`src/system_config.py`](file:///home/mario/Work/RFC-LLM/src/system_config.py), `SystemEnvironmentConfig` validates task model assignments using a `@model_validator`:
 1. If `LLM_EXTRACTION_MODEL` is blank, falls back to `MODEL_NAME` (global default).
 2. If `LLM_ROUTER_MODEL` is blank, falls back to `MODEL_NAME`.
 3. If `LLM_REPAIR_MODEL` is blank, falls back to `MODEL_NAME`.
@@ -2168,7 +2143,7 @@ This guarantees that leaving any specific task env var empty does not crash the 
 
 ### `docs/VERIFICATION_AND_SELF_HEALING.md`
 
-*sha256:`3e8560f56c54` · 122 lines · 7.5 KB · lang:`markdown`*
+*sha256:`3e8560f56c54` · 122 lines · 7.5 KB (~1,909 tokens) · lang:`markdown`*
 
 ````markdown
 # Verification Engine & Closed-Loop Self-Healing
@@ -2299,7 +2274,7 @@ Evaluates BM25, Dense, Hybrid RRF-60, Hybrid RRF-20, and Two-Stage Rerank. Hybri
 
 ### `logs/.gitignore`
 
-*sha256:`46b6b3b94a18` · 2 lines · 0.1 KB · lang:`text`*
+*sha256:`46b6b3b94a18` · 2 lines · 0.1 KB (~16 tokens) · lang:`text`*
 
 ```text
 # Ignore continuous log streams, keep tabular CSV results
@@ -2310,7 +2285,7 @@ Evaluates BM25, Dense, Hybrid RRF-60, Hybrid RRF-20, and Two-Stage Rerank. Hybri
 
 ### `pytest.ini`
 
-*sha256:`b160d82f7811` · 3 lines · 0.0 KB · lang:`ini`*
+*sha256:`b160d82f7811` · 3 lines · 0.0 KB (~10 tokens) · lang:`ini`*
 
 ```ini
 [pytest]
@@ -2322,7 +2297,7 @@ testpaths = tests
 
 ### `requirements.txt`
 
-*sha256:`bba9594e006d` · 12 lines · 0.2 KB · lang:`text`*
+*sha256:`bba9594e006d` · 12 lines · 0.2 KB (~56 tokens) · lang:`text`*
 
 ```text
 # Core Dependencies for CPSA / RFC-LLM Pipeline

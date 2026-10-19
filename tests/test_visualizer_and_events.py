@@ -6,16 +6,16 @@ from pathlib import Path
 from unittest.mock import MagicMock
 from aiohttp import web
 
-from rfc_llm.pipeline_events import GLOBAL_EVENT_BUS, PipelineEvent
-from rfc_llm.intermediate_representation.protocol_syntax_tree import (
+from src.pipeline_events import GLOBAL_EVENT_BUS, PipelineEvent
+from src.intermediate_representation.protocol_syntax_tree import (
     CPSAVariableDeclaration,
     CPSATraceEvent,
     CPSAProtocolRole,
     CPSAProtocolSpecification,
 )
-from rfc_llm.intermediate_representation.algebraic_sorts import CPSASortEnum
-from rfc_llm.verification_engine.compiler_diagnostic_repair import repair_protocol_specification
-from rfc_llm.visualizer.server import VisualizerServer
+from src.intermediate_representation.algebraic_sorts import CPSASortEnum
+from src.verification_engine.compiler_diagnostic_repair import repair_protocol_specification
+from src.visualizer.server import VisualizerServer
 
 
 @pytest.fixture

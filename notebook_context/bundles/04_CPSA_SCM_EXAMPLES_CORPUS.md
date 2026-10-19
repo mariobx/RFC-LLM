@@ -2,7 +2,7 @@
 
 > Tier 3 Reference Corpus — Complete collection of 148 official MITRE CPSA `.scm` protocol specifications, heralds, macros, defroles, and security goals used for few-shot RAG grounding and grammar verification.
 
-*Generated: 2026-10-14 16:18:38 UTC · Git: `main` @ `f572f106cef2` · Tier: Tier 3 — Domain Reference Code Corpus (.scm) · Files: 148*
+*Generated: 2026-10-19 21:48:59 UTC · Git: `main` @ `9d27f26fb814` · Tier: Tier 3 — Domain Reference Code Corpus (.scm) · Files: 148 · Estimated Tokens: ~88,246*
 
 ## Table of Contents
 
@@ -159,7 +159,7 @@
 
 ### `refrences/internet/examples_scm/DH_hack.scm`
 
-*sha256:`1dd27362fe4b` · 72 lines · 2.4 KB · lang:`scheme`*
+*sha256:`1dd27362fe4b` · 72 lines · 2.4 KB (~615 tokens) · lang:`scheme`*
 
 ```scheme
 ;; This file demonstrates a way to model DH keys in a limited way
@@ -240,7 +240,7 @@
 
 ### `refrences/internet/examples_scm/ab.scm`
 
-*sha256:`1e3d93f7a82d` · 26 lines · 0.6 KB · lang:`scheme`*
+*sha256:`1e3d93f7a82d` · 26 lines · 0.6 KB (~164 tokens) · lang:`scheme`*
 
 ```scheme
 ;;  Simple example of A-B cascading.
@@ -275,7 +275,7 @@
 
 ### `refrences/internet/examples_scm/abc.scm`
 
-*sha256:`67394bb26109` · 30 lines · 0.7 KB · lang:`scheme`*
+*sha256:`67394bb26109` · 30 lines · 0.7 KB (~190 tokens) · lang:`scheme`*
 
 ```scheme
 ;;  Simple example of A-B-C cascading.
@@ -314,7 +314,7 @@
 
 ### `refrences/internet/examples_scm/aik.scm`
 
-*sha256:`de3554177295` · 30 lines · 1.0 KB · lang:`scheme`*
+*sha256:`de3554177295` · 30 lines · 1.0 KB (~254 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Anonymous identity protocol from TCG")
@@ -353,7 +353,7 @@
 
 ### `refrences/internet/examples_scm/atomic-open-closed.scm`
 
-*sha256:`0aca95d4c358` · 416 lines · 10.4 KB · lang:`scheme`*
+*sha256:`0aca95d4c358` · 416 lines · 10.4 KB (~2,665 tokens) · lang:`scheme`*
 
 ```scheme
 (herald atomic-open-closed
@@ -778,7 +778,7 @@
 
 ### `refrences/internet/examples_scm/attest.scm`
 
-*sha256:`fc0ffff10b77` · 190 lines · 5.0 KB · lang:`scheme`*
+*sha256:`fc0ffff10b77` · 190 lines · 5.0 KB (~1,278 tokens) · lang:`scheme`*
 
 ```scheme
 (herald attest-door)
@@ -977,7 +977,7 @@
 
 ### `refrences/internet/examples_scm/auth-enc.scm`
 
-*sha256:`f2ddbb62150b` · 18 lines · 0.4 KB · lang:`scheme`*
+*sha256:`f2ddbb62150b` · 18 lines · 0.4 KB (~104 tokens) · lang:`scheme`*
 
 ```scheme
 (herald auth-enc)
@@ -1004,7 +1004,7 @@
 
 ### `refrences/internet/examples_scm/auth-hash.scm`
 
-*sha256:`58e88956cdec` · 18 lines · 0.4 KB · lang:`scheme`*
+*sha256:`58e88956cdec` · 18 lines · 0.4 KB (~95 tokens) · lang:`scheme`*
 
 ```scheme
 (herald auth-hash)
@@ -1031,7 +1031,7 @@
 
 ### `refrences/internet/examples_scm/blanchet-strandmax.scm`
 
-*sha256:`5caa67bbda5b` · 131 lines · 3.9 KB · lang:`scheme`*
+*sha256:`5caa67bbda5b` · 131 lines · 3.9 KB (~1,000 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Blanchet's Simple Example Protocol (strand max)"
@@ -1171,7 +1171,7 @@
 
 ### `refrences/internet/examples_scm/blanchet.scm`
 
-*sha256:`2f16c32a28d3` · 88 lines · 2.6 KB · lang:`scheme`*
+*sha256:`2f16c32a28d3` · 88 lines · 2.6 KB (~665 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Blanchet's Simple Example Protocol"
@@ -1268,7 +1268,7 @@
 
 ### `refrences/internet/examples_scm/bug_example.scm`
 
-*sha256:`68f92ca2c76a` · 43 lines · 1.1 KB · lang:`scheme`*
+*sha256:`68f92ca2c76a` · 43 lines · 1.1 KB (~294 tokens) · lang:`scheme`*
 
 ```scheme
 (herald bug_example (bound 20))
@@ -1320,7 +1320,7 @@
 
 ### `refrences/internet/examples_scm/cert_lang.scm`
 
-*sha256:`f2199b4592dc` · 44 lines · 1.4 KB · lang:`scheme`*
+*sha256:`f2199b4592dc` · 44 lines · 1.4 KB (~362 tokens) · lang:`scheme`*
 
 ```scheme
 (herald cert-lang)
@@ -1373,7 +1373,7 @@
 
 ### `refrences/internet/examples_scm/chan-envelope.scm`
 
-*sha256:`34a633cf224a` · 212 lines · 6.5 KB · lang:`scheme`*
+*sha256:`34a633cf224a` · 212 lines · 6.5 KB (~1,652 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Envelope Protocol With Channels" (bound 15))
@@ -1594,7 +1594,7 @@
 
 ### `refrences/internet/examples_scm/chan-perrig-song.scm`
 
-*sha256:`28d099dc459d` · 48 lines · 1.0 KB · lang:`scheme`*
+*sha256:`28d099dc459d` · 48 lines · 1.0 KB (~258 tokens) · lang:`scheme`*
 
 ```scheme
 (herald perrig-song)
@@ -1651,7 +1651,7 @@
 
 ### `refrences/internet/examples_scm/chan-unilateral.scm`
 
-*sha256:`65050edbf09c` · 61 lines · 1.3 KB · lang:`scheme`*
+*sha256:`65050edbf09c` · 61 lines · 1.3 KB (~321 tokens) · lang:`scheme`*
 
 ```scheme
 (herald chan-unilateral)
@@ -1721,7 +1721,7 @@
 
 ### `refrences/internet/examples_scm/chan-yahalom-role-decl.scm`
 
-*sha256:`01f7233171d9` · 78 lines · 2.2 KB · lang:`scheme`*
+*sha256:`01f7233171d9` · 78 lines · 2.2 KB (~555 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Yahalom Protocol Without Forwarding" (bound 15))
@@ -1808,7 +1808,7 @@
 
 ### `refrences/internet/examples_scm/chan-yahalom.scm`
 
-*sha256:`e3d108aed772` · 129 lines · 4.3 KB · lang:`scheme`*
+*sha256:`e3d108aed772` · 129 lines · 4.3 KB (~1,105 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Yahalom Protocol Without Forwarding" (bound 15))
@@ -1946,7 +1946,7 @@
 
 ### `refrences/internet/examples_scm/commitment.scm`
 
-*sha256:`505c140833d9` · 44 lines · 1.5 KB · lang:`scheme`*
+*sha256:`505c140833d9` · 44 lines · 1.5 KB (~379 tokens) · lang:`scheme`*
 
 ```scheme
 (herald commitment)
@@ -1999,7 +1999,7 @@
 
 ### `refrences/internet/examples_scm/comp_test.scm`
 
-*sha256:`6fb561c2b579` · 156 lines · 4.7 KB · lang:`scheme`*
+*sha256:`6fb561c2b579` · 156 lines · 4.7 KB (~1,196 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Main Example")
@@ -2164,7 +2164,7 @@
 
 ### `refrences/internet/examples_scm/completeness-test.scm`
 
-*sha256:`32ffa577d5f7` · 56 lines · 1.5 KB · lang:`scheme`*
+*sha256:`32ffa577d5f7` · 56 lines · 1.5 KB (~388 tokens) · lang:`scheme`*
 
 ```scheme
 ;; In this protocol an initiator verifies the liveness
@@ -2229,7 +2229,7 @@
 
 ### `refrences/internet/examples_scm/crushing.scm`
 
-*sha256:`9c7657aaef79` · 35 lines · 0.8 KB · lang:`scheme`*
+*sha256:`9c7657aaef79` · 35 lines · 0.8 KB (~215 tokens) · lang:`scheme`*
 
 ```scheme
 ;;; Attempt to make a protocol that reduces several strands by hulling at once
@@ -2273,7 +2273,7 @@
 
 ### `refrences/internet/examples_scm/dass_simple.scm`
 
-*sha256:`48d05f30a4f4` · 57 lines · 2.1 KB · lang:`scheme`*
+*sha256:`48d05f30a4f4` · 57 lines · 2.1 KB (~547 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Distributed Authentication Security Service Protocol Variants")
@@ -2339,7 +2339,7 @@
 
 ### `refrences/internet/examples_scm/denning-sacco.scm`
 
-*sha256:`5550b730f87a` · 27 lines · 0.8 KB · lang:`scheme`*
+*sha256:`5550b730f87a` · 27 lines · 0.8 KB (~212 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Denning-Sacco Protocol")
@@ -2375,7 +2375,7 @@
 
 ### `refrences/internet/examples_scm/deorig_contract.scm`
 
-*sha256:`d2b82fe71e94` · 40 lines · 1.1 KB · lang:`scheme`*
+*sha256:`d2b82fe71e94` · 40 lines · 1.1 KB (~285 tokens) · lang:`scheme`*
 
 ```scheme
 ;;;  Deorig_contract:  Demonstrates a subtle incompleteness.
@@ -2424,7 +2424,7 @@
 
 ### `refrences/internet/examples_scm/deorig_mesg.scm`
 
-*sha256:`9455450b46ca` · 19 lines · 0.5 KB · lang:`scheme`*
+*sha256:`9455450b46ca` · 19 lines · 0.5 KB (~119 tokens) · lang:`scheme`*
 
 ```scheme
 (herald deorig-mesg)
@@ -2452,7 +2452,7 @@
 
 ### `refrences/internet/examples_scm/deorig_simple.scm`
 
-*sha256:`61d250e40a22` · 30 lines · 0.9 KB · lang:`scheme`*
+*sha256:`61d250e40a22` · 30 lines · 0.9 KB (~238 tokens) · lang:`scheme`*
 
 ```scheme
 (herald deorig-simple)
@@ -2491,7 +2491,7 @@
 
 ### `refrences/internet/examples_scm/dh-ca_hack.scm`
 
-*sha256:`f94fc6424084` · 66 lines · 2.0 KB · lang:`scheme`*
+*sha256:`f94fc6424084` · 66 lines · 2.0 KB (~506 tokens) · lang:`scheme`*
 
 ```scheme
 (herald dhca (algebra basic) (bound 12))
@@ -2566,7 +2566,7 @@
 
 ### `refrences/internet/examples_scm/dh_encrypt_hack.scm`
 
-*sha256:`7cc99c4130f6` · 53 lines · 1.4 KB · lang:`scheme`*
+*sha256:`7cc99c4130f6` · 53 lines · 1.4 KB (~369 tokens) · lang:`scheme`*
 
 ```scheme
 (herald dhencrypt (algebra basic))
@@ -2628,7 +2628,7 @@
 
 ### `refrences/internet/examples_scm/dh_group_sig.scm`
 
-*sha256:`27fb57e12cbf` · 70 lines · 1.6 KB · lang:`scheme`*
+*sha256:`27fb57e12cbf` · 70 lines · 1.6 KB (~418 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Signed group DH exchange (improved version)"
@@ -2705,7 +2705,7 @@
 
 ### `refrences/internet/examples_scm/dh_group_sig_auth_failure.scm`
 
-*sha256:`7aef504be50e` · 59 lines · 1.4 KB · lang:`scheme`*
+*sha256:`7aef504be50e` · 59 lines · 1.4 KB (~370 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Signed group DH exchange (version with auth failure)"
@@ -2772,7 +2772,7 @@
 
 ### `refrences/internet/examples_scm/dh_mim_hack.scm`
 
-*sha256:`40710e381d87` · 31 lines · 1.0 KB · lang:`scheme`*
+*sha256:`40710e381d87` · 31 lines · 1.0 KB (~250 tokens) · lang:`scheme`*
 
 ```scheme
 (defmacro (CDH gx gy dhkey) (enc "dh" gx gy dhkey))
@@ -2812,7 +2812,7 @@
 
 ### `refrences/internet/examples_scm/dhnsl_hack.scm`
 
-*sha256:`1988a950f6f8` · 44 lines · 1.3 KB · lang:`scheme`*
+*sha256:`1988a950f6f8` · 44 lines · 1.3 KB (~339 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Diffie-Hellman enhanced Needham-Schroeder-Lowe Protocol"
@@ -2865,7 +2865,7 @@
 
 ### `refrences/internet/examples_scm/dhstatic-state.scm`
 
-*sha256:`a49573f51e24` · 67 lines · 2.0 KB · lang:`scheme`*
+*sha256:`a49573f51e24` · 67 lines · 2.0 KB (~503 tokens) · lang:`scheme`*
 
 ```scheme
 (herald dhstatic-state
@@ -2941,7 +2941,7 @@
 
 ### `refrences/internet/examples_scm/disclosure.scm`
 
-*sha256:`03f8b49cc6eb` · 33 lines · 1.0 KB · lang:`scheme`*
+*sha256:`03f8b49cc6eb` · 33 lines · 1.0 KB (~244 tokens) · lang:`scheme`*
 
 ```scheme
 ;;; Here's a protocol where there are two ways for the init strand to
@@ -2983,7 +2983,7 @@
 
 ### `refrences/internet/examples_scm/doorsep.scm`
 
-*sha256:`b727325455f4` · 33 lines · 0.8 KB · lang:`scheme`*
+*sha256:`b727325455f4` · 33 lines · 0.8 KB (~207 tokens) · lang:`scheme`*
 
 ```scheme
 (herald doorsep (comment "Door Simple Example Protocol"))
@@ -3025,7 +3025,7 @@
 
 ### `refrences/internet/examples_scm/doorsep2invk.scm`
 
-*sha256:`7fe92d6d7c55` · 27 lines · 1.0 KB · lang:`scheme`*
+*sha256:`7fe92d6d7c55` · 27 lines · 1.0 KB (~261 tokens) · lang:`scheme`*
 
 ```scheme
 (herald doorsep2invk (comment "Door Simple Example Protocol"))
@@ -3061,7 +3061,7 @@
 
 ### `refrences/internet/examples_scm/encsig.scm`
 
-*sha256:`480f80c2eea1` · 44 lines · 1.5 KB · lang:`scheme`*
+*sha256:`480f80c2eea1` · 44 lines · 1.5 KB (~375 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Encrypted Signed Message Example"
@@ -3114,7 +3114,7 @@
 
 ### `refrences/internet/examples_scm/envelope.scm`
 
-*sha256:`0c2f85eb6f6b` · 204 lines · 6.6 KB · lang:`scheme`*
+*sha256:`0c2f85eb6f6b` · 204 lines · 6.6 KB (~1,686 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Envelope Protocol" (bound 15))
@@ -3327,7 +3327,7 @@
 
 ### `refrences/internet/examples_scm/epmo-hash.scm`
 
-*sha256:`57d5e38dc720` · 77 lines · 2.7 KB · lang:`scheme`*
+*sha256:`57d5e38dc720` · 77 lines · 2.7 KB (~682 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Electronic Purchase with Money Order Protocol with Key Hashing"
@@ -3413,7 +3413,7 @@
 
 ### `refrences/internet/examples_scm/epmo-key-hash.scm`
 
-*sha256:`f779124fc6fe` · 77 lines · 2.7 KB · lang:`scheme`*
+*sha256:`f779124fc6fe` · 77 lines · 2.7 KB (~700 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Electronic Purchase with Money Order Protocol with Key Hashing"
@@ -3499,7 +3499,7 @@
 
 ### `refrences/internet/examples_scm/epmo.scm`
 
-*sha256:`619a6b134674` · 80 lines · 2.8 KB · lang:`scheme`*
+*sha256:`619a6b134674` · 80 lines · 2.8 KB (~713 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Electronic Purchase with Money Order Protocol"
@@ -3588,7 +3588,7 @@
 
 ### `refrences/internet/examples_scm/epmo_acctnum-key-hash.scm`
 
-*sha256:`9590f59d5844` · 100 lines · 3.8 KB · lang:`scheme`*
+*sha256:`9590f59d5844` · 100 lines · 3.8 KB (~960 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Electronic Purchase with Money Order Protocol Variant with Key Hashing"
@@ -3697,7 +3697,7 @@
 
 ### `refrences/internet/examples_scm/expand.scm`
 
-*sha256:`80a54a16b03e` · 18 lines · 0.3 KB · lang:`scheme`*
+*sha256:`80a54a16b03e` · 18 lines · 0.3 KB (~81 tokens) · lang:`scheme`*
 
 ```scheme
 (herald expand (expand) (comment "test macro expansion"))
@@ -3724,7 +3724,7 @@
 
 ### `refrences/internet/examples_scm/facts.scm`
 
-*sha256:`e6a2686168e7` · 95 lines · 2.4 KB · lang:`scheme`*
+*sha256:`e6a2686168e7` · 95 lines · 2.4 KB (~612 tokens) · lang:`scheme`*
 
 ```scheme
 (herald facts)
@@ -3828,7 +3828,7 @@
 
 ### `refrences/internet/examples_scm/factvar.scm`
 
-*sha256:`fb9d3f74d9e3` · 32 lines · 0.7 KB · lang:`scheme`*
+*sha256:`fb9d3f74d9e3` · 32 lines · 0.7 KB (~175 tokens) · lang:`scheme`*
 
 ```scheme
 (herald factvar)
@@ -3869,7 +3869,7 @@
 
 ### `refrences/internet/examples_scm/ffgg.scm`
 
-*sha256:`5b0ba3591e9d` · 24 lines · 0.7 KB · lang:`scheme`*
+*sha256:`5b0ba3591e9d` · 24 lines · 0.7 KB (~167 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "The ffgg Protocol"
@@ -3902,7 +3902,7 @@
 
 ### `refrences/internet/examples_scm/fluffy_draft03_gske.scm`
 
-*sha256:`c6039262563d` · 114 lines · 3.5 KB · lang:`scheme`*
+*sha256:`c6039262563d` · 114 lines · 3.5 KB (~903 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "GSKE, part of Fluffy: Simplified Key Exchange for Constrained Environments draft-hardjono-ace-fluffy-03"
@@ -4025,7 +4025,7 @@
 
 ### `refrences/internet/examples_scm/fragile_pruning.scm`
 
-*sha256:`5c19c39ed044` · 45 lines · 1.2 KB · lang:`scheme`*
+*sha256:`5c19c39ed044` · 45 lines · 1.2 KB (~314 tokens) · lang:`scheme`*
 
 ```scheme
 ;;; Illustrates how delicate pruning must be:
@@ -4079,7 +4079,7 @@
 
 ### `refrences/internet/examples_scm/goals.scm`
 
-*sha256:`b1ae1766178a` · 240 lines · 7.5 KB · lang:`scheme`*
+*sha256:`b1ae1766178a` · 240 lines · 7.5 KB (~1,913 tokens) · lang:`scheme`*
 
 ```scheme
 (herald goals)
@@ -4328,7 +4328,7 @@
 
 ### `refrences/internet/examples_scm/goalsvar.scm`
 
-*sha256:`0d26a1fa46e2` · 229 lines · 6.7 KB · lang:`scheme`*
+*sha256:`0d26a1fa46e2` · 229 lines · 6.7 KB (~1,715 tokens) · lang:`scheme`*
 
 ```scheme
 (herald goalsvar)
@@ -4566,7 +4566,7 @@
 
 ### `refrences/internet/examples_scm/hashtest-key-hash.scm`
 
-*sha256:`a9914930ffa5` · 25 lines · 0.4 KB · lang:`scheme`*
+*sha256:`a9914930ffa5` · 25 lines · 0.4 KB (~114 tokens) · lang:`scheme`*
 
 ```scheme
 ;;; Hashtest.scm is designed to test if the
@@ -4600,7 +4600,7 @@
 
 ### `refrences/internet/examples_scm/hashtest.scm`
 
-*sha256:`3ff3a8f0d1cc` · 25 lines · 0.4 KB · lang:`scheme`*
+*sha256:`3ff3a8f0d1cc` · 25 lines · 0.4 KB (~112 tokens) · lang:`scheme`*
 
 ```scheme
 ;;; Hashtest.scm is designed to test if the
@@ -4634,7 +4634,7 @@
 
 ### `refrences/internet/examples_scm/incompleteness_example.scm`
 
-*sha256:`d6fcb0502d3d` · 21 lines · 0.6 KB · lang:`scheme`*
+*sha256:`d6fcb0502d3d` · 21 lines · 0.6 KB (~164 tokens) · lang:`scheme`*
 
 ```scheme
 (herald incompleteness-example
@@ -4664,7 +4664,7 @@
 
 ### `refrences/internet/examples_scm/isoreject-corrected.scm`
 
-*sha256:`caf4ace8ece3` · 24 lines · 0.6 KB · lang:`scheme`*
+*sha256:`caf4ace8ece3` · 24 lines · 0.6 KB (~156 tokens) · lang:`scheme`*
 
 ```scheme
 (herald isoreject-corrected)
@@ -4697,7 +4697,7 @@
 
 ### `refrences/internet/examples_scm/isoreject.scm`
 
-*sha256:`9280d47d1adc` · 22 lines · 0.6 KB · lang:`scheme`*
+*sha256:`9280d47d1adc` · 22 lines · 0.6 KB (~142 tokens) · lang:`scheme`*
 
 ```scheme
 (defprotocol isoreject basic
@@ -4728,7 +4728,7 @@
 
 ### `refrences/internet/examples_scm/kelly1.scm`
 
-*sha256:`757b6d34a380` · 76 lines · 2.1 KB · lang:`scheme`*
+*sha256:`757b6d34a380` · 76 lines · 2.1 KB (~545 tokens) · lang:`scheme`*
 
 ```scheme
 ;;An attestation protocol containing a client, a server, and an appraiser.
@@ -4813,7 +4813,7 @@
 
 ### `refrences/internet/examples_scm/kerberos.scm`
 
-*sha256:`63adf8e0bcea` · 37 lines · 1.3 KB · lang:`scheme`*
+*sha256:`63adf8e0bcea` · 37 lines · 1.3 KB (~334 tokens) · lang:`scheme`*
 
 ```scheme
 (defprotocol kerberos basic
@@ -4859,7 +4859,7 @@
 
 ### `refrences/internet/examples_scm/lemmas.scm`
 
-*sha256:`c815266aaa57` · 61 lines · 1.7 KB · lang:`scheme`*
+*sha256:`c815266aaa57` · 61 lines · 1.7 KB (~424 tokens) · lang:`scheme`*
 
 ```scheme
 (herald goalsvar)
@@ -4929,7 +4929,7 @@
 
 ### `refrences/internet/examples_scm/locn_envelope.scm`
 
-*sha256:`b76bdb322e9d` · 254 lines · 8.1 KB · lang:`scheme`*
+*sha256:`b76bdb322e9d` · 254 lines · 8.1 KB (~2,062 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Envelope Protocol, location-based version"
@@ -5192,7 +5192,7 @@
 
 ### `refrences/internet/examples_scm/missing_contraction.scm`
 
-*sha256:`327190aada48` · 54 lines · 1.8 KB · lang:`scheme`*
+*sha256:`327190aada48` · 54 lines · 1.8 KB (~470 tokens) · lang:`scheme`*
 
 ```scheme
 ; missing-contraction
@@ -5255,7 +5255,7 @@
 
 ### `refrences/internet/examples_scm/neq_test.scm`
 
-*sha256:`0602413ce18e` · 30 lines · 0.7 KB · lang:`scheme`*
+*sha256:`0602413ce18e` · 30 lines · 0.7 KB (~178 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Inequality constraint using facts and rules"
@@ -5294,7 +5294,7 @@
 
 ### `refrences/internet/examples_scm/neuman-stubblebine.scm`
 
-*sha256:`c2208789c13a` · 37 lines · 1.2 KB · lang:`scheme`*
+*sha256:`c2208789c13a` · 37 lines · 1.2 KB (~314 tokens) · lang:`scheme`*
 
 ```scheme
 (defprotocol neuman-stubblebine basic
@@ -5340,7 +5340,7 @@
 
 ### `refrences/internet/examples_scm/no_contraction.scm`
 
-*sha256:`160793310026` · 16 lines · 0.4 KB · lang:`scheme`*
+*sha256:`160793310026` · 16 lines · 0.4 KB (~96 tokens) · lang:`scheme`*
 
 ```scheme
 (defprotocol no-contraction basic
@@ -5365,7 +5365,7 @@
 
 ### `refrences/internet/examples_scm/non_transforming.scm`
 
-*sha256:`ec45277f12c7` · 42 lines · 1.0 KB · lang:`scheme`*
+*sha256:`ec45277f12c7` · 42 lines · 1.0 KB (~246 tokens) · lang:`scheme`*
 
 ```scheme
 ; non_transforming.scm --
@@ -5416,7 +5416,7 @@
 
 ### `refrences/internet/examples_scm/nonaug-prune.scm`
 
-*sha256:`5274cf847e16` · 42 lines · 1.2 KB · lang:`scheme`*
+*sha256:`5274cf847e16` · 42 lines · 1.2 KB (~297 tokens) · lang:`scheme`*
 
 ```scheme
 ;; This protocol shows that it is possible to prune
@@ -5467,7 +5467,7 @@
 
 ### `refrences/internet/examples_scm/ns-l.scm`
 
-*sha256:`1eebc4fe0c3f` · 38 lines · 1.0 KB · lang:`scheme`*
+*sha256:`1eebc4fe0c3f` · 38 lines · 1.0 KB (~260 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Needham-Schroeder-Low Public-Key Protocol"
@@ -5514,7 +5514,7 @@
 
 ### `refrences/internet/examples_scm/ns-rebinding.scm`
 
-*sha256:`f9af085a3c0b` · 103 lines · 2.7 KB · lang:`scheme`*
+*sha256:`f9af085a3c0b` · 103 lines · 2.7 KB (~701 tokens) · lang:`scheme`*
 
 ```scheme
 (comment
@@ -5626,7 +5626,7 @@
 
 ### `refrences/internet/examples_scm/ns.scm`
 
-*sha256:`436649066c0e` · 37 lines · 1.0 KB · lang:`scheme`*
+*sha256:`436649066c0e` · 37 lines · 1.0 KB (~256 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Needham-Schroeder Public-Key Protocol"
@@ -5672,7 +5672,7 @@
 
 ### `refrences/internet/examples_scm/nsl3.scm`
 
-*sha256:`8bc8612a71fd` · 55 lines · 1.5 KB · lang:`scheme`*
+*sha256:`8bc8612a71fd` · 55 lines · 1.5 KB (~381 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Three Party Needham-Schroeder-Lowe Protocol")
@@ -5736,7 +5736,7 @@
 
 ### `refrences/internet/examples_scm/nslsk.scm`
 
-*sha256:`139b149a6a68` · 51 lines · 1.3 KB · lang:`scheme`*
+*sha256:`139b149a6a68` · 51 lines · 1.3 KB (~320 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Needham-Schroeder-Lowe Protocol with symmetric encryption")
@@ -5796,7 +5796,7 @@
 
 ### `refrences/internet/examples_scm/open-closed-multiloc.scm`
 
-*sha256:`06aac6425c95` · 166 lines · 4.5 KB · lang:`scheme`*
+*sha256:`06aac6425c95` · 166 lines · 4.5 KB (~1,140 tokens) · lang:`scheme`*
 
 ```scheme
 (herald open-closed
@@ -5971,7 +5971,7 @@
 
 ### `refrences/internet/examples_scm/open-closed-tag.scm`
 
-*sha256:`077b13ff8584` · 149 lines · 3.8 KB · lang:`scheme`*
+*sha256:`077b13ff8584` · 149 lines · 3.8 KB (~978 tokens) · lang:`scheme`*
 
 ```scheme
 (herald open-closed
@@ -6129,7 +6129,7 @@
 
 ### `refrences/internet/examples_scm/open-closed.scm`
 
-*sha256:`ffb860449ac3` · 180 lines · 4.8 KB · lang:`scheme`*
+*sha256:`ffb860449ac3` · 180 lines · 4.8 KB (~1,233 tokens) · lang:`scheme`*
 
 ```scheme
 (herald open-closed
@@ -6318,7 +6318,7 @@
 
 ### `refrences/internet/examples_scm/or.scm`
 
-*sha256:`8bdc4e82cc5e` · 27 lines · 0.9 KB · lang:`scheme`*
+*sha256:`8bdc4e82cc5e` · 27 lines · 0.9 KB (~222 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Otway-Rees Protocol"
@@ -6354,7 +6354,7 @@
 
 ### `refrences/internet/examples_scm/ordered.scm`
 
-*sha256:`c0c9185c45bf` · 39 lines · 0.7 KB · lang:`scheme`*
+*sha256:`c0c9185c45bf` · 39 lines · 0.7 KB (~189 tokens) · lang:`scheme`*
 
 ```scheme
 (herald ordered)
@@ -6402,7 +6402,7 @@
 
 ### `refrences/internet/examples_scm/orderedvar.scm`
 
-*sha256:`aa7cdc6a6107` · 39 lines · 0.7 KB · lang:`scheme`*
+*sha256:`aa7cdc6a6107` · 39 lines · 0.7 KB (~191 tokens) · lang:`scheme`*
 
 ```scheme
 (herald ordered)
@@ -6450,7 +6450,7 @@
 
 ### `refrences/internet/examples_scm/pca.scm`
 
-*sha256:`298053fef263` · 36 lines · 1.1 KB · lang:`scheme`*
+*sha256:`298053fef263` · 36 lines · 1.1 KB (~282 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Privacy Certificate Authority" (bound 15)
@@ -6495,7 +6495,7 @@
 
 ### `refrences/internet/examples_scm/pen-non-orig-test.scm`
 
-*sha256:`43ea68bd790c` · 29 lines · 0.8 KB · lang:`scheme`*
+*sha256:`43ea68bd790c` · 29 lines · 0.8 KB (~198 tokens) · lang:`scheme`*
 
 ```scheme
 ;; This is to test the pen-non-orig declaration.
@@ -6533,7 +6533,7 @@
 
 ### `refrences/internet/examples_scm/pfs-via-pubkey.scm`
 
-*sha256:`49b7b5024629` · 35 lines · 1.2 KB · lang:`scheme`*
+*sha256:`49b7b5024629` · 35 lines · 1.2 KB (~296 tokens) · lang:`scheme`*
 
 ```scheme
 (herald pfs-via-pubkey)
@@ -6577,7 +6577,7 @@
 
 ### `refrences/internet/examples_scm/pkinit.scm`
 
-*sha256:`424045fb7b6f` · 22 lines · 0.7 KB · lang:`scheme`*
+*sha256:`424045fb7b6f` · 22 lines · 0.7 KB (~172 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Kerberos PK init")
@@ -6608,7 +6608,7 @@
 
 ### `refrences/internet/examples_scm/preprocess.scm`
 
-*sha256:`85f407700b4e` · 27 lines · 0.8 KB · lang:`scheme`*
+*sha256:`85f407700b4e` · 27 lines · 0.8 KB (~215 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Pre-processing test example: modified NS with two responders")
@@ -6644,7 +6644,7 @@
 
 ### `refrences/internet/examples_scm/print.scm`
 
-*sha256:`5461454e4b17` · 13 lines · 0.4 KB · lang:`scheme`*
+*sha256:`5461454e4b17` · 13 lines · 0.4 KB (~114 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Print Test"
@@ -6666,7 +6666,7 @@
 
 ### `refrences/internet/examples_scm/prottrans.scm`
 
-*sha256:`506c69f72936` · 107 lines · 2.8 KB · lang:`scheme`*
+*sha256:`506c69f72936` · 107 lines · 2.8 KB (~725 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Protocol Transformations With Rules")
@@ -6782,7 +6782,7 @@
 
 ### `refrences/internet/examples_scm/pruning1.scm`
 
-*sha256:`6c32b763e3f2` · 42 lines · 1.4 KB · lang:`scheme`*
+*sha256:`6c32b763e3f2` · 42 lines · 1.4 KB (~352 tokens) · lang:`scheme`*
 
 ```scheme
 ; pruning1
@@ -6833,7 +6833,7 @@
 
 ### `refrences/internet/examples_scm/puzzle_example.scm`
 
-*sha256:`9786d9060676` · 73 lines · 2.1 KB · lang:`scheme`*
+*sha256:`9786d9060676` · 73 lines · 2.1 KB (~532 tokens) · lang:`scheme`*
 
 ```scheme
 (herald puzzle_example)
@@ -6915,7 +6915,7 @@
 
 ### `refrences/internet/examples_scm/reflect.scm`
 
-*sha256:`d28cf4717229` · 32 lines · 0.6 KB · lang:`scheme`*
+*sha256:`d28cf4717229` · 32 lines · 0.6 KB (~165 tokens) · lang:`scheme`*
 
 ```scheme
 (herald reflect)
@@ -6956,7 +6956,7 @@
 
 ### `refrences/internet/examples_scm/renamings.scm`
 
-*sha256:`26877988b9f1` · 30 lines · 0.9 KB · lang:`scheme`*
+*sha256:`26877988b9f1` · 30 lines · 0.9 KB (~233 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Blanchet's Simple Example Protocol"
@@ -6995,7 +6995,7 @@
 
 ### `refrences/internet/examples_scm/role_uniq.scm`
 
-*sha256:`44cb41cd7701` · 56 lines · 1.6 KB · lang:`scheme`*
+*sha256:`44cb41cd7701` · 56 lines · 1.6 KB (~403 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Role Unique Origination")
@@ -7060,7 +7060,7 @@
 
 ### `refrences/internet/examples_scm/rule-node.scm`
 
-*sha256:`d623459ea1e4` · 88 lines · 1.8 KB · lang:`scheme`*
+*sha256:`d623459ea1e4` · 88 lines · 1.8 KB (~467 tokens) · lang:`scheme`*
 
 ```scheme
 (herald rule-node)
@@ -7157,7 +7157,7 @@
 
 ### `refrences/internet/examples_scm/rule-order.scm`
 
-*sha256:`02735c6e55ef` · 21 lines · 0.3 KB · lang:`scheme`*
+*sha256:`02735c6e55ef` · 21 lines · 0.3 KB (~87 tokens) · lang:`scheme`*
 
 ```scheme
 (herald rule-order)
@@ -7187,7 +7187,7 @@
 
 ### `refrences/internet/examples_scm/rules.scm`
 
-*sha256:`2761f75fd5bd` · 67 lines · 1.6 KB · lang:`scheme`*
+*sha256:`2761f75fd5bd` · 67 lines · 1.6 KB (~401 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Rules and Facts")
@@ -7263,7 +7263,7 @@
 
 ### `refrences/internet/examples_scm/scep-tls-dh-broken.scm`
 
-*sha256:`b1818bb80bb3` · 140 lines · 4.7 KB · lang:`scheme`*
+*sha256:`b1818bb80bb3` · 140 lines · 4.7 KB (~1,191 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Fordham's GREATEST PROTOCOL GO RAMS🐏🐏🐏🐏🐏🐏🐏🐏🐏🐏 Protocol"
@@ -7410,7 +7410,7 @@
 
 ### `refrences/internet/examples_scm/scep-tls-dh-fixed.scm`
 
-*sha256:`f58ff6535265` · 141 lines · 4.8 KB · lang:`scheme`*
+*sha256:`f58ff6535265` · 141 lines · 4.8 KB (~1,211 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Fordham's GREATEST PROTOCOL GO RAMS🐏🐏🐏🐏🐏🐏🐏🐏🐏🐏 Protocol"
@@ -7558,7 +7558,7 @@
 
 ### `refrences/internet/examples_scm/sdls-auth-enc-full-payload.scm`
 
-*sha256:`ca74511ed9c2` · 226 lines · 10.5 KB · lang:`scheme`*
+*sha256:`ca74511ed9c2` · 226 lines · 10.5 KB (~2,675 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLSP Authenticated Encryption: full SDLS-EP rekeying sequence")
@@ -7793,7 +7793,7 @@
 
 ### `refrences/internet/examples_scm/sdls-auth-enc-logic.scm`
 
-*sha256:`8f15c79e0913` · 55 lines · 2.5 KB · lang:`scheme`*
+*sha256:`8f15c79e0913` · 55 lines · 2.5 KB (~630 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLSP Authenticated Encryption")
@@ -7857,7 +7857,7 @@
 
 ### `refrences/internet/examples_scm/sdls-auth-full-payload.scm`
 
-*sha256:`3a36093acaf5` · 226 lines · 9.8 KB · lang:`scheme`*
+*sha256:`3a36093acaf5` · 226 lines · 9.8 KB (~2,521 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLSP TC Baseline: Authentication Only (AES-CMAC): full SDLS-EP rekeying sequence")
@@ -8092,7 +8092,7 @@
 
 ### `refrences/internet/examples_scm/sdls-auth-logic.scm`
 
-*sha256:`69e52ed30db5` · 75 lines · 3.0 KB · lang:`scheme`*
+*sha256:`69e52ed30db5` · 75 lines · 3.0 KB (~765 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLSP TC Baseline: Authentication Only (AES-CMAC)")
@@ -8176,7 +8176,7 @@
 
 ### `refrences/internet/examples_scm/sdls-enc-logic.scm`
 
-*sha256:`ab76741609f5` · 78 lines · 2.7 KB · lang:`scheme`*
+*sha256:`ab76741609f5` · 78 lines · 2.7 KB (~701 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLSP Encryption")
@@ -8263,7 +8263,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-challenge-auth.scm`
 
-*sha256:`350ed2a1d1d9` · 49 lines · 2.7 KB · lang:`scheme`*
+*sha256:`350ed2a1d1d9` · 49 lines · 2.7 KB (~681 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Key Verification: Authentication Only")
@@ -8321,7 +8321,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-challenge-authenc.scm`
 
-*sha256:`d4e5673b3ddc` · 51 lines · 3.0 KB · lang:`scheme`*
+*sha256:`d4e5673b3ddc` · 51 lines · 3.0 KB (~764 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Key Verification: Authenticated Encryption")
@@ -8381,7 +8381,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-challenge.scm`
 
-*sha256:`312adef361d9` · 40 lines · 1.3 KB · lang:`scheme`*
+*sha256:`312adef361d9` · 40 lines · 1.3 KB (~327 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Key Verification")
@@ -8430,7 +8430,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-key-activation-auth.scm`
 
-*sha256:`a6bc99dd2efc` · 40 lines · 1.7 KB · lang:`scheme`*
+*sha256:`a6bc99dd2efc` · 40 lines · 1.7 KB (~447 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Key Activation: Authentication Only")
@@ -8479,7 +8479,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-key-activation-authenc.scm`
 
-*sha256:`6367eb4a2d12` · 42 lines · 2.0 KB · lang:`scheme`*
+*sha256:`6367eb4a2d12` · 42 lines · 2.0 KB (~520 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Key Activation: Authenticated Encryption")
@@ -8530,7 +8530,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-key-activation.scm`
 
-*sha256:`8e5407169d35` · 28 lines · 0.8 KB · lang:`scheme`*
+*sha256:`8e5407169d35` · 28 lines · 0.8 KB (~207 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Key Activation")
@@ -8567,7 +8567,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-otar-auth.scm`
 
-*sha256:`3361496cd892` · 49 lines · 2.5 KB · lang:`scheme`*
+*sha256:`3361496cd892` · 49 lines · 2.5 KB (~636 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP OTAR: Authentication Only")
@@ -8625,7 +8625,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-otar-authenc.scm`
 
-*sha256:`9c21a336cca3` · 51 lines · 2.8 KB · lang:`scheme`*
+*sha256:`9c21a336cca3` · 51 lines · 2.8 KB (~710 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP OTAR: Authenticated Encryption")
@@ -8685,7 +8685,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-otar-transmission.scm`
 
-*sha256:`c6cab6fa329e` · 50 lines · 1.7 KB · lang:`scheme`*
+*sha256:`c6cab6fa329e` · 50 lines · 1.7 KB (~431 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Over-the-Air Rekeying (OTAR)")
@@ -8744,7 +8744,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-sa-rekey-auth.scm`
 
-*sha256:`efa36900f119` · 47 lines · 2.4 KB · lang:`scheme`*
+*sha256:`efa36900f119` · 47 lines · 2.4 KB (~603 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Rekey SA: Authentication Only")
@@ -8800,7 +8800,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-sa-rekey-authenc.scm`
 
-*sha256:`161329f435d8` · 49 lines · 2.6 KB · lang:`scheme`*
+*sha256:`161329f435d8` · 49 lines · 2.6 KB (~677 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Rekey SA: Authenticated Encryption")
@@ -8858,7 +8858,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-sa-rekey.scm`
 
-*sha256:`f4d29e1126d6` · 36 lines · 1.4 KB · lang:`scheme`*
+*sha256:`f4d29e1126d6` · 36 lines · 1.4 KB (~353 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Rekey SA")
@@ -8903,7 +8903,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-sa-start-auth.scm`
 
-*sha256:`176085a6c5c2` · 40 lines · 1.8 KB · lang:`scheme`*
+*sha256:`176085a6c5c2` · 40 lines · 1.8 KB (~454 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Start SA: Authentication Only")
@@ -8952,7 +8952,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-sa-start-authenc.scm`
 
-*sha256:`61c0b0266d5c` · 42 lines · 2.1 KB · lang:`scheme`*
+*sha256:`61c0b0266d5c` · 42 lines · 2.1 KB (~527 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Start SA: Authenticated Encryption")
@@ -9003,7 +9003,7 @@
 
 ### `refrences/internet/examples_scm/sdls-ep-sa-start.scm`
 
-*sha256:`db963aab66d9` · 38 lines · 1.1 KB · lang:`scheme`*
+*sha256:`db963aab66d9` · 38 lines · 1.1 KB (~280 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "SDLS-EP Start SA")
@@ -9050,7 +9050,7 @@
 
 ### `refrences/internet/examples_scm/sigenc.scm`
 
-*sha256:`7de7f622deba` · 44 lines · 1.5 KB · lang:`scheme`*
+*sha256:`7de7f622deba` · 44 lines · 1.5 KB (~375 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Signed Encrypted Message Example"
@@ -9103,7 +9103,7 @@
 
 ### `refrences/internet/examples_scm/sorted_epmo_acctnum.scm`
 
-*sha256:`3e81474246f0` · 90 lines · 3.3 KB · lang:`scheme`*
+*sha256:`3e81474246f0` · 90 lines · 3.3 KB (~846 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Electronic Purchase with Money Order Protocol Variant"
@@ -9202,7 +9202,7 @@
 
 ### `refrences/internet/examples_scm/sts.scm`
 
-*sha256:`f4cba59e4388` · 81 lines · 2.2 KB · lang:`scheme`*
+*sha256:`f4cba59e4388` · 81 lines · 2.2 KB (~575 tokens) · lang:`scheme`*
 
 ```scheme
 ;;; Station-to-station
@@ -9292,7 +9292,7 @@
 
 ### `refrences/internet/examples_scm/sts_non_role.scm`
 
-*sha256:`1b34a75f590e` · 98 lines · 2.6 KB · lang:`scheme`*
+*sha256:`1b34a75f590e` · 98 lines · 2.6 KB (~659 tokens) · lang:`scheme`*
 
 ```scheme
 ;;; Station-to-station
@@ -9399,7 +9399,7 @@
 
 ### `refrences/internet/examples_scm/sts_weakened_reflect.scm`
 
-*sha256:`c639a40306a4` · 80 lines · 2.3 KB · lang:`scheme`*
+*sha256:`c639a40306a4` · 80 lines · 2.3 KB (~577 tokens) · lang:`scheme`*
 
 ```scheme
 ;;; Station-to-station
@@ -9488,7 +9488,7 @@
 
 ### `refrences/internet/examples_scm/subatomic-open-closed-test-genrule.scm`
 
-*sha256:`819efab85760` · 227 lines · 8.4 KB · lang:`scheme`*
+*sha256:`819efab85760` · 227 lines · 8.4 KB (~2,158 tokens) · lang:`scheme`*
 
 ```scheme
 (herald subatomic-open-closed-test-genrule
@@ -9724,7 +9724,7 @@
 
 ### `refrences/internet/examples_scm/subatomic-open-closed.scm`
 
-*sha256:`eae2ff6d0a48` · 165 lines · 4.6 KB · lang:`scheme`*
+*sha256:`eae2ff6d0a48` · 165 lines · 4.6 KB (~1,185 tokens) · lang:`scheme`*
 
 ```scheme
 (herald subatomic-open-closed
@@ -9898,7 +9898,7 @@
 
 ### `refrences/internet/examples_scm/sync_locn_envelope.scm`
 
-*sha256:`c0dfe134ad6c` · 303 lines · 9.6 KB · lang:`scheme`*
+*sha256:`c0dfe134ad6c` · 303 lines · 9.6 KB (~2,456 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Envelope Protocol, location-based version"
@@ -10210,7 +10210,7 @@
 
 ### `refrences/internet/examples_scm/sync_locn_envelope_no_auth.scm`
 
-*sha256:`e234dfddd0b0` · 299 lines · 9.2 KB · lang:`scheme`*
+*sha256:`e234dfddd0b0` · 299 lines · 9.2 KB (~2,349 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Envelope Protocol, location-based version"
@@ -10518,7 +10518,7 @@
 
 ### `refrences/internet/examples_scm/targetterms1.scm`
 
-*sha256:`c2c1a27820ba` · 21 lines · 0.6 KB · lang:`scheme`*
+*sha256:`c2c1a27820ba` · 21 lines · 0.6 KB (~141 tokens) · lang:`scheme`*
 
 ```scheme
 ;; Solution requires the use of target terms in the solved filter.
@@ -10548,7 +10548,7 @@
 
 ### `refrences/internet/examples_scm/targetterms2.scm`
 
-*sha256:`1910a7315f43` · 36 lines · 1.3 KB · lang:`scheme`*
+*sha256:`1910a7315f43` · 36 lines · 1.3 KB (~326 tokens) · lang:`scheme`*
 
 ```scheme
 ;;; Target terms experiment
@@ -10593,7 +10593,7 @@
 
 ### `refrences/internet/examples_scm/targetterms6.scm`
 
-*sha256:`4a93026b8f2e` · 56 lines · 2.2 KB · lang:`scheme`*
+*sha256:`4a93026b8f2e` · 56 lines · 2.2 KB (~551 tokens) · lang:`scheme`*
 
 ```scheme
 ;;; Target terms experiment
@@ -10658,7 +10658,7 @@
 
 ### `refrences/internet/examples_scm/targetterms8.scm`
 
-*sha256:`25e015e83177` · 64 lines · 2.2 KB · lang:`scheme`*
+*sha256:`25e015e83177` · 64 lines · 2.2 KB (~570 tokens) · lang:`scheme`*
 
 ```scheme
 ;;; Target terms experiment
@@ -10731,7 +10731,7 @@
 
 ### `refrences/internet/examples_scm/thisthat.scm`
 
-*sha256:`ff8fb574f088` · 31 lines · 0.9 KB · lang:`scheme`*
+*sha256:`ff8fb574f088` · 31 lines · 0.9 KB (~227 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Needham-Schroeder Public-Key Protocol This-That Variant")
@@ -10771,7 +10771,7 @@
 
 ### `refrences/internet/examples_scm/tickle-unique.scm`
 
-*sha256:`7a2222c13440` · 39 lines · 0.8 KB · lang:`scheme`*
+*sha256:`7a2222c13440` · 39 lines · 0.8 KB (~216 tokens) · lang:`scheme`*
 
 ```scheme
 (herald tickle-unique)
@@ -10819,7 +10819,7 @@
 
 ### `refrences/internet/examples_scm/timestamping.scm`
 
-*sha256:`82003a7aeb20` · 46 lines · 1.4 KB · lang:`scheme`*
+*sha256:`82003a7aeb20` · 46 lines · 1.4 KB (~367 tokens) · lang:`scheme`*
 
 ```scheme
 (herald timestamping-service)
@@ -10874,7 +10874,7 @@
 
 ### `refrences/internet/examples_scm/trust-anchor.scm`
 
-*sha256:`29e459309918` · 19 lines · 0.5 KB · lang:`scheme`*
+*sha256:`29e459309918` · 19 lines · 0.5 KB (~130 tokens) · lang:`scheme`*
 
 ```scheme
 (herald trust-anchor
@@ -10902,7 +10902,7 @@
 
 ### `refrences/internet/examples_scm/ugen-at.scm`
 
-*sha256:`b5797b5eddf5` · 53 lines · 1.3 KB · lang:`scheme`*
+*sha256:`b5797b5eddf5` · 53 lines · 1.3 KB (~323 tokens) · lang:`scheme`*
 
 ```scheme
 (herald uniq-at)
@@ -10964,7 +10964,7 @@
 
 ### `refrences/internet/examples_scm/ugo.scm`
 
-*sha256:`a9bb4281d911` · 110 lines · 2.8 KB · lang:`scheme`*
+*sha256:`a9bb4281d911` · 110 lines · 2.8 KB (~707 tokens) · lang:`scheme`*
 
 ```scheme
 (herald uniq-gen-and-orig-example
@@ -11083,7 +11083,7 @@
 
 ### `refrences/internet/examples_scm/uncarried_keys.scm`
 
-*sha256:`f8f5a1fac5e9` · 30 lines · 0.9 KB · lang:`scheme`*
+*sha256:`f8f5a1fac5e9` · 30 lines · 0.9 KB (~241 tokens) · lang:`scheme`*
 
 ```scheme
 ; uncarried-keys
@@ -11122,7 +11122,7 @@
 
 ### `refrences/internet/examples_scm/unilateral.scm`
 
-*sha256:`3f30672cadd0` · 89 lines · 2.3 KB · lang:`scheme`*
+*sha256:`3f30672cadd0` · 89 lines · 2.3 KB (~588 tokens) · lang:`scheme`*
 
 ```scheme
 (herald unilateral)
@@ -11220,7 +11220,7 @@
 
 ### `refrences/internet/examples_scm/uniq-at.scm`
 
-*sha256:`d8ec10d3158a` · 53 lines · 1.3 KB · lang:`scheme`*
+*sha256:`d8ec10d3158a` · 53 lines · 1.3 KB (~324 tokens) · lang:`scheme`*
 
 ```scheme
 (herald uniq-at)
@@ -11282,7 +11282,7 @@
 
 ### `refrences/internet/examples_scm/uniq-gen-test.scm`
 
-*sha256:`863bc5bd5cfd` · 35 lines · 0.8 KB · lang:`scheme`*
+*sha256:`863bc5bd5cfd` · 35 lines · 0.8 KB (~214 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Unique generation test protocols."
@@ -11326,7 +11326,7 @@
 
 ### `refrences/internet/examples_scm/uo.scm`
 
-*sha256:`4e212592b42d` · 25 lines · 0.7 KB · lang:`scheme`*
+*sha256:`4e212592b42d` · 25 lines · 0.7 KB (~175 tokens) · lang:`scheme`*
 
 ```scheme
 ; uniq-orig
@@ -11360,7 +11360,7 @@
 
 ### `refrences/internet/examples_scm/wang-hash.scm`
 
-*sha256:`e49573e42a15` · 434 lines · 12.2 KB · lang:`scheme`*
+*sha256:`e49573e42a15` · 434 lines · 12.2 KB (~3,129 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Wang's Fair Exchange Protocol" (bound 10))
@@ -11803,7 +11803,7 @@
 
 ### `refrences/internet/examples_scm/wang-key-hash.scm`
 
-*sha256:`362536a1eb34` · 434 lines · 12.2 KB · lang:`scheme`*
+*sha256:`362536a1eb34` · 434 lines · 12.2 KB (~3,128 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Wang's Fair Exchange Protocol" (bound 10))
@@ -12246,7 +12246,7 @@
 
 ### `refrences/internet/examples_scm/weird.scm`
 
-*sha256:`c90e3b9beb58` · 58 lines · 1.3 KB · lang:`scheme`*
+*sha256:`c90e3b9beb58` · 58 lines · 1.3 KB (~338 tokens) · lang:`scheme`*
 
 ```scheme
 (defprotocol weird basic
@@ -12313,7 +12313,7 @@
 
 ### `refrences/internet/examples_scm/wonthull.scm`
 
-*sha256:`2e7e04acefd5` · 40 lines · 1.1 KB · lang:`scheme`*
+*sha256:`2e7e04acefd5` · 40 lines · 1.1 KB (~281 tokens) · lang:`scheme`*
 
 ```scheme
 (herald wonthull (bound 9))
@@ -12362,7 +12362,7 @@
 
 ### `refrences/internet/examples_scm/wonthull2.scm`
 
-*sha256:`ec51d8d163d6` · 38 lines · 1.0 KB · lang:`scheme`*
+*sha256:`ec51d8d163d6` · 38 lines · 1.0 KB (~265 tokens) · lang:`scheme`*
 
 ```scheme
 (herald wonthull2 (bound 9))
@@ -12409,7 +12409,7 @@
 
 ### `refrences/internet/examples_scm/wonthull3.scm`
 
-*sha256:`37101d7ff334` · 36 lines · 0.9 KB · lang:`scheme`*
+*sha256:`37101d7ff334` · 36 lines · 0.9 KB (~226 tokens) · lang:`scheme`*
 
 ```scheme
 ;;;  Wonthull 3:  Demonstrates a subtle incompleteness.
@@ -12454,7 +12454,7 @@
 
 ### `refrences/internet/examples_scm/woolam.scm`
 
-*sha256:`9b5ddc1d5e38` · 26 lines · 0.7 KB · lang:`scheme`*
+*sha256:`9b5ddc1d5e38` · 26 lines · 0.7 KB (~169 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Woo-Lam Protocol")
@@ -12489,7 +12489,7 @@
 
 ### `refrences/internet/examples_scm/yahalom-6.3.6.scm`
 
-*sha256:`6ad926c80e47` · 53 lines · 1.7 KB · lang:`scheme`*
+*sha256:`6ad926c80e47` · 53 lines · 1.7 KB (~434 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Yahalom Protocol"
@@ -12551,7 +12551,7 @@
 
 ### `refrences/internet/examples_scm/yahalom-forward.scm`
 
-*sha256:`06698f095963` · 41 lines · 1.2 KB · lang:`scheme`*
+*sha256:`06698f095963` · 41 lines · 1.2 KB (~307 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Yahalom Protocol With Forwarding" (bound 15))
@@ -12601,7 +12601,7 @@
 
 ### `refrences/internet/examples_scm/yahalom.scm`
 
-*sha256:`e403b0a15ffb` · 34 lines · 1.0 KB · lang:`scheme`*
+*sha256:`e403b0a15ffb` · 34 lines · 1.0 KB (~259 tokens) · lang:`scheme`*
 
 ```scheme
 (herald "Yahalom Protocol with Forwarding Removed" (bound 10))
@@ -12644,7 +12644,7 @@
 
 ### `refrences/internet/examples_scm/yes-or-no.scm`
 
-*sha256:`44271b6e83a9` · 52 lines · 1.3 KB · lang:`scheme`*
+*sha256:`44271b6e83a9` · 52 lines · 1.3 KB (~333 tokens) · lang:`scheme`*
 
 ```scheme
 (herald yes-or-no)

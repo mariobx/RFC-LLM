@@ -4,11 +4,11 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from rfc_llm.system_config import SYSTEM_CONFIG
-from rfc_llm.main_pipeline_orchestrator import run_rfc_translation_pipeline
-from rfc_llm.document_ingestion.protocol_applicability_gate import ProtocolApplicabilityReport
-from rfc_llm.intermediate_representation.algebraic_sorts import CPSASortEnum
-from rfc_llm.intermediate_representation.protocol_syntax_tree import (
+from src.system_config import SYSTEM_CONFIG
+from src.main_pipeline_orchestrator import run_rfc_translation_pipeline
+from src.document_ingestion.protocol_applicability_gate import ProtocolApplicabilityReport
+from src.intermediate_representation.algebraic_sorts import CPSASortEnum
+from src.intermediate_representation.protocol_syntax_tree import (
     CPSAVariableDeclaration,
     CPSATraceEvent,
     CPSAProtocolRole,
@@ -113,9 +113,9 @@ def test_pipeline_e2e_successful_synthesis_and_build(tmp_path: Path, mock_valid_
         rationale="Clear cryptographic authentication handshake.",
     )
 
-    with patch("rfc_llm.main_pipeline_orchestrator.evaluate_protocol_applicability", return_value=mock_app_report), \
-         patch("rfc_llm.main_pipeline_orchestrator.route_handshake_sections", return_value=["2"]), \
-         patch("rfc_llm.main_pipeline_orchestrator.extract_protocol_specification", return_value=mock_valid_spec):
+    with patch("src.main_pipeline_orchestrator.evaluate_protocol_applicability", return_value=mock_app_report), \
+         patch("src.main_pipeline_orchestrator.route_handshake_sections", return_value=["2"]), \
+         patch("src.main_pipeline_orchestrator.extract_protocol_specification", return_value=mock_valid_spec):
 
         summary = run_rfc_translation_pipeline(
             rfc_file_path=rfc_source,

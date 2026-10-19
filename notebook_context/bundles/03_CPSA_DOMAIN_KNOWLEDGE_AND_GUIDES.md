@@ -1,15 +1,18 @@
 # CPSA 4.4.9 Domain Modeling References, Manuals & Guides
 
-> Tier 1/3 Domain Reference — Curated CPSA 4.4.9 protocol modeling skill definitions, grammar and roletran references, Dolev-Yao theoretical guides, and transcribed CPSA documentation under the max file size threshold.
+> Tier 1/3 Domain Reference — Curated CPSA 4.4.9 protocol modeling skill definitions, complete official MITRE User Manual and Specification, grammar and roletran references, Dolev-Yao theoretical guides, and transcribed CPSA documentation.
 
-*Generated: 2026-10-14 16:18:38 UTC · Git: `main` @ `f572f106cef2` · Tier: Tier 1/3 — Domain Reference Documentation & Modeling Guides · Files: 37*
+*Generated: 2026-10-19 21:48:59 UTC · Git: `main` @ `9d27f26fb814` · Tier: Tier 1/3 — Domain Reference Documentation & Modeling Guides · Files: 40 · Estimated Tokens: ~432,327*
 
 ## Table of Contents
 
 - [`refrences/cpsa-protocol-modeling/SKILL.md`](#refrencescpsa-protocol-modelingskillmd)
+- [`refrences/cpsa-protocol-modeling/manuals/CPSA4_User_Manual.md`](#refrencescpsa-protocol-modelingmanualscpsa4-user-manualmd)
+- [`refrences/cpsa-protocol-modeling/manuals/CPSA_Comprehensive_Guide.md`](#refrencescpsa-protocol-modelingmanualscpsa-comprehensive-guidemd)
 - [`refrences/cpsa-protocol-modeling/manuals/CPSA_Design.md`](#refrencescpsa-protocol-modelingmanualscpsa-designmd)
 - [`refrences/cpsa-protocol-modeling/manuals/CPSA_Goals_and_Security.md`](#refrencescpsa-protocol-modelingmanualscpsa-goals-and-securitymd)
 - [`refrences/cpsa-protocol-modeling/manuals/CPSA_Primer.md`](#refrencescpsa-protocol-modelingmanualscpsa-primermd)
+- [`refrences/cpsa-protocol-modeling/manuals/CPSA_Specification.md`](#refrencescpsa-protocol-modelingmanualscpsa-specificationmd)
 - [`refrences/cpsa-protocol-modeling/manuals/Dolev_Yao_Model_Paper.md`](#refrencescpsa-protocol-modelingmanualsdolev-yao-model-papermd)
 - [`refrences/cpsa-protocol-modeling/manuals/INDEX.md`](#refrencescpsa-protocol-modelingmanualsindexmd)
 - [`refrences/cpsa-protocol-modeling/manuals/Role_Translations.md`](#refrencescpsa-protocol-modelingmanualsrole-translationsmd)
@@ -48,7 +51,7 @@
 
 ### `refrences/cpsa-protocol-modeling/SKILL.md`
 
-*sha256:`f9dbe9ad071d` · 421 lines · 27.0 KB · lang:`markdown`*
+*sha256:`f9dbe9ad071d` · 421 lines · 27.0 KB (~6,893 tokens) · lang:`markdown`*
 
 ````markdown
 ---
@@ -475,9 +478,8560 @@ This skill includes specialized deep-dive reference documents:
 
 ---
 
+### `refrences/cpsa-protocol-modeling/manuals/CPSA4_User_Manual.md`
+
+*sha256:`8536a06c9658` · 4762 lines · 239.5 KB (~60,846 tokens) · lang:`markdown` · 22 control chars sanitized*
+
+````markdown
+# CPSA 4 Official User Manual
+
+           The Cryptographic Protocol Shapes Analyzer:
+                     A Manual for CPSA 41
+
+                          Moses D. Liskov   John D. Ramsdell
+                          Joshua D. Guttman    Paul D. Rowe
+
+                                The MITRE Corporation
+                                      CPSA Version 4.4.9
+
+                                         May 24, 2026
+
+
+
+
+     © 2016–2026 The MITRE Corporation. Permission to copy without fee all or part of this
+material is granted provided that the copies are not made or distributed for direct commercial
+advantage, this copyright notice and the title of the publication and its date appear, and notice in
+given that copying is by permission of The MITRE Corporation.
+
+Contents
+
+
+## 1 Introduction                                                                                1
+
+  1.1 Recommended reading . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         2
+  1.2 Tool components . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       2
+
+
+I   Basic use of CPSA                                                                        4
+
+
+## 2 Setup and Installation                                                                     5
+
+  2.1 Basic Installation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   5
+      2.1.1 Getting the Source . . . . . . . . . . . . . . . . . . . . . . . . . . . .       5
+  2.2 Finding Documentation . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        6
+  2.3 Running cpsa . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     6
+      2.3.1 cpsa Projects . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      7
+      2.3.2 Using the cpsa Makefile . . . . . . . . . . . . . . . . . . . . . . . . .        7
+      2.3.3 Using the Haskell Makefile . . . . . . . . . . . . . . . . . . . . . . . .       7
+      2.3.4 Memory usage . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         8
+      2.3.5 Parallelism . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      8
+
+
+## 3 Basic Protocol Modeling and Analysis with CPSA                                              9
+
+  3.1 Basic CPSA modeling . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        10
+  3.2 CPSA input . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     11
+  3.3 CPSA output . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      13
+  3.4 Interpreting shapes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    16
+  3.5 Blanchet’s simple example protocol . . . . . . . . . . . . . . . . . . . . . . .       18
+
+
+## 4 Algebra Features of CPSA                                                                   25
+
+  4.1 Generic messages and long-term keys . . . . . . . . . . . . . . . . . . . . . .        26
+  4.2 Modeling Diffie-Hellman . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      31
+      4.2.1 Other examples . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       34
+  4.3 Other Algebra Features . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       35
+      4.3.1 Hashing . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      35
+
+
+                                               i
+
+            4.3.2 Constants . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   35
+            4.3.3 Bidirectional Long-Term Keys . . . . . . . . . . . . . . . . . . . . . .      36
+      4.4   The Lang Field: Declaring new operators . . . . . . . . . . . . . . . . . . .       36
+
+
+II     Understanding and Guiding CPSA                                                           39
+
+
+## 5 The CPSA Search Algorithm                                                                     40
+
+  5.1 Solving tests . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     41
+  5.2 Flawed Kerberos, revisited . . . . . . . . . . . . . . . . . . . . . . . . . . . .        42
+      5.2.1 The operation field . . . . . . . . . . . . . . . . . . . . . . . . . . . .         42
+
+6 Constraining CPSA’s search                                                                    46
+  6.1 Bundles: A Strand-Based Execution Model . . . . . . . . . . . . . . . . . .               46
+  6.2 Secrecy assumptions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         47
+  6.3 Diffie-Hellman declarations . . . . . . . . . . . . . . . . . . . . . . . . . . .         48
+  6.4 Declaring skeletons . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       48
+  6.5 A Caution about typos . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         50
+
+
+III     Advanced features of CPSA                                                               51
+
+
+## 7 Logical Security Goals and Rules                                                              52
+
+  7.1 Overview . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        55
+  7.2 Semantics . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       55
+  7.3 Examples . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        57
+      7.3.1 Needham-Schroeder Responder . . . . . . . . . . . . . . . . . . . . .               57
+      7.3.2 A Needham-Schroeder Secrecy Goal . . . . . . . . . . . . . . . . . .                59
+  7.4 The Rest of the Story . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         60
+  7.5 Syntactic Abbreviations . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         61
+  7.6 Shape Analysis Sentences . . . . . . . . . . . . . . . . . . . . . . . . . . . .          62
+  7.7 Rules . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     63
+      7.7.1 Facts . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       63
+      7.7.2 DoorSEP . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .           64
+      7.7.3 Generated rules . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         65
+      7.7.4 Rules generated for trace annotations . . . . . . . . . . . . . . . . .             69
+  7.8 Lemmas . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        75
+
+
+## 8 Channels and State                                                                            77
+
+  8.1 Channels . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      79
+      8.1.1 Yahalom with Channels . . . . . . . . . . . . . . . . . . . . . . . . .             80
+      8.1.2 Yahalom with Channels, 1: Role-level assumptions . . . . . . . . . .                81
+
+
+                                                 ii
+
+           8.1.3 Yahalom with Channels, 2: Per-strand assumptions . . . . . . . . . .               83
+     8.2   State . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    84
+           8.2.1 The axioms of state . . . . . . . . . . . . . . . . . . . . . . . . . . .          85
+           8.2.2 Consequences of the axioms . . . . . . . . . . . . . . . . . . . . . . .           86
+           8.2.3 Syntax for state . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       88
+           8.2.4 Channels and state: Summary . . . . . . . . . . . . . . . . . . . . .              90
+
+
+IV     Reference material                                                                          93
+
+
+## 9 Troubleshooting                                                                                  94
+
+  9.1 Non-termination . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .            94
+      9.1.1 Configuring the search . . . . . . . . . . . . . . . . . . . . . . . . . .             95
+  9.2 Error messages . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .           96
+
+
+## 10 CPSA Program                                                                             102
+
+   10.1 CPSA pre-processing . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 102
+   10.2 CPSA input syntax . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 103
+   10.3 Algebra reference . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 106
+        10.3.1 Basic crypto algebra . . . . . . . . . . . . . . . . . . . . . . . . . . . 106
+        10.3.2 The Diffie-Hellman crypto algebra . . . . . . . . . . . . . . . . . . . 107
+   10.4 Declaration syntax . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 107
+   10.5 Command-line options . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 107
+        10.5.1 Heralds . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 111
+
+
+## 11 CPSA Tools                                                                                      112
+
+
+
+
+
+                                                  iii
+
+List of Figures
+
+ 3.1 Needham-Schroeder roles . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        10
+ 3.2 Needham-Schroeder defprotocol . . . . . . . . . . . . . . . . . . . . . . . .            11
+ 3.3 Initiator point of view . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      12
+ 3.4 Responder point of view . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        12
+ 3.5 Needham-Schroeder search tree . . . . . . . . . . . . . . . . . . . . . . . . .          14
+ 3.6 Needham-Schroeder skeleton . . . . . . . . . . . . . . . . . . . . . . . . . . .         15
+ 3.7 NS shape, initiator point of view . . . . . . . . . . . . . . . . . . . . . . . .        17
+ 3.8 NS shape for responder point of view . . . . . . . . . . . . . . . . . . . . . .         19
+ 3.9 The Blanchet simple example protocol . . . . . . . . . . . . . . . . . . . . .           20
+ 3.10 Blanchet points of view . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       21
+ 3.11 Blanchet privacy search tree . . . . . . . . . . . . . . . . . . . . . . . . . . .      22
+ 3.12 Blanchet shape for responder’s point of view . . . . . . . . . . . . . . . . . .        23
+
+ 4.1   A flawed version of Kerberos . . . . . . . . . . . . . . . . . . . . . . . . . . .     27
+ 4.2   Flawed Kerberos point of view . . . . . . . . . . . . . . . . . . . . . . . . .        27
+ 4.3   Flawed Kerberos dead skeleton . . . . . . . . . . . . . . . . . . . . . . . . .        28
+ 4.4   Flawed Kerberos with a generic ticket . . . . . . . . . . . . . . . . . . . . .        29
+ 4.5   Flawed Kerberos shape . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      30
+ 4.6   Diffie-Hellman defprotocol . . . . . . . . . . . . . . . . . . . . . . . . . . . .     33
+ 4.7   Deletion of strand . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   34
+
+ 5.1   Flawed Kerberos key moment in analysis . . . . . . . . . . . . . . . . . . . .         44
+
+ 7.1   Needham-Schroeder Initiator Point of View . . . . . . . . . . . . . . . . . .          54
+ 7.2   Needham-Schroeder Responder Point of View . . . . . . . . . . . . . . . . .            58
+ 7.3   Needham-Schroeder Secrecy Goal . . . . . . . . . . . . . . . . . . . . . . . .         59
+ 7.4   Two Initiator Authentication Goals . . . . . . . . . . . . . . . . . . . . . . .       60
+ 7.5   Initiator Shape Analysis Sentence . . . . . . . . . . . . . . . . . . . . . . . .      62
+ 7.6   DoorSEP Protocol . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       64
+ 7.7   DoorSEP Weakness . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       65
+ 7.8   Door Simple Example Protocol . . . . . . . . . . . . . . . . . . . . . . . . .         66
+ 7.9   Rule with a flag to control its use . . . . . . . . . . . . . . . . . . . . . . . .    67
+
+                                              iv
+
+7.10 Minipay rely/guarantee formulas . . . . . . . . . . . . . . . . . . . . . . . .        72
+7.11 Goal statements, 1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     73
+7.12 Goal statements . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    74
+
+8.1   Yahalom (role decls.) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   81
+8.2   The responder’s point of view . . . . . . . . . . . . . . . . . . . . . . . . . .     82
+8.3   Responder’s first guarantee . . . . . . . . . . . . . . . . . . . . . . . . . . .     83
+8.4   Leads-to axioms . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   86
+8.5   Three derived rules for state: Scissors, no interruption, and cake . . . . . . .      86
+8.6   Device-open role causing door to open . . . . . . . . . . . . . . . . . . . . .       88
+8.7   State segments are critical sections . . . . . . . . . . . . . . . . . . . . . . .    91
+8.8   Critical section: Generated rules . . . . . . . . . . . . . . . . . . . . . . . .     91
+
+11.1 defprot Example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 114
+
+
+
+
+                                            v
+
+List of Tables
+
+ 4.1   Lang Field Syntax . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      37
+
+ 7.1   Goal syntax . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    53
+
+ 10.1 cpsa Input Syntax . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      104
+ 10.2 The Basic Cryptoalgebra . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      105
+ 10.3 cpsa Basic Algebra Syntax; sorts, operators id from Lang field . . . . . . .           106
+ 10.4 The Diffie-Hellman Cryptoalgebra . . . . . . . . . . . . . . . . . . . . . . . .       108
+ 10.5 cpsa Diffie-Hellman Algebra Syntax . . . . . . . . . . . . . . . . . . . . . .         109
+ 10.6 Declaration syntax . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     109
+
+ 11.1 defprot Grammar . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 113
+ 11.2 defprot commands . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 113
+
+
+
+
+                                             vi
+
+
+## Chapter 1
+
+
+Introduction
+
+cpsa, the Cryptographic Protocol Shapes Analyzer, is a software tool designed to assist in
+the design and analysis of cryptographic protocols. A cryptographic protocol is a specific
+pattern of interaction between principals. TLS and IKE are some examples of well-known
+cryptographic protocols.
+    The tool takes as input a protocol definition and a partial description of an execution,
+each built within a particular formal model by the user. It attempts to produce descriptions
+of all possible executions of the protocol that complete the partial description, consistent
+with the presence of a powerful network adversary capable of diverting, altering, replaying,
+or dropping network messages. Such an adversary may be able to manipulate honest par-
+ticipants into an unexpected execution, breaking a secrecy or authentication property that
+the protocol was intended to achieve.
+    Naturally, there are infinitely many possible executions of a useful protocol, since dif-
+ferent participants can run it with varying parameters, and the participants can run it
+repeatedly. However, for many naturally occurring protocols, there are only finitely many
+of these runs that are essentially different. Indeed, there are frequently very few, often just
+one or two, even in cases where the protocol is flawed. We call these minimal, essentially
+different executions the shapes of the protocol. Authentication and secrecy properties are
+easy to “read off” from the shapes, as are attacks and anomalies.
+    The analysis performed by cpsa is done within a pure Dolev-Yao model [3]; as such, the
+analysis reveals only structural flaws in the protocols it analyzes. It cannot detect flaws in
+underlying cryptographic algorithms or in actual implementations of protocol participants.
+    The purpose of this document is to provide the background required to make effective
+use of the cpsa software distribution.
+
+
+
+
+
+
+### 1.1    Recommended reading
+
+If you are new to cpsa, it is recommended that you first read Part I, which is introductory
+in nature and presented as a tutorial. Chapter 2 discusses how to download, install, and
+run the tool. Chapter 3 begins the tutorial describing how to use the tool, and Chapter 4
+describes some of the more important additional features.
+    Readers, especially those without direct access to an experienced user of the tool, are
+encouraged to attempt the “explorations” present from Chapter 3 onwards. The purpose of
+the explorations is to give the reader experience in the use of the tool and a chance to test
+his or her understanding of its features. After reading through the first part, you should be
+ready to attempt to use the tool to analyze a protocol that interests you, whether it be an
+existing protocol or one you need to design.
+    When you are ready for a deeper base of knowledge, read Part II. The chapters in
+Part II will be helpful as you cross from trying to understand how to use the tool to trying
+to impact your work on protocol design through use of the tool. Chapter 5 will be of
+general use as you try to understand the analyses cpsa conducts, and Chapter 6 will help
+you narrow the tool’s focus to what interests you.
+    Part III deals with special-purpose features of the tool. Chapter 8 deals with stateful
+protocols and Chapter 7 deals with logic-based protocol goals. You should read these
+chapters if those features seem important to you.
+    Part IV is reference material. Chapter 9 contains reference material about dealing with
+errors of various sorts that arise during the use of cpsa, while Chapter 10 documents the
+complete syntax of the tool.
+
+
+
+### 1.2    Tool components
+
+The distribution includes a number of separate executable command-line tools. Of these,
+three are key components of the core expected workflow: cpsa4, cpsa4graph, and cpsa4shape.
+The other tools are auxiliary utilities most general users will not need to use, although
+cpsa4diff is of some use to a general user when updating the tool.
+     The cpsa4 program takes as input one or more analysis problems (at least, a protocol
+and a partial description of an execution), and analyzes them one at a time. It outputs the
+full, step-by-step analysis for each problem, ultimately describing all possible full executions
+that complete the partial execution.
+     The cpsa4shape program takes an analysis and reduces it to an analysis that skips
+directly from analysis input to the set of shapes associated with that input.
+     The cpsa4graph program takes an analysis (from either cpsa4 or cpsa4shape) and
+formats it into an xhtml file and includes svg(scalable vector graphics) diagrams of each
+partial execution as well as the overall branching pattern of the analysis.
+     The expected work flow follows. An analysis problem is entered using an ordinary
+text editor, preferably one with support for Lisp syntax. The cpsa4 program uses an S-
+
+
+expression-based syntax for both input and output. S-expression is an abbreviation for a
+Symbolic Expression (as in the Lisp programming language).
+    The body of the input consists of two forms: defprotocol statements that describe a
+protocol, and defskeleton statements that describe a partial execution of a protocol. The
+exact details of both forms depend on the message algebra specified by the protocol.
+    Assuming there are no errors in the input, the analyzer will produce output as a text
+document. The text document contains each step used to derive a shape from a problem
+statement. It is common to filter the output using the cpsa4shapes program, and look
+only at the computed shapes associated with each problem statement.
+    The cpsa4graph program is applied to the output to produce a more readable, hyper-
+linked xhtml document that can be displayed in a standards-compliant web browser. See
+Chapter 11 for more information on the programs that come with a cpsa distribution.
+
+
+
+
+
+      Part I
+
+Basic use of CPSA
+
+
+
+
+
+
+## Chapter 2
+
+
+Setup and Installation
+
+
+### 2.1     Basic Installation
+
+The use of cpsa requires Haskell, the programming language in which cpsa is coded. Our
+recommendation is to use the Haskell Platform, which is available for Windows, Mac, and
+Linux. The “Core” platform is sufficient, but the “Full” platform is also fine. On Linux,
+install the haskell-platform package. Otherwise, follow the download and installation
+instructions at:
+
+                            http://www.haskell.org/platform/
+
+    To install cpsa, run in a terminal or command prompt:
+$ cabal update (to get the latest package list; this may take a while.)
+$ cabal install cpsa
+    Note that if you are behind a proxy, you may have to set the http proxy for your shell
+if you haven’t already. For example, on a mac:
+$ export http_proxy=http://proxy.myorg:port
+On Windows:
+$ set HTTP_PROXY=http://proxy.myorg:port
+    Cabal will install cpsa in a directory specified in its config file (usually in /.cabal/config,
+unless you’ve installed Haskell in a different directory). Instructions for changing your path
+are included in the config file. The final step in the cabal install process should print the
+location that cpsa has been installed in.
+
+
+### 2.1.1    Getting the Source
+
+If you have trouble with cabal, or if you’d like extra features such as the cpsa test suite
+of example protocols, you can download the current source distribution directly at:
+
+                               http://github.com/mitre/cpsa
+
+
+    There is a directory named cpsa4 at the top-level of the repository. It contains a copy
+of the cpsa sources downloaded and compiled using cabal. On all platforms, to install
+from this source, change into the cpsa4 directory and type:
+
+$ cabal update
+$ cabal install parallel
+$ cabal configure
+$ cabal build
+$ cabal install
+
+    Alternatively, there are other install options described in README.txt in the cpsa4
+directory.
+
+
+
+### 2.2    Finding Documentation
+
+cpsa comes with documentation, but it can be difficult to locate by hand when the tool
+has been installed through cabal. Run
+    $ cpsa4 -h
+to see the program’s help message, including the documentation directory, where this man-
+ual should be found.
+
+
+
+### 2.3    Running cpsa
+
+To analyze a protocol you have put in prob.scm type:
+
+$ cpsa4 -o prob.txt prob.scm
+$ cpsa4shapes -o prob_shapes.txt prob.txt
+$ cpsa4graph -o prob_shapes.xhtml prob_shapes.txt
+
+    See Section 10.5 for command-line options.
+    The cpsa4shapes command is optional, but recommended; it cuts down cpsa’s output
+to only show final results. Unless you’re doing detailed debugging, using it will make the
+output much easier to read.
+    To analyze a protocol without using the cpsa4shapes command, type:
+
+$ cpsa4 -o prob.txt prob.scm
+$ cpsa4graph -o prob.xhtml prob.txt
+
+   The .xhtml results can be opened in a web browser.
+
+
+
+
+
+2.3.1   cpsa Projects
+A cpsa project is a directory containing some cpsa input files and items that orchestrate
+the use of the various cpsa tools. To create a project, in a fresh directory, run cpsa4init.
+
+$ mkdir project
+$ cd project
+$ cpsa4init
+Created Makefile
+Created cpsa.mk
+Created Make.hs
+Created cpsa4prolog.pl
+
+   The cpsa4init will not overwrite a file if it is already present in the current directory.
+The distribution provides two ways to relieve users of the tedium of issuing individual
+commands.
+
+
+### 2.3.2   Using the cpsa Makefile
+
+The easiest way to orchestrate cpsa programs is to use GNU make. A cpsa project
+contains the files Makefile and cpsa4.mk. To analyze the problems in your project, type
+make. Edit the file Makefile to adjust program flags to suit your needs. For example, you
+many want to enable the use of multiple processors during protocol analysis as described
+in Section 2.3.5.
+    The cpsa program is Emacs friendly. If you run the above makefile via M-x compile,
+the results will be displayed in a buffer in Compilation Mode. The command C-x ‘ will
+visit the locus of the next error message or match (next-error) in your cpsa input file.
+
+
+### 2.3.3   Using the Haskell Makefile
+
+This approach is designed to be easy for Windows users, who do not want to bother installing
+Cygwin or MSYS.
+   Locate Make.hs in your project directory. If using Windows, double-click on the file
+and it will open up a new window with a prompt. On a Mac or Linux machine, run $ ghci
+Make.hs
+   From the Make.hs prompt, you can use the following commands:
+
+   • build: Run cpsa on all protocols (.scm files) in the directory, and produce .xhtml
+     output files displaying the results.
+
+   • clean: Remove all cpsa output files, to ensure that any changes to protocol files are
+     reflected in the output.
+
+
+
+        – Because intermediate files are used for behind-the-scenes processing, it can be
+          possible to have the results in the .xhtml output files not reflect the most up-to-
+          date protocol file contents. If you make changes and don’t see them reflected in
+          the output, try running clean. Getting into the habit of running clean before
+          build is a good idea.
+
+   • cpsa4 "protocolname ": Run cpsa on just the protocol provided. Note that the file
+     extension (.scm) should not be included in the name; if your protocol is in foo.scm,
+     you would run cpsa4 "foo". Most useful if you have an exceptionally large number
+     of protocols in a single directory.
+
+   • :q Quit.
+
+
+### 2.3.4   Memory usage
+
+On large problems, cpsa can consume large amounts of memory. To protect against mem-
+ory exhaustion, run cpsa with the command-line options +RTS -M512m -RTS. The initial
+makefile includes these options by default.
+
+
+### 2.3.5   Parallelism
+
+CPSA is built so it can make use of multiple processors. To make use of more than one
+processor, start CPSA with a runtime flag that specifies the number of processors to be
+used, such as +RTS -N4 -RTS. The GHC documentation describes the -N option in detail.
+
+
+
+
+
+
+## Chapter 3
+
+
+Basic Protocol Modeling and
+Analysis with CPSA
+
+This chapter is designed to be a tutorial for a new user with access to the tool, but totally
+unfamiliar with the ideas behind it. We will explain the basics of the tool while stepping
+through an example input and its output. Input and output for the examples in this chapter
+and in other chapters are included in the distribution. Explorations are included for readers
+to build their understanding of the tool through experience. If you are a new user but do
+not intend to work through the explorations, we recommend that you at least copy the
+input files and run the tool yourself to check that you can produce outputs mirroring those
+in the distribution.
+    The first protocol we discuss is the Needham-Schroeder protocol for establishing key
+transport over insecure networks. The protocol has two participants: an initiator a and a
+responder b. The intention is for the following interaction to take place:
+
+  1. a picks a fresh, random nonce n1 and encrypts a message containing n1 and a’s name
+     under b’s public encryption key, and sends the result to b.
+
+  2. b, on receiving such a message, picks a fresh random nonce n2 and encrypts a message
+     containing n1 and n2 under a’s public encryption key, and sends the result to a.
+
+  3. a, on receiving this reply, encrypts n2 under b’s public encryption key and sends the
+     result to b.
+
+    The intention is that a and b should have authenticated each other (that is, that a is
+communicating with b and vice versa) and that the pair of nonces establish a unique session
+of such authentication. The nonces should also be unreadable by the network adversary, so
+that they can be used to create a session key between a and b.
+    This protocol has a well known but non-obvious flaw discovered by Lowe [10] that cpsa
+can discover automatically.
+
+
+                      init      / {|n1 , a|}K            {|n1 , a|}Kb       / resp
+                                                b
+
+
+
+
+                                                                              
+                       •o       {|n1 , n2 |}Ka           {|n1 , n2 |}Ka o     •
+
+
+                                                                             
+                       •         / {|n2 |}K                {|n2 |}Kb         /•
+                                           b
+
+
+
+
+               Figure 3.1: Needham-Schroeder initiator and responder roles
+
+
+
+### 3.1     Basic CPSA modeling
+
+In order to use cpsa on this protocol, we must first understand some basics about how
+cpsa models protocols and messages.
+     Since cpsa’s aim is to analyze protocols in the presence of a powerful network attacker,
+we equate the network with the attacker, and do not model the notion of addressing of
+messages. The description provided above for Needham-Schroeder describes messages that
+(for instance) a sends to b. In cpsa, we ignore the intended recipient because the attacker
+is free to ignore it.
+     The protocol can be thought of as made up of the roles that entities can play during the
+protocol. In the case of Needham-Schroeder, there are two: the initiator and the responder.
+These roles describe the sequence of message-related events each party observes during the
+protocol. The events are described by giving a formula for the format of each message,
+along with an indiciation whether each event is a reception of a message or a transmission
+of one.
+     Messages in cpsa are represented as formally structured objects, specifically as terms
+in an order-sorted algebra [4]. Terms are either variables or functional outputs of simpler
+terms. Variables have types called sorts, and function symbols have specific signatures that
+specifies the sorts of each input and the sort of the output. The roles of Needham-Schroeder
+are given in Figure 3.1.
+     The messages in these roles are built from variables (n1 , n2 , a, b) and function symbols;
+the three function symbols used in this protocol are encryption, pairing, and the “key of”
+function.
+     {|m|}k denotes the encryption of message m under encryption key k. In cpsa, encryp-
+tion operators are always regarded as offering authenticated encryption, meaning that a
+participant without access to an encryption key is overwhelmingly unlikely to generate a
+message that can be successfully decrypted. This property is primarily relevant in symmet-
+ric (secret-key) kinds of encryption.
+     Terms in a pair are represented in comma-separated lists. And Ka denotes the result
+
+
+```scheme
+                       (defprotocol ns basic
+                         (defrole init
+                           (vars (a b name) (n1 n2 text))
+                           (trace (send (enc n1 a (pubk b)))
+                                  (recv (enc n1 n2 (pubk a)))
+                                  (send (enc n2 (pubk b))))
+                         (defrole resp . . . ))
+```
+
+
+                       Figure 3.2: Needham-Schroeder defprotocol
+
+
+of the “key of” function symbol on input a. This represents the public key (either an
+encryption key or a signature verification key) of a. The values n1 and n2 are of a different
+sort than a and b: the latter are names to which the K(·) function can be applied, while n1
+and n2 are simple values.
+    In addition to a description of the protocol, cpsa expects the description of what we
+call a skeleton—a partial protocol execution. A skeleton is made up of instances of the
+roles, that is, viewpoints of honest parties, along with what values are associated with the
+variables in those viewpoints. These viewpoints may be partial, but they always represent
+a prefix of a full role.
+
+
+
+### 3.2    CPSA input
+
+The ns.scm file in the examples directory contains a protocol description for Needham-
+Schroeder and two skeletons: one representing the viewpoint of a completed initiator, and
+one representing the viewpoint of a completed responder. The .scm extension used for
+cpsa input files refers to the Scheme programming language, which is a language derived
+from Lisp. This allows the user to make use of an IDE or text editor that knows about
+Scheme syntax, for ease of editing input files. The cpsa tool itself does not require any
+particular extension, but auxiliary tools may, including the Make.hs program described in
+Section 2.3.
+     The input file for Needham-Schroeder contains comments found on lines beginning with
+‘;’, and four top-level S-Expressions: a herald, a defprotocol, and two defskeletons. We
+will describe heralds in Section 10.5.1; ignore them for now.
+     The defprotocol S-expression describes and names a protocol, while the defskeleton
+describes a skeleton, referencing a particular protocol. A portion of the Needham-Schroeder
+defprotocol is reproduced in Figure 3.2 for ease of reference.
+     A defprotocol S-expression starts with a protocol name, ns in this case, followed by
+the name of a message algebra. The basic algebra contains enough elements to describe
+Needham-Schroeder and most simple examples; the only other algebra contained in the
+
+
+
+```scheme
+                         (defskeleton ns
+                           (vars (b name) (n1 text))
+                           (defstrand init 3 (b b) (n1 n1))
+                           (non-orig (privk b))
+                           (uniq-orig n1))
+```
+
+                             Figure 3.3: Initiator point of view
+
+```scheme
+                         (defskeleton ns
+                           (vars (a name) (n2 text))
+                           (defstrand resp 3 (a a) (n2 n2))
+                           (non-orig (privk a))
+                           (uniq-orig n2))
+```
+
+                           Figure 3.4: Responder point of view
+
+
+cpsa distribution is diffie-hellman; see Chapter 4, and specifically Section 4.2, for details
+of the Diffie-Hellman algbera.
+    The rest of the defprotocol S-expression is a sequence of roles, each defined by a
+defrole S-expression. In our example, there are two roles, and thus two defroles, the first
+defining the initiator role (init) and the latter describing the responder role (resp).
+    The first input to a defrole is a role name; the second should be a set of variable
+declarations (vars), and the third should be a trace declaration which describes the event
+sequence of the role. The variable declarations define and give types to the variables used
+in the role’s trace. The trace S-expression defines the list of events: a recv S-expression
+describes a reception and send describes a transmission.
+    Function symbols in the cpsa message algebra have specific S-expressions associated
+with them. enc denotes an encryption, cat denotes a pair, and pubk denotes the “key of”
+function. You may notice that cat does not occur in the figure: this is because its use is
+hidden by “syntactic sugar”—a convenient shortcut in the syntax. The message (enc n1 a
+(pubk b)) is more properly the encryption of the pair (n1 , a) under the key Kb , but when
+an enc S-expression is given more than two inputs, it is assumed that all but the last are
+concatenated together using pairs.
+    In Figures 3.3 and 3.4, we reproduce the skeletons described in our example input file. A
+defskeleton S-expression includes first of all a protocol name, then variable declarations,
+and then a list of instances, most of which are defined by the defstrand S-expression.
+A defstrand includes an input specifying the name of the role the strand is an instance
+of, as well as a height, that is, a number of the events (send / recv) in the role that
+are to be reflected in the instance, starting from the first event. In our example input,
+each defskeleton includes one defstrand, which defines an instance of height 3 since that
+refers to a full execution of either role in the protocol. A defstrand S-expression may
+
+
+
+optionally include maplets that specify values to be used to instantiate variables in the role
+specification. A maplet is a parentheses-delimited pair where the first element is the name
+of the role variable to be instantiated and the second is the value, which can be any term
+formed over the variables declared in the vars portion of the defskeleton.
+    A defskeleton will usually have one or more declarations in it that restrict the class
+of executions the tool is to explore. Here, each example includes two declarations: one
+non-orig declaration and one uniq-orig declaration. Declarations must be made about
+expressions that can be parsed given the variables in the defskeleton; it is because of these
+declarations that we specify an instantiation of certain variables in a defstrand.
+    A non-orig declaration specifies a value (usually a symmetric or private key) as secret
+and never sent by honest parties in any potentially decryptable form. A uniq-orig dec-
+laration specifies a value as being randomly and freshly chosen where it first occurs in a
+transmission. Here, the initiator point of view specifies two assumptions: that the initiator
+picks her own nonce properly (i.e. randomly), and that the initiator’s intended communi-
+cation partner has an uncompromised private key. Similarly, the responder’s point of view
+assumes that the the responder picks his own nonce properly and that his intended partner
+has an uncompromised private key.
+
+
+
+### 3.3    CPSA output
+
+When we run the cpsa tool on the Needham-Schroeder input file, and then run the
+cpsa4graph graphing tool on the result, we obtain a .xhtml file that can be viewed in
+a web browser. The ns.xhtml file in the examples directory contains these results.
+     The graphing output contains some top matter that includes the herald from the input
+file. Below this is a list of trees, each of which represents the analysis of one of the input
+defskeletons; in the case of our example, there are two trees.
+     The rest of the graph output consists of the search results. The numbers in the list of
+trees link to the start of each tree. Each search result starts with an identification (“Tree
+0” in the example), followed by a graph of the search, then the defprotocol used in that
+search, and then the skeletons considered by cpsa during its analysis. Figure 3.5 illustrates
+the list of trees, the tree identification, and that tree’s search graph.
+     The search tree diagrams the steps in the search. Each skeleton in the entire graph
+file has a label, a number starting from 0. The number associated with a tree is the label
+number of the input skeleton. The left edge of the search graph is the root of the tree: in
+the case of Figure 3.5, the graph does not look very tree-like because the analysis doesn’t
+branch. The numbers in the graph are the labels of the skeletons considered by cpsa during
+its analysis, and clicking on a number will direct the browser to display the corresponding
+skeleton.
+     The process by which cpsa analyzes a skeleton is the repeated use of an operation called
+the cohort, which takes an input skeleton and produces a set of more refined skeletons that
+
+
+
+         Figure 3.5: Search tree diagram for the initiator point of view in ns.xhtml
+
+
+cover all the possible executions the input skeleton covered. The relationship between a
+parent skeleton and a child is that a child is included in the cohort calculated with the
+parent as an input.
+    Numbers are normally displayed in black, but may also be displayed in other colors.
+Blue numbers represent shapes, that is, skeletons that represent a minimal execution.1 Red
+numbers represent dead skeletons, that is, skeletons that represent partial executions that
+are not part of any actual execution—in other words, impossible scenarios.
+    Numbers may occur in the tree more than once, because it is possible that cpsa will dis-
+cover a particular skeleton through more than one branch of the analysis. Green, italicized
+numbers represent skeletons present in more than one branch that are not dead skeletons,
+while orange italicized numbers represent dead skeletons present in more than one branch.
+    Each skeleton starts with a line that indicates its label (item) and the labels of its
+parent ((parent), if any) and its children ((child), if any) See Fig. 3.6) The parent and
+child numbers link to those skeletons, while the “item” number links back to the tree this
+skeleton is part of.
+    Below the diagram is a defskeleton that fully describes the skeleton. This text is fully
+compatible with cpsa input and can be used as a skeleton input for analysis with this
+protocol, although some of the fields in it are added by cpsa and would be ignored during
+input, for instance, the label and parent fields.
+    The diagram shows the skeleton as a graph. Strands are columns, ordered from top
+to bottom. The nodes in the graph are events, normally transmissions or receptions of
+messages. Nodes may be blue, red, or black; a black node represents a transmission, while
+blue and red nodes represent receptions. A blue node represents an explainable reception
+while a red node represents an unexplainable one. The left-most strands in a skeleton are
+normally the strands from the input defskeleton.
+    Note that sometimes cpsa encounters a realized skeleton representing an actual execution before a
+shape. It does further analysis once a realized skeleton is reached in order to generalize that skeleton as
+much as possible to obtain a minimal execution (i.e., a shape). Realized skeletons that are not shapes are
+displayed in gray. See page 33 for more detail on generalization.
+
+
+
+
+Figure 3.6: Skeleton from the initiator point of view in ns.xhtml
+
+
+
+
+    The user may hover their mouse cursor over any node and will see a display of the
+S-expression describing the message at that event (see Figure 3.6). Here, if we hover over
+the red node (as shown) we will see that this is an event where the initiator receives the
+message {|n1, n2|}Ka . This occurs after two transmissions: the first event in the init strand
+and the second in the resp strand. Those two transmissions are {|n1, a|}Kb and {|n1, n20 |}Ka .
+Neither transmission is the expected message, but sometimes a reception can be explained
+even if no regular node sends the exact message. Here, it is a question of what the adversary
+can build given the messages available. In this skeleton there are non-orig or uniq-orig
+assumptions about n1, SKa , and SKb , so since both messages are encrypted under keys
+for which we have a secrecy assumption on the decryption key, the adversary is unable to
+decrypt them. The adversary is also unable to build the required message: although the
+adversary is allowed access to n2 and Ka (since there are no restrictions on those), the
+adversary does not have access to n1. Hence, this node is unexplainable.
+    Arrows in the diagram represent basic orderings in the skeleton; arrows go from earlier
+events to later events. An arrow is solid when it goes from an event transmitting a message
+to one receiving the same message. So the blue node in this example is obviously explained
+because the exact message was transmitted by the initiator, specifically, at the first node
+in the initiator strand. The arrow ending at the red node is dashed because the messages
+do not agree, but it still represents that in this skeleton the second node of the responder
+strand occurs before the second node of the initiator strand.
+
+
+
+### 3.4    Interpreting shapes
+
+Next, we turn our attention to Figure 3.7, which is the one shape found by cpsa during
+the search on the initiator point of view.
+    Before we get into detail on what is contained in this skeleton, note the graph. All the
+arrows are solid, and there are arrows everywhere we expect them to be. This describes
+a message being sent by an initiator and received, unaltered, by a responder, who then
+sends a message that is received, again unaltered, by the same initiator, who then sends a
+message.
+    The user can hover their mouse cursor over the name of the role at the top of a strand
+in the skeleton diagram to see the variable assignment used in that instance. Here, hovering
+over both the instances indicates that they are in agreement about the values of n1, n2, a,
+and b: that is, the initiator’s internal value for each variable is the same as the responder’s
+internal value for the variable of the same name.
+    It may seem slightly odd that the initiator sends a message in its third node that is not
+received by anyone, but we know that in general it need not be received. The adversary
+completely controls the network, so it does not have to deliver that message.
+
+
+
+
+
+Figure 3.7: The only shape from the initiator point of view (ns.xhtml)
+
+
+
+
+The responder’s point of view. The shape found during the search on the responder’s
+point of view, however, includes something unusual. See Figure 3.8.
+     The graph of this shape should look less like expected behavior. Two things look odd,
+even at first glance. Most noticeable is the dashed arrow from the third initiator node to
+the third responder node. Also, there’s the fact that there is a blue node (the one in the
+top left) that does not have any arrow coming in.
+     Inspection of the instances in this shape reveals that the initiator and responder agree
+on all the values except for b. This explains the dashed arrow: the initiator sends {|n2|}Kb0
+but the responder receives {|n2|}Kb ; these messages are not the same, which is why the arrow
+is not solid. As for how the responder could receive the proper value, note that we only
+assumed SKa and SKb are secure, but we did not assume SKb0 was secure. It would have
+been hard to do so, since b0 is a value we know nothing about from the responder’s point
+of view. The initiator’s transmission of {|n2|}Kb0 thus does not protect n2 from decryption,
+so an attacker could have created the responder’s received message by encrypting n2 under
+Kb .
+     The lack of an incoming arrow for the responder’s first node can be explained because
+of the lack of any assumption about the value n1. The value n1 is the initiator’s nonce, but
+this analysis does not assume that an initiator, if present, will choose their nonce properly.
+So n1 could actually be a value already chosen by the adversary, and the message {|n1, a|}Kb
+can be constructed and delivered to the responder before the initiator even starts.
+     The fact that the initiator and responder do not agree on b is an interesting feature of
+this protocol. We know from the initiator’s point of view that the initiator a, when they
+have completed their execution, can infer that b has taken part in the responder role with
+a, and that they agree on both nonces.
+     The responder’s point of view leads to less information. The responder b knows that a
+has taken part in the initiator role, but does not know that a intended to initate commu-
+nication with b. This lets us conclude that the Needham-Schroeder protocol provides less
+than an ideal level of authentication.
+
+Exploration 3.1. The attack described above was first identified by Gavin Lowe [10], who
+also proposed a fix, namely, to have the second message in the Needham-Schroeder protocol
+include the name b of the responder.
+    Make a copy of the Needham-Schroeder input file and modify the protocol so that the
+second message (in both roles) includes a b. Run the analysis again and graph it. You
+should observe that the disagreement on b from the responder’s point of view is no longer
+possible, and that the initiator’s point of view is still good.
+
+
+3.5    Blanchet’s simple example protocol
+Next we turn our attention to a second protocol, which will help build the reader’s ex-
+perience with cpsa and also introduce some additional features. This protocol is due to
+
+
+Figure 3.8: The only shape in the responder point of view search in ns.xhtml
+
+
+
+
+
+```scheme
+                     (defprotocol blanchet basic
+                       (defrole init
+                         (vars (a b akey) (s skey) (d data))
+                         (trace (send (enc (enc s (invk a)) b))
+                                (recv (enc d s)))
+                         (uniq-orig s))
+                       (defrole resp
+                         (vars (a b akey) (s skey) (d data))
+                         (trace (recv (enc (enc s (invk a)) b))
+                                (send (enc d s)))
+                         (uniq-orig d)))
+```
+
+                    Figure 3.9: The Blanchet simple example protocol
+
+Bruno Blanchet, and has a flaw introduced by design for the purpose of discussing protocol
+analysis. In this protocol there are again two participants: an initiator and a responder.
+However, in this protocol, we do not use names, just public keys. Specifically, one party
+has a public signing key (a), while the other has a public encryption key (b).
+   The protocol is as follows, informally:
+
+   • The initiator chooses a fresh, random session key s, signs it with their private signing
+     key (corresponding to the public key a), and encrypts it with the responder’s public
+     key b and sends the result to the responder.
+
+   • The responder receives and decrypts such a message, confirms the signature, and then
+     encrypts a piece of data d under s and sends this back to the initiator.
+
+    The file blanchet.scm in the examples directory contains Blanchet’s simple example
+protocol described above. See Figure 3.9 for the protocol declaration.
+    There are several elements of this protocol input that are new. First of all, the Needham-
+Schroeder protocol used only two types: name and text, while this protocol uses three new
+types. The data type is for simple values, much like text. In fact, the two types are
+interchangeable, but both are available for cases where an analyst may wish to describe a
+protocol in which two types of simple values exist that cannot be confused for each other.
+    The akey and skey types are for keys, specifically, asymmetric and symmetric keys,
+respectively. The invk function symbol maps an asymmetric key to its inverse.
+    Note that we use (enc s (invk a)) to represent the digital signature. A digital sig-
+nature in the cpsa message algebra is represented as an encryption under the signature
+key.
+    A third feature is the presence of a delcaration such as (uniq-orig s) within a defrole.
+Like the uniq-orig declaration that can appear in a skeleton, this declaration indicates
+that the value contained inside is freshly chosen. When this declaration appears in the role,
+
+
+```scheme
+                   (defskeleton blanchet
+                     (vars (a b akey) (s skey) (d data))
+                     (defstrand init 2 (a a) (b b) (s s) (d d))
+                     (deflistener d)
+                     (non-orig (invk b)))
+```
+
+```scheme
+                   (defskeleton blanchet
+                     (vars (a b akey) (s skey) (d data))
+                     (defstrand resp 2 (a a) (b b) (s s) (d d))
+                     (deflistener d)
+                     (non-orig (invk a) (invk b)))
+```
+
+
+                           Figure 3.10: Blanchet points of view
+
+
+however, the assumption is that the value is freshly chosen by every honest participant
+in the protocol who plays that role. Declarations present in a role are inherited by every
+skeleton with an instance of that role. See Chapter 6 for more on the declarations supported
+by cpsa.
+
+Exploration 3.2. Make a variant of the Needham-Schroeder protocol in which the fresh-
+ness of each party’s nonce is assumed via a uniq-orig declaration in the protocol role. Run
+the analysis from each participant’s point of view. What differs in the shapes, and why?
+(There should be one difference that’s noticeable in the graph of one of the shapes.)
+
+Exploration 3.3. Make a variant of the Needham-Schroeder protocol in which the secrecy
+of each party’s partner’s private key is assumed via a non-orig declaration in the protocol
+role. Run the analysis from each participant’s point of view.
+    You should observe that the authentication failure is no longer present in the shape
+from the analysis of the responder’s viewpoint. What conclusion can you draw about this
+declaration? Did we fix the protocol? If not, why does the analysis seem to contain no
+flaws?
+
+    The blanchet.scm file contains four inputs to the analysis. The first and second are
+just the points of view of each participant, under typical assumptions. But the third and
+fourth contain another new element. See Figure 3.10 for these two inputs.
+    These two inputs are prepared to ask a confidentiality question: specifically, is the
+value d exposed to the adversary? A listener is a pseudo-role that is considered part of
+all protocols by cpsa. That role consists of receiving some arbitrary message and then
+sending that same message. Listeners can show up in cpsa analyses, in order to handle a
+case where a certain value is learnable, so that the rest of the case breakdown can assume
+that value is not learnable.
+
+
+Figure 3.11: The search tree for the privacy of d in the initiator’s point of view in
+blanchet.xhtml
+
+    In this protocol, the secret data d remains private in the initiator’s point of view.
+Figure 3.11 shows the search tree for the point of view in which the initiator completes the
+protocol and in which there is a listener for the same d value the initiator hears. The fact
+that all the numbers are red here indicates that all the skeletons in the search are “dead”,
+meaning that they are inconsistent with any actual executions. In other words, there are
+no executions in which d is revealed given our assumption that the private decryption key
+of b is not compromised.
+    However, d does not remain private in the responder’s point of view. Figure 3.12 shows
+the graph of a shape for the point of view in which the responder completes the protocol
+and in which there is a listener for the d value the responder sends. Note that although d
+is encrypted under s, and s is freshly chosen by an initiator, the shape shows that s can
+leak. We are not guaranteed that the initiator and responder agree on b. Therefore, the
+initiator may have sent s encrypted with b0 , and since the private key corresponding to b0
+is not necessarily secret, s may leak.
+    The blanchet.scm file also contains a second protocol named blanchet-corrected in
+which the flaw that allows d to be learned in the responder’s point of view is eliminated.
+Exploration 3.4. Modify the Blanchet protocol to add a role that is identical to the
+initiator role, except that s is not declared uniq-orig. What impact does this have on the
+analyses?
+Exploration 3.5. If you modify the Blanchet protocol to instead add a role that is identical
+to the responder role, except that d is not declared uniq-orig, what impact do you believe
+this will have on the analyses? Make a prediction, then check your prediction.
+
+
+Figure 3.12: The only shape in the analysis for the responder’s point of view with a listener
+for d in blanchet.xhtml. The second strand, with no role name, is the listener.
+
+
+
+
+Exploration 3.6. Try modifying the Blanchet protocol, removing the uniq-orig declara-
+tions from the two roles. Replace the defskeletons in the input file with the point of view
+skeletons for the un-corrected version of the Blanchet protocol from blanchet.xhtml; these
+skeletons will explicitly include declarations that would be inherited but were lost due to
+the removal of the role declaration.
+
+
+
+
+
+
+## Chapter 4
+
+
+Algebra Features of CPSA
+
+The cpsa distribution comes equipped with one cryptographic algebra. For reasons of back-
+wards compatibility it has two names: the basic cryptoalgebra and the diffie-hellman
+cryptoalgebra. Previous versions of cpsa had separate implementations, but since the
+Diffie-Hellman algebra was a pure extension of the basic algebra, we have merged them
+back into one. Thus, the Diffie-Hellman features are always available, even when the user
+specifies the basic algebra.
+    In Chapter 3, we introduced basic components of the cryptoalgebra such as the data,
+text, name, skey, and akey sorts, and the pubk, privk, invk, enc, and cat function
+symbols. In addition to these, there are the sorts tag and mesg, and the ltk, bltk, and
+hash function symbols, and string constants. To represent Diffie-Hellman values we include
+two further sorts, rndx and expt, and five new function symbols, exp, rec, mul, gen,
+and one.
+    At one time variables of sort base were also permitted, but a variable b of sort base has
+the same meaning as a term (exp (gen) alpha) where alpha is of sort expt. Eliminating
+variables of sort base allows us to eliminate some tricky but conceptually unnecessary,
+even practically unnecessary, code. Thus, replace these variables with (exp (gen) alpha),
+where alpha is a variable of sort expt. We still refer to these terms as having sort base,
+since they may be the bases for further exponentiation, but there are no variables of this
+sort.
+    In this chapter we will explain these additional features with examples. In Section 4.1,
+we will discuss the ltk function symbol and the use of the mesg sort, worked with an
+example based on the Kerberos protocol. In Section 4.2, we will discuss the tool’s Diffie-
+Hellman features. In Section 4.3, we will discuss the remaining features, and note examples
+that demonstrate their use. For a more complete reference about the two algebras, see
+Section 10.3.
+
+
+
+
+
+
+### 4.1    Generic messages and long-term keys
+
+Securing communications purely with symmetric keys faces an inherent scaling problem:
+when there are n parties that may wish to communicate, there must be O(n2 ) keys shared
+between parties, which gets to be too many in any system with a large number of users.
+    The Kerberos protocol is a well-known protocol for the distribution of symmetric keys.
+Instead of having the n parties share keys with each other party, the users share a key only
+with a central key server (also known as a key distribution center). The key server controls
+key distribution within a realm that can be thought of as the set of users that share keys
+with the key server.
+    Suppose a user wishes to communicate securely with another user in the same realm.
+The first user would contact the key server and request a session key for communication
+with the other user. The key server could then encrypt the session key twice, once under
+each user’s shared key with the server. One encrypted key is sent back to the user that
+requested the channel, and the other (called the “ticket”) is also sent to the requesting user,
+to be forwarded on to their communication partner.
+    We will focus on a flawed protocol similar to the initialization protocol used by Kerberos.
+The protocol is described informally as follows. There are three parties, the initiator a, the
+responder b, and the key server s.
+
+   • a sends a message (a, b, n) to the key server, where n is a freshly chosen nonce.
+
+   • The key server, on a message (a, b, n), picks a fresh, random session key k, and sends
+     two encryptions to a: {|k, n|}SK(a,s) and {|k, a, b|}SK(b,s) . Here, SK(x, s) refers to the
+     shared secret between the key server and x.
+
+   • a receives these two messages, decrypts the first to learn k and to check that the
+     proper nonce n was included, then sends a message m on to the responder, encrypted
+     under k, along with the second message (the ticket).
+
+   • b receives two encrypted messages, decrypts the second to learn k, and decrypts the
+     first with k to learn the message.
+
+    The ltk function symbol is used in cpsa to represent long-term shared keys between two
+specific parties, when communication of that key is assumed out of scope of the analysis. See
+Figure 4.1 for a defprotocol that attempts to describe this flawed version of the Kerberos
+initialization protocol. See kerb.scm in the examples directory for the input file discussed
+here.
+    The actual Kerberos protocol contains several additional elements that we omit for
+simplicity, but the key difference is that the message encrypted under SK(a, s) should
+include b. The message from the initiator that requests a session key is transmitted in the
+clear and can be tampered with, so the initiator needs assurance that the session key k is
+
+
+
+```scheme
+      (defprotocol kerb-flawed basic
+        (defrole init
+          (vars (a b s name) (m n text) (k skey))
+          (trace (send (cat a b n))
+                 (recv (cat (enc k n (ltk a s)) (enc k a b (ltk b s))))
+                 (send (cat (enc m k) (enc k a b (ltk b s)))))
+          (uniq-orig n))
+        (defrole keyserv
+          (vars (a b s name) (n text) (k skey))
+          (trace (recv (cat a b n))
+                 (send (cat (enc k n (ltk a s)) (enc k a b (ltk b s)))))
+          (uniq-orig k))
+        (defrole resp
+          (vars (a b s name) (m n text) (k skey))
+          (trace (recv (cat (enc m k) (enc k a b (ltk b s)))))))
+```
+
+                         Figure 4.1: A flawed version of Kerberos
+
+```scheme
+                  (defskeleton kerb-flawed
+                    (vars (a b s name) (m text))
+                    (defstrandmax init (a a) (b b) (s s) (m m))
+                    (deflistener m)
+                    (non-orig (ltk a s) (ltk b s))
+                    (uniq-orig m))
+```
+
+                        Figure 4.2: Flawed Kerberos point of view
+
+
+being exposed only to the initiator and b. Otherwise, even assuming the long-term keys of
+both a and b with the key server are secure, a third party may observe the message m: all
+the adversary has to do is block the initial message and substitute b with another name c.
+    Will cpsa find this attack? See kerb.xhtml for the results of the analysis for the point-
+of-view skeleton described in Figure 4.2. Note the use of defstrandmax; this is a shortcut
+you can use in cpsa to specify a full-height instance of a role.
+    Interestingly, the result of the analysis does not indicate any attack is possible! The
+analysis gets stuck at a skeleton (see Figure 4.3) where the key server does in fact generate
+a session key for a and b, and where that session key is exposed, but it cannot be exposed if
+it was generated for a and b and if we are assuming both of their long-term keys are private.
+    The reason cpsa gets the wrong result here is that we have inadvertently modeled
+our protocol question incorrectly. Specifically, we have described a version of the protocol
+where the initiator is able to check the validity of the ticket. The attack we have in mind
+is one where the two encrypted keys received by the initiator are prepared by a key server
+
+
+
+Figure 4.3: Flawed Kerberos dead skeleton. The use of the mesg sort provides a fix to this
+badly modeled version of the protocol.
+
+
+
+
+```scheme
+       (defprotocol kerb-flawed2 basic
+         (defrole init
+           (vars (a b s name) (m n text) (ticket mesg) (k skey))
+           (trace (send (cat a b n))
+                  (recv (cat (enc k n (ltk a s)) ticket))
+                  (send (cat (enc m k) ticket)))
+           (uniq-orig n))
+         (defrole keyserv
+           (vars (a b s name) (n text) (k skey))
+           (trace (recv (cat a b n))
+                  (send (cat (enc k n (ltk a s)) (enc k a b (ltk b s)))))
+           (uniq-orig k))
+         (defrole resp
+           (vars (a b s name) (m n text) (k skey))
+           (trace (recv (cat (enc m k) (enc k a b (ltk b s)))))))
+```
+
+
+          Figure 4.4: Using a variable of sort mesg in a flawed version of Kerberos
+
+
+instance, but one which does not agree with the initiator on b. However, the ticket would
+not match what the initiator expects in our expression of the initiator role.1
+    We described an initiator that will only proceed onto the third step (sending m) if the
+ticket is of the form we specified. In fact, the initiator cannot do this. The initiator cannot
+even verify that the ticket is encrypted under the correct key! The solution is to use a
+generic variable, one that can stand for any message, even one that a particular participant
+cannot parse or understand. The mesg sort is the sort of all possible messages, so a variable
+of the mesg sort can stand for any potential value at all. See Figure 4.4 for a version that
+models the initiator’s reception properly. Note the ticket variable in the initiator role,
+which stands for the ticket value the initiator cannot inspect.
+    This version of the flawed Kerberos protocol may also be found in the file kerb.scm, and
+its analysis may be found in kerb.xhtml. This time, there is a shape found. See Figure 4.5.
+
+Notes on generic variables. Variables of the mesg sort are constrained in cpsa, and
+may only be used when they are received before they are transmitted. So for instance the
+m variable in the initiator role of the flawed Kerberos protocol cannot be of the mesg sort,
+because it appears first in a transmission. However, if the responder is willing to accept an
+encryption of any message m, then m may declared as a variable of the mesg sort within
+that role.
+     An alert reader may wonder how they could detect such an error of their own when using the tool. We
+will return to this example in Chapter 5, when we discuss how the cpsa search process works.
+
+
+
+
+Figure 4.5: Flawed Kerberos shape. The use of the mesg variable allows us to find the
+attack illustrated here.
+
+
+
+
+   Also, variables of the mesg sort should never be used as a key in any encryption. This is
+because cpsa uses a single function symbol to represent both symmetric and asymmetric
+encryption, and when the key is a variable of sort mesg, it is ambiguous which is meant.
+
+Notes on long-term keys. Long-term keys are uni-directional: (ltk a b) and (ltk b
+a) are distinct values. In fact, cpsa believes that they cannot be the same unless a = b.
+This is fine for modeling protocols like Kerberos where there is a clear distinction between
+client and server behavior. Note that in our protocol example, all long-term keys were
+described in all roles with a client name in the first position and a server name in the
+second position. See Section 4.3.3 for discussion of the bltk function symbol, which models
+bi-directional long-term symmetric keys.
+    For another example of the use of long-term symmetric keys in a protocol, see yahalom.scm
+in the examples directory.
+Exploration 4.1. Fix the flawed version of Kerberos so that the initiator can believe their
+transmission is private to them and b. Continue to use the ticket variable of sort mesg.
+    Construct a defskeleton for the responder’s point of view for your fixed protocol,
+analyze it, and explain in English what authentication property this analysis implies.
+Exploration 4.2. Construct a defskeleton for the initiator’s point of view, without the
+listener for m, in the fixed version you created in Exercise 4.1. Run the tool on your
+defskeleton. Why are there dashed arrows in the result? Does this represent an insecurity
+in the protocol?
+    Whether or not you think this is an insecurity, think about how you would alter the
+protocol to avoid the dashed arrows, and try out your ideas.
+   The Otway-Rees protocol is another example of very similar modeling; see or.scm and
+or.xhtml if you wish to explore these issues further on your own.
+
+
+
+### 4.2    Modeling Diffie-Hellman
+
+In their seminal 1976 paper, “New Directions in Cryptography”, Diffie and Hellman proposed
+the notion of public-key cryptography [1]. They did not have a method for public-key direct
+encryption, but they did have a key exchange protocol that has become a crucial building
+block in cryptographic protocols.
+    The Diffie-Hellman protocol works as follows. A large prime number p is chosen and
+agreed upon as a parameter, and g is chosen to be some integer modulo p. In order to enable
+secure communication between arbitrary parties, Diffie and Hellman imagined a directory
+of public values, like a phone book. Each person who wishes to be able to communicate
+securely with others will generate for themselves a private value x, and publicize g x mod p
+as their public value. If Alice’s private value is a, and Bob’s private value is b, then the
+shared secret between Alice and Bob would be g ab mod p, which each party can calcuate
+
+
+from their own private value and their partner’s public value. For instance, Alice can
+calculate g ab ≡ (g b )a mod p.
+    The cryptoalgebra for cpsa includes features to represent values that allow for analysis
+of protocols that incorporate Diffie-Hellman techniques. Whether the user asks for the
+basic algebra or the Diffie-Hellman algebra, the result is the same: They get an algebra
+that includes all the function symbols and sorts available in the original basic algebra, plus
+two additional sorts of variable, namely the two sorts rndx and expt for exponents such as
+x. The Diffie-Hellman specific function symbols are as follows:
+
+   • exp represents exponentation. For example, hx is encoded as
+     (exp h x).
+
+   • mul represents multiplication of exponents. So if x is an exponent,
+     (mul x x) would represent the square of x.
+
+   • gen represents the standard generator g. It is probably best to think of gen as a
+     constant, i.e. a function symbol with arity 0.
+
+   • one represents the multiplicative identity for the group of exponents. Like gen, one
+     is a 0-ary function.
+     Important: gen and one are functions, so they must be enclosed in parentheses. So
+     (exp (gen) x) represents g x , while (exp gen x) would represent genx where gen is
+     expected to be a variable. Similarly, (mul (one) x) represents 1 · x while (mul one
+     x) would represent one · x where the tool expects one to be an exponent variable. (In
+     fact, using (exp gen x) would result in an error message since cpsa does not allow
+     variables of the same sort base as (gen). But (mul one x) would produce no error
+     because one can be the name of an expt variable.)
+
+   • rec represents the multiplicative inverse in the group of exponents. So for instance
+     (exp (exp (gen) x) (rec x)) = (exp (gen) (one)) = (gen).
+
+    At this time, cpsa does not model addition of exponents, although there are many
+examples of protocols that add or subtract exponents. There is no way to take a product
+of exponentiated values either (e.g. g x · g y ) since this would be equivalent to including
+addition of exponents.
+    Several examples of Diffie-Hellman protocols are available in the examples directory
+of the distribution. The plaindh.scm example models a simple, unauthenticated Diffie-
+Hellman exchange between two parties.
+    The initiator and responder perform a Diffie-Hellman exchange, followed by the initiator
+choosing a random nonce n and sending it, encrypted with the Diffie-Hellman key, to the
+responder, who decrypts n and sends it back.
+
+
+
+
+```scheme
+                  (defprotocol plaindh diffie-hellman
+                    (defrole init
+                      (vars (x rndx) (y expt) (n text))
+                      (trace (send (exp (gen) x))
+                             (recv (exp (gen) y))
+                             (send (enc n (exp (gen) (mul y x))))
+                             (recv n))
+                      (uniq-orig n)
+                      (uniq-gen x))
+                   ...)
+```
+
+
+                           Figure 4.6: Diffie-Hellman defprotocol
+
+
+    The analysis result can be found in plaindh.xhtml. You can see there that a shape is
+found where an initiator exists but no responder; the n can be decrypted because g xx0 can
+be calculated by the adversary when x0 is not assumed secret.
+    Two features of the cpsa model of Diffie-Hellman in this protocol are worth drawing
+attention to. See Figure 4.6
+    Note that the initiator uses a variable x of the rndx sort to represent its own random
+variable, and a variable y of the expt sort to represent the exponent present in the base value
+(exp (gen) y) it receives from the initiator. Distinct values of the rndx sort model distinct
+independent random choices of exponents, while expt values merely represent arbitrary
+exponents which may or may not be calculated as some product of other known values.
+Here, since the initiator chooses their own exponent, we model x as an rndx value. But
+since the initiator cannot know how the base value g y was calculated, we model y as an
+expt value.
+    Note that unlike the example in Section 4.1, where receiving a specifically formatted
+encryption in a protocol role implied the ability to decrypt and check that structure is
+present, the use of a value like g y in a reception does not imply that y is known, only that
+y is defined to be the value such that g y is the base value received.
+    Second, you may notice that n is declared uniq-orig while x is declared uniq-gen. The
+difference between these declarations is rather technical: see Section 6.2 for details. For the
+moment, it is sufficient to say that one should use uniq-gen for exponents that first occur
+within an exponentiation, rather than uniq-orig.
+    It is also instructive to examine the two final skeletons in the analysis that leads to the
+shape; see Figure 4.7. The first realized skeleton reached in the branch is skeleton 4, on
+the left, which includes an instance of the initiator role and a listener. But this realized
+skeleton has a child: skeleton 5. The difference is that skeleton 5 does not include the
+listener. This is an example of a step that cpsa takes called generalization: when cpsa
+recognizes a realized skeleton (that is, one that has no unexplainable receptions), it attempts
+
+
+
+                               Figure 4.7: Deletion of strand
+
+
+to identify ways to make that skeleton more general without losing coverage. Here, cpsa
+has deleted the listener, because that actual explicit reception and re-transmission of g xx0
+is not strictly necessary. When a realized skeleton cannot be further generalized, cpsa
+declares it a “shape” and stops working in that branch of the analysis.
+    You may notice there is another shape in plaindh.xhtml, in which a responder is
+present. As it happens, the other shape is strictly less general than the shape shown as
+skeleton 5. cpsa does not promise that the set of shapes it outputs is strictly minimal, and
+this is one example where the output of cpsa is not minimal.
+
+
+### 4.2.1   Other examples
+
+The examples directory also contains the station.scm and station.xhtml examples that
+model the station-to-station protocol. This protocol uses digital signatures in order to
+authenticate a Diffie-Hellman exchange so that the key established represents a secure and
+authenticated channel. Two versions of the protocol are provided; in one, the Diffie-Hellman
+
+
+
+exponents are assumed fresh in the roles, while in the other, they are not. The two analyses
+produce different results.
+    Another example provided can be found in iadh-um.scm and iadh-um.xhtml. These
+inputs concern a method of determining Diffie-Hellman session keys using both long-term
+and “ephemeral” exponents called the unified method. The “ia” in the example name stands
+for implicitly authenticated, because this method of session key creation allows the parties
+to be sure that no other party knows the key. One interesting feature of this input is that it
+contains an example of an exponent being transmitted outside of an exponentiation. Specif-
+ically, there is a role in which a party generates and signs their long-term Diffie-Hellman
+public value, and then compromises it by releasing the key. The explicit compromise allows
+us to test the “forward secrecy” property of the unified method.
+
+
+
+### 4.3     Other Algebra Features
+
+
+### 4.3.1    Hashing
+
+The cpsa cryptoalgebra includes a hash function symbol that can be used to represent the
+use of a hash function. The function takes a single input, but (hash t1 t2 ... tn) is
+interpreted as shorthand for (hash (cat t1 (cat t2 ( ...tn) ...))).
+Exploration 4.3. The Needham-Schroeder protocol discussed in Chapter 3 was described
+as for key agreement, but no session key is apparent in the protocol. The intention is to
+use the hash of the two nonces as the key. Make a copy of the ns.scm example in which
+this key is explicitly used to encrypt and transmit a separate fresh value, and make a point
+of view testing the confidentiality of the plaintext.
+
+
+### 4.3.2    Constants
+
+Numerous cryptographic protocols make use of magic numbers or string constants to dis-
+ambiguate the purpose of various messages that occur during the protocol. cpsa includes
+constant strings in the basic cryptoalgebra. Such constants, which we often call tags, always
+appear as quoted strings, e.g. "foo". These strings do not need to be declared in a vars
+statement because they are not variables. Tags are messages, so that a variable of mesg
+sort may be instantiated by a tag.
+Exploration 4.4. Note that in the Needham-Schroeder protocol, there seems to be no
+way for an initiator to accidentally talk to another initiator, even though the initiator both
+sends and receives an encrypted message with two components in it. Make a copy of the
+Needham-Schroeder protocol in which the nonces are declared to be of sort name instead
+of text, so that {|n1 , a|}Kb and {|n1 , n2 |}Ka are modeled as similar enough in format that
+confusing the two is possible. What changes?
+    Then try adding distinct tag constants to each encrypted message, to avoid the ambi-
+guity we just created. Run the analysis to see the effect.
+
+
+    Constants may also be used to modify the pubk and privk function symbols, to de-
+scribe distinct keys associated with a particular name. For instance, one might use (pubk
+"encrypt" a) to describe the public encryption key of a, so as to distinguish it from the
+public signature verification key of a. Or, one might wish to describe a certifying author-
+ity’s certificate-signing key but also a key used to sign certificate revocation statements that
+might be different.
+
+
+### 4.3.3    Bidirectional Long-Term Keys
+
+The ltk function symbol is used to describe the long-term secret key shared between two
+parties. However, the names of the two parties are, in the function symbol, presented in a
+distinguished order.
+    In other words, cpsa regards (ltk a b) and (ltk b a) as distinct from each other;
+in fact, they are only considered equal when a = b. The bltk function symbol regards the
+two orders of names as equivalent. That is, (bltk a b) = (bltk b a). In the Kerberos
+example discussed in Section 4.1, we noted that the server’s name s always appears second
+in our ltk expressions. This is fine if participants never can act as both client and server,
+but if a participant can act as both, the use of ltk implies that the participant maintains
+a strict separation between the keys they share with other servers when acting as a client
+(in which their own name appears first), and keys they share with clients when acting as a
+server (in which their own name appears second).
+    The use of bltk implies that participants can act as both servers and clients, and that
+they only share one key with other entities, and use that key both when acting as a server
+and when acting as a client.
+    See bltk_or.scm and bltk_or.xhtml for modeling of the Otway-Rees protocol with
+bi-directional long-term keys rather than uni-directional ones.
+Exploration 4.5. Make a version of the flawed Kerberos input file kerb.scm that uses
+bi-directional long-term keys instead. What differences do you observe?
+
+Exploration 4.6. Repeat the Exercise 4.5 but with the Yahalom protocol (yahalom.scm)
+instead.
+
+
+4.4     The Lang Field: Declaring new operators
+The signature of the message algebra used by cpsa is extensible. There are two forms
+of extensibility provided by cpsa. Users can add operations for encryption, tupling, and
+hashing; and add sorts for atomic data.
+    A common extension is to add tupling operations to message algebras. Previously,
+complex protocols often made use of tagged concatenation to encode a tagged sequence of
+messages. In cpsa, concatenation is implemented as sequences of pairing operations. Thus,
+the expression for a certificate body of the form
+
+
+                    lang     ←    (lang ldecl∗)
+                   ldecl     ←    (symbol+ kind)
+                    kind     ←    atom | akey | hash | (tuple integer)
+                             |    enc | senc | aenc | sign
+
+
+                               Table 4.1: Lang Field Syntax
+
+      (cat "cert-body" dn serial-no pub-key)
+is syntax for
+      (cat "cert-body" (cat dn (cat serial-no pub-key)))
+    Algebra extensions are declared using the lang key in the protocol’s association list, at
+the end of a protocol. For the certificate body example,
+```scheme
+      (defprotocol cert basic
+        ...
+        (lang (cert-body (tuple 3))))
+```
+adds one tupling operation so that the example above can be written as
+      (cert-body dn serial-no pub-key)
+cpsa represents this form internally as a sequence of messages with a distinguished mark.
+This representation is more efficient as compared with the tagged concatenation represen-
+tation.
+    The syntax of a lang declaration is given in Table 4.1. There are eight kinds of ways
+that cpsa algebras can be extended.
+
+   • An atomic sort is added to the algebra when a symbol is declared to be of kind
+     atom. If dollar is declared to be an atomic sort, then (price dollar) in a var form
+     declares price to be of sort dollar.
+
+   • An atomic sort is also added to the algebra when a symbol is declared to be of kind
+     akey. However, in addition to adding the sort, cpsa adds the equation (x−1 )−1 = x
+     for variables of the new sort.
+
+   • A unary operation is added to the algebra when a symbol is declared to be of kind
+     hash. As with the default hash operation, the adversary cannot extract the contents
+     of the hash.
+
+   • An n-ary operation is added to the algebra when a symbol is declared to be of kind
+     (tuple n). As with concatenation, the adversary can construct and extract contents
+     of tuples. Constraint: n > 0.
+
+
+• A binary operation is added to the algebra when a symbol is declared to be of kind
+  enc. As with the default encryption operation, the adversary cannot extract contents
+  of the encryption without access to the inverse of the key.
+
+• A symbol of kind senc is just like one of kind enc except that the key supplied when
+  it is applied must be symmetric, that is, the sort of the key must not be asymmetric.
+
+• A symbol of kind aenc is just like one of kind enc except that the key supplied when
+  it is applied must be asymmetric, but not the inverse applied to an asymmetric key.
+
+• A symbol of kind sign is just like one of kind enc except that the key supplied when
+  it is applied must be the inverse applied to an asymmetric key.
+
+
+
+
+
+            Part II
+
+Understanding and Guiding CPSA
+
+
+
+
+
+
+## Chapter 5
+
+
+The CPSA Search Algorithm
+
+The result of running the cpsa4shape tool is a file that contains only “shapes”, which include
+all essential structures possible in executions of the protocol under the conditions input to
+the analysis. Although this output contains the most important elements of the results of
+an analysis, it can be useful to an analyst to examine the full result.
+    Consider analyzing a protocol that has a secrecy property you wish to guarantee. After
+modeling the protocol, you model a set of conditions under which you expect the secrecy
+property to hold, but you include a listener that would invalidate it. See Section 3.5 for an
+instance of the use of this technique.
+    Suppose the analysis confirms the secrecy property. This would mean that there are no
+shapes at all, because any shape would represent a possible way in which the conditions
+were present but the secret is revealed. If you look only at the shapes file, you will see
+nothing other than the fact that no shapes are present. The full analysis, however, can
+be used to understand the space of attacks that were explored, which gives a much clearer
+sense of why the analysis resulted in no shapes.
+    It is a complicated and somewhat unnatural process modeling a protocol and setting up
+the conditions for an analysis. Human error is possible, and when a human error occurs, it
+is difficult for the analyst—most likely, the human that made the error in the first place—to
+distinguish a human error from a correct analysis result.
+    By examining the full analysis carefully, the analyst may discover errors of two types:
+segments of the analysis that seem inconsistent with the intended scenario, or the lack of
+analysis that the user expected to be present. The first circumstance indicates an analysis
+that was under-constrained, while the latter indicates one that was over-constrained. In
+order to detect errors of the second type, however, the analyst needs to understand the
+search algorithm.
+    Another reason to understand the search algorithm is when the user has obtained an
+analysis that describes a genuine attack against a protocol. By stepping through the path
+in the analysis that led to the shape in question, a user may gain an understanding of what
+
+
+
+features of the protocol allowed this attack to take place. This often leads to insights about
+how to repair the protocol and eliminate the attack.
+
+
+
+### 5.1     Solving tests
+
+A realized skeleton is one in which every reception is explainable given the assumed re-
+strictions on the attacker. The attacker is capable of producing every basic value (that is,
+every possible value of the basic sorts data, text, name, akey, skey, and rndx), except
+for those specifically withheld from the adversary. The values withheld are the ones for
+which there is one of the following declarations present: uniq-orig, uniq-gen, non-orig,
+or pen-non-orig (see Section 6.2 for detail).
+     In addition, the attacker observes all of the transmissions made in a skeleton. The
+attacker is also capable of manipulating messages in certain specific ways—these are the
+derivations present in Table 10.2.
+     When a reception message can be constructed by the attacker from the basic values
+accessible to the attacker and the transmissions that occur prior to that reception, we say
+it is realized, meaning that this reception can be explained.
+     When a skeleton to be analyzed contains at least one unrealized node, one of these
+nodes is selected as the “test node”, and the subsequent skeletons are determined based on
+four distinct strategies for resolving (or at least making progress at resolving) the problem
+at the test node. The strategies focus on a critical term, a sub-value of the reception value
+that is a specific problem for derivability. The critical term may be a freshly generated
+value, which was generated by a regular participant but is subsequently found in a different
+message context than any in which it is known to have been transmitted. It may also be
+an encrypted (or digitally signed) unit, which must be generated on some regular strand
+unless the generating key is compromised. This inference builds in the assumption that
+cryptographic operators have an authentication value, as a symmetric encryption may be an
+authenticated encryption. cpsa always interprets an encryption operator as guaranteeing
+authenticity, unless the key is compromised.
+     Only certain kinds of sub-values may be of interest as critical terms, specifically, those
+which are carried . The notion of a carried sub-term can be defined recursively: a term
+carries itself, a pair carries either of its components, and an encryption carries its plaintext.
+     The four strategies are:
+
+   • A regular augmentation, which assumes the presence of an additional transmission
+     carrying the critical term, in an entirely new strand,
+   • A displacement, which assumes the presence of an additional transmission carrying
+     the critical term, but in an already existing strand,
+   • A contraction, which assumes that the critical issue can be resolved with some more
+     refined version of the current transmissions that carry the critical value, and
+
+
+   • A listener augmentation, which assumes that some key not known to be derivable is
+     in fact derivable.
+
+    When examining a skeleton and one of its children in a full cpsa analysis it is often
+simple to determine which sort of strategy was used. If a child has one more strand than its
+parent then it was produced by either augmentation (if the extra strand is a role instance)
+or listener augmentation (if the extra strand is a listener). If a child has the same number
+of strands but additional nodes, it is the result of a displacement. When a child has the
+same number of nodes and strands, it may be the result of a displacement or a contraction,
+but either way the only thing that has changed is a map of terms.
+
+
+
+### 5.2     Flawed Kerberos, revisited
+
+In Section 4.1, we worked through an example—a flawed version of the Kerberos protocol.
+The first attempt at modeling the protocol was flawed in a way that would prevent the tool
+from discovering the attack against the protocol.
+    See Figure 4.1 for the flawed model of the protocol. Recall that the initiator is a, the
+server is s, and the responder is b. See Figure 4.4 for the corrected model; the difference
+is that in the corrected version, the initiator uses a variable of sort mesg to represent the
+ticket the initiator receives, since the initiator is not able to check the internal format of
+the ticket.
+
+
+### 5.2.1    The operation field
+
+Examining the full cpsa analysis is essential to detecting the mistake. Each skeleton has
+an operation field describing how it was derived from its parent, with one exception: when
+the input skeleton does not meet all the requirements for a skeleton, the first child will be
+the minimal skeleton incorporating the input.
+    In kerb.xhtml, tree 0 is the flawed model. Item 0 is the input point of view and Item
+1 is the completion of that input into a skeleton; notice that the skeleton below Item 1 has
+no S-expression of the form (operation ...) in it.
+    Item 2 is a child of Item 1 that adds a key server instance. This was a regular augmen-
+tation, because a new protocol role instance was added. The operation field will include
+added-strand whenever the skeleton was produced by regular augmentation. The full
+operation field in Item 2 is:
+
+               (operation encryption-test (added-strand keyserv 2)
+                                (enc k n (ltk a s)) (0 1))
+
+   The first argument to the operation field is the general type of operation performed.
+Typically this will be one of the following four possibilities:
+
+
+
+       • encryption-test indicates that the critical term at the test node was an encryption.
+
+       • nonce-test indicates that the critical term at the test node was an atom, not an
+         encryption.
+
+       • channel-test indicates that the critical term at the test node was an authenticated
+         channel message.
+
+       • generalization indicates that the skeleton was realized and the tool is trying to
+         make it more general without making it unrealized.
+
+    The second argument describes the operation; here, the operation is added-strand
+(regular augmentation), where the new instance is an instance of keyserv and is of length
+2. The third argument is the criticial term; here it was (enc k n (ltk a s)), the portion
+of the server’s message intended for the initiator. The last argument is a node, normally
+the test node, so in this case, the (0 1) refers to strand 0, node 1—the second node of the
+initiator strand in Item 1.
+    Returning to our example, Item 2’s critical term is the encryption {|k, n|}SK(a,s) . The
+regular augmentation creates a new transmission of that encryption in some carried form;
+in this case, it is a transmission by the key server. Note that the key server instance in
+Item 2 agrees with the initiator on a but not on b.
+    See Figure 5.1 for Item 3 in the analysis. It is this step at which the analyst should
+notice there was a mistake of some sort. If the analyst is trying to understand why it should
+be impossible for the secret m to leak, thus far the reasoning is that if the initiator proceeds
+to its third event, there is a key server that agreed with the initiator on a, s, and n. But
+since the second initiator node is red, this indicates there is still something unexplained in
+the execution.
+    The operation field of Item 3 is telling:
+
+                 (operation encryption-test (displaced 3 2 keyserv 2)
+                               (enc k a b-0 (ltk b-0 s)) (0 1))
+
+    The critical term here is the encryption {|k, a, b0|}K(b0,s) . Thus, the ticket portion of the
+initiator’s reception is driving this step in the analysis.1 After the displacement (which,
+you may notice, adds no new nodes), the key server agrees with the initiator on b.
+    In other words, the tool reasons first that the presence of the “authenticator” portion
+of the reception guarantees there is a key server instance that believes it is responding to
+a request initiated by a, but may or may not believe the request initiated by a was for
+communicating with b. The ticket portion makes the guarantee, but that’s strange because
+     Note that the specific encryption {|k, a, b0|}K(b0,s) is not actually present in Item 2 or in Item 3, it is
+a side effect of the internal way cpsa represents variables and determines how to display them. Still, only
+the ticket portion of the node (0 1) is of this kind of format, so the conclusion in the text is correct.
+
+
+
+Figure 5.1: Flawed Kerberos key moment in analysis
+
+
+
+
+
+the ticket is for b and not a to examine. To believe this reasoning implies that the initiator
+really is checking the format of the ticket, which the analyst should realize is not the way
+the protocol is intended to work.
+    If you next examine the properly modeled protocol, you will find that Items 5, 6, and
+7 follow a very similar path. Item 6 makes Item 5 into a skeleton, while Item 7 adds a key
+server instance in which the key server agrees with the initiator on a but not on b. But
+Item 7 is a realized skeleton, while Item 2 is not realized.
+
+
+
+
+
+
+## Chapter 6
+
+
+Constraining CPSA’s search
+
+If you have read Chapters 3 and 4, you have seen the uniq-orig and non-orig features,
+which are the first representatives of a large class of features called declarations. These
+“declare” certain assumed properties about an execution in order to constrain the tool’s
+search. In this chapter, we will describe more precisely the notion of execution that moti-
+vates the cpsa analysis, and precisely define these and other declarations available for use
+in the tool.
+
+
+6.1    Bundles: A Strand-Based Execution Model
+The cpsa tool is based on strand space theory [2]. A strand is simply a sequence of events,
+which are transmissions or receptions of messages.
+    A bundle is a set of strands, along with a satisfaction relation → from transmissions to
+receptions, where for every reception event e1 of a message m, there is a unique transmission
+event e0 of m such that e0 → e1 , and such that the graph formed on the events of the strands
+with edges defined by → and strand succession is acyclic.
+    Bundles express an explanatory framework in which a set of sequential viewpoints of
+transmissions and receptions is self-contained. Although bundles do not totally order the
+events, they express the orderings that are essential due to causality.
+    The most basic notion of a protocol is simply a set of roles which are each themselves
+strands representing a template of behavior. A bundle is a bundle of a protocol P if
+every strand in the bundle is either an instance of a role in P or an instance of a pen-
+etrator role. There are two types of penetrator roles: derivation roles and the “create”
+role. The derivation roles are determined by the message model; one matches each deriv-
+ability rule in the algebra used. The create role consists of a one-event strand in which
+certain basic values may be transmitted. This always includes all constants (such as tag
+constants or the Diffie-Hellman generator g), and also includes all values of basic sorts:
+data, text, name, skey, akey, rndx.
+
+
+
+
+### 6.2    Secrecy assumptions
+
+A priori, the analysis of (say) the initiator’s point of view in Needham-Schroeder is tasked
+with exploring all bundles of the Needham-Schroeder protocol in which an initiator instance
+of sufficient length is included. As it turns out, there is a most general shape, namely, the
+full-length initiator instance, alone. However, the bundle this shape describes is not of great
+interest, because the nonce chosen by the initiator appears in a “create” instance.
+    An assumption of secrecy is, in essence, a statement that the analyst is interested only
+in certain bundles. In the case of this nonce, for instance, we assume the nonce is secret
+and are thus uninterested in bundles in which that nonce appears in a “create” instance.
+    There are four declarations that may be used in cpsa to represent a secrecy assumption,
+but these assumptions are distinct from each other and each have a particular semantic and
+syntactic meaning.
+    To describe these assumptions, we first need some terminology. We use “carried” to refer
+to subterms of a term that can potentially be obtained from that term via decomposition.
+A pair carries each of its elements, and an encryption carries its plaintext. We extend this
+notion transitively, so for instance {|n1, n2|}K(a) carries n1 since it carries the plaintext
+(n1, n2) which in turn carries n1.
+    We say that a value originates on a strand when its first carried occurrence is in a
+transmission. We say that a value generates on a strand when its first occurrence (whether
+carried or not) in that strand is in a transmission.
+
+   • A value uniquely originates in a bundle if it originates on exactly one strand. Note
+     that if the unique origination point of a value is on a regular strand, then it cannot
+     be produced in a “create” instance because that would constitute a second point of
+     origination.
+
+   • A value is non-originating in a bundle if it does not originate on any strands. A
+     simple lemma can show that a value is non-originating only if it is not carried in any
+     message in the bundle.
+
+   • A value is penetrator non-originating in a bundle of a protocol if it does not originate
+     on any penetrator strands. Clearly, such a value cannot be produced in a “create”
+     instance.
+
+    The presence of a uniq-orig, non-orig, or pen-non-orig declaration of a value is a
+statement by the user that they are only interested in bundles in which the declared value
+uniquely originates, is non-originating, or is penetrator non-originating, respectively.
+    The fourth declaration that imposes a secrecy assumption is the uniq-gen declaration.
+The presence of a uniq-gen declaration of a value equates to a restriction to bundles in
+which the declared value generates on only one strand. Note that if a value that generates
+uniquely generates on a regular strand, it cannot be produced in a “create” instance.
+
+
+
+    The uniq-orig (resp. uniq-gen) declaration can only be used in cpsa input for values
+that do originate (resp. generate) on the role or in the skeleton in which the declaration
+appears. This forces the use of such declarations to create a secrecy assumption.
+    Because “generation” covers a wider set of occurrences than “origination,” a value that
+originates uniquely on one strand may still generate on a different strand. For instance,
+it may be used to encrypt a message on that strand. This means that one can model a
+key (for instance) that is distributed from a point of unique origination, and subsequently
+used to encrypt messages on other strands, without modeling a particular mechanism for
+storing it in the recipient’s device. This property of origination and generation can, however,
+cause surprises if the key could surface unexpectedly in other strands. See Chapter 8 to
+understand how to store values explicitly, when that is desired.
+Exploration 6.1. Experiment with variants of your favorite simple protocol in which you
+try replacing uniq-orig with uniq-gen and/or non-orig with pen-non-orig. What do
+you find?
+Exploration 6.2. Suppose a protocol you wish to model involves key management, and
+includes keys being encrypted and transmitted and received in encrypted form. What
+declaration should you use to model a long-term (not recently chosen) key as secret, if you
+are concerned about the actual possibility of that key leaking?
+    Note: these four declarations (uniq-orig, non-orig, pen-non-orig, and uniq-gen)
+may only be applied to basic values. One of the main purposes of such declarations is to
+restrict the use of the “create” role in bundles, so such declarations on values that cannot
+be produced in the “create” role is undesirable.
+
+
+
+### 6.3    Diffie-Hellman declarations
+
+A declaration arises as a part of the algorithm cpsa uses for Diffie-Hellman protocols. Like
+other declarations, these may be provided as part of a protocol or skeleton input.
+
+   • The absent declaration specifies that a particular rndx variable does not occur in an
+     exponent expression. This declaration is automatically added to specify x is absent
+     within y whenever y is an exponent expression that occurs in a strand in which x
+     is declared uniq-gen before the point where x is generated. This declaration is also
+     added by the algorithm in rare circumstances.
+
+
+
+### 6.4    Declaring skeletons
+
+To ask cpsa a query, one uses a defskeleton form. The detailed syntax definition is
+in Table 10.1. We give here a summary of the core elements and how to use them. A
+defskeleton form such as those in Figs. 3.3–3.4 has the form
+
+
+```scheme
+                                 (defskeleton prot-name
+                                   (vars ...)
+                                   strand-decls ...
+                                   assumptions ...
+                                   comments)
+```
+prot-name is the name of the protocol. The (vars ...) give the names and sorts of the
+values appearing in the resulting skeleton, for instance values that may be parameters of one
+or more role instances in the skeleton, and may appear in the assumptions. The assumptions
+include unique origination and non-origination claims, as well as channel properties and
+state annotations (Chapter 8) and facts (Section 7.7.1). Comments are for the convenience
+of the specifier. The strand-decls consist of one or more forms
+
+   • (defstrand role height bindings) for an instance of role of the given height,
+
+   • (defstrandmax role bindings) to indicate an instance of role of its full maximum
+     height, or
+
+   • (deflistener t) to indicate that the term t is heard transmitted publicly.
+
+Generally, a defskeleton q containing a (deflistener t) declaration is used to see
+whether the term t remains confidential in the situation described by the remainder q ′
+of the defskeleton. If cpsa determines that there are no shapes for this query, then there
+is no extension of q ′ in which the participants emit messages allowing the adversary to
+extract t. Typically, this is what the specifier intends to find: These are non-disclosure
+queries.
+    A defskeleton form most frequently contains a single defstrand or defstrandmax, in
+which case cpsa will determine what other behaviors this participant can rely on having
+occurred when a run of this role takes this number of steps. Thus, it determines what is
+learnt from the point of view of this participant. These are authentication queries from that
+participant’s point of view.
+    When a single-strand authentication query gives some information about other local
+sessions, but we would like also to know whether additional conclusions follow if we assume
+unique origination or non-origination for values in those local sessions, then we would use
+multiple defstrands.
+    The bindings (aka “maplets”) in a strand declaration are pairs (p v) where p is a
+parameter of the role being declared and v is a value defined from the variables declared for
+this skeleton. Most often v just is one of these variables. These bindings can be confusing,
+since the role parameter and the variable in the skeleton may have the same name, so we have
+a binding (b b) or (n1 n1), as in Fig. 3.3. However, the two bs are different: The first is
+the parameter declared in the init role in Fig. 3.2, while the second is the skeleton variable
+declared in the variable form (vars (b name) (n1 text)). A binding must appear in the
+strand declaration only if we need to assert something about it. In Fig. 3.3, those two
+
+
+bindings appear because the skeleton variable n1 is assumed uniquely originating, and b
+appears because (privk b) is assumed non-originating. Any other parameters may be
+omitted, in which case cpsa supplies an unconstrained value for it.
+
+
+
+### 6.5    A Caution about typos
+
+Declarations are typically found syntactically in “association lists” which include declara-
+tions and may also include other fields, whether in protocol declarations, role declarations
+within them, or in skeleton query declarations. For instance, the cpsa tool creates asso-
+ciations in its defskeleton outputs specifying things like the algorithmic method used to
+produce this skeleton, or the label of the parent, etc. cpsa handles comments in the same
+way. Any association list entry (header . . . stuff . . . ) in which the header is unrecognized
+is treated as a comment, and preserved in the output. This is convenient not just for doc-
+umenting your specifications, but also for defining material to be used not by cpsa itself
+but by downstream tools.
+    Be careful when using declarations that you do not mis-spell the keywords! If you do,
+they will typically be treated just like a comment and ignored, so they will not have the
+effect you intended.
+
+
+
+
+
+         Part III
+
+Advanced features of CPSA
+
+
+
+
+
+
+## Chapter 7
+
+
+Logical Security Goals and Rules
+
+How easy is it to read off authentication and secrecy properties? What precisely is it that an
+expert sees? This chapter describes cpsa’s support for reasoning about security goals using
+first-order logic. With security goals expressed in first-order logic, intuition is replaced by
+determining if a formula is true in all executions of the protocol.
+     This treatment of security goals relies heavily on a branch of first-order logic called
+model theory. It deals with the relationship between descriptions in first-order languages
+and the structures that satisfy these descriptions. In our case, the structures are skeletons
+that denote a collection of executions of a protocol. This chapter describes the language of
+security goals and its structures without requiring the reader to have studied model theory.
+     The model theoretical foundation of this approach to security goals appears in [6]. A
+practical use of security goals in protocol standardization is described in [8, 14]. The precise
+semantics of the goal language is in [13]. The syntax of security goals appears in Table 7.1.
+     The cpsa distribution contains, in its examples directory, the input file goals.scm.
+The reader is encouraged to run the examples and examine the output while reading this
+chapter.
+     In this chapter we return to the Needham-Schroeder protocol discussed in Chapter 3.
+The roles are displayed in Figure 3.2.
+     The protocol is analyzed from the point of view of a complete run of one instance of the
+initiator role. The input security goal, followed by the point of view skeleton it generates
+and the shape produced by cpsa, are shown in Figure 7.1. The syntax and semantics of the
+goal will be explained later. Roughly speaking, it asserts that if a realized skeleton contains
+a full length initiator strand, its private key is uncompromised, and it uniquely generates
+n1, then the skeleton will contain a responder strand that agrees with the initiator on the
+name b. The shape produced by cpsa contains the annotation (satisfies yes). This
+indicates that its structure satisfies the description given by the security goal. It will be
+explained later why the properties of cpsa allows us to conclude that this goal is true in
+all executions of the protocol, and therefore conclude that the Needham-Schroeder protocol
+
+
+
+               goal     ←    (defgoal id sentence+ alist)
+          sentence      ←    (forall (gvdecl∗) implication)
+            gvdecl      ←    (id+ sort) | (id+ strd) | (id+ indx)
+              vmap      ←    (id id)
+        implication     ←    (implies conjunction conclusion)
+       conjunction      ←    conjunct | (and conjunct+)
+          conjunct      ←    atomic | (strand id strdvar integer (vmap∗))
+                        |    (listener strdvar id)
+         conclusion     ←    (false) | existential
+                        |    (or existential+)
+        existential     ←    conjunction | (exists (gvdecl∗) conjunction)
+             atomic     ←    (p string strdvar integer)
+                        |    (p string string strdvar term)
+                        |    (prec strdvar index strdvar index)
+                        |    (leads-to strdvar index strdvar index)
+                        |    (non term) | (pnon term)
+                        |    (uniq term) | (uniq-at term strdvar index)
+                        |    (ugen term) | (ugen-at term strdvar index)
+                        |    (conf term) | (auth term)
+                        |    (= strdvar strdvar) | (= term term)
+                        |    (gen-st term) | (trans strdvar index)
+                        |    (comm-pr strdvar index strdvar index)
+                        |    (state-node strdvar index)
+                        |    (same-locn strdvar index strdvar index)
+                        |    (component term term) | (fact id term*)
+            strdvar     ←    symbol
+              index     ←    symbol | integer
+
+
+Table 7.1: Goal syntax. See Tables 10.3 and 10.5 for the algebra syntax, which defines the
+term and sort symbols.
+
+
+
+
+
+```scheme
+(defgoal ns                ; Goal
+  (forall ((b name) (n1 text) (z0 strd))
+    (implies
+     (and (p "init" z0 3)
+      (p "init" "n1" z0 n1) (p "init" "b" z0 b)
+      (non (privk b)) (uniq n1))
+     (exists ((z1 strd))
+      (and (p "resp" z1 2) (p "resp" "b" z1 b))))))
+```
+
+```scheme
+(defskeleton ns            ; Point of view skeleton
+  (vars (a b name) (n1 n2 text))
+  (defstrand init 3 (a a) (b b) (n1 n1) (n2 n2))
+  (non-orig (privk b))
+  (uniq-orig n1))
+```
+
+        {|N1 , A|}KB                    {|N1 , A|}KB
+init                         ≺                           resp
+       {|N1 , N2 |}KA                  {|N1 , N2′ |}KA
+ •                           ≻                            •
+         {|N2 |}KB
+ •
+```scheme
+(defskeleton ns            ; Shape
+  (vars (n1 n2 text) (a b name))
+  (defstrand init 3 (n1 n1) (n2 n2) (a a) (b b))
+  (defstrand resp 2 (n2 n2-0) (n1 n1) (b b) (a a))
+  (precedes ((0 0) (1 0)) ((1 1) (0 1)))
+  (non-orig (privk b))
+  (uniq-orig n1)
+  (satisfies yes))
+```
+
+                Figure 7.1: Needham-Schroeder Initiator Point of View
+
+
+
+
+
+achieves this authentication goal.
+
+
+
+### 7.1     Overview
+
+In addition to defskeleton S-expressions, a cpsa input file may contain defgoal S-
+expressions. Like a defskeleton, a defgoal takes as its first parameter the name of a
+protocol which the tool expects has been previously defined in the input file. The second
+parameter to a defgoal is a geometric sentence in first-order logic. A geometric sentence
+contains one implication. The antecedent is a conjunction of atomic formulas. The free
+variables that occur in the antecedent are universally quantified. The conclusion is a dis-
+junction of existentially quantified conjunctions of atomic formulas.
+    When the tool is run, a defgoal is converted to a defskeleton that represents as
+narrowly as possible the left-hand side of the implication and has a goal recorded for the
+right-hand side. The tool then analyzes defskeletons as usual, but realized skeletons
+found during the course of analysis of a defskeleton with a goal are augmented with a
+satisfies S-expression indicating whether the goal is met or not.
+    The tool cpsa4goalsat will examine the output from a cpsa run, and, for each goal
+formula, will determine whether the analysis ensures that the goal is met. If not, it identifies
+the labels of all the skeletons that furnish counterexamples to the goal. See Section 11.
+    The remainder of this chapter is devoted to explaining the semantics of this feature in
+greater detail.
+
+
+
+### 7.2     Semantics
+
+In a defgoal sentence, the antecedent specifies the point of view skeleton. We focus on the
+antecedent. In the example,
+
+      (defstrand init 3 (a a) (b b) (n1 n1) (n2 n2))
+
+is extracted from
+
+      (and (p "init" z0 3)
+        (p "init" "n1" z0 n1) (p "init" "b" z0 b)).
+
+Notice that cpsa adds a binding for a and n2 just as it does had
+
+      (defstrand init 3 (b b) (n1 n1))
+
+been given as input.
+    Our aim now is to specify how to decide if a security goal is true in all possible executions
+of a protocol. A skeleton defines a set of executions that contain the skeleton’s structure.
+We say a skeleton satisfies a formula if the skeleton contains all of the structure specified
+
+
+by the formula. To decide if a skeleton satisfies a formula, we decide if it satisfies each of
+its atomic formulas, and combine the results using the rules of first-order logic.
+    Atomic formula (p "init" z0 3) is called a role strand length formula. A skeleton k
+satisfies the formula if z0 maps to a strand s in k such that
+  1. the trace of strand s in k has a length greater than 2, and
+
+  2. the trace when truncated to length 3 is an instance of the init role.
+Consider the shape in Figure 7.1. It satisfies (p "init" z0 3) when z0 maps to 0.
+    Atomic formula (p "init" "n1" z0 n1) is called a role parameter formula. A skele-
+ton k satisfies the formula if z0 maps to strand s in k, n1 first occurs in at position i in the
+trace of the init role, and n1 maps to a message algebra term t in k such that
+  1. the trace of strand s in k has a length greater than i,
+
+  2. the trace truncated to length i + 1 is an instance of the init role, and
+
+  3. the truncated trace is compatible with mapping the init role’s "n1" role variable to t.
+The shape in Figure 7.1 satisfies (p "init" "n1" z0 n1) when z0 maps to 0 and n1 maps
+to the message algebra term n1.
+    Collectively, a skeleton satisfies the formula
+      (and (p "init" z0 3)
+           (p "init" "a" z0 a) (p "init" "b" z0 b)
+           (p "init" "n1" z0 n1) (p "init" "n2" z0 n2))
+if the skeleton contains the structure specified by
+      (defstrand init 3 (a a) (b b) (n1 n1) (n2 n2)).
+   The antecedent in Figure 7.1 contains two origination assertions. The formula (non
+(privk b)) is extracted as (non-orig (privk b)). A skeleton k satisfies the formula if b
+maps to a message algebra term t in k such that k assumes that t is non-originating. The
+unique origination formula for n1 is similarly extracted.
+   Putting it all together, the mapping
+
+                         {n1 7→ n1, n2 7→ n2, a 7→ a, b 7→ b, z0 7→ 0}
+
+shows that the shape in Figure 7.1 satisfies the antecedent of the security goal.
+    The prec predicate is used to assert a node precedes another node. The conclusion
+in Figure 7.1 with (prec z1 2 z0 2) added is satisfied by the shape using the mapping
+z0 7→ 0 and z1 7→ 1.
+    The uniq-at predicate is used to assert not only that an atom uniquely originates, but
+also the node at which it originates. In the Figure 7.1 goal, the (uniq n1) formula could
+
+
+have been replaced by (uniq-at n1 z0 0). The extracted point of view skeleton is the
+same.
+    The ugen and ugen-at predicates are similar, except that they refer to an earliest
+outbound occurrence, whether carried or not. If an atom is an asymmetric key, it and its
+inverse are generated together at the first outbound occurrence of either one.
+    Predicates conf and auth hold true of channels, when those channels are assumed to
+be confidential or authenticated channels as described in Chapter 8. The gen-st predicate
+holds true of a message value that cannot be an unexplained value in a state location, but
+can only be the result of a transition caused by a regular role (Section 8.2). The leads-to
+predicate relates a pair of nodes when the former creates a state value in a location, and
+the latter reads it from that location with no intervening transitions (Section 8.2). The
+comm-pr, comm-pr, and state-node predicates are used mainly internally to cpsa.
+    Recall that our aim in analyzing a protocol is to find out what security goals are true
+in all of its possible executions. When every shape of a cpsa run satisfies the goal specified
+in a defgoal query, then that goal is satisfied in every execution.
+    When cpsa performs a shape analysis, every shape it generates refines the input skele-
+ton. Skeleton refinement is defined in Chapter 5. The definition makes precise the notion
+of structure containment, as skeleton A refines skeleton B if and only if A contains the
+structure of skeleton B.
+    The skeleton k0 extracted from the antecedent of a security goal has the property that
+a skeleton refines k0 if and only if it satisfies the antecedent. A skeleton with this property
+is called the characteristic skeleton of the antecedent.
+    Given a goal Φ, consider a shape analysis starting from the characteristic skeleton k0 of
+its antecedent. Assume cpsa finds shapes k1 , . . . , kn and that cpsa determines that each ki
+satisfies Φ. Consider the executions that contain the structure in k0 . cpsa tells us that
+each execution is in the executions that contain the structure of some ki . Furthermore,
+because k0 is a characteristic skeleton, each ki satisfies the antecedent of Φ. Executions
+that do not contain the structure in k0 do not satisfy the antecedent. Therefore, Φ is true
+in all executions of the protocol and maximally informative.
+
+
+
+### 7.3     Examples
+
+This section contains examples of both authentication and secrecy goals. The first example
+shows the feedback the user receives when a shape does not satisfy a security goal. The
+second example shows how to use a listener to state a secrecy goal.
+
+
+### 7.3.1    Needham-Schroeder Responder
+
+Figure 7.2 contains an analysis of Needham-Schroeder from the point of view of a complete
+run of the responder under the assumption that the responder’s private key is uncompro-
+mised and the nonce it generates uniquely originates.
+
+
+```scheme
+(defgoal ns                ; Goal
+  (forall ((a b name) (n2 text) (z0 strd))
+    (implies
+      (and (p "resp" z0 3) (p "resp" "n2" z0 n2)
+        (p "resp" "a" z0 a) (p "resp" "b" z0 b)
+        (non (privk a)) (uniq n2))
+      (exists ((z1 strd))
+        (and (p "init" z1 2) (p "init" "b" z1 b))))))
+```
+
+```scheme
+(defskeleton ns            ; Point of view skeleton
+  (vars (a b name) (n1 n2 text))
+  (defstrand resp 3 (a a) (b b) (n1 n1) (n2 n2))
+  (non-orig (privk a))
+  (uniq-orig n2))
+```
+
+                    {|N1 , A|}KB                   {|N1 , A|}KB′
+          resp                                                     init
+                    {|N1 , N2 |}KA                {|N1 , N2 |}KA
+           •                            ≺                              •
+                      {|N2 |}KB                     {|N2 |}KB′
+           •                            ≻                              •
+
+```scheme
+(defskeleton ns            ; Shape
+  (vars (n1 n2 text) (a b b-0 name))
+  (defstrand resp 3 (n2 n2) (n1 n1) (b b) (a a))
+  (defstrand init 3 (n1 n1) (n2 n2) (a a) (b b-0))
+  (precedes ((0 1) (1 1)) ((1 2) (0 2)))
+  (non-orig (privk a))
+  (uniq-orig n2)
+  (satisfies (no (a a) (b b) (n2 n2) (z0 0))))
+```
+
+
+               Figure 7.2: Needham-Schroeder Responder Point of View
+
+
+
+
+
+```scheme
+     (defgoal ns
+       (forall ((a b name) (n1 text) (z0 z1 strd))
+         (implies
+           (and (p "init" z0 3) (p "init" "n1" z0 n1)
+             (p "init" "a" z0 a) (p "init" "b" z0 b)
+             (p "" z1 1) (p "" "x" z1 n1) ; Listener
+             (non (privk a)) (non (privk b))
+             (uniq n1))
+           (false))))
+```
+
+
+                      Figure 7.3: Needham-Schroeder Secrecy Goal
+
+   The conclusion of the goal asserts that in an execution compatible with the point of
+view, there must be an initiator strand that agrees with the responder strand on the name
+b. The shape produced by cpsa is a counterexample to this assertion. Because of this,
+cpsa annotates the shape with
+     (satisfies (no (a a) (b b) (n2 n2) (z0 0))).
+The annotation includes a variable mapping for the shape that satisfies the antecedent of
+the goal but does not satisfy its conclusion. The reason the shape does not satisfy the goal
+is because the mapping (b b) maps the initiator’s b parameter to b, not b-0 as is required
+to model the shape.
+    Gavin Lowe identified this authentication failure in Needham-Schroeder and provided a
+fix. In the Needham-Schroeder-Lowe Protocol, the name b is included within the encryption
+in second message of both roles. With this modification, the shape found by cpsa satisfies
+the security goal in Figure 7.2, so Needham-Schroeder-Lowe achieves this authentication
+goal.
+
+
+### 7.3.2   A Needham-Schroeder Secrecy Goal
+
+Figure 7.3 contains a goal of Needham-Schroeder from the point of view of a complete
+run of the initiator under the assumption that the responder’s and its peer’s private keys
+are uncompromised and the nonce n1 it generates uniquely originates. Furthermore, the
+antecedent of the goal assumes that the nonce is leaked using a listener (represented by the
+empty string "").
+     (p "" z1 1) (p "" "x" z1 n1)           ; Listener
+The conclusion of the goal is false, a predicate that is satisfied by no executions. Essen-
+tially, this goal is saying that any shape found by the analysis is evidence that the nonce
+can leak, and therefore a counterexample to the secrecy goal. This is because any shape
+found will satisfy the antecedent, but not the conclusion of this goal. In this case, cpsa
+finds no shapes, so Needham-Schroeder achieves this secrecy goal and does not leak n1.
+
+
+```scheme
+      (defgoal ns
+        (forall ((a b name) (n text) (z0 strd))
+          (implies
+            (and (p "init" z0 2) (p "init" "n1" z0 n)
+              (p "init" "a" z0 a) (p "init" "b" z0 b)
+              (non (privk a)) (non (privk b)) (uniq n))
+            (exists ((z1 strd))
+              (and (p "resp" z1 2) (p "resp" "b" z1 b)))))
+        (forall ((a b name) (n text) (z0 strd))
+          (implies
+            (and (p "init" z0 2) (p "init" "n1" z0 n)
+              (p "init" "a" z0 a) (p "init" "b" z0 b)
+              (non (privk a)) (non (privk b)) (uniq n))
+            (exists ((z1 strd))
+              (and (p "resp" z1 2) (p "resp" "a" z1 a))))))
+```
+
+
+                      Figure 7.4: Two Initiator Authentication Goals
+
+
+
+### 7.4    The Rest of the Story
+
+The examples in the previous section demonstrate the typical way security goals are ana-
+lyzed with cpsa. However, there are more features that may be useful.
+    A defgoal form may contain more than one sentence. See Figure 7.4 for an example.
+When presented with more than one sentence, cpsa extracts the point of view skeleton
+from the first sentence.
+    It is wise to ensure that the antecedent in every sentence is identical. When cpsa
+performs satisfaction-checking on sentence Φ, it only determines if each shape satisfies Φ.
+If the point of view skeleton is not the characteristic skeleton of the antecedent of Φ, the
+fact that all skeletons satisfy Φ cannot be used to conclude that Φ is true in all executions
+of the protocol.
+    cpsa performs satisfaction-checking when an input skeleton in annotated with one or
+more security goals. The annotation uses the goals key.
+
+```scheme
+      (defskeleton
+         ...
+         (goals sent+))
+```
+
+
+   The program cpsa4sas, discussed in the next section, can be used to generate a for-
+mula with an antecedent such that the input skeleton is the characteristic skeleton of the
+antecedent.
+
+
+
+
+
+### 7.5    Syntactic Abbreviations
+
+Section 7.2 described how cpsa extracts
+      (defstrand init 3 (a a) (b b) (n1 n1) (n2 n2))
+from the following conjunction of facts
+      (and (p "init" z0 3)
+        (p "init" "n1" z0 n1) (p "init" "b" z0 b)).
+    Using a conjunction of facts to represent a single defstrand is convenient for defining
+and implementing a clear semantics, however it can be quite cumbersome and error prone
+to specify these conjunctions. We therefore also provide support for syntactic sugar in the
+goal language to allow users to represent these conjunctions in a manner much closer to the
+defstrand form found in a skeleton. In particular, the user can write
+      (strand init z0 3 (n1 n1) (b b))
+as a single conjunct in a formula, and cpsa will ingest it with the same interpretation as if
+the user had entered
+      (and (p "init" z0 3)
+        (p "init" "n1" z0 n1) (p "init" "b" z0 b)).
+   Thus the goal in Fig. 7.1 could therefore be written as follows instead:
+```scheme
+      (defgoal ns
+        (forall ((b name) (n1 text) (z0 strd))
+          (implies
+           (and (strand init z0 3 (n1 n1) (b b))
+            (non (privk b)) (uniq n1))
+           (exists ((z1 strd))
+            (strand resp z1 2 (b b)))))).
+    This representation has the benefit of being syntactically quite close to the skeleton
+```
+representation, and therefore the connection is more visually obvious to the user. Notice
+the crucial difference that the (strand ...) form includes a strand variable after the name
+of the role. While such a variable is not needed for skeletons, it is required in formulas to
+allow other facts to reference the strand it represents.
+    We also provide a similar abbreviation for listener strands. Instead of writing
+      (and (p "" z0 1) (p "" "x" z0 n1))
+we can write the following instead
+      (listener z0 n1).
+    These abbreviations can be used both in goals and in rules (described below in Sec-
+tion 7.7).
+
+
+```scheme
+(defgoal ns
+  (forall ((n1 n2 text) (b a name) (z strd))
+    (implies
+      (and (p "init" z 3) (p "init" "n1" z n1)
+        (p "init" "n2" z n2) (p "init" "a" z a)
+        (p "init" "b" z b) (non (privk b)) (uniq-at n1 z 0))
+      (exists ((n2-0 text) (z-0 strd))
+        (and (p "resp" z-0 2) (p "resp" "n2" z-0 n2-0)
+          (p "resp" "n1" z-0 n1) (p "resp" "b" z-0 b)
+          (p "resp" "a" z-0 a) (prec z 0 z-0 0)
+          (prec z-0 1 z 1))))))
+```
+
+
+                       Figure 7.5: Initiator Shape Analysis Sentence
+
+
+
+### 7.6    Shape Analysis Sentences
+
+A shape analysis sentence expresses all that can be learned from a run of cpsa as a security
+goal. If a security goal can be derived from a shape analysis sentence, then the protocol
+achieves the security goal, that is, the goal is true in all executions of the protocol.
+   The program cpsa4sas extracts shape analysis sentences from the output of cpsa.
+Consider the first example in this paper (Figure 7.1), which is in the sample file goals.scm.
+To generate a maximally informative security goal from the initiator point of view with
+ghci and Make.hs, type
+
+      $ ghci Make.hs
+      *Make> sas "goals"
+
+When using GNU make, type “make goals_sas.text”. The resulting shape analysis sen-
+tence is displayed in Figure 7.5.
+    A shape analysis sentences asserts that either a realized skeleton does not satisfy its
+antecedent or it satisfies one or more of the disjuncts in its conclusion. cpsa has been
+designed so that this assertion is true. Therefore, every shape analysis sentence is true in
+all executions.
+    A security goal is true in all executions if it can be derived from a shape analysis sen-
+tence [13]. In practice, theorem-proving using shape analysis sentences is rarely employed.
+It’s clumsy and it requires too much expertise. The main use of cpsa4sas is for generating
+a formula that is edited to become a desired security goal.
+    In general, cpsa will not use the syntactic abbreviations of the previous section in its
+output, preferring instead the fully elaborated conjunction of facts. So the shape analysis
+sentences will not contain these abbreviations.
+
+
+
+
+
+
+### 7.7     Rules
+
+Each protocol includes a small collection of rules. A rule is a sentence in the goal language
+presented in Table 7.1. Rules are defined after the roles of a protocol are defined. The
+syntax of a rule follows.
+
+                   rule    ←    (defrule name sentence comments)
+
+    A rule is an axiom added to a protocol. cpsa uses the axiom as a rewrite rule to
+derive zero or more new skeletons from a skeleton produced during a step. An example of
+a protocol with a rule is in Figure 7.8 on page 66.
+    The trust rule states that when CPSA finds a person strand of length at least one, and
+the inverse of it’s p parameter is non-originating, CPSA should assume the inverse of it’s d
+parameter is non-originating.
+
+
+### 7.7.1   Facts
+
+Each skeleton includes a small database of facts. A fact is a named relation among fact
+terms. A fact term is either a strand of the skeleton or an algebra term. A set of facts
+is defined anywhere after strands are defined using the facts form. The syntax of facts
+follows.
+                              facts    ←   (facts fact∗)
+                               fact    ←   (symbol fterm∗)
+                             fterm     ←   mesg | nat
+
+    For example, in a skeleton, a user may want to note that strand 0 owns the private key
+for a by assuming.
+
+                               (facts (owns 0 (privk a)))
+
+    Facts are most useful when combined with rules. Here is an example of their combina-
+tion. Suppose a point of view skeleton has two names, a and b, and the problem is modeling
+a situation in which the two names are known to differ. To enforce this constraint, add
+                                    (facts (neq a b))
+to the point of view skeleton. CPSA generates a default rule stating essentially that neq
+can never apply to two equal terms:
+
+      (defrule neq
+        (forall ((a mesg))
+          (implies
+            (fact neq a a)
+            (false))))
+
+
+                                 person                           door
+                               {|{|K|}P −1 |}D                {|{|K|}P −1 |}D
+                      •                          /                              /•
+         Fresh: K                 {|T |}K                        {|T |}K           Fresh: T
+                      •o                                  o                     •
+                                                                                
+                      •
+                                     T           /                  T           /•
+
+
+                                    Figure 7.6: DoorSEP Protocol
+
+
+
+### 7.7.2   DoorSEP
+
+As a motivating scenario consider the Door Simple Example Protocol (DoorSEP), derived
+from an expository protocol that was designed to have a weakness. Despite this, the protocol
+achieves the needs of an application, given a trust assumption.
+    Imagine a door D which is equipped with a badge reader, and a person P equipped with
+a badge. When the person swipes the badge, the protocol executes. Principals such as doors
+or persons are identified by the public parts of their key pairs, with D−1 and P −1 being the
+corresponding private keys. We write {|M |}K for the encryption of message M with key K.
+We represent digital signatures {|M |}P −1 as if they were the result of encrypting with P ’s
+private key.
+    P initiates the exchange by creating a fresh symmetric key K, signing it, and sending
+it to the door D encrypted with the door’s public key. D extracts the symmetric key
+after checking the signature, freshly generates a token T , and sends it—encrypted with the
+symmetric key—back to P . P demonstrates they are authorized to enter by decrypting
+the token and sending it as plaintext to the door. The two roles of DoorSEP are shown in
+Fig. 7.6, where each vertical column displays the behavior of one of the roles. The cpsa
+encoding of the roles is in Figure 7.8.
+    cpsa finds an undesirable execution of DoorSEP. Assume the person’s private key P −1
+is uncompromised and the door has received the token it sent out. Then cpsa finds that P
+freshly created the symmetric key K. However, nothing ensures that the person meant
+to open door D. If P ever initiates a run with a compromised door C, the adversary
+can perform a man-in-the-middle attack, decrypting using the compromised key C −1 and
+re-encrypting with D’s public key, as elided in the · · · in Fig. 7.7. To verify this result
+with cpsa, remove the trust axiom in the doorsep protocol in examples/rules.scm and
+run cpsa. Thus, without additional assumptions, the door cannot authenticate the person
+requesting entry.
+    But possibly we can trust the person to swipe her badge only in front of doors our
+organization controls. And we can we ensure that our doors have uncompromised private
+keys. If so, then the adversary cannot exercise the flaw.
+    We regard this as a trust assumption, and we can express it as an axiom:
+
+Trust Assumption 1. If an uncompromised signing key P −1 is used to prepare an instance
+
+
+                     person                                                 door
+                               {|{|K|}P −1 |}C            {|{|K|}P −1 |}D
+                        •                        / ···                      /•
+                                                              {|T |}K         
+                                                      o                      •
+                                                                              
+                                                                T           /•
+
+                              Uncompromised: P            Fresh: K, T
+
+                               Figure 7.7: DoorSEP Weakness
+
+of the first DoorSEP message, then its owning principal has ensured that the selected door
+D has an uncompromised private key.
+    The responsibility for ensuring the truth of this axiom may be split between P and the
+organization controlling D. P makes sure to swipe her badge only at legitimate doors of
+the organization’s buildings. The organization maintains a security posture that protects
+the corresponding private keys.
+Is DoorSEP good enough, assuming the trust axiom? Add the trust axiom back to the
+doorsep protocol in doc/rules.scm and see. You should find that the protocol does its job;
+namely, ensuring that the door opens only when an authorized person requests it to open.
+
+A trick to control rules. Sometimes, one would like to explore two versions of a protocol:
+One that contains a particular rule, and another that doesn’t. Some cpsa queries should
+be executed with the rule in force, and others without the rule. For instance, one may want
+to know which security properties hold even without the assumption made in the rule.
+    To do this, one can add a sort of flag to the rule as an additional premise. For instance,
+in the DoorSEP case, we could have written the rule as shown in Fig. 7.9, with the additional
+premise (fact use-trust-rule).
+    Now, a query that should not use the trust-sometimes rule can be stated as usual,
+as in Fig. 7.8. A query that should use the rule can add the use-trust-rule fact to the
+defskeleton form, as shown in Fig. 7.9. As a consequence, the additional premise will be
+satisfied any time that cpsa would apply the rule.
+    This also illustrates the way that a fact that is written (fact use-trust-rule) in a
+goal or rule is declared (facts (use-trust-rule)) in a defskeleton form.
+
+
+### 7.7.3    Generated rules
+
+cpsa generates certain rules either automatically in all cases or else as a consequence of
+user inputs. The rules generated for a given protocol input may be found in the printed
+output for that protocol; these are the formulas appearing in defgenrule forms in the .txt
+and .xhtml files.
+
+
+```scheme
+(defprotocol doorsep basic
+  (defrole person
+    (vars (d p akey) (k skey) (t text))
+    (trace
+     (send (enc (enc k (invk p)) d))
+     (recv (enc t k))
+     (send t)))
+  (defrole door
+    (vars (d p akey) (k skey) (t text))
+    (trace
+     (recv (enc (enc k (invk p)) d))
+     (send (enc t k))
+     (recv t)))
+  (defrule trust
+    (forall ((z strd) (p d akey))
+            (implies
+             (and (p "person" z 1)
+                  (p "person" "p" z p)
+                  (p "person" "d" z d)
+                  (non (invk p)))
+             (non (invk d))))
+    (comment "The trust rule"))
+  (comment "Doorsep protocol using unnamed asymmetric keys"))
+```
+
+```scheme
+(defskeleton doorsep
+  (vars (p akey))
+  (defstrand door 3 (p p))
+  (non-orig (invk p))
+  (comment "Analyze from the doors’s perspective"))
+```
+
+
+                     Figure 7.8: Door Simple Example Protocol
+
+
+
+
+
+ (defrule trust-sometimes
+   (forall ((z strd) (p d akey))
+           (implies
+            (and (fact use-trust-rule)
+                 (p "person" z 1)
+                 (p "person" "p" z p)
+                 (p "person" "d" z d)
+                 (non (invk p)))
+            (non (invk d))))
+   (comment "The trust rule. Assume (fact use-trust-rule) to enable it"))
+
+. . .
+
+```scheme
+(defskeleton doorsep
+  (vars (p akey))
+  (defstrand door 3 (p p))
+  (non-orig (invk p))
+  (facts (use-trust-rule))
+  (comment "Analyze from the doors perspective, with trust rule"))
+```
+
+
+                  Figure 7.9: Rule with a flag to control its use
+
+
+
+
+
+Negated equalities. Since negated equalities are often needed to express assumptions
+users are interested in, cpsa generates three rules with the body:
+
+(implies (fact neq x x)
+         (false))
+
+This rule has the effect of terminating a branch of analysis if two expressions that the
+user has stipulated should not be equal become unified to the same value. Three rules
+are generated since the variable x may be of sort mesg, or of sort strd for a strand in the
+skeleton, or of sort indx meaning the index of a node along a strand. To stipulate a negated
+equality between two expressions e1 , e2 , the user may write in the input file:
+
+```scheme
+(defskeleton protocol
+   . . . strand declarations, etc. . . .
+   (facts (neq e1 e2 )))
+```
+
+Negated equality assertions may also appear in the conclusions of user-defined rules, or
+anywhere else that an atomic formula may appear.
+    A good number of additional rules are generated to implement cpsa’s model of state
+(see Section 8.2, esp. Figs. 8.4–8.5 and pp. 89–90).
+
+“Assume” declarations. A formula may be provided after the trace declaration in a
+defprotocol declaration in an assume clause. For instance:1
+
+```scheme
+(defrole init
+    (vars ...)
+    (trace ...)
+    ...
+    (assume (fact neq (exp (gen) upsilon) (gen))))
+```
+
+In this case, the cpsa loader checks that all of the free variables (just upsilon here) appear
+in the trace. If i is the first height at which all of the variables have occurred, cpsa
+generates a rule stating that any instance of the rule of height ≥ i satisfies this property of
+the instances of the role parameters. In this case, i = 4, so the generated formula states:
+
+(defgenrule assume-init-0
+    (forall ((z strd) (upsilon expt))
+      (implies (and (p "init" z 4) (p "init" "upsilon" z upsilon))
+        (fact neq (exp (gen) upsilon) (gen)))))
+
+Here, the assumption is the uninterpreted predicate symbol neq applied to two expres-
+sions. However, the assumption may also involve conjunction and existential quantifiers.
+       See the file dhcr_um_expt_assume.scm in the manual examples directory.
+
+
+
+cpsa also permits disjunctions, but these typically cause unreasonable branching and bad
+performance.
+   In case the assumption is a fact, such as the neq assertion above, one can write
+
+```scheme
+(defrole init
+    (vars ...)
+    (trace ...)
+    ...
+    (facts (neq (gen) (exp (gen) upsilon))))
+```
+
+instead of writing the assume annotation above. Many facts may be listed as clauses here,
+with the effect of a conjunction. The keyword here is the plural facts, and the singular
+fact does not appear in the individual clauses.
+    The facts annotation may also appear in a defskeleton query.
+
+```scheme
+(defskeleton dhcr-um
+  (vars (a b name) (beta expt))
+  (defstrand init 5 (a a) (b b) (beta beta))
+  (non-orig (privk "sig" b))
+  (facts (neq a b) (undisclosed beta)))
+```
+
+Currently, cpsa does not recognize the assume keyword in defskeleton queries.
+
+
+### 7.7.4   Rules generated for trace annotations
+
+cpsa now allows a few types of annotations to be interspersed within the trace declaration
+within a role. These are:
+
+rely, used after a reception to declare a formula containing only free variables appearing
+      up to and including this reception. Every instance of the role long enough to include
+      a successful instance of this reception must satisfy the formula;
+
+guar, used before a transmission to declare a formula containing only free variables appear-
+     ing up to and including the following transmission. Every instance of the role long
+     enough to include an instance of the following transmission must satisfy the formula.
+
+All of these trace annotations will cause similar rules to be generated. Trace annotations
+do not add to the height of the trace. They simply express constraints on what happens in
+the “real” events around them.
+
+Expressing rely and guarantee statements. In work on trust management, and on
+compiling cryptographic protocols [9, 7, 11], we introduced the idea of a rely formula that
+expresses what a principal learns when a message is received, possibly assuming that certain
+peers are uncompromised. We also introduced the idea of a (dual) guarantee formula that
+
+
+must be true in order for a principal to transmit a message. In particular, if a message
+sent by a principal A has a particular guarantee formula ϕ, and a peer B receives it and
+authenticates its origin with A in this step of the protocol, then B may rely on a formula
+with the meaning, A says ϕ.
+    This example will be sound in the sense that the authentication property ensures that
+A really did say (i.e. guarantee) ϕ in any execution in which B relies on the claim. The
+soundness of rely statements may be checked by analyzing the protocol with the rely state-
+ments omitted, and querying them as goal statements under the relevant non-compromise
+assumptions. We will now assume that this soundness checking has been done, and that
+any relevant non-compromise assumptions are made in the protocol definition.
+    Thus, a rely formula definitely holds true whenever the principal successfully completes
+the preceding receive event. Indeed, the operational interpretation of a rely formula is
+that the principal will add an assertion to a database of its knowledge. cpsa transforms
+a rely formula after a reception which is at height i in a trace into a rule stating: “long-
+enough” instances of the role will satisfy the formula, for that instance’s values of the role
+parameters.
+    This transformation is similar to what cpsa does for a cheq annotation, except that
+instead of an equation, the conclusion may involve other atomic formulas, conjunctions,
+and existential quantifiers. Disjunctions are permitted, but will usually lead to intractable
+cpsa analysis.
+    A guarantee formula has a dual relation with a subsequent transmission. Just as the
+received message may determine the instances of parameters appearing in a rely formula,
+a guarantee formula may dually select instances of parameters that will appear in the
+subsequent transmission. As a rely formula is interpreted operationally as an assert to a
+database held by the principal, a guarantee formula is interpreted operationally as a query
+against that database. Hence, assertions caused by previous rely formulas may influence
+the parameter instances selected by subsequent guarantee formulas.
+
+A rely-guarantee example. Consider a protocol in which a customer will interact with
+a merchant and a bank to purchase an item at a cost; the merchant will be paid by a debit
+from the customer’s account at the bank. Each participant should obtain evidence that
+the expected peers are participating in a corresponding session. Moreover, the merchant
+does not need to know the customer’s account number, and therefore should not see this
+information. The bank does not need to know what item the customer is buying, and
+therefore should not see that. Outsiders should not see the details at all. How best to
+achieve this goal?
+    Each party will need to generate a digital signature, since in case of dispute a third
+party must be able to reconstruct who committed to paying whom, and to sending what
+merchandise. Moreover, public key encryption will be needed, at least for a handshake,
+since the parties must protect secrets from the outsiders and from the third party. Thus,
+there is no way to avoid having three digital signatures generated, along with a similar
+
+
+number of public key encryptions, with corresponding verification and decryption actions.
+A protocol that achieves this goal is found in examples/minipay.scm.
+    Each party is making assertions, in effect. The customer asserts his desire to buy the
+item for the cost. The bank asserts that it will transfer the funds to the merchant. The
+merchant asserts that it will ship the item. Moreover, the protocol should ensure that each
+party knows that the others have made these commitments. For instance, the merchant is
+willing to ship the goods because it knows that the bank will transfer the payment. Thus,
+each party makes a guarantee, and each party learns that it may rely on its peers having
+made their guarantee. A fine point is the bank’s rely formula; it learns that the customer
+has requested some item in exchange for the cost, but not which one. Thus, the item is
+existentially bound in the bank’s rely formula.
+    This yields the rely and guarantee formulas displayed in Fig. 7.10; the protocol with
+these trust annotations may be found in examples/minipay-rely-guar.scm. The princi-
+pals in a particular session are required not to proceed past a guarantee formula unless the
+instances of the variables are known to satisfy the property claimed. The rely formulas
+summarize what they have learned in the preceding reception.
+    But: How do we know these formulas are in fact true in every execution that includes
+the preceding reception, or at least every execution satisfying some reasonable assumptions
+about uncompromised keys?
+    We can use goal formulas to check this. In a separate file, examples/minipay-guar.scm,
+we define the protocol with the same message structure and guarantee formulas, but with
+no rely formulas. We now pose goal statements for cpsa to resolve; these are shown in
+Fig. 7.11–7.12. In these formulas, the conclusions are the rely statements that must be
+justified. The hypotheses say that there is a strand z instantiating the relevant role long
+enough to reach the rely statement position. They also connect the variables in the rely
+formula with the parameters of z. Moreover, each customer goal assumes only the relevant
+peer’s signature key to be non-compromised. The merchant assumes only the bank’s signing
+key non-compromised, which is desirable since it may have no long-term association with
+the customer. The bank presumably has an association with the customer, established
+when the customer opened the account; the customer’s signing key could be established at
+that time.
+    The goals may be constructed from the generated rules cpsa provides when process-
+ing examples/minipay-rely-guar.scm, essentially adding the non-compromise assump-
+tions.
+    Since cpsa validates these goal formulas in the minipay-guar protocol that contains
+the guarantee formulas but not the rely formulas, the generated rules introduced by the
+rely formulas are also sound subject to the stated non-compromise assumptions.
+    We regard this rely-guarantee method as a systematic way to formalize the trust assump-
+tions, and the effects, of protocols that accomplish real-world tasks, in this case purchase
+and payment.
+
+
+
+
+```scheme
+(defrole cust (vars ...)
+  (trace
+    (guar (fact buy-via c m b item cost n))
+    (send ...)
+    (recv ...)           ; from bank
+    (rely (fact will-transfer c m b cost n mtr btr))
+    (recv ...)           ; from merchant
+    (rely (fact will-ship c m b item mtr))))
+```
+
+```scheme
+(defrole merc (vars ...)
+  (trace
+    (recv ...)           ; from customer
+    (send ...)
+    (recv ...)           ; from bank
+    (rely (and (fact buy-via c m b item cost n)
+               (fact will-transfer c m b cost n mtr btr)))
+    (guar (fact will-ship c m b item mtr))
+    (send ...)))
+```
+
+```scheme
+(defrole bank (vars ...)
+  (trace
+    (recv ...)
+    (rely (exists ((item merchandise))
+                  (fact buy-via c m b item cost n)))
+    ;; Do not proceed unless customer signature trustworthy.
+    ;; Given that, now commit to transferring the funds
+    (guar (and (non (privk "sig" c))
+               (fact will-transfer c m b cost n mtr btr)))
+    (send ...)))
+```
+
+
+            Figure 7.10: Rely and gauantee formulas in minipay.scm
+
+
+
+
+
+```scheme
+(defgoal minipay-guar
+  (forall
+   ((z strd) (c m b name) (cost amount) (n data) (mtr btr text))
+   (implies
+    (and (p "cust" z 2)
+         (p "cust" "c" z c)
+         (p "cust" "m" z m)
+         (p "cust" "b" z b)
+         (p "cust" "cost" z cost)
+         (p "cust" "n" z n)
+         (p "cust" "mtr" z mtr)
+         (p "cust" "btr" z btr)
+         (non (privk "sig" b)))
+    (fact will-transfer c m b cost n mtr btr))))
+```
+
+```scheme
+(defgoal minipay-guar
+  (forall
+   ((z strd) (c m b name) (item merchandise) (n data) (mtr btr text))
+   (implies
+    (and (p "cust" z 3)
+         (p "cust" "c" z c)
+         (p "cust" "m" z m)
+         (p "cust" "b" z b)
+         (p "cust" "item" z item)
+         (p "cust" "n" z n)
+         (p "cust" "mtr" z mtr)
+         (p "cust" "btr" z btr)
+         (non (privk "sig" m)))
+    (fact will-ship c m b item mtr))))
+```
+
+
+           Figure 7.11: Goal statements to validate customer’s rely formulas
+
+
+
+
+
+```scheme
+(defgoal minipay-guar
+  (forall
+   ((z strd) (c m b name) (item merchandise) (cost amount) (n data) (mtr btr text))
+   (implies
+    (and (p "merc" z 3)
+         (p "merc" "c" z c)
+         (p "merc" "m" z m)
+         (p "merc" "b" z b)
+         (p "merc" "item" z item)
+         (p "merc" "cost" z cost)
+         (p "merc" "n" z n)
+         (p "merc" "mtr" z mtr)
+         (p "merc" "btr" z btr)
+         (non (privk "sig" b)))
+    (and (fact will-transfer c m b cost n mtr btr)
+         (fact buy-via c m b item cost n)))))
+```
+
+```scheme
+(defgoal minipay-guar
+  (forall
+   ((z strd) (c m b name) (cost amount) (n data))
+   (implies
+    (and (p "bank" z 1)
+         (p "bank" "c" z c)
+         (p "bank" "m" z m)
+         (p "bank" "b" z b)
+         (p "bank" "cost" z cost)
+         (p "bank" "n" z n)
+         (non (privk "sig" c)))
+    (exists ((item merchandise))
+            (fact buy-via c m b item cost n)))))
+```
+
+
+             Figure 7.12: Goal statements to validate other rely formulas
+
+
+
+
+
+
+### 7.8    Lemmas
+
+One common way in which rules have been used in cpsa is as lemmas. The analyst would
+define a goal as a query and run cpsa to check that the goal is satisfied. Then the goal
+can be added to the protocol as a rule to help speed up the search for subsequent queries.
+One common example is when cpsa repeatedly undergoes a long search to satisfy a listener
+for some key that cannot be satisfied. Validating once and for all that the key cannot be
+leaked, and then including that fact as a rule can drastically improve performance.
+    Unfortunately, the syntax for doing so was not particularly friendly to the user. The
+formula stated as a defgoal query resides outside the protocol, while the defrule ver-
+sion must be included inside the protocol. Managing these lemmas could become difficult
+as there was no built-in management to help determine which rules had previously been
+validated as lemmas that hold.
+    For this reason, cpsa also includes a deflemma form. It must be place outside the
+protocol at the top level, just as a defgoal form. However, the syntax for a lemma differs
+slightly from that of a goal in ways that allow cpsa to help manage the complexities that
+arise from sometimes wanting to validate a formula as a goal and sometimes wanting to use
+it as a rule. The user should look at tst/lemmas.scm for an example of the syntax.
+    Compared to a defgoal, a deflemma has two extra arguments that come at the begin-
+ning. The first is a flag that signals to cpsa whether or not it should include a query for
+the lemma in order to validate that it is satisfied. There are three valid values: rule, goal,
+and both. The second is a name that will be used as the rule name when the lemma is
+used as a rule.
+    When a lemma uses the rule flag, cpsa will update the protocol identified in the
+lemma to include the specified formula as a rule. As a result, all subsequent queries for
+that protocol will include the lemma as a rule. cpsa will not generate a query for the
+lemma. The result is the same as if a copy of the protocol with the same name had been
+added in this location with an extra defrule added to it (hence only subsequent queries
+would use the rule).
+    The goal flag signals cpsa to treat the lemma as if it were a defgoal. A query will be
+added to the analysis, but it will not be included as a rule in any subsequent queries. The
+skeletons in the analysis contain a comment indicating the name of the lemma the analysis
+is associated with.
+    When the both flag is used, the behavior is first to treat the lemma as a goal, and then
+as a rule. cpsa will first create a query for the lemma against the specified protocol before
+updating the protocol to include the lemma as a rule for subsequent queries.
+    Since cpsa updates the protocol with a rule at load time, it cannot know in advance
+whether the lemma is satisfied or not. That means that subsequent queries will use the
+lemma as a rule, even if the query for the lemma shows that the lemma is not satisfied ! For
+this reason, the added rule contains a comment to indicate whether or not an associated
+query has been added to check its validity. When the both flag is used for a lemma that is
+
+
+
+not satisfied, since a query for the formula is generated as a goal, the output will contain
+(satisfies (no ...)) as evidence that some goal was not satisfied.
+
+
+
+
+
+
+## Chapter 8
+
+
+Channels and State
+
+Suppose that we are developing a protocol. We may well want to work out the overall
+message flow, and understand the consequences of different choices, before we figure out
+how—concretely—to protect particular messages. For instance, we may know that the
+sender of a particular message will want to ensure that its contents will remain confidential,
+without selecting a particular mechanism for doing so. Having worked out the overall
+structure of the protocol, it may later be clear how to discharge the assumption that the
+contents remain confidential. Or in other cases, we may know that we will use the same
+main message flow in several contexts, and in each of those contexts there may be different
+mechanisms that would make sense.
+    In those kinds of development, cpsa allows us to assume that messages are transmitted
+over channels that are assumed to offer security guarantees to the messages they carry.
+The treatment of channels also helped determine an approach to representing long-term,
+cross-session mutable state in cpsa. The goal of this chapter is to explain how to use
+the cpsa channel mechanism, and to build on that understanding to work with long-term
+mutable state.
+
+Channel security guarantees. The most important guarantees are authenticated chan-
+nels and confidential channels. They stipulate actions that must be taken by some instance
+of a role of the protocol, rather than by the adversary.
+   • An authenticated channel guarantees to the recipient of a message that this message
+     was sent by some instance of a role of the protocol.
+
+   • A confidential channel guarantees to the sender that this transmission will not be
+     received by the adversary, i.e. that any recipient is an instance of a role of the protocol.
+     Hence, any disclosure of not-yet-public parts of the message occur only if the message
+     is received and acted on by one or more instances of protocol roles.
+A channel that is both authenticated and confidential is sometimes called a secure channel.
+
+
+    Later, when we have developed an adequate protocol using the channel properties, we
+can refine it to one or more protocols that use specific cryptographic mechanisms to achieve
+the properties we need. For instance, digital signatures or Message Authentication Codes
+can achieve authenticity, public-key encryption can achieve confidentiality, and symmetric
+encryption (e.g. an authenticated encryption mode) can implement a secure channel.
+    Likewise, specific TLS modes can be used to implement authentic, confidential, and
+secure channels. For instance, a typical unilaterally authenticated TLS connection provides
+the client an authenticated channel for messages from the server, while it provides a confi-
+dential channel for messages to the server. In itself, the TLS unilateral handshake provides
+no guarantee to the server.
+    Other properties of channels are sometimes of interest, but are not directly implemented
+by cpsa. For instance, a fair channel ensures that a message transmitted onto it will
+eventually be delivered to some instance of a role of the protocol. A deliver-once channel
+ensures that a message transmitted onto it will be delivered at most once to any instance
+of a role of the protocol. In-order delivery is another possible channel property. Some of
+these may be represented indirectly in cpsa specifications [5]. However, authenticated and
+confidential channels are often useful in protocol design, and fit smoothly into the cpsa
+authentication test method.
+    In Section 8.1, we describe how to use the cpsa channel mechanism.
+
+Channels and long-term state. In Section 8.2, we also describe a model of protocols
+that rely on long-term, cross-session state, which is based on the channel mechanism. Here
+we consider a regular principal that interacts privately with a device containing some reg-
+isters that maintain state.1 The principal may read values out of the state registers and
+write back other values, often related values; these actions determine the state transitions
+the device can undergo when used in this protocol.
+    The connection with channels is this. When a regular protocol participant writes a
+value into a state register, this is akin to sending a message to oneself at a future moment.
+What one relies on, when using this mechanism, is that the recipient of this message—one’s
+future self—is still a regular participant, so that any future disclosure to the adversary will
+be due to some other action. That is, writing to a state register is sending a message on a
+confidential channel.
+    When reading from a state register, there are two possibilities. One is that one’s past
+self wrote this value into the state register previously. In this case, reading from the state
+register is like receiving a message on an authenticated channel. However, there is another
+case also, in which the value read may simply have been an initial state, available from the
+state register at power-up, so to speak. We call a state value a generated state value when
+the second case cannot apply to it, i.e. it is a value that may have been written into the
+     By a regular principal for a protocol Π, we mean a non-adversarial principal, i.e. one that acts only in
+accordance with the protocol Π.
+
+
+
+
+register but was definitely not available simply as an initial, power-up value. We summarize
+the idea by saying that reading a generated state value from a state register is receiving a
+authenticated value from a channel.
+    Thus, state registers offer a confidentiality property for written values, and an authen-
+ticity property for read values, if they are generated values. Thus, for state registers, the
+duality of confidentiality and authenticity holds in a limited form, i.e. for generated values.
+This is the reason why cpsa implements state via the same ideas as confidential and authen-
+ticated channels, although state requires some additional properties that will be described
+below in Section 8.2.
+
+
+
+### 8.1     Channels
+
+The cpsa model of authenticated or confidential channels requires only a small amount of
+syntax. First, variables of sort chan may be declared to range over channels, for instance:
+
+```scheme
+      (vars ... (ch-name-1 ch-name-2 chan) ...)
+```
+
+Second, a transmission event or reception event may have an additional component that is
+a variable of sort chan, taking the forms:
+
+      (send ch-name-1 sent-msg)
+      (recv ch-name-2 recvd-msg)
+
+Finally, we may assert the authenticated or confidential property of a channel, using the
+annotations:
+
+      (auth ch-name-1 ch-name-2)
+      (conf ch-name-2)
+
+     As with annotations such as uniq-orig and non-orig, these can appear either within
+a defskeleton query form or within a defrole role declaration. As in the previous cases,
+the semantics for an annotation in a particular query is that the annotation holds only for
+that specific instance. An annotation in a role declaration is a much stronger assumption.
+It instructs cpsa to add the instance of the assumption every time it adds an instance of
+that role. Since it is a much stronger assumption, it yields less precise analyses.
+     Starting with cpsa version 4.4.9, when a send or recv event has two arguments, the
+first channel argument can be any algebra term, not just a variable of the chan sort. If a
+variable of sort mesg is used, that variable must be acquired (i.e. its first occurrence in the
+role must be in a carried position of an inbound event).
+
+
+
+
+
+
+### 8.1.1    Yahalom with Channels
+
+We provide two examples of the channel mechanism, both based on the Yahalom protocol.
+They both use channels with annotations to explain the security properties needed for
+interaction with the key server. An explicit encryption is present only for the last message,
+in which the initiator encrypts and returns the responder’s nonce, establishing that the
+session key has been received and accepted, and was indeed requested by the initiator when
+starting the session.
+    In the first version (Section 8.1.2), we “take the easy way out,” and incorporate the
+channel annotations into the role definitions, meaning that cpsa will introduce a new
+instance of the assumption for every instance of a role that it considers.
+    In the second version, we use the slower mechanism, and introduce each individual
+channel property in a declaration in the defskeleton query forms. From the latter we
+learn a kind of session-independence: The security properties of a particular session of the
+protocol depend only on the channels that should be used in that protocol session, and the
+messages cannot leak from one session to undermine the security goals of another session.
+    It is perfectly reasonable in a development process to explore the protocol design choices
+with the channel annotations as assumptions at the role definition level first. When analysis
+shows that a version is acceptable, then one can remove the role definition annotations, and
+add assumptions strand-by-strand during a stepwise analysis.
+    If this analysis yields an acceptable result, for instance the session-independence prop-
+erty, one can then further refine the protocol by incorporating cryptographic mechanisms
+to ensure the channel properties are met. In the original Yahalom protocol (see e.g. [12]),
+the channels are implemented via symmetric cryptography. If the initiator and responder
+each share an uncompromised long-term key with the server, then an authenticated encryp-
+tion mode certainly satisfies the channel properties. However, other mechanisms are also
+possible, e.g. asymmetric primitives or, indeed, TLS.
+    Indeed, a choice of a particular primitive early in the design process obscures what
+actual properties are needed for the protocol to achieve its goals.
+
+Yahalom: Protocol idea. In the Yahalom protocol, the initiator A provides a nonce
+NA to the responder B, who passes that along with its own nonce NB and both names
+A, B to a key server. The server then creates a fresh session key K for A and B, packaging
+it separately for A and for B with their names; the package for A also contains NA , NB . A
+completes the exchange by encrypting B’s nonce NB with the session key K.
+
+Yahalom: Channel assumptions. In any session, the server needs a confidentiality
+guarantee for the packages it sends in order to protect the session key K in that session.
+So that requires the channel confidentiality property for the outbound channels from the
+server. Moreover, the initiator and responder each need an authentication guarantee for
+the packages it receives, so as to know that the key is safe to use.
+
+
+
+```scheme
+(defprotocol yahalom basic
+  (defrole init
+    (vars (a b c name) (n-a n-b text) (k skey) (ch3 chan))
+    (trace (send (cat a n-a))
+           (recv ch3 (cat a b k n-a n-b))
+           (send (enc n-b k)))
+    (auth ch3))
+```
+
+```scheme
+  (defrole resp
+    (vars (b a c name) (n-a n-b text) (k skey) (ch1 ch2 chan))
+    (trace (recv (cat a n-a))
+           (send ch1 (cat a b n-a n-b))
+           (recv ch2 (cat a b k))
+           (recv (enc n-b k)))
+    (auth ch2))
+```
+
+```scheme
+  (defrole serv
+    (vars (c a b name) (n-a n-b text) (k skey) (ch1 ch2 ch3 chan))
+    (trace (recv ch1 (cat a b n-a n-b))
+           (send ch3 (cat a b k n-a n-b))
+           (send ch2 (cat a b k)))
+    (conf ch3 ch2)
+    (uniq-orig k)))
+```
+
+
+        Figure 8.1: Yahalom protocol with channel assumptions in role declarations
+
+
+8.1.2    Yahalom with Channels, 1: Role-level assumptions
+We first codify the confidentiality and authenticity channel properties using annotations in
+the role declarations. This corresponds to the stronger assumption that compliant prin-
+cipals always use channels that successfully achieve those security properties. Since the
+assumption is stronger, any conclusions we reach will be weaker conclusions: they are im-
+plications that depend on a stronger hypothesis. In Section 8.1.3, we will show how, with
+a bit of extra work, we can find the tightest relevant hypotheses.
+    In Fig. 8.1 we show the three roles of the protocol with the behavior and channel
+assumptions mentioned at the end of Section 8.1.1. cpsa will automatically instantiate the
+channel assumptions for each role every time it incorporates an instance of the role.
+    We can now ask cpsa a succession of queries about this protocol. First, if the responder
+has a complete, four-step local session, then there are corresponding server and initiator
+runs (Fig. 8.2). All participants agree on the identities A, B, the responder’s nonce Nb , and
+the session key K. Moreover, the server and initiator agree on the initiator’s nonce NA ,
+but the responder does not need to. cpsa also validates that the session key K cannot be
+disclosed.
+
+
+
+                                           (defstrand resp 4 (k k) (n-a n-a)
+                                                      (n-b n-b) (b b) (a a) ...)
+
+                                           (defstrand serv 3 (k k) (n-a n-a-0)
+                                                      (n-b n-b) (a a) (b b) ...)
+
+                                           (defstrand init 3 (k k) (n-a n-a-0)
+                                                      (n-b n-b) (a a) (b b) ...)
+
+
+
+
+                         Figure 8.2: The responder’s point of view
+
+
+    When we ask what follows if the initiator has a full local session, the result is more
+limited. The initiator authenticates a server session of at least length two, agreeing on
+the identities A, B, the two nonces, and the session key K. Again, cpsa validates that K
+cannot be disclosed.
+    Observe that if any initiator and responder have local sessions involving a shared key
+K, then at least the result of Fig. 8.2 must hold, and they agree on each other’s identities
+A, B.
+    The server receives no authentication guarantees from the protocol as defined here, but
+is guaranteed that the shared key K will remain undisclosed. This is undesirable from
+one point of view, as it may cost resources for the key server to generate a new key and
+package it. Thus, an adversary can force this to occur as desired. This is (presumably) the
+reason why the original Yahalom protocol encrypts the message from the responder to the
+server (the arrow that appears dashed in Fig. 8.2). We may achieve the desired effect by
+stipulating that the server’s channel ch1 is authenticated. Our analysis shows that there is
+no benefit to confidentiality on that channel.
+    One might, however, doubt whether there is much benefit to the (auth ch1) stipulation,
+since the adversary can still arrange for messages from legitimate responders to be delivered
+repeatedly.
+    We can infer from this analysis that a symmetric authenticated long-term encryption
+key shared between the key server and each client is a good way to implement the channels
+ch2 and ch3, since the key server relies on their confidentiality property and the clients rely
+on their authentication property.
+
+
+
+
+
+```scheme
+                        (defskeleton yahalom
+                          (vars (k skey) (n-b n-a n-a-0 n-b-0 text)
+                                          (a b name) ...)
+                          (defstrand resp 4 (k k) (n-a n-a) (n-b n-b)
+                                             (b b) (a a) ...)
+                          (defstrand serv 3 (k k) (n-a n-a-0) (n-b n-b-0)
+                                             (a a) (b b) ...)
+                          (precedes ((1 2) (0 2)))
+                          (uniq-orig k n-b)
+                          (auth ch2) ...)
+```
+
+
+                          Figure 8.3: Responder’s first guarantee
+
+8.1.3   Yahalom with Channels, 2: Per-strand assumptions
+We now remove the role definition annotations, i.e. we omit the (conf ch3 ch2) annotation
+from the declaration of the server, and we omit the (auth ch2) and (auth ch3) annotations
+from the responder and initiator declarations, resp. We will now ask a succession of queries,
+each eliciting some more information, and allowing us to add small assumptions at each
+stage to identify the individual channel properties that matter. First, we ask:
+```scheme
+(defskeleton yahalom
+  (vars (a b c name) (n-b text) (ch1 ch2 chan))
+  (defstrand resp 4 (a a) (b b) (n-b n-b) (ch1 ch1) (ch2 ch2))
+  (auth ch2)
+  (uniq-orig n-b))
+```
+
+This yields the output in Fig. 8.3.
+    Now that we have ascertained a server run occurred with the same identities A, B and
+session key K, we may resubmit this output to cpsa with the added annotation (conf ch2
+ch3), saying that we will assume that this server session successfully used channels with
+the confidential property. At this point, cpsa completes the analysis with the same shape
+shown in Fig. 8.2.
+    This establishes that no other channel assumptions could be relevant to the conclusion.
+This was not evident from Fig. 8.2, since other channel assumptions may have led cpsa to
+discard some branches of analysis as impossible, which might then never be displayed.
+    The analysis from the initiator’s point of view can then follow the same pattern.
+
+Message terms as channels. The test suite has a version of the above channel-based
+description of Yahalom (tst/chan-mesg.scm) in which, instead of using arbitrary channel
+variables to name the channels, they are given names such as (cat a b) to indicate is a
+channel intended to go from a to b. The user should be aware that if channel (cat a b)
+is marked as authentic, then when b receives a message on that channel, the sending party
+
+
+will necessarily agree with the values a and b whether or not those names appear in the
+message payload.
+
+
+
+### 8.2     State
+
+cpsa models situations in which regular principals control devices with state registers or
+storage locations—we will henceforth use the term location for all such pieces of memory—
+that allow long-term storage and coordination among different local protocol sessions.2
+Each protocol role determines when a regular principal reads from a device location; what
+it does with the value read from it, and the parts of the value; and when it writes a new
+value into a location.
+
+Locations and channels. As we mentioned at the start of the chapter, cpsa relies on the
+analogy between reading from locations and receiving messages from channels, and between
+writing to locations and sending messages onto channels. In particular, writing to a location
+is like sending to a confidential channel, as we are modeling regular principals in control
+of the devices. And reading a state value is partly like receiving from an authenticated
+channel: Unless the value read might be the result of device initialization, it must have
+been written by a previous write action by a regular principal. We say that a value is
+a generated state value when we model it as not a possible result of device initialization.
+When cpsa knows of a value read from a location that it is a generated state value, it
+treats this as an authenticated channel reception. It then investigates the possible ways
+that regular principals may previously have written this state value to the location.
+
+Contrast: Locations are mutable. Channels can deliver the same message more than
+once, and, since redelivery is never ruled out, effectively always remember their previous
+contents. However, locations are mutable. After a transition event observes the value in a
+location and writes a new (possibly related) value into the location, subsequent reads are
+guaranteed to deliver the new value, not its predecessor. Although any number of read
+events may observe the same value, a transition event ensures that the new value is the
+only value available from this location. This fact—that transitions erase the past—is the
+essential characteristic of mutable state.
+
+“Leads to.” When a state transition event n0 writes a value v into a state location ℓ,
+and a later observation or transition event n1 obtains this value v from ℓ, without any
+other transitions having occurred to ℓ in between, we say that n0 leads to n1 , and we write
+n0 ⇝ n1 .
+    Allowing the Dolev-Yao adversary to have devices does not strengthen its powers, as it can already
+remember unbounded numbers of messages and perform all the reasonable operations on them. This is why
+our model highlights devices under the control of the regular principals.
+
+
+
+   Thus, when n0 ⇝ n1 the following conclusions hold:
+
+   1. n0 and n1 are events on the same location ℓ;
+
+   2. n0 is a transition event;
+
+   3. n0 precedes n1 , also written n0 ≺ n1 ; and
+
+   4. n1 receives the value that n0 has written into ℓ.
+
+The event n1 may just be a state observation rather than a state transition. In the former
+case, it is a pure read against ℓ. In the latter case, it is the beginning of a transition event,
+which we think of as consisting of a read of the old value in ℓ followed by a write of the
+new value into ℓ.
+    Internally, cpsa represents a state event as transmitting or receiving a pair t = (p, v).
+The second component is the state value v being read or written. The first component is
+a special value which is thought of as a spacetime point p. If the event is a write event,
+then cpsa assumes p to be uniquely originating. cpsa defines n0 ⇝ n1 to hold iff (i) n0 is
+a state node; (ii) n0 ≺ n1 , and (iii) for some message t, n0 transmits t and n1 receives t.
+    This cpsa representation lets us add to (1)–(4) another conclusion: When n0 ⇝ n1 ,
+
+   5. if also n2 ⇝ n1 , then n0 = n2 .
+
+
+### 8.2.1    The axioms of state
+
+The mutating, past-erasing property of transitions is expressed in two basic properties of
+the leads-to relation. They say in essence that leads-to is discrete for transitions events on
+any one location.
+    We write them diagrammatically in Fig. 8.4, using a boxed variable m to represent
+a transition event, and a plain variable m to represent an event that may be either a
+transition or a pure observation. We use a wavy arrow to represent leads-to; a dotted arrow
+to represent the precedence ordering ≺; and ⪯ to express the weak ordering, i.e. n0 ⪯ n1
+holds if and only if n0 ≺ n1 or n0 = n1 .
+    In each case, the events n, m0 , m1 are all state events on the same location ℓ.
+
+Axiom (i) states that when n ⇝ m0 and n ≺ m1 , all of these being transition events on
+    ℓ, then m0 ⪯ m1 . Thus, the leads-to relation is a discrete step, and if m0 ̸= m1 , then
+    the latter comes definitely later.
+      We call axiom (i) the discrete-after axiom, since it forces m1 to come after a tran-
+      sition that is the target of the ⇝ edge.
+
+Axiom (ii) states that when m0 ≺ n and m1 ⇝ n, each mi being a transition on ℓ, then
+    m0 ⪯ m1 . Again, the leads-to relation is a discrete step, and if m0 ̸= m1 , then the
+    former comes definitely earlier.
+
+
+                      (i)                  n                                          n
+                                                    ≺                                             ≺
+                                                                  =⇒
+                                                                                               
+                                 m0                 m1                 m0             ⪯           m1
+
+
+
+                      (ii)       m0                     m1             m0                 ⪯           m1
+                                                                  =⇒
+                                       ≺                                       ≺           
+                                           n                                              n
+
+             Figure 8.4: Two axioms about state events on the same location ℓ
+
+
+                      n                                                          n0
+                                 =⇒ m0 = m1                                               ≺
+                                                                                                =⇒ false
+                                                                                         
+                m0          m1                                         n1 ≻ m
+
+                                               n0
+                                                                  =⇒        false
+                                                         
+
+                                  n1           ≺         m
+
+        Figure 8.5: Three derived rules for state: Scissors, no interruption, and cake
+
+
+     We call axiom (ii) the discrete-before axiom, since it forces m0 to come before a
+     transition that is the source of the ⇝ edge.
+
+The symmetry between these two principles is better brought out if we omit to state, in (i),
+that n is a transition. The source of a leads-to edge is always a transition. The common
+idea is that a weak ordering holds between m0 and m1 , whenever one is a connected to n
+by ⇝ and the other by ≺. They jointly say: a transition ordered with respect to one end
+of a leads-to arrow has the corresponding weak ordering with respect to the other end.
+
+
+### 8.2.2    Consequences of the axioms
+
+What is distinctive of state—over and above channel confidentiality and channel authentic-
+ity for generated state values—is captured in the discrete-after and discrete-before axioms.
+However, each of them has a disjunction as its conclusion, namely either m0 = m1 or
+m0 ≺ m1 . Disjunctions are logically less convenient than non-disjunctive conclusions, since
+separate possibilities must each be explored. Hence, cpsa also formalizes three conse-
+quences of the discreteness axioms. One of them has the conclusion m0 = m1 , and the
+
+
+
+other two have the conclusion false. Again assuming that the state events concern the same
+location ℓ, the rules are:
+
+Scissors rule, which says that when a given node n leads to transition nodes m0 , m1 , the
+     latter two are equal.
+     Equivalently, a single node leads to at most one transition node.
+
+No interruption, which says that a transition node m is never properly between transition
+     nodes n0 and n1 when n0 ⇝ n1 .
+     Thus, a transition node m cannot “interrupt” the leads-to edge.
+
+Cake rule, which says that if a node n0 leads to two other nodes, and one of them is a
+    transition n1 , then the other one m does not follow the transition.
+     Thus, it says that a transition n1 caps off the period when other events m (which are
+     pure observations by the scissors rule) may result from n0 .
+
+We present these diagrammatically in Fig. 8.5. The two leads-to edges of the scissors rule
+are like the blades, which the equation m0 = m1 snaps shut. The cake rule formalizes the
+fact that you can’t eat your cake at n1 and have it too at m, at least not if m follows n1 .
+    Again, their concrete form may be found in the output of cpsa specifications using
+state, such as tst/open-closed.tst.
+
+Why these rules are consequences. Each of these rules is easily justified from the
+discrete-after and discrete-before rules, using the facts that n ⇝ m implies n ≺ m and that
+⪯ is a (weak) partial order.
+
+Scissors rule: The scissors rule follows by two applications of the discrete-after axiom.
+     Specifically, since n ⇝ m1 implies n ≺ m1 , we can apply the discrete-after axiom to
+     infer that m0 ⪯ m1 . Symmetrically, observing that n ⇝ m0 implies n ≺ m0 , we can
+     again apply the discrete-after axiom to infer that m1 ⪯ m0 .
+     The antisymmetry of ⪯ implies that m0 = m1 .
+
+No interruptions rule: For the no interruptions rule, apply discrete-after to infer that
+     n1 ⪯ m. But since m ≺ n1 is also assumed, this would yield a cycle.
+
+Cake rule: For the cake rule, apply discrete-before, instantiating its variable m0 as m,
+    its m1 as n0 , and its n as n1 . Thus, it follows that m ⪯ n0 , but the leads-to edge
+    n0 ⇝ m implies n0 ≺ m, yielding a contradiction.
+
+
+
+
+
+```scheme
+(defrole dev-open
+    (vars (k skey) (n nb text) (any mesg) (d o b name) (lk ls locn))
+    (trace
+     (load lk (dev-key-state d o k))
+     (recv (cat b n (enc (open-req b d o nb n) (hash-dk (cat b nb n k)))))
+     (load ls (door-state d any))
+     (load lk (dev-key-state d o k))          ; check k unchanged
+     (stor ls (door-state d (opened b nb n)))
+     (send (hash (open-req b d o nb n))))
+    (gen-st (dev-key-state d o k))
+    (facts (same-dev ls lk)))
+```
+
+
+                      Figure 8.6: Device-open role causing door to open
+
+
+
+### 8.2.3    Syntax for state
+
+In defining the syntax for modeling state, we first describe state events and the state
+segments that they can build up. We then describe how to specify generated state values—
+which were mentioned at the beginning of the chapter—and critical sections—which are
+atomicity assumptions about state segments.
+
+State events and state segments. In addition to the chan sort discussed in Section 8.1,
+there is a sort locn. A variable lv declared of sort locn via a declaration such as (lv locn)
+may be used as the target of load and stor events; these events indicate that a value is to
+be read from a location or written to it. Thus, Fig. 8.6, which uses a number of operators
+from a lang field,3 shows a role that manipulates two variables lk, ls of sort locn. Its
+intent is to open a door in response to a suitable encrypted command, conforming its
+action. The form (lk ls locn) declares the variables of sort locn. The form (load lk
+(dev-key-state d o k)) loads a tuple including a key k from the locn lk, which must
+contain a tuple of this kind for the event to occur. After receiving a message that contains
+a request to open the door, it loads the current door state from the other location ls, after
+which it stores back the “open” value. These events might be implemented by a sensor and
+an actuator in a real device. Finally, it confirms success by sending the hash of the open
+request.
+    Starting with cpsa version 4.4.9, a load or stor event may be followed by any pair of
+message terms. The first acts as a name for the location, just like a channel send or recv
+(Section 8.1). A particularly useful structure for a channel name is (cat d l) where d is
+a variable of sort dev and l is a variable of sort locn. This can help to represent natural
+     See Section 4.4. In this example, dev-key-state, open-req, door-state, and opened are tuple op-
+erators, and hash-dk is a hash operator, in essence a key derivation function. This example is found
+in examples/open-closed.scm.
+
+
+
+
+assumptions about stateful devices such as the fact that no role will update one location on
+one device and another location on another in the same transaction. If the locations can be
+viewed as fixed addresses on a device then one can even use (cat d "l") with a constant
+to represent the location.
+    In general, a state segment consists of zero or more load events followed by zero or
+more stor events, subject to the requirements that:
+
+  1. no two load events in this state segment load from the same location;
+
+  2. no two stor events in this state segment store into the same location.
+
+A particular state segment is a transition for a location ℓ iff there is a stor into ℓ in this
+state segment. It is a (pure) observation for ℓ iff there is a load from ℓ but no stor into ℓ
+in this state segment.
+    State segments of length greater than two necessarily represent events that involve
+multiple locations (given the constraints above). If a transition for location ℓ1 depends on
+the value present in ℓ2 , then a state segment can load v2 from ℓ2 and then store a new
+value dependent on v2 into ℓ1 . In this case, the state segment is a transition for ℓ1 but
+a pure observation for ℓ2 . If instead new values are stored into both ℓ1 and ℓ2 , then the
+state segment is a transition for both. In other cases, a state segment loads from both ℓ1
+and ℓ2 , but instead of storing back to either of them, it simply uses those values to control
+future message transmissions and receptions. In the latter cases, the state segment is a
+pure observation for both ℓ1 and ℓ2 .
+
+Rules for protocols with state. cpsa generates three types of rules for protocols that
+manipulate state, in addition to the two axioms of Section 8.2.1 and the three consequences
+of Section 8.2.2.4
+    The first kind are the transition rules, and these are generated entirely automatically by
+cpsa. The axioms and rules of Sections 8.2.1–8.2.2 depend on which events are transition
+events, the boxed events in Figs 8.4–8.5. Moreover, the syntax of the state segments
+determines which these are. Thus, cpsa generates rules that imply that an event is a
+transition event if:
+
+  1. it is a stor event; or
+
+  2. it is a load event, and the strand is long enough also to have a stor event from this
+     state segment for the same location ℓ.
+
+These are the transition rules.
+   The second kind are the generated state value rules. As we mentioned at the start, a
+generated state value is a value v that is definitely non-initial. Thus, if a load event reads
+      See Section 7.7 for rules in cpsa.
+
+
+
+
+a generated state value v from a location ℓ, then ℓ is acting like an authenticated channel
+for v. In particular cpsa will consider which instances of the roles could previously have
+stored v into ℓ; one of those must be present.
+    A generated state assumption may be introduced as a per-strand assumption, akin to
+the declarations discussed in Section 8.1.3. In that case it is syntactically present in a cpsa
+defskeleton query such as:
+```scheme
+(defskeleton open-closed
+  (vars (k skey) (d o name))
+  (defstrand dev-pass 4 (k k) (d d) (o o))
+  (gen-st (dev-key-state d o k)))
+```
+
+This gen-st declaration says that the particular tuple (dev-key-state d o k) using the
+values of the variables that appear in this strand forms a generated state value.
+    A generated state assumption may be introduced as a role-level assumption, akin to the
+declarations discussed in Section 8.1.2. In this case, the specifier wants to tell cpsa that
+the declared value is a generated state value whenever an instance of the role is long enough
+to furnish values for the variables that appear in it. Fig. 8.6 contains a role-level generated
+state assumption, namely (dev-key-state d o k). Since the trace of the dev-open rule
+loads a value of this form as its first action, these variables have values in every instance of
+height ≥ 1.
+    cpsa enforces this role-level assumption by generating a rule stating:
+(defgenrule gen-st-dev-open-0
+    (forall ((z strd) (k skey) (o d name))
+      (implies
+        (and (p "dev-open" z 1) (p "dev-open" "k" z k)
+             (p "dev-open" "o" z o) (p "dev-open" "d" z d))
+        (gen-st (dev-key-state d o k)))))
+
+cpsa uses the defgenrule form to distinguish rules it has generated automatically from
+rules that were explicitly written by the specifier, as described in Section 7.7.
+    Finally, the third kind of rule concerns critical sections. These are generated automat-
+ically for each state segment. These generated rules imply that any node that precedes
+one of the events in a state segments must precede all of them. Any node that follows one
+of the store events must follow all of them. Thus for instance in Fig. 8.7, the load events at
+indices 1, 2 and the store events at indices 3, 4 occur with transaction-like atomicity. cpsa
+generates the rules in Fig. 8.8. They are of value only when the state segment has multiple
+loads or multiple stores. In this particular example, the critical section declaration does
+not in fact make a difference to the analysis.
+
+8.2.4    Channels and state: Summary
+A core idea is that receptions may have authenticity, meaning that the adversary has not
+delivered the message; thus, cpsa explores what regular strands may have transmitted it.
+
+
+```scheme
+(defrole dev-up
+    (vars (k skey) (d o name) (old old1 mesg) (ch chan) (lk ls locn))
+    (trace
+     (recv ch (cat "power-up" d o k))
+     (load lk old)
+     (load ls old1)
+     (stor lk (dev-key-state d o k))
+     (stor ls (door-state d (closed o)))
+     (send (enc "up" k)))
+    (auth ch)
+    (facts (same-dev ls lk)))
+```
+
+
+                   Figure 8.7: State segments are critical sections
+
+
+
+
+ (defgenrule cau-dev-up-2
+   (forall ((z z1 strd) (i indx))
+     (implies
+       (and (p "dev-up" z 3) (prec z1 i z 2))
+       (or (= z z1) (prec z1 i z 1)))))
+
+ (defgenrule eff-dev-up-3
+   (forall ((z z1 strd) (i indx))
+     (implies
+       (and (p "dev-up" z 4) (prec z 3 z1 i))
+       (or (= z z1) (and (p "dev-up" z 5) (prec z 4 z1 i))))))
+
+
+                    Figure 8.8: Critical section: Generated rules
+
+
+
+
+
+Dually, a transmission may have confidentiality, meaning that the adversary will not receive
+the message directly. Thus, any parts of the transmitted message that appear in new forms
+subsequently will require some regular strand to have received it and transformed these
+parts.
+    In the channel mechanism, cpsa allows these properties to be directly associated with
+channels, providing a useful technique for protocol design. In the state mechanism, cpsa
+models the confidentiality of storing a value into a device controlled locally by the regular
+principal(s). Moreover, stored state values with the gen-st property satisfy the authenticity
+condition also.
+    Besides these properties, mutable state also requires modeling the fact that an old state
+value can no longer be observed in a location after that location has undergone a transition.
+We express these in the two axioms of Fig. 8.4; cpsa also uses their three consequences as
+shown in Fig. 8.5 for efficiency.
+    The modeling distinguishes between transitions on a location, which are expressed in
+state segments that contain a stor to it, and observations, expressed in state segments
+that contain a load but no stor to it. cpsa determines which events are transitions on a
+location automatically, and generates rules to keep track of this information. Rules are also
+available to determine which state values are stored state values, and these are generated
+from gen-st declarations.
+    cpsa’s job is to enumerate shapes. When a specification distinguishes a kind of value
+that can only appear in an initial load, and transitions that do not produce these values, but
+always produce stored state values with the gen-st property, then a run can typically have 0,
+1, 2, . . . , n transitions, and these will have no homomorphisms between them. Hence there
+will be infinitely many distinct shapes to enumerate, and cpsa will not terminate, although
+its partial outputs are often informative. The craft of using cpsa to understand state in
+protocols is often to restrict the gen-st declarations so that cpsa does not distinguish
+among state histories of (irrelevantly) different lengths.
+
+
+
+
+
+     Part IV
+
+Reference material
+
+
+
+
+
+
+## Chapter 9
+
+
+Troubleshooting
+
+The cpsa tool is a complicated one and many errors are possible in its use. In this chapter
+we discuss these errors, from the simplest to the most complex, and offer suggestions as to
+how to resolve them.
+
+
+
+### 9.1    Non-termination
+
+The cpsa tool is not guaranteed to complete its search on all well-formed inputs. The
+problem space cpsa attempts to perform includes some Turing-undecidable problems.
+   Because of this, the tool has two bail-out conditions that users should be aware of:
+
+   • The strand bound causes the tool to abort its analysis if any skeleton it analyzes
+     has more strands than the bound. By default, the strand bound is 12.
+
+   • The step limit causes the tool to abort its analysis if during the analysis of a single
+     input defskeleton or defgoal, the number of skeletons it processes exceeds the limit.
+     By default, the step limit is 2000.
+
+   • The depth limit causes the tool to not analyze skeletons more steps away from the
+     initial point of view than the bound. There is no depth limit by default. Skeletons that
+     are unrealized and not analyzed due to the depth limit are marked with “(fringe)”.
+
+    If you execute an analysis and the tool says “Strand bound exceeded” or “Step limit
+reached,” then that bail-out condition has come into play. This may indicate an analysis
+that would never terminate, but it may also be the case that the strand bound or step limit
+is too small, and a larger one will enable the analysis to complete.
+    Unlike the strand bound and the step limit, the depth limit never triggers an error
+condition, and can thus be useful for multi-skeleton analyses in which one of the earlier
+skeletons would otherwise have a non-terminating analysis.
+
+
+
+    The step limit, depth limit, and strand bound can be adjusted through the limit,
+depth, and bound options, respectively. See Section 10.5.
+    Note that sometimes, a user may become impatient waiting for an analysis to either
+complete or bail out. When this happens, the user should not hesitate to interrupt the
+tool; the tool will output a partial result that can be graphed so the user can examing the
+analysis done so far.
+    An analysis that doesn’t terminate does not necessarily represent an insecure protocol, it
+may just indicate a protocol where a more clever analysis is required than cpsa’s automated
+one.
+
+
+### 9.1.1    Configuring the search
+
+There are cases in which the default cpsa analysis does not terminate, but a non-default
+analysis would terminate. The tool has several default settings that influence the search
+but can be configured:
+
+   • Node precedence. In a skeleton with multiple unrealized receptions, the tool will,
+     by default, focus on the topmost unrealized node of the rightmost strand that contains
+     an unrealized node. If you find that an analysis gets into a large search space due
+     to exploring those unrealized receptions first, you could alter this order with the
+     reverse-nodes or try-old-strands options. The latter will prioritize the leftmost
+     strands over the rightmost, while the former will prioritize the bottom-most unrealized
+     node in the strand rather than the topmost. These can be used individually or jointly,
+     yielding three extra non-default search strategies.
+
+   • Critical term precedence. Occasionally, a reception will arise that is unrealized
+     and multiple critical terms are available. In particular, there are cases where a term
+     contains both a hard-to-explain encryption and a restricted nonce. For instance, in
+     the Kerberos protocol, the ticket {|k, a, b|}SK(b,s) can serve as both a critical encryption
+     (because SK(b, s) may be declared non-originating) and a critical term (because k
+     is uniquely originating). By default, cpsa will treat the encryption as the critical
+     term because this tends to lead to learning more in fewer steps, but this choice can
+     be reversed by using the check-nonces option.
+
+   • Priority. The tool contains an ability to declare a priority for certain receptions
+     that differs from the default. Priority takes precedence over all other search order-
+     ings. See Section 10.4 for the format requirements for declaring priorities, and the
+     priority_test.scm example in the examples directory.
+     Note that the default priority is 5, and priority 0 indicates that the tool should never
+     bother solving tests at those nodes. This may be of use, for instance, if solving one
+     particular node leads to infinite analysis, but other nodes would result in a quick
+     determination that a skeleton is dead.
+
+
+
+### 9.2    Error messages
+
+In this section, we provide an alphabetical listing of error messages / failures that may arise
+during cpsa execution. If you get an error message not included here, it likely represents
+a bug and should be reported to the tool maintainers.
+
+   • “[ASSERT FAILED] [...]”. This kind of error should not occur. If you see this
+     happen, please contact the tool maintainers and make a bug report!
+
+   • “Aborting after applying 500 rules and more are applicable”. This most
+     likely indicates a circular use of rules.
+
+   • “Algebra.absenceSubst: bad absence assertion” or “Algebra.nullifyOne: un-
+     expected pattern” The absent declaration must be declared on a pair where the
+     first element is an rndx variable and the second element is an exponent. These errors
+     should not occur if you did not give cpsa an input with an absent declaration.
+
+   • “Algebra.inv: Cannot invert a variable of sort mesg”. Variables of the mesg
+     sort should never be used as the key in an encryption. cpsa uses a single function
+     symbol to represent both symmetric and asymmetric encryption, and when the key
+     is a variable of sort mesg, it is ambiguous which is meant. As a result, it is unclear
+     what the decryption key would be for such a message. When cpsa tries to calculate
+     the decryption key when the encryption key is a variable of sort mesg, this error is
+     produced.
+
+   • “Atom not unique at node”. This occurs when a formula has been specified
+     including a uniq-at predicate in the antecedent that is untrue.
+
+   • “Bad char [...]”. This error message comes from a low-level parser trying to under-
+     stand S-expressions. When parsing an S-expression, any non-whitespace that isn’t
+     a parenthesis is an “atom” but we expect atoms to be symbols, numbers, or quoted
+     strings, and only certain characters are allowed in these. An atom that starts with a
+     digit is expected to be a number, for instance, so subsequent non-digits will cause an
+     error of this kind. The characters allowed in symbols include all alphanumeric char-
+     acters and the following punctuation marks: +, -, *, /, <, =, >, !, ?, :, $,
+     %, _, &, ~, ^.
+
+   • “Bad height” / “Bad position in role” / “Negative position in role”. A
+     defstrand includes a specification of a height (the length of the instance) but that
+     height must be positive and must not exceed the length of the role.
+
+   • “Bad str-prec”. Your goal included a str-prec predicate among node variables
+     associated with different roles. In other words, your formula has attempted to make
+     a single strand that includes events from distinct roles.
+
+
+• “Close of unopened list”. Your input has an erroneous close-paren.
+
+• “Disallowed bare exponent”. See Section 4.2. The tool requires that within roles
+  and skeletons, any exponent occurring outside an exponentiation function must be of
+  sort rndx.
+
+• “Domain does not match range”. This error message occurs when cpsa is trying
+  to understand the variable assignment you have specified in a defstrand. You may
+  have defined the value of a parameter more than once, or your definition may have
+  a type mismatch. For instance if a is a parameter role expected to be of the name
+  type, and you declare t to be a text variable, then including (a t) in a defstrand will
+  produce this error.
+
+• “Duplicate role [...] in protocol [...]”. The roles in a protocol must have distinct
+  names. This error occurs if you have two protocols with the same name.
+
+• “Duplicate variable declaration for [...]”. Within any vars statement, any sym-
+  bol may be used for a variable name, but each variable name can be declared only
+  once.
+
+• “End of input in string”. You included a quote-delimited string but didn’t close it
+  before the end of the input file.
+
+• “Equals not allowed in antecedent”. The equals predicate may only be used on
+  the conclusion side of a defgoal.
+
+• “Expansion limit exceeded”. This most likely indicates a circular use of macros.
+  The limit of expansion of a macro within a macro is hard-coded in the tool as depth
+  1000.
+
+• “Expecting [...] to be [a/an ...]”. You have a type error in your use of a func-
+  tion symbol. For instance if (pubk a) is to be loaded within a particular variable
+  declaration scope, the a variable should be of the name sort.
+
+• “Expecting a node variable” / “Expecting an algebra term”. Certain predi-
+  cates within a defgoal expect one of their inputs to be a declared node variable (or
+  to be a non-node variable). If a variable used in such an input is declared otherwise,
+  this error message is produced.
+
+• “Expecting an atom”. Certain declarations, in particular the uniq-orig, uniq-gen,
+  and non-orig ones, are expected to be used on atomic terms rather than compound
+  ones.
+
+• “Expecting terms in algebra [...]”. This is a historical artifact resulting from the
+  fact that the algebra has two names. If you specify one name as a runtime parameter
+
+
+  (or in the herald) that is different from the name used in the defprotocol form, this
+  error will result.
+
+• “Expts must first be received, rndxs first sent”. If the first occurrence of a
+  variables of the expt sort is in a transmission, it could resolve to any multiplication
+  of exponents and so is underspecified. When receiving an exponent, there is no way
+  to ensure it was not chosen to be some multiplication of other exponents, so we can
+  assume its sort is rndx. Hence the rule described by the error.
+
+• “Identifier [...] unknown”. This is a relatively common user-caused error that
+  occurs when you try to use a variable not declared in your vars declaration.
+
+• “Include depth exceeded with file [...]”. Most likely, this indicates a circular use
+  of the include command. The limit of inclusion within an included file is depth 16.
+
+• “Keyword [...] unknown”. The tool was expecting the symbol to specify an algebra
+  function symbol, but it didn’t match any of the available ones. This most commonly
+  indicates that the user forgot to include a function symbol name at the beginning
+  of a list when describing a term. One of the most common forms of this mistake is
+  to include (send (a b)) in a trace of a role, when the user intended to model the
+  sending of the pair (a, b). The proper input would be (send (cat a b)).
+  Because of this type of mistake, it is recommended to avoid using variables in your
+  model that are the same as function symbol names such as “ltk” or “pubk”.
+
+• “In a rule equality check, cannot find a binding for some variable”. An
+  equality in a rule is receiving a variable that has not been bound by a length or
+  parameter predicate. Try moving the equality to the end of the conjunction in which
+  it occurs.
+
+• “In rule [...], parameter predicate for [...] did not get a strand”. This message
+  occurs when a strand variable is not bound by a length predicate.
+
+• “In rule [...], [...] did not get a strand”. This message occurs when a strand
+  variable is not bound by a length predicate.
+
+• “In rule [...], [...] did not get a term. This message occurs when an algebra
+  variable is not bound by a parameter predicate.
+
+• “Malformed [...]”. Generally speaking, this indicates a syntax error. Consult the
+  grammar in Chapter 10 for the syntax requirements for the type of object the tool
+  claims was malformed. Double-check that you have spelled required keywords cor-
+  rectly, and that your parentheses are matched.
+
+
+
+
+
+• “Malformed association list”. This refers to one of the “-alist” symbols in the
+  grammar; these may occur in skeletons, goals, protocols, or roles.
+  Association lists are lists of S-expressions, each of which is a list that starts with a
+  symbol. This error would occur if you had, for instance, a symbol or a number, or an
+  S-expression starting with a number as an input to a defrole or defskeleton.
+
+• “Malformed input”. Top level S-expressions in your input file must be one of the
+  following: defprotocol, defskeleton, defgoal, comment, or herald. The tool
+  also recognizes defpreskeleton as a synonym for defskeleton. If you have an S-
+  expression at the top level that is other than one of these, this is the error message
+  you will see.
+
+• “Malformed pair – nodes in same strand”. In a defskeleton you are prohibited
+  from specifying orderings between nodes in the same strand.
+  This is not the case for leadsto relationships.
+
+• “No strands”. Your defskeleton did not include any strands at all; it must include
+  at least one.
+
+• “Node occurs in more than one role predicate”. Node variables in a goal must
+  occur within a role position predicate, but should not occur within more than one
+  within their defined scope.
+
+• “Priority declaration disallowed on [...]”. Prioritization has no effect except on
+  events that need an explanation. If you try to change the default priority of a send
+  or stor event, this is assumed to be a mistake and the tool produces this error.
+
+• “Protocol [...] unknown”. This error occurs when you have a defskeleton or
+  defgoal with a protocol name not matching any defprotocol so far present in the
+  file.
+
+• “Role [...] not found in [...]”. You included a defstrand referencing a role that
+  does not exist in the protocol definition.
+
+• “Role in parameter pred differs from role position pred”. A node variable
+  in a formula should occur in a role position predicate but may also occur in node
+  parameter predicates. However, node parameter predicates for a given node variable
+  should match the role of the role position predicate the variable occurs in.
+
+• “Role not well formed: role trace is a prefix of a listener”. cpsa disallows the
+  use of roles that begin with the reception of some message followed by the transmission
+  of that same message, because there is an ambiguity as to whether an instance is a
+  listener or an instance of a protocol role. This should not be a problem because
+
+
+
+  beginning a role in this manner is quite unusual, but if it is necessary for you to do so
+  we recommend the reception be paired with a tag constant such as (cat "regular
+  role" [...]).
+
+• “Role not well formed: non-orig [...] carried”. The non-orig declaration
+  specifies that a certain atomic value not be carried (see Section 6.2). You have made
+  such a declaration but a plain (full-height) instance of your role violates the rule.
+
+• “Role not well formed: uniq-orig/uniq-gen [...] doesn’t originate/generate”.
+  The uniq-orig declaration in a role requires the declared value to originate, i.e., its
+  first carried occurrence is in a transmission. The role probably has an earlier car-
+  ried reception of the value. Similarly uniq-gen requires the first occurrence (whether
+  carried or not) to be in a transmission. See Section 6.2 for an explanation of “carried.”
+
+• “Role not well formed: variable [...] not acquired”. Variables of the mesg sort
+  must be “acquired” when used in roles. This means that the first occurrence of the
+  variable must be a carried occurrence in a reception event. See Section 6.2 for an
+  explanation of “carried.”
+
+• “[Role / Skeleton] not well formed: inequality conditions violated”. A neq
+  declaration is false where it is first declared: in a role or skeleton definition.
+
+• “[Role / Skeleton] not well formed: lt declarations form a cycle”. The lt
+  declarations present in a role or in a skeleton are already violated in the role or
+  skeleton definition.
+
+• “[Role / Skeleton] not well formed: subsort requirements violated”. The
+  subsort declarations present in the role or skeleton being defined are already violated.
+
+• “Skeleton not well formed: a variable in [...] is not in some trace”. A
+  defskeleton causes this error when a variable used in a declaration does not appear
+  in any of the traces.
+
+• “Skeleton not well formed: cycle found in ordered pairs”. The ordering edges
+  (strand succession plus ordered pairs) of a skeleton should form an acyclic graph. A
+  cycle represents circular causality which should not be possible in any real execution.
+
+• “Skeleton not well formed: non-orig [...] carried”. The non-orig declaration
+  specifies that a certain atomic value not be carried (see Section 6.2). You have made
+  such a declaration but your defskeleton violates the rule.
+
+• “Skeleton not well formed: ordered pairs not well formed”. This error occurs
+  when an ordering is specified between the wrong types of events. In cpsa, an ordering
+  must be such that the earlier node has an outgoing type, so for instance an ordering
+  directly between two reception events is disallowed.
+
+
+• “Sort [...] not recognized”. You attempted to declare a variable to be of a sort
+  not present in the algebra. There is likely a typo in one of the sorts.
+
+• “Terms in [role/skeleton] not well formed”. This error occurs when you have
+  constructed a term using a function symbol that expects inputs of a certain sort,
+  but your inputs are not of that sort. For instance, in (ltk a b), a and b must be
+  variables of the name sort, or they are not well-formed. To resolve: double-check your
+  variable declarations and your use of function symbols.
+
+• “Too many locations in declaration”. You have a native declaration that appears
+  to include two or more locations in it. All native declarations allow at most one
+  location.
+
+• “Type mismatch in equals”. The equals predicate in a defgoal can be used
+  to compare node variables or to compare algebra variables, but cannot be used to
+  compare node variables to algebra variables.
+
+• “Unbound variable in [...]”. In a defgoal, variables must meet specific binding
+  requirements. See Chapter 7 for details. This error indicates that you have provided
+  a formula that the tool rejects for this reason.
+
+• “Unexpected end of input in list”. One of the most frequent user errors—you
+  didn’t include close parens for all your S-expressions.
+
+
+
+
+
+
+## Chapter 10
+
+
+CPSA Program
+
+
+### 10.1     CPSA pre-processing
+
+The cpsa tool performs a pre-processing step before it interprets its input. There are two
+important features that take place during pre-processing: macros and file inclusion.
+
+File inclusion. cpsa input files that become large enough become unweildy, and the user
+may wish to break them down into logical components and include one file in another. For
+instance, one might wish to separate protocol definitions out so they can be reused, or a
+user might wish to put together a file of macros they find useful. To include one file in
+another, add (include "filename") as a top-level S-expression where you wish that file
+to be included. Inclusion recognizes only relative paths.
+
+Macros. The cpsa pre-processor interprets macros.
+   To define a macro in a cpsa input file, use the defmacro keyword in an S-expression.
+The envelope.scm file in the examples directory uses the following macro:
+
+;; This is the refusal token
+(defmacro (refuse n pcr v k aik)
+  (enc "quote" (extend "refuse" (extend n pcr)) (enc v k) aik))
+
+    The first input to the defmacro defines the format that will trigger the macro. In
+this case, the first macros are defined for an S-expression with keyword refuse and five
+additional inputs. The second input to the defmacro describes what the macro should be
+replaced with. Symbols that exactly match the subsequent symbols in the first input are
+interpreted as standing for the inputs when the macro is used. So for instance (refuse a
+b c d e) would be replaced by
+
+(enc "quote" (extend "refuse" (extend a b)) (enc c d) e)
+
+
+wherever it appears in what follows. Macros can call on other macros, but there is a depth
+limit to the amount of recursion that this can entail. In the example, extend is actually
+another macro.
+    Normally a defmacro will replace a symbol with a single S-expression, but the ˆ (splice)
+keyword can be used to indicate that a macro should be replaced with more than one S-
+expression. This may be of use, for instance, to describe a portion of a role’s trace, when
+defining multiple roles with some behavior in common. For instance:
+
+(defmacro (handshake n a b)
+  (^ (send (enc "hello" a b n (pubk b)))
+     (recv (enc "hello-received" a n (pubk a))))
+
+   Note that the pre-processor actually handles the splice keyword as a separate pre-
+processing step after macro expansion. For this reason, use of ˆ outside of macros can
+produce unanticipated behavior.
+
+
+
+### 10.2     CPSA input syntax
+
+The complete syntax for the analyzer using the Basic Crypto Algebra is shown in Table 10.1.
+The start grammar symbol is file, and the terminal grammar symbols are: (, ), symbol,
+string, integer, and the constants set in typewriter font.
+    The alist, prot-alist, role-alist, and skel-alist productions are Lisp style asso-
+ciation lists, that is, lists of key-value pairs, where every key is a symbol. Key-value pairs
+with unrecognized keys are ignored, and are available for use by other tools. On output, un-
+recognized key-value pairs are preserved when printing protocols, but elided when printing
+skeletons.
+    The contents of a file can be interpreted as a sequence of S-expressions. The S-
+expressions used are restricted so that most dialects of Lisp can read them, and characters
+within symbols and strings never need quoting. Every list is proper. An S-expression atom
+is either a symbol, an integer, or a string. The characters that make up a symbol are
+the letters, the digits, and the special characters in “-*/<=>!?:$%_&~^+”. A symbol may
+not begin with a digit or a sign followed by a digit. The characters that make up a string
+are the printing characters omitting double quote and backslash, except when double quote
+and backslash are escaped using the backslash character. Double quotes delimit a string.
+A comment begins with a semicolon, or is an S-expression list at top-level that starts with
+the comment symbol.
+
+
+
+
+
+        file   ←    herald? form+
+    herald     ←    (herald [symbol | string] alist)
+      form     ←    (comment . . .) | protocol | skeleton | goal
+  protocol     ←    (defprotocol id alg role+ rule∗ prot-alist)
+          id   ←    symbol
+        alg    ←    basic | diffie-hellman
+      role     ←    (defrole id vars trace role-alist)
+       vars    ←    (vars vdecl∗)
+     vdecl     ←    (id+ sort)
+     trace     ←    (trace {event | annot}+)
+     event     ←    (dir term? term)
+         dir   ←    send | recv | load | stor
+     annot     ←    (cheq id term) | (rely conclusion) | (guarantee conclusion)
+      rule     ←    (defrule id sentence alist)
+ role-alist    ←    role-decl role-alist | alist role-alist
+      alist    ←    (symbol . . .)? alist?
+  skeleton     ←    (defskeleton id vars strand+ skel-alist)
+    strand     ←    (defstrand id integer maplet∗)
+               |    (defstrandmax id integer? maplet∗)
+               |    (deflistener term)
+    maplet     ←    (term term)
+ skel-alist    ←    skel-decl skel-alist | alist skel-alist
+               |    (precedes node-pair∗) skel-alist
+               |    (leadsto node-pair∗) skel-alist
+               |    (goal sentence+)| (facts(id term*))
+  node-pair    ←    (node node)
+      node     ←    (integer integer)
+       goal    ←    (defgoal id sentence+ alist)
+     check     ←    rule | goal | both
+     lemma     ←    (deflemma check id id sentence alist)
+
+
+Table 10.1: cpsa Input Syntax. See Tables 10.3 and 10.5 for algebra syntax (for the term
+and sort symbols), Table 10.6 for declaration syntax (for the role-decl and skel-decl
+symbols), and Table 7.1 for goal syntax (for the sentence and conclusion symbols).
+
+
+
+
+
+                                    Sorts
+Sorts:                    name, text, data, tag, skey, akey < mesg
+                          dev, chan, locn < mesg
+                                 Operations
+{| · |}(·)                mesg × mesg → mesg Encryption
+(·, ·)                    mesg × mesg → mesg Pairing
+#(·)                      mesg → mesg           Hashing
+K(·)                      name → akey           Public key of name
+   s
+K(·)                      name → akey           s-Public key of name
+(·)−1                     akey → akey           Inverse of key
+ltk(·, ·)                 name × name → skey Long-term key
+                                 Constants
+T ags                     tag                   Tag constants
+                                 Equations
+(a−1 )−1 = a              a : akey
+                                 Derivations
+m0 , m1 ⊨ {|m0 |}m1       m0 , m1 : mesg        Encryption
+m0 , m1 ⊨ (m0 , m1 )      m0 , m1 : mesg        Pairing
+(m0 , m1 ) ⊨ {m0 , m1 }   m0 , m1 : mesg        Destructuring
+{|m|}k , inv(k) ⊨ m       m, k : mesg           Decryption
+m ⊨ #(m)                  m : mesg              Hashing
+
+                  Table 10.2: The Basic Cryptoalgebra
+
+
+
+
+
+                     alg    ←    basic
+                    sort    ←    text | data | name | tag | skey | akey
+                            |    dev | chan | locn | mesg | id
+                       id   ←    symbol
+                    term    ←    id | (pubk id) | (privk id) | (invk id)
+                            |    (pubk string id) | (privk string id)
+                            |    (ltk id id) | string | (cat term+)
+                            |    (enc term+ term) | (hash term+)
+                            |    (id term+)
+
+       Table 10.3: cpsa Basic Algebra Syntax; sorts, operators id from Lang field
+
+
+
+### 10.3     Algebra reference
+
+
+### 10.3.1    Basic crypto algebra
+
+The basic crypto algebra is an order-sorted algebra with signature described in Table 10.2.
+Historically it was a distinct subset of the Diffie-Hellman crypto algebra, but they have since
+been merged into a single algebra used by all protocols. The presentation here starts with
+the basic crypto algebra as the core, then describes the Diffie-Hellman-specific additions.
+The basic algebra is the free order-sorted algebra generated by the function symbols, sorts,
+and constants given, modulo the one equation.
+    Additionally, cpsa reasons about derivability of values from other values, and the basic
+derivation rules are given in the table, where inv is defined as follows (with ⊥ indicating
+“undefined”):
+                                        if a : akey
+                                −1
+                                a
+                    inv(a) =      a     if a is not a variable of sort mesg              (10.1)
+                                  ⊥     otherwise.
+                               
+
+    Because inv is undefined on variables of sort mesg, cpsa cannot handle protocols or
+skeletons in which a value is encrypted with such a variable. This is a consequence of the
+choice we made in the design of cpsa to use only one encryption function symbol, despite
+there being two forms of encryption (symmetric and asymmetric). When encrypting with
+a variable of sort mesg, the type of encryption is ambiguous.
+    Table 10.3 describes the grammar for basic crypto algbera messages in the input syntax.
+    Each of these function symbols has a specific interpretation in the algebra signature;
+for instance, enc refers to the {| · |}· function symbol, and pubk refers to the K(·) function
+symbol when it has one input, but to K(·)    s when it has two inputs, where the second is s.
+
+privk refers to the composition of either K(·) or K(·)s with (·)−1 .
+
+
+
+
+
+
+### 10.3.2    The Diffie-Hellman crypto algebra
+
+The Diffie-Hellman crypto algebra refers to the extra features on top of the basic crypto
+algebra. It is an order-sorted algebra with signature described in Table 10.4. The algebra is
+the free order-sorted algebra generated by the function symbols, sorts, and constants given,
+modulo the equations.
+    In Section 4.2 we discussed modeling Diffie-Hellman in cpsa, but we said almost nothing
+about the expt sort that features prominently in the algebra signature. Our message model
+for Diffie-Hellman has two sorts of exponents. The rndx sort is for exponents that are to
+be thought of as atomic values. Randomly chosen exponents should always be of this sort,
+which is why rndx appears exclusively in our examples, while expt does not. The expt
+sort is for compound expressions involving exponents, or values (exp (gen) alpha) that
+are received with unconstrained exponent. There may also be variables of this sort, but
+they should not first occur in transmissions in protocol roles.
+    Table 10.5 describes the grammar for Diffie-Hellman crypto algbera messages in the
+input syntax. Symbols in the grammar appearing in the grammar for the basic crypto
+algebra retain their same interpretation. Additionally, the gen and one symbols, used as
+0-ary function symbols, specify the g and 1 constants, respectively.
+
+
+
+### 10.4     Declaration syntax
+
+Table 10.6 gives a grammar for the syntax of native and user-defined declarations. For the
+purposes of this table, there are two top-level symbols: role-decl and skel-decl.
+
+
+
+### 10.5     Command-line options
+
+The following command-line options are defined for the cpsa program:
+
+   • ‘o’ (“output”) – specifies a file to which the output will be written. Usage: -o FILE
+     or –output=FILE.
+
+   • ‘l’ (“limit”) – specifies a step limit (see Section 9.1). By default, the step limit is 2000.
+     Usage: -l INT or –limit=INT.
+
+   • ‘d’ (“depth”) – specifies a depth limit (see Section 9.1). The depth limit is infinite by
+     default. Usage: -d INT or –depth=INT.
+
+   • ‘b’ (“bound”) – specifies a strand bound (see Section 9.1). By default, the strand
+     bound is 12. Usage: -b INT or –bound=INT.
+
+   • ‘m’ (“margin”) – specifies the number of characters allowed per line in the output. By
+     default, the margin is 72. Usage: -m INT or –margin=INT.
+
+
+
+                                    Sorts
+Sorts:                    name, text, data, tag, skey, akey< mesg
+                          rndx < expt < mesg
+                          dev, chan, locn < mesg
+                                 Operations
+{| · |}(·)                mesg × mesg → mesg Encryption
+(·, ·)                    mesg × mesg → mesg Pairing
+#(·)                      mesg → mesg           Hashing
+K(·)                      name → akey           Public key of name
+   s
+K(·)                      name → akey           s-Public key of name
+(·)−1                     akey → akey           Inverse of key
+ltk(·, ·)                 name × name → skey Long-term key
+bltk(·, ·)                name × name → skey Bi-directional LTK
+(·)(·)                    base × expt → base    Exponentiation
+(··)                      expt × expt → expt Multiplication
+i(·)                      expt → expt           Mult. Inverse
+                                  Constants
+T ags                     mesg                  Tag constants
+g                         base                  Generator
+1                         expt                  Mult. Identity
+                                  Equations
+(a−1 )−1 = a                                    a : akey
+bltk(a, b) = bltk(b, a)                         a, b : name
+xy = yx                   x(yz) = (xy)z         x, y : expt
+x1 = x                    x(i(x)) = 1           x : expt
+h1 = h                    (hx )y = h(xy)        h : base, x, y : expt
+                                 Derivations
+m0 , m1 ⊨ {|m0 |}m1       m0 , m1 : mesg        Encryption
+m0 , m1 ⊨ (m0 , m1 )      m0 , m1 : mesg        Pairing
+(m0 , m1 ) ⊨ {m0 , m1 }   m0 , m1 : mesg        Destructuring
+{|m|}k , inv(k) ⊨ m       m, k : mesg           Decryption
+m ⊨ #(m)                  m : mesg              Hashing
+x, y ⊨ xy                 x, y : expt           Multiplication
+x ⊨ i(x)                  x : expt              Inversion
+h, x ⊨ hx                 h : base, x : expt    Exponentiation
+
+             Table 10.4: The Diffie-Hellman Cryptoalgebra
+
+
+
+
+
+               alg      ←   diffie-hellman
+              sort      ←   text | data | name | tag | skey | akey
+                        |   rndx | expt | dev | chan | locn | mesg | id
+                 id     ←   symbol
+              term      ←   id | (pubk id) | (privk id) | (invk id)
+                        |   (pubk string id) | (privk string id)
+                        |   (ltk id id) | string | (cat term+)
+                        |   (enc term+ term) | (hash term+)
+                        |   (exp term term ) | (gen) | (mul term term)
+                        |   (rec term) | (one) | (id term+)
+
+                      Table 10.5: cpsa Diffie-Hellman Algebra Syntax
+
+
+
+
+            role-decl       ←   (one-term-decl ht-term+)
+                            |   (priority (height integer)+)
+                            |   (facts (id term*)*) | (assume conclusion*)
+       one-term-decl        ←   non-orig | pen-non-orig | uniq-orig | uniq-gen
+                            |   conf | auth | gen-st
+               height       ←   integer
+             ht-term        ←   term | (term height)
+            skel-decl       ←   (one-term-decl term+)
+                            |   (two-term-decl (term term)+)
+                            |   (facts (id term*)*)
+                            |   (priority (node integer)+)
+                 node       ←   (integer integer)
+
+
+Table 10.6: Declaration syntax. See Tables 10.3 and 10.5 for the algebra syntax, which
+defines the term symbols. See Table 7.1 for formulas conclusion.
+
+
+
+
+
+• ‘e’ (“expand”) – expands macros only. For use in debugging macros; when run with
+  this option, the tool does not analyze its input.
+• ‘z’ (“noanalyze”) – loads the input but does not analyze. This could be used for
+  checking whether any errors are present in the input.
+• ‘n’ (“noisochk”) – disable isomorphism checks. Not recommended except in rare
+  circumstances. When the tool produces a new skeleton, it only gets a number in the
+  output if no isomorphic skeleton has already been found. With isomorphism checking
+  disabled, many analyses that otherwise terminate will not terminate. However, there
+  is one advantage. Normally, when a skeleton is found more than once in an analysis,
+  its operation field (see Section 5.2) is displayed only for the first time that skeleton is
+  found. Other instances are not annotated with an operation field but instead simply
+  link to the isomorphic skeleton. This usage is largely unnecessary due to the presence
+  of the seen-ops field.
+• ‘c’ (“check-nonces”) – check nonces first. Normally, the tool will consider the largest
+  possible critical term when attempting to solve an unrealized node. This option flips
+  the default behavior. Some analyses terminate only with this option, while others
+  perform better with this option.
+• ‘t’ (“try-old-strands”) – try old strands first. Normally, when there are unrealized
+  nodes on multiple strands, the tool will focus on the highest-numbered (rightmost in
+  the diagram) strand with unrealized nodes. This option flips the default behavior.
+  Some analyses terminate only with this option, while others perform better with this
+  option.
+• ‘r’ (“reverse-nodes”) – try younger nodes first. Normally, when a strand containing
+  unrealized nodes is chosen for analysis, if there are multiple unrealized nodes, the
+  earliest (oldest) node is analyzed. This option flips the default behavior. Some
+  analyses terminate only with this option, while others perform better with this option.
+
+
+• ‘g’ (“goals-sat”) – stop when goals are satisfied. Normally, a defgoal is converted to a
+  skeleton and analyzed, and only shapes are compared to the goals. With this option
+  enabled, the goals are checked against every intermediate skeleton, and branches of
+  the analysis in which the goals are satisfied are not further pursued. The output
+  analysis will show the skeletons in which the goals were first satisfied, and any shapes
+  in which the goals were not satisfied. In a sense, running cpsa with this option asks
+  the question: what are all the ways in which this goal may not be satisfied?
+• ‘a’ (“algebra”) – sets the algebra to use for the input. Since the basic and diffie-hellman
+  algebras have now been joined into a single algebra, this option should be considered
+  deprecated. Usage: -a STRING or –algebra=STRING.
+
+
+   • ‘s’ (“show-algebras”) – causes the tool to print a list of the allowed algebras, instead
+     of performing any analysis.
+
+   • ‘h’ (“help”) – causes the tool to print a list of command-line options, and also to
+     print the directory in which the package’s documentation exists. When run with this
+     option, the tool will not perform any analysis.
+
+   • ‘v’ (“version”) – causes the tool to simply print its version number rather than per-
+     forming any analysis.
+
+   Additionally,
+
+   • To protect cpsa against memory exhaustion, run cpsa with the command-line options
+     +RTS -M512m -RTS.
+
+   • To make use use of parallelism on an n-processor machine, start cpsa with the
+     command-line options +RTS -Nn -RTS.
+
+   See the GHC User’s Guide [15] for documentation on these and other options.
+
+
+### 10.5.1    Heralds
+
+At the top of each cpsa input file is, optionally, a herald that is an alternate way to specify
+command-line options. All of the examples in the examples directory contain heralds. The
+herald, in addition to setting certain options for the analyzer, is also included in the output
+file, which may be useful to the analyst in distinguishing one analysis from a similar, related
+one.
+     Options are included in the herald by constructing an S-expression with first element
+equal to the long name of an option, and the second element (if any) set to be the parameter
+for that option. For instance, (bound 20) can be included to increase the strand bound for
+every run of the analysis without having to add the flag manually.
+     Command-line options override the herald. Also, certain command-line options are not
+allowed in the herald, specifically, “output”, “help”, “version”, and “show-algebras”.
+
+
+
+
+
+
+## Chapter 11
+
+
+CPSA Tools
+
+This chapter describes programs that complement the cpsa program. All the tools accept a
+–help option that describes the tool’s usage and a –version option that prints the version
+of the tool.
+
+cpsa4init: Populates a directory with files used to create a cpsa project. See Section 2.3.1.
+
+cpsa4shape: Cuts down cpsa’s output to only show final results—the shapes.
+
+cpsa4graph: Constructs an xhtml document that visualizes the output of a cpsa run or
+     the output of cpsa4shape.
+
+cpsa4goalsat: Prints the labels of skeletons that do not satisfy a defgoal. See Section 7.1.
+     For each point of view skeleton specified by a goal, the program prints a list. The first
+     element of the list is the label of the point of view skeleton. The remaining elements
+     of the list are labels of the skeletons that do not satisfy the goal.
+
+cpsa4prot: Translates protocols expressed in Alice and Bob notation into cpsa’s defprotocol
+     syntax. It translates defprot forms, and passes all else through unchanged. The syn-
+     tax of defprot forms is presented in Table 11.1.
+     The basic layout of a defprot is a chronological description of things that happen
+     in the intended execution of the protocol. The s-expression (msg A B M) is used to
+     indicate that role A sends M, while role B receives it. Other features of cpsa4prot are
+     given in Table 11.2.
+     See Figure 11.1 for an example.
+
+cpsa4sas: Generates Shape Analysis Sentences from the output of cpsa. See Section 7.6.
+
+cpsa4pp: Pretty prints cpsa input. It can also be used to translate S-expression syntax
+     into json for use with tools written in other languages such as Python.
+
+
+
+             prot     ←    (defprot id alg vars form∗ rule∗ prot-alist)
+              vars    ←    (vars vdecl∗)
+             form     ←    (msg role role chmsg)
+                      |    (msg role role chmsg chmsg)
+                      |    (from role chmsg)
+                      |    (to role chmsg)
+                      |    (assume role role-alist)
+                      |    (clone role role)
+          chmmsg      ←    (chmsg id term) | (chmsg term) | term
+
+
+                             Table 11.1: defprot Grammar
+
+       Form                                       Meaning
+   (msg A B M)                                 A sends M to B
+ (msg A B M N)                        A sends M and B receives it as N
+    (from A M)                                   A sends M
+     (to A M)                                   A receives M
+  (assume A M)                      Add the assumption M to the role A
+   (clone A B)    Create a role B which includes all behavior described for A to this point.
+
+
+                             Table 11.2: defprot commands
+
+
+cpsa42latex: Translates cpsa macros specifying message formats into equivalent LATEX
+     macros. Algebra primitives such as enc and pubk are mapped to unspecified LATEX
+     macros with the same name and arity (sometimes with an optional tag), allowing the
+     user to easily customize how they would like these primitives to be typeset.
+
+cpsa4json: Translates cpsa input in json syntax into S-expression syntax.
+
+cpsa4diff: Compares the skeletons in two files. If a difference is detected, it prints the
+     first difference and exits.
+
+
+
+
+
+$ cat blanchet.prot
+(defprot blanchet basic
+```scheme
+  (vars (a b akey) (s skey) (d data))
+  (msg init resp (enc (enc s (invk a)) b))
+  (msg resp init (enc d s))
+  (assume init (uniq-orig s))
+  (assume resp (uniq-orig d))
+  (comment "Blanchet’s protocol"))
+```
+$ cpsa4prot blanchet.prot
+```scheme
+(defprotocol blanchet basic
+  (defrole init
+    (vars (a b akey) (s skey) (d data))
+    (trace (send (enc (enc s (invk a)) b)) (recv (enc d s)))
+    (uniq-orig s))
+  (defrole resp
+    (vars (a b akey) (s skey) (d data))
+    (trace (recv (enc (enc s (invk a)) b)) (send (enc d s)))
+    (uniq-orig d))
+  (comment "Blanchet’s protocol"))
+```
+$
+
+
+
+                    Figure 11.1: defprot Example
+
+
+
+
+
+Bibliography
+
+[1] W. Diffie and M. Hellman. New directions in cryptography. IEEE Transactions on
+    Information Theory, 22(6):644–654, November 1976.
+
+[2] Shaddin F. Doghmi, Joshua D. Guttman, and F. Javier Thayer. Searching for shapes
+    in cryptographic protocols. In Tools and Algorithms for Construction and Analysis of
+    Systems (TACAS), number 4424 in LNCS, pages 523–538, 2007.
+
+[3] Daniel Dolev and Andrew Yao. On the security of public-key protocols. IEEE Trans-
+    actions on Information Theory, 29:198–208, 1983.
+
+[4] Joseph A. Goguen and José Meseguer. Order-sorted algebra I: equational deduction
+    for multiple inheritance, overloading, exceptions and partial operations. Theoretical
+    Computer Science, 105(2):217–273, 1992.
+
+[5] Joshua D. Guttman. State and progress in strand spaces: Proving fair exchange.
+    Journal of Automated Reasoning, 48(2):159–195, 2012.
+
+[6] Joshua D. Guttman. Establishing and preserving protocol security goals. Journal of
+    Computer Security, 22(2):201–267, 2014.
+
+[7] Joshua D. Guttman, Jonathan C. Herzog, John D. Ramsdell, and Brian T. Sniffen.
+    Programming cryptographic protocols. In Rocco De Nicola and Davide Sangiorgi,
+    editors, Trust in Global Computing, number 3705 in LNCS, pages 116–145. Springer,
+    2005.
+
+[8] Joshua D Guttman, Moses D Liskov, and Paul D Rowe. Security goals and evolving
+    standards. In Security Standardisation Research, pages 93–110. Springer, 2014.
+
+[9] Joshua D. Guttman, F. Javier Thayer, Jay A. Carlson, Jonathan C. Herzog, John D.
+    Ramsdell, and Brian T. Sniffen. Trust management in strand spaces: A rely-guarantee
+    method. In David Schmidt, editor, Programming Languages and Systems: 13th Eu-
+    ropean Symposium on Programming, number 2986 in LNCS, pages 325–339. Springer,
+    2004.
+
+
+
+[10] Gavin Lowe. Breaking and fixing the Needham-Schroeder public-key protocol using
+     FDR. In Proceeedings of tacas, volume 1055 of LNCS, pages 147–166, 1996.
+
+[11] Jay A. McCarthy, Shriram Krishnamurthi, Joshua D. Guttman, and John D. Ramsdell.
+     Compiling cryptographic protocols for deployment on the web. In World Wide Web
+     Conference, pages 687–696. ACM, 2007.
+
+[12] Lawrence C. Paulson. Relations between secrets: Two formal analyses of the Yahalom
+     protocol. Journal of Computer Security, 2001.
+
+[13] John D. Ramsdell. Deducing security goals from shape analysis sentences. The MITRE
+     Corporation, April 2012. http://arxiv.org/abs/1204.0480.
+
+[14] Paul D. Rowe, Joshua D. Guttman, and Moses D. Liskov. Measuring protocol
+     strength with security goals. International Journal of Information Security, 15(6):575–
+     596, November 2016. DOI 10.1007/s10207-016-0319-z, http://web.cs.wpi.edu/
+     ~guttman/pubs/ijis_measuring-security.pdf.
+
+[15] The GHC Team. GHC user’s guide documentation, release 8.2.1, July 2017. https:
+     //downloads.haskell.org/~ghc/latest/docs/users_guide.pdf.
+
+
+
+
+
+Index
+
+ˆ(macro splicing), 103           defprotocol, 11
+                                 defrole, 12
+absent, 48                       defskeleton, 11, 48
+added strand, 42                 defstrand, 49
+akey, 20                         defstrandmax, 27, 49
+Algebra, 11                      deletion, 33
+algebra, 110                     depth limit, 94, 107
+and, 52                          Diffie-Hellman, 31
+assume declarations, 68               algebra, 25, 110
+augmentation                          plain, 32
+    listener, 41                      unauthenticated, 32
+    regular, 41                  displacement, 41
+auth, 79
+                                 enc, 12
+Blanchet protocol, 18            encryption
+bltk, 36                             function symbol, 10
+                                 event, 46
+carried subterm, 41, 47
+                                 examples
+cat, 12
+                                     Blanchet, 18
+channel, 77
+                                     Diffie-Hellman, 32
+    annotations, 79
+                                     Envelope protocol
+    authenticated, 77
+                                        macros in, 102
+    confidential, 77
+                                     Kerberos, 26, 42
+check-nonces option, 95, 110
+                                        with bi-directional keys, 36
+cohort, 13
+                                     Needham-Schroeder, 9
+comments, 103
+                                        logical goals in, 52
+conf, 79
+                                     Otway-Rees, 31
+constants, 35
+                                        with bi-directional keys, 36
+contraction, 41
+                                     Station to Station, 34
+data, 20                             Unified Method, 35
+defgoal, 52                          Yahalom, 31
+deflistener, 21, 49                     with bi-directional keys, 36
+defmacro, 102                    exists, 52
+
+
+
+expt, 33, 107                      nesting, 103
+                                   splicing, 103
+fact term, 63                  maplet, 13
+false, 52                      mesg, 27
+file extensions                message algebra, 10
+      .scm, 11                 minimality of cpsa output, 34
+forall, 52                     model, 10
+forward secrecy, 35            mutable state, 84
+                                   axioms, 85
+gen-st, 90
+generalization, 33             Needham-Schroeder, 9
+generated state value, 90          logical goals in, 52
+generation, 47                 Needham-Schroeder-Lowe protocol, 18
+generics, 27                   non-orig, 13
+goals-sat option, 110          non-orig, 47
+graphing, 13
+guarantee declarations, 69     operation field, 42
+                               options
+hash, 35                            algebra, 110
+hash functions, 35                  bound, 107
+herald, 111                         check-nonces, 95, 110
+                                    depth, 107
+implies, 52
+                                    expand, 107
+include, 102
+                                    goals-sat, 110
+instance, 11
+                                    help, 111
+interrupting, 95
+                                    limit, 107
+Kerberos protocol, 26, 42           margin, 107
+key-of function symbol, 10          noanalyze, 110
+                                    noisochk, 110
+label, 13                           output, 107
+lang field, 37                      reverse-nodes, 95, 110
+leads-to relation, 84               show-algebras, 110
+listener, 21                        try-old-strands, 95, 110
+listener augmentation, 41           version, 111
+load, 89                       or, 52
+locn, 88                       origination, 47
+long-term key                       non-origination, 47
+     bidirectional, 36              penetrator non-origination, 47
+Lowe attack, 18                     unique, 47
+ltk, 26, 31                    Otway-Rees protocol, 31
+                                    with bi-directional keys, 36
+macros, 102
+
+
+pairing function symbol, 10         uniq-orig, 13
+pen-non-orig, 47                    uniq-orig, 47
+priority, 95
+protocol, 10                        vars, 12
+pubk, 12
+                                    Yahalom protocol, 31
+recv, 12
+regular augmentation, 41
+rely declarations, 69
+reverse-nodes option, 95, 110
+rndx, 33
+role, 10
+role declarations, 20
+
+search tree, 14
+    colors, 14
+seen child, 110
+send, 12
+signatures, 20
+skeleton, 11
+    dead, 14, 21
+    realized, 14, 41
+skey, 20
+state, 84
+Station to Station protocol, 34
+step limit, 94, 107
+stor, 89
+strand bound, 94, 107
+strand spaces, 46
+
+tag, 25, 35
+tags, 35
+tooltip
+    instance, 16
+    skeleton node, 14
+trace, 12
+trans, 89
+try-old-strands option, 95, 110
+tuple, 36
+
+Unified Method, 35
+uniq-gen, 33, 47
+````
+
+---
+
+### `refrences/cpsa-protocol-modeling/manuals/CPSA_Comprehensive_Guide.md`
+
+*sha256:`86bb8c0f775d` · 3776 lines · 186.0 KB (~45,928 tokens) · lang:`markdown` · 10 control chars sanitized*
+
+```markdown
+# Comprehensive Guide to CPSA Modeling
+
+Approved for Public Release; Distribution Unlimited
+Case # 12-0038
+
+
+
+
+                       MTR110479
+                       MITRE TECHNICAL REPORT
+
+
+                       Completeness of CPSA
+
+
+
+                       October 2011
+
+                       Moses D. Liskov
+                       Paul D. Rowe
+                       F. Javier Thayer
+
+
+
+
+                       Sponsor:       NSA/R2D            Contract No.:    W15P7T-12-C-F600
+                       Dept. No.:     G020               Project No.:     0712N60B
+
+
+
+                       The views, opinions and/or findings contained in       This document was prepared for authorized
+                       this report are those of The MITRE Corporation         distribution only. It has not been approved
+                       and should not be construed as an official             for public release.
+                       Government position, policy, or decision, unless
+                       designated by other documentation.
+
+                        c 2011 The MITRE Corporation. All Rights Reserved.
+
+
+
+
+                       Center for Integrated Intelligence Systems
+                       Bedford, Massachusetts
+
+                                Abstract
+
+The Cryptographic Protocol Shapes Analyzer (cpsa) is a program for au-
+tomatically characterizing the possible executions of a protocol compatible
+with a specified partial execution. This paper presents a mathematically
+rigorous theory that backs up the implementation of cpsa in Haskell, and
+proves the algorithm produces characterizations that are complete, and that
+the algorithm enumerates these characterizations.
+
+Contents
+
+## 1 Introduction                                                                 3
+
+  1.1 Previous and Related Work . . . . . . . . . . . . . . . . . . .          3
+  1.2 Document structure . . . . . . . . . . . . . . . . . . . . . . . .       4
+
+
+## 2 Preliminaries                                                                5
+
+  2.1 Basic Cryptoalgebra . . . . . . . . . . . . . . . . . . . . . . .        5
+  2.2 Path Viewpoint . . . . . . . . . . . . . . . . . . . . . . . . . .       5
+
+
+## 3 Upward and Downward Closure                                             7
+
+  3.1 Closure Properties . . . . . . . . . . . . . . . . . . . . . . . . 10
+
+
+## 4 Critical Path                                                               14
+
+
+
+## 5 Fragments                                                                   18
+
+
+
+## 6 Protocols                                                               21
+
+  6.1 Roles and Protocols . . . . . . . . . . . . . . . . . . . . . . . . 22
+
+
+## 7 Skeletons                                                                   24
+
+  7.1 Preskeletons . . . . . . . . . . . . . . . . . . . . . . . . . . . .    27
+  7.2 Hierarchies and Commitments . . . . . . . . . . . . . . . . . .         28
+      7.2.1 Assignment Committed Protoskeletons . . . . . . . . .             29
+      7.2.2 Listener Committed Protoskeletons . . . . . . . . . . .           30
+  7.3 Diagrams . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      31
+  7.4 Preservation Properties . . . . . . . . . . . . . . . . . . . . . .     32
+  7.5 Coverage . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    33
+
+
+## 8 Operators                                                                   34
+
+  8.1 Suites . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    36
+  8.2 Filters . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   36
+  8.3 Primitive Operators . . . . . . . . . . . . . . . . . . . . . . . .     36
+
+
+## 9 Suites and the Setwise Reduction                                            41
+
+  9.1 The Pre-Cohort Suite . . . . . . . . . . . . . . . . . . . . . . .      42
+  9.2 The Skeletonization Suite . . . . . . . . . . . . . . . . . . . .       44
+  9.3 Post-Processing Filters . . . . . . . . . . . . . . . . . . . . . .     46
+  9.4 The Cohort and the CPSA Set Reduction . . . . . . . . . . .             47
+
+
+
+
+## 10 Suite Completeness                                                    48
+
+   10.1 Top-level Completeness Proof . . . . . . . . . . . . . . . . . . 53
+
+
+## 11 Skeletonization                                                             55
+
+
+
+## 12 Pre-Cohort Completeness                                                     63
+
+   12.1 Preliminaries . . . . . . . . . . . . . . . . . . . . . . . . . . .    63
+   12.2 Contractions . . . . . . . . . . . . . . . . . . . . . . . . . . . .   64
+   12.3 Listener Augmentation . . . . . . . . . . . . . . . . . . . . . .      65
+   12.4 Regular Augmentation . . . . . . . . . . . . . . . . . . . . . .       68
+   12.5 Exhaustivity of the Cases . . . . . . . . . . . . . . . . . . . .      70
+   12.6 Proof of Lemma 10.11 . . . . . . . . . . . . . . . . . . . . . .       76
+
+
+## 13 Enumerability                                                               77
+
+
+A The cowt Algorithm                                                           82
+
+
+
+
+
+
+## 1     Introduction
+
+The Cryptographic Protocol Shapes Analyzer (cpsa) is a program for au-
+tomatically characterizing the possible executions of a protocol compatible
+with a specified partial execution [17]. The purpose of this document is to
+present a mathematically rigorous theory that backs up the implementation
+of cpsa in Haskell, and prove the algorithm produces characterizations that
+are complete, and that the algorithm enumerates these characterizations.
+
+
+### 1.1    Previous and Related Work
+
+cpsa is the result of a line of research on the formal analysis of security
+protocols, typically traced to seminal work of Dolev and Yao [12]. Formal
+analysis of security protocols treats cryptographic tools such as encryption
+and digital signatures as abstractions, and thus reduces the problem of an-
+alyzing a security protocol to a simpler task. Meadows [16] and Lowe [15]
+showed that automatic tools for analysis of security protocols are both prac-
+tical and effective. Numerous tools have been developed since for automated
+protocol analysis [15, 4, 6, 5, 1, 21, 3, 2, 8, 13].
+    The cryptographic protocol shapes analyzer is unusual among these tools
+because it aims to give a complete characterization of possible executions,
+independent of any specific security property to confirm or contradict. cpsa
+is an automated tool that aims at complete characterization, and works with
+Strand Space theory [20, 14]. Its structure is described in [9, 11], and the al-
+gorithm is more fully specified in [18]. However, no full proof of the algorithm
+has been given until now.
+    It is worth noting a few of the similarities and differences from one tool
+in particular named Scyther [8, 7], created by Cas Cremers. We highlight
+this tool due to its close similarity to cpsa. Scyther’s algorithm is based on
+the algorithm used in Avispa [1] and also aims to produce complete char-
+acterizations of protocols. It is also based on the theory of Strand Spaces,
+although its semantics is not quite identical to that of cpsa. Scyther’s char-
+acterizations are sensitive to certain types of adversarial actions, and so these
+actions are explicitly included in the output, while cpsa focuses solely on the
+projection of executions onto the regular participants. This difference also
+manifests itself in the algorithms used by the two tools. In choosing to have
+characterizations that are insensitive to which adversary actions are used,
+cpsa must base its algorithm on so-called “authentication tests” [10]. This
+
+
+appears to add noticeable complexity to the proof of completeness. There
+has been no systematic comparison of these tools with regard to their per-
+formance and expressibility; nor have there been any studies to compare the
+similarities and differences between the characterizations that the two tools
+output.
+
+
+### 1.2    Document structure
+
+In sections 2, 3, 4, and 5, we describe the formal algebra used to model mes-
+sages in our protocols and the capabilities of the adversary, and develop some
+key definitions and reasoning that support the algorithmic design of cpsa.
+We are mainly concerned with the notion of derivability, specifically, given a
+message, can the adversary derive it from available messages, and if not, why
+not? The main result of importance to the proof is the development of the
+definitions of an escape set and a critical path, and the relationship between
+escape sets, critical paths, and derivability, which we prove in Theorem 4.11.
+    In sections 6, and 7, we describe our mathematical notion of a protocol
+and its roles, and describe skeletons, which capture our idea of a (possibly
+partial) protocol execution. We also describe homomorphisms, maps from
+one skeleton to another, that indicate that the target is an extension of
+the source as a partial execution. This makes it possible for us to describe
+coverage and to formally explain the goal of the cpsa algorithm.
+    In sections 8, and 9, we give a mathematical theory of operators (trans-
+formative operations on skeletons) and suites in order to define the cohort
+suite, the main algorithmic operation of cpsa. We also define the overall
+algorithm of cpsa.
+    In sections 10, 11, 12, and 13, we formally state and prove the top-level
+theorems about cpsa we wish to establish: Theorem 10.17, which proves
+that cpsa gives a complete characterization of its input, and Theorem 13.1,
+which proves that our algorithm enumerates normal characterizations of any
+input.
+
+
+
+
+
+
+## 2     Preliminaries
+
+
+### 2.1    Basic Cryptoalgebra
+
+We use a message algebra called the Basic Cryptoalgebra which is the main
+algebra used by cpsa.
+
+                                Sorts
+        Sorts:       name, text, data, skey, akey < mesg
+        Base sorts: name, text, data, skey, akey
+                              Operations
+        {| · |}(·)   mesg × mesg → mesg Encryption
+        (·, ·)       mesg × mesg → mesg Pairing
+        K(·)         name → akey           Public key of name
+            −1
+        (·)          akey → akey           Inverse of key
+        ltk(·, ·)    name × name → skey
+                              Constants
+        T ags        mesg                  Tag constants
+                              Equations
+        (a−1 )−1 = a a : akey
+
+The base sorts are pairwise disjoint. Given a set X of generators AX is the
+free cryptoalgebra generated by X. The set elements of sort base is denoted
+BX .
+            B = Askey ∪ Aakey ∪ Aname ∪ Atext ∪ Adata                   (1)
+Elements of B are called atoms in the cpsa Theory paper. The set B
+consists of those terms which are not pairs, not encryptions, not variables of
+sort message and not tags.
+    End(A) is the set of homomorphisms A −→ A. There is a bijective
+correspondence between elements of End(A) and mappings X −→ A. If
+σ ∈ End(A), s-dom σ is the set of variables that are not fixed by σ.
+
+
+### 2.2    Path Viewpoint
+
+A position π is a finite sequence of whole numbers. We write π a π 0 to indicate
+the concatenation of sequences π and π 0 . When π 0 is a prefix of π, we write
+(π − π 0 ) to indicate the unique sequence π 00 such that π 0 a π 00 = π.
+
+
+
+   The term in t that occurs at π, written t @ π, is:
+                   t @ hi = t;
+                   (t1 , t2 ) @ hii a π = ti @ π for i ∈ {1, 2};
+                   {|t1 |}t2 @ hii a π = ti @ π for i ∈ {1, 2};
+                   t−1 @ h1i a π = t @ π.
+All references to terms are considered in A. A term t occurs in term t0 if
+t = t0 @ p for some p.
+    We consider the elements of A as a directed graph with labeled nodes
+                a
+and arrows; t → s where t, s ∈ A if and only if t @ hai = s, where a ∈ {1, 2}.
+Given a term t, the set of paths p from t is denoted by Path(t).
+Remark 2.1. A position π determines a path in the parse tree of a term t.
+We can associate to each path from t a position π and conversely positions π
+in a term t determines a path from t. For compatibility with cpsa notation
+we identify a path p from t with a pair (t, π) where π is a position in t. For
+any prefix ρ of position π, t @ ρ is a node on the path. We will use similar
+terminology for paths and positions. For example, a prefix of a path (t, π) is
+a path (t, ρ) where ρ is a prefix of π. If p is a path from t, then t @ p is the
+endpoint of the path p. the free algebra.
+  1. A path p = (t, π) traverses a term a if t @ ρ = a for some proper prefix
+     ρ of π. As a particular case of this, note that any non-null path from
+     t traverses t.
+  2. A path p = (t, π) terminates at a if t @ π = a. Alternative phrases are
+     p leads from t to a or a is an endpoint of p.
+  3. A path p visits a if p traverses a or terminates at a.
+  4. A path p = (t, π) in t traverses the i-th position of a function symbol
+     f of arity n ≥ i if for some position ρ, t @ ρ is a term with constructor
+     f and ρ a hii is a prefix of π. Cases of interest are plaintext edges and
+     key edges of encryptions and key inverse.
+  5. A path p is carried if it does not traverse any key edge or any inverse
+     edge. The set of carried paths at t is denoted CarPath(t).
+  6. A term a is reachable from t if some path leads from t to a; a is reachable
+     by a carried path if there is a carried path that leads from t to a. In
+     other words, a occurs in t if it is reachable from t, and a is carried by t
+     if it is reachable from t via a carried path.
+
+
+
+## 3     Upward and Downward Closure
+
+Remarks 3.1 (Notational). Destructuring is either one of the two operations
+which map a pair (a, b) into its components. If a is a term,
+                                 −1
+                                 a    if a : akey
+                     inv(a) =      a   if a ∈
+                                            / Xmesg                     (2)
+                                   ⊥   otherwise.
+                                
+
+Decryption with a key u is the operation {|a|}u 7→ a. Encryption with a key
+u is the operation a 7→ {|a|}u .
+    It is convenient to separate the notion of available terms from the notion
+of the context, which is a set of keys that may be used in derivations. We
+will use calligraphic fonts S to emphasize that a set of terms is regarded as
+a context.
+Definition 3.2. Suppose S is a set of terms regarded as a cryptographic
+context. A carried path p is S-decryptable if the only encryptions that p
+traverses are of the form {|b|}u where inv(u) ∈ S. A carried path p is S-
+encryptable if the only encryptions p traverses are of the form {|b|}u where
+u ∈ S.
+   An S-decryptable path may terminate at an encryption {|b|}u with
+inv(u) ∈
+       / S.
+Definition 3.3. A maximal S-decryptable carried path is an S-decryptable
+carried path p which is not a proper prefix of an S-decryptable carried path.
+Completely analogously, we can define a maximal S-encryptable carried path.
+Remark 3.4. Clearly an S-decryptable carried path p is maximal (in the set
+of S-decryptable carried paths) if and only if it terminates at an encryption
+{|b|}u with inv(u) ∈
+                   / S or terminates at a term which is not an encryption and
+not a pair. Similarly an S-encryptable carried path p is maximal (in the set
+of S-encryptable carried paths) if and only if it terminates at an encryption
+{|b|}u with u ∈
+              / S or terminates at a term which is not an encryption and not
+a pair.
+Remark 3.5. For a carried path p from t exactly one of the following alter-
+natives must hold:
+    1. p is a maximal S-decryptable carried path from t.
+
+
+  2. A proper prefix of p is a maximal S-decryptable carried path from t.
+     This will be the case if and only if p is not S-decryptable.
+
+  3. p is a proper prefix of a maximal S-decryptable carried path from t.
+
+There is a corresponding version of the above assertion with “S-decryptable”
+replaced by “S-encryptable”.
+Remark 3.6. The maximal S-decryptable prefix of a path p from t if it exists
+is unique. This is immediate since the set of prefixes of p is totally ordered.
+However p may have more than one maximal S-decryptable extension. The
+same remark holds if “S-decryptable” is replaced with “S-encryptable”.
+Remark 3.7. If a carried path p terminates at a term c such that c is either
+an encryption {|b|}u with inv(u) ∈/ S or c is not an encryption and not a pair,
+then p has no proper extensions which are S-decryptable carried paths. In
+this case some prefix of p (possibly hi or p itself) is a maximal S-decryptable
+carried path from t. In the other direction, if p is an S-decryptable carried
+path that has no proper extensions which are S-decryptable carried paths,
+then p terminates at a term c such that c is either an encryption {|b|}u with
+inv(u) ∈/ S or c is not an encryption and not a pair. Again there is a corre-
+sponding statement for maximal S-encryptable carried path: It terminates
+at a term c such that c is either an encryption {|b|}u with u ∈  / S or c is not
+an encryption and not a pair.
+   First we adapt some terminology which is more-or-less standard in the
+context of paths and graphs: If p is a path, t a term and L a set of terms such
+that p visits an element of L, the first L-visit prefix of p at t is the minimal
+prefix of p which visits an element of L.
+
+Definition 3.8. Given a set L of terms, the depth of L relative to a term
+a, denoted depth(L, S, a), is the supremum over all maximal S-encryptable
+carried paths p from a of the length of the first L-visit prefix of p. By conven-
+tion, if there is a maximal S-encryptable carried path which does not visit
+L, then depth(L, S, a) = +∞.
+    A set L is an S-support for a if depth(L, S, a) < ∞. Alternative phrase:
+a is S-supported by L.
+
+Remark 3.9. For every term a, {a} is an S-support of a. Clearly a is S-
+supported by L if and only if every maximal S-encryptable carried path
+visits L.
+
+
+Definition 3.10. Let P and S be sets of terms, where we regard S as a
+context. The S-downclosure of P denoted Cl↓ (P, S) consists of those terms
+a which are endpoints of an S-decryptable carried path beginning at some
+element of P . The S-upclosure of P denoted Cl↑ (P, S) consists of those
+terms a which are S-supported by P .
+    The S-frontier of P denoted Fr(P, S) consists of those terms which are
+endpoints of a maximal S-decryptable carried path beginning at some element
+of P .
+
+Remark 3.11. Taking the contrapositive of Definition 3.10, a ∈ / Cl↓ (P, S) if
+and only if there is no S-decryptable carried path starting at an element of
+P that reaches a.
+   Equivalently,
+
+Lemma 3.12. a ∈  / Cl↓ (P, S) if and only if every carried path from an element
+of P to a traverses Fr(P, S).
+
+Proof. Suppose a ∈/ Cl↓ (P, S) and p is a path from t to a. By Definition 3.10,
+p is not S-decryptable, and therefore has a proper prefix q which is maximal
+S-decryptable. The endpoint eq of the path q is an element of Fr(P, S)
+and clearly p traverses eq . Conversely, if a ∈ Cl↓ (P, S) then there is an S-
+decryptable path p from an element of P to a. Every encryption c traversed
+by p is S-decryptable and therefore by Remark 3.4, no such c can be the
+endpoint of a maximal S-decryptable path from anywhere. Therefore no such
+c can be an element of Fr(P, S). Thus p traverses no element of Fr(P, S).
+Remark 3.13. In other words, Lemma 3.12 asserts that a ∈     / Cl↓ (P, S) if and
+only for all t ∈ P , a is carried in t only within Fr(P, S). Some elements of
+Fr(P, S) may not carry a at all.
+
+Remark 3.14. By Remark 3.4 any element in Fr(P, S) is either an encryption
+of the form {|b|}u with inv(u) ∈
+                               / S or is not an encryption and not a pair or
+equivalently, either an encryption or an atom. Every element of Cl↓ (P, S) is
+visited by an S-decryptable path starting at some element of P .
+   The frontier has a boundary-like property:
+
+Proposition 3.15. If t ∈ Cl↓ (P, S), a ∈
+                                       / Cl↓ (P, S) and p is a path from t to
+a then p traverses Fr(P, S).
+
+
+
+
+                                                             P
+
+
+
+
+                                                             Encryptions {|b|}u , inv(u) ∈ S
+
+
+
+
+      Encryptions {|b|}u , inv(u) ∈
+                                  /S                                 Fr(P, S)
+
+
+
+
+                                Figure 1: Frontier
+
+Proof. By Definition 3.10, there is an S-decryptable path r from some ele-
+ment of P to t. Now consider the path r a p. Again by Definition 3.10, r a p
+is not S-decryptable. Therefore r a p has a proper maximal S-decryptable
+prefix q. However q must be an extension of r, possibly r itself. Moreover,
+the endpoint eq of q is an element of the frontier Fr(P, S) and an element of
+Cl↓ (P, S). Since r a p is a path from an element of P to a, eq is an element of
+Fr(P, S). It follows that p visits eq ∈ Fr(P, S) as claimed and since a 6= eq , p
+traverses eq .
+
+
+### 3.1    Closure Properties
+
+A set Z of terms is derivational if it is closed under pairing, encryption with
+a key u such that u ∈ Z, destructuring and decryption with a key u such that
+inv(u) ∈ Z. The smallest derivational set containing P is denoted D(P ).
+    A set Z of terms is S-constructive if and only if it is closed under pairing
+and encryption with a key u such that u ∈ S. A set Z is S-deconstructive
+if and only if it is closed under destructuring and decryption with a key
+u such that inv(u) ∈ S. A set Z is S-derivational if and only if it is S-
+constructive and S-deconstructive. The smallest S-derivational set contain-
+ing P is D(P, S).
+    We can characterize these sets in terms of the path heuristic.
+
+
+                        P
+
+
+
+
+                                                    r
+                                                        t ∈ Cl↓ (P, S)
+
+
+
+
+                                                q
+                                        eq
+
+
+
+                                 rap
+                                            p
+
+                                        / Cl↓ (P, S)
+                                       a∈
+
+
+
+            Figure 2: Frontier as a Boundary (Proposition 3.15)
+
+Lemma 3.16. A set Z is S-deconstructive if and only if every term a which
+is the endpoint of an S-decryptable carried path p from t ∈ Z, is also an
+element of Z.
+
+Proof. Suppose Z is S-deconstructive. We show that if a term a is reachable
+from t ∈ Z by an S-decryptable carried path p, then a ∈ Z. We use induction
+on the length of the path p. If p has length 0, then p = hi and a = t ∈ Z.
+Suppose the claim is true for all carried paths of length n and p has length
+n + 1. Then p = q a hai where q has length n. q is an S-decryptable carried
+path and therefore by the induction hypothesis t @ q ∈ Z. If t @ q is an
+encryption {|b|}u , then by the assumption p is S-decryptable, inv(u) ∈ S.
+Since Z is S-deconstructive, t @ p = b ∈ Z. If t @ q is a pair (x, y) then both
+x, y ∈ Z and t @ p is either x or y.
+    Suppose that every a reachable from t ∈ Z by an S-decryptable carried
+path p is an element of Z. If a = (x, y) then x and y are reachable from
+t by the carried paths p a h1i, p a h2i and therefore x, y ∈ Z. If a = {|b|}u
+
+
+with inv(u) ∈ S, then p a h1i is an S-decryptable path so b ∈ Z. Thus Z is
+S-deconstructive.
+   There is an analogous statement, Lemma 3.17, for S-constructive sets,
+but this requires the notion of support.
+
+Lemma 3.17. A set Z is S-constructive if and only if every term t which is
+S-supported by Z is an element of Z.
+
+Proof. Suppose Z is S-constructive. We show that for every integer n ≥ 0,
+if depth(Z, S, t) ≤ n, then t ∈ Z. We use induction on n. If n = 0, then
+t ∈ Z and {t} is an S-support set for t. Suppose the assertion holds for n − 1
+and depth(Z, S, t) = n ≥ 1. In particular, t is either a pair or an encryption.
+If t = (x, y) then depth(Z, S, x) ≤ n − 1 and similarly for y. Thus x ∈ Z
+and y ∈ Z by the induction hypothesis. Since Z is S-constructive, t ∈ Z.
+If t = {|b|}u with u ∈ S, then depth(Z, S, b) ≤ n − 1. By the inductive
+hypothesis b ∈ Z. Since Z is S-constructive, t ∈ Z.
+    Conversely, if every t which is S-supported by Z is an element of Z it is
+straightforward to show Z is constructive.
+
+Corollary 3.18. The smallest S-constructive set containing P is the set of
+terms t which are S-supported by P .
+
+Proposition 3.19. Cl↓ (P, S) is the smallest S-deconstructive set containing
+P.
+
+Proof. Let Z be the smallest S-deconstructive set containing P . By
+Lemma 3.16, Cl↓ (P, S) is S-deconstructive. Since Cl↓ (P, S) ⊇ P , it fol-
+lows that Z ⊆ Cl↓ (P, S). Po prove the converse, by definition Z is S-
+deconstructive and so by Lemma 3.16 if t ∈ Z and p is an S-decryptable
+carried path from t then t@p ∈ Z. Since P ⊆ Z, it follows Z ⊇ Cl↓ (P, S).
+   Analogously, applying Lemma 3.17,
+
+Proposition 3.20. Cl↑ (P, S) is the smallest S-constructive set containing
+P.
+
+Lemma 3.21. If Z is S-deconstructive, then Cl↑ (Z, S) is S-deconstructive.
+
+
+
+
+
+                                   t ∈ Cl↑ (Z, S)
+
+
+
+
+                              p
+
+                              ep
+
+
+                                                          qi = p a qi0
+                                                    qi0
+                     Z
+
+
+
+
+             Figure 3: Cl↑ (Z.S) is S-deconstructive (Case (2))
+
+Proof. By Lemma 3.16, it suffices to show that the endpoint of every carried
+S-decryptable path from t ∈ Cl↑ (Z, S) is also in Cl↑ (Z, S). Let p be an S-
+decryptable path from t ∈ Cl↑ (Z, S) with endpoint ep . By the S-encryptable
+version of Remark 3.5, one of two things must hold for p: (1) there is a
+maximal S-encryptable path q which is a (not necessarily proper) prefix of
+p, or (2) p has maximal S-encryptable proper extensions. Let q1 , . . . , q` be
+all the maximal S-encryptable extensions.
+    Consider case (1). By Corollary 3.18 and Proposition 3.20, every element
+of Cl↑ (Z, S) is S-supported by Z, and so some prefix q 0 of q terminates in an
+element of Z. Thus we can write p = q 0 a q 00 where q 00 is an S-decryptable
+path from an element of Z to ep . Since Z is S-deconstructive, ep ∈ Cl↑ (Z, S).
+    In case (2), we can write qi = p a qi0 for each 1 ≤ i ≤ ` where each qi0 is
+a maximal S-encryptable path starting at ep . Again, since Cl↑ (Z, S) is S-
+supported by Z, we know that each qi visits an element of Z. If this happens
+with some q 0 which is a prefix of p, then we can argue as we did in case
+(1) that ep must be in Cl↑ (Z, S). Otherwise, we are guaranteed that each qi0
+visits an element of Z. Since these qi are the maximal S-encryptable paths
+of ep , we know ep is S-supported by Z. By Lemma 3.17 ep ∈ Cl↑ (Z, S).
+   The previous results immediately yield:
+
+Proposition 3.22. D(P, S) = Cl↑ (Cl↓ (P, S), S).
+
+
+   In particular, by the characterization of the S-upclosure of a set given by
+Proposition 3.20:
+
+Corollary 3.23. A necessary and sufficient condition t ∈ D(P, S) is that t
+be S-supported by some subset of Cl↓ (P, S).
+
+Corollary 3.24. A necessary and sufficient condition t ∈ D(P, S) is that
+every maximal S-encryptable path p beginning at t visit some element of
+Cl↓ (P, S).
+
+Proof. Apply Remark 3.9 and Corollary 3.23.
+   Corollary 3.24 leads to the notion of essential obstruction and critical
+path in the next section.
+
+Proposition 3.25. Suppose t ∈ D(P, S), p is a path from t to a and either
+(i) a = {|b|}u with u ∈
+                      / S or (ii) a is not an encryption and not a pair. Then
+either p traverses Fr(P, S) or a ∈ Cl↓ (P, S).
+
+Proof. Consider case (i): Suppose a ∈     / Cl↓ (P, S). Since u ∈   / S, by Re-
+mark 3.7, the path p is has a maximal S-encryptable prefix (possibly p it-
+self.) By Corollary 3.24, that prefix must visit some element b of Cl↓ (P, S);
+                                  / Cl↓ (P, S), it is in fact a proper prefix q of
+in particular p visits b. Since a ∈
+p that visits b. Let r be the remnant of p after q. r is a path from b to a. By
+Proposition 3.15, r traverses Fr(P, S).
+    In case (ii) the argument is identical, since the only fact used was that
+the path p is has a maximal S-encryptable prefix.
+
+
+
+## 4     Critical Path
+
+Definition 4.1. An essential obstruction of t relative to P, S is a maximal
+S-encryptable path beginning at t which does not visit an element of Cl↓ (P, S).
+
+    The set of essential obstructions is denoted Eob(P, S, t).
+Remark 4.2. The content of Corollary 3.24 is that t ∈ D(P, S) if and only if
+Eob(P, S, t) = ∅.
+    For the cpsa search algorithm, in particular for its notion of “progress”
+the set of essential obstructions is too small. This leads to the notion of
+critical path.
+
+
+                                        t
+                 Eob(P, S, t)
+
+
+
+
+                           Cl↓ (P, S)
+
+
+
+
+                         Figure 4: Essential Obstruction
+
+Definition 4.3. Let p ∈ CarPath(t) have endpoint ep . p is critical relative
+to P, S if and only (1) ep is an encryption {|b|}u with u ∈/ S or an element
+which is not a pair and not an encryption (2) ep ∈ / Cl↓ (P, S) and (3) p does
+not visit Fr(P, S).
+
+   The set of critical paths is denoted CritPath(P, S, t).
+
+Proposition 4.4. Let p ∈ CarPath(t) have endpoint ep . A necessary and
+sufficient condition for p to be critical relative to P, S is that (A) ep is an
+encryption {|b|}u with u ∈/ S or an element which is not a pair and not an
+encryption, (B) p does not visit an element of Cl↓ (P, S).
+
+Proof. Conditions (1) of Definition 4.3 and (A) are identical. Now suppose
+p ∈ CarPath(t) is such that (1) holds. Then properties (2) and (3) of Def-
+inition 4.3 are equivalent to (B): In one direction, suppose (B) holds, that
+is, p does not visit Cl↓ (P, S). Since p visits ep , it follows that ep ∈
+                                                                        / Cl↓ (P, S)
+                                            ↓
+which is (2). By definition Fr(P, S) ⊆ Cl (P, S), and therefore p cannot visit
+any element of Fr(P, S) proving (3). In the other direction, suppose (2) and
+(3) hold, but p visits a ∈ Cl↓ (P, S). Now a 6= ep , for otherwise p is a maximal
+S-encryptable path from an element of P to a (by Remark 3.7) and therefore
+ep = a ∈ Fr(P, S) ⊆ Cl↓ (P, S) which contradicts (2). Otherwise, let q be
+the remnant of p from a. By the boundary property of Fr(P, S) (Proposi-
+
+
+
+tion 3.15), q visits an element of Fr(P, S). Therefore p visits an element of
+Fr(P, S) which contradicts (3).
+Remark 4.5. Any essential obstruction is a critical path. Proof: By the
+version of Remark 3.7 for S-encryptable paths, any essential obstruction
+satisfies (A) of Proposition 4.4. (B) is part of the definition of essential
+obstruction.
+Remark 4.6. If p ∈ CritPath(P, S, t), by Remark 3.6 p has a unique maximal
+S-encryptable prefix µ(p). Since p does not visit Cl↓ (P, S), no prefix of p
+can visit Cl↓ (P, S). In particular, µ(p) ∈ Eob(P, S, t). Now Eob(P, S, t) ⊆
+CritPath(P, S, t) and µ is the identity on Eob(P, S, t) and the mapping µ :
+CritPath(P, S, t) −→ Eob(P, S, t) is the identity on Eob(P, S, t).
+
+Proposition 4.7. A necessary and sufficient condition t ∈ D(P, S) is that
+
+                            CritPath(P, S, t) = ∅.                        (3)
+
+Proof. Consider the map µ : CritPath(P, S, t) −→ Eob(P, S, t) defined in Re-
+mark 4.6. The map µ is surjective and therefore CritPath(P, S, t) 6= ∅ ⇐⇒
+Eob(P, S, t) 6= ∅. The result now follows by Remark 4.2.
+
+Definition 4.8. The escape set of a relative to P, S, denoted Esc(P, S, a) is
+the union of the set of those elements of Fr(P, S) which carry a with the set
+{a} if a ∈ Cl↓ (P, S).
+
+Remark 4.9. By Remark 3.14, every element of Esc(P, S, a) other than a is
+either an encryption or an atom.
+
+Proposition 4.10. If p ∈ CarPath(t) with endpoint ep and p                 ∈
+CritPath(P, S, t), then the following conditions hold:
+
+  1. p does not visit Esc(P, S, ep ).
+
+  2. Every path from an element of P to ep visits Esc(P, S, ep ).
+
+  3. For every encryption {|b|}u ∈ Esc(P, S, ep ), inv(u) ∈
+                                                          / S.
+
+  4. If ep is an encryption {|b|}u , then u ∈
+                                            / S.
+
+
+
+
+
+Proof. Suppose p ∈ CritPath(P, S, t). By Definition 4.3, p does not
+visit Fr(P, S). Moreover, also by Definition 4.3, ep ∈    / Cl↓ (P, S). Thus
+Esc(P, S, ep ) ⊆ Fr(P, S) by the Definition 4.8 of escape set. This proves (1).
+Since ep ∈/ Cl↓ (P, S), any path from P to ep must traverse some element
+d ∈ Fr(P, S) by the boundary property of the frontier (Proposition 3.15). d
+carries ep and therefore d ∈ Esc(P, S, ep ). This proves (2). Property (3) is
+immediate from the definition of frontier. Finally Property (4) follows from
+the definition of critical path.
+
+
+Theorem 4.11. Suppose p ∈ CarPath(t) with endpoint ep and E ⊆ A con-
+sists of encryptions or atoms. If p ∈
+                                    / CritPath(P, S, t), then one of the fol-
+lowing conditions holds:
+  1. p visits E.
+
+  2. There is a path from an element of P to ep which does not visit E.
+
+  3. For some {|b|}u ∈ E, inv(u) ∈ S.
+
+  4. ep is an encryption {|b|}u with u ∈ S.
+Proof. Since p ∈/ CritPath(P, S, t), by taking the contrapositive of Proposi-
+tion 4.4, we conclude that the one of the following must hold:
+ (A) It is not the case that ep is an encryption of the form {|b|}u with u ∈
+                                                                           /S
+     and ep is not an atom.
+
+ (B) p visits an element of Cl↓ (P, S, t).
+
+    Case (A) is equivalent to: ep is an encryption of the form {|b|}u with
+u ∈ S. Thus in case (A), condition (4) of the Lemma holds. Thus we may
+henceforth assume that (A) fails and (B) holds. In particular, p visits an
+element d of Cl↓ (P, S, t). Let q be the remnant of p starting at d, and let r
+be an S-decryptable path from an element of P to d. In this case one of the
+following statements holds:
+ (a) p visits E
+
+ (b) r visits E
+
+ (c) Neither p nor r visit E
+
+
+                                                                  aF 0
+                                      PF 0
+
+
+
+
+                                                   r
+             SF 0 -decryptable path
+                                                        d ∈ Cl↓ (F 0 )
+
+                                             q     p0
+
+
+                                             e0p
+
+
+                       Figure 5: Case (B) of Lemma 5.6
+
+In case (a), this is simply Condition (1) of the lemma. If (a) case does not
+hold but (b) does hold, then we conclude that r traverses an element x ∈ E,
+for if r terminated at x, then p would visit E contrary to the assumption that
+(a) does not hold. By hypothesis, x is either an encryption or atom, but x
+cannot be an atom since no path can traverse an atom. Thus x is of the form
+{|c|}v . Since r is S-decryptable, inv(v) ∈ S, thereby meeting Condition (3)
+of the lemma. In case (c), the carried path r_ q is a path from P to ep which
+does not visit E, thereby satisfying Condition (2) of the lemma.
+
+
+
+## 5    Fragments
+
+So far we have considered derivability in the basic cryptoalgebra setting. This
+section introduces a further refinement in which the available messages and
+the context are determined by other considerations which occur naturally in
+the setting of a protocol execution. In the section on the adversary model,
+it is explained why the penetrator cannot use terms in the what is called the
+exclusion set. Recall that B = Askey ∪ Aakey ∪ Aname ∪ Atext ∪ Adata
+
+
+
+Definition 5.1. A fragment consists of a tuple F = (T, X, a) where X ⊆ B
+and a is a term. The X in a fragment is called the exclusion set. The set of
+public messages at F is
+
+                     PF = T ∪ (B \ X) ∪ Xmesg ∪ Tags .                      (4)
+
+The encryption context at F is SF = D(PF ). If F is an fragment, TF , XF ,
+and aF are the components of F.
+
+Definition 5.2. The critical pathset of a fragment F is the set CritPath(F) =
+CritPath(PF , SF , aF ). The critical pathset at F is denoted CritPath(F). The
+escape set of a term a in F is Esc(F, a) = Esc(PF , SF , a). Similar conven-
+tions apply to the sets Cl↑ , Cl↓ ,
+
+Remark 5.3. By virtue of (4), Xmesg ∪ Tags ⊆ Cl↓ (F).
+    In the intended interpretation of a fragment for skeletons, U corresponds
+to the declared uniquely originating atoms which actually originate in A.
+
+Definition 5.4. If F = (T, X, a), F 0 = (T 0 , X 0 , a0 ) are fragments, a homo-
+morphism σ : F −→ F 0 is an algebra homomorphism such that σ(T ) ⊆ T 0 ,
+σ(X) ⊆ X 0 , and σ(a) = a0 .
+
+   We now consider possible ways of resolving a critical path.
+
+Definition 5.5 (Critical Path Solved). Suppose F, F 0 are fragments and p
+is a critical path with endpoint ep of the term aF at F. Let σ : A −→ A be an
+algebra homomorphism. Let E 0 = σ(Esc(F, ep )), p0 = σ(p) and e0p = σ(ep ).
+Path p from aF is solved in F 0 by σ, if and only if one of the following
+conditions holds:
+
+   • Sol1. p0 visits E 0 .
+
+   • Sol2. There is a carried path from an element of TF 0 to e0p which does
+     not visit E 0 .
+
+   • Sol3. For some {|b|}u ∈ E 0 , inv(u) ∈ SF 0 .
+
+   • Sol4. e0p = {|b|}u , and u ∈ SF 0 .
+
+Let Solved(F, p) = {(σ, F 0 ) : σ is a homomorphism A −→ A. and σ solves p in F 0 }
+
+
+
+   In words, cpsa makes progress by a contraction (Item 1), where mes-
+sages are identified, an augmentation (Item 2), where something is added to
+the escape set, or a listener augmentation (Item 3 and Item 4), where an
+assumption about the lack of the derivability of a key is shown to be invalid.
+                                                         σ
+Lemma 5.6. Suppose F, F 0 are fragments and A →− A is an algebra homo-
+                                      / CritPath(F 0 ), then σ solves p in
+morphism. If p ∈ CritPath(F) and σ(p) ∈
+F 0.
+Proof. Let ep be the endpoint of p. By Proposition 4.4, ep is either (a) an
+encryption of the form {|b|}u with u ∈   / SF or (b) not a pair and not an
+encryption. The only possibility for ep in case (b) is ep ∈ B: For by clause
+(B) of Proposition 4.4 ep ∈  / Cl↓ (F) and variables Xmesg or Tags are in
+Cl↓ (F) by Remark 5.3. Now by Remark 4.9 all elements of Esc(F, ep ) other
+than ep are either encryptions or atoms. Therefore all elements of Esc(F, ep )
+are either encryptions or atoms.
+    Let E 0 = σ(Esc(F, ep )), p0 = σ(p) and e0p = σ(ep ). By the last statement
+of the previous paragraph, all elements of E 0 are encryptions or atoms. Now
+apply Theorem 4.11.
+    When dealing with instantiating variables of sort mesg while inferring
+additional honest behavior, cpsa uses the notion of the set of “target terms,”
+to keeps its behavior finite. First the set of threshold terms between a term
+a and a set of terms S:
+Thr(S, a) = {a}∪{t | t carries a, t is a proper carried subterm of some s ∈ S}.
+Note that a is always a threshold term regardless of whether a is carried
+within some element of a.
+Definition 5.7 (Target terms). The set of target terms for a critical path p
+with endpoint t in a fragment F is the set Thr(Esc(F, t), t).
+Definition 5.8 (Critical Path Weakly Solved). Suppose F, F 0 are fragments
+and p is a critical path with endpoint ep of the term aF at F. Let σ : A −→ A
+be an algebra homomorphism. Let E 0 = σ(Esc(F, ep )), p0 = σ(p) and e0p =
+σ(ep ). Path p from aF is weakly solved in F 0 by σ, if and only if p is solved
+in F 0 by σ, or if
+   • Sol5. There is an element of Targ(Esc(F 0 , e0p ), e0p )) not in σ(Targ(E, ep )).
+   The notion of a path being weakly solved is needed later in the proof of
+completeness. Sol5 represents a very weak form of progress, where we have
+only improved our set of target terms.
+
+
+
+## 6     Protocols
+
+A run of a protocol is viewed as an exchange of messages by a finite set of
+local sessions of the protocol.
+     An event is either a message transmission or a reception. If m is a mes-
+sage, an outbound message event is written as +m, and inbound message
+event is written as −m. By abuse of language, if e is an event we will write
+−e to signify that e is an inbound event and similarly for outbound events.
+A trace in A is a sequence he1 , . . . , en i of message events. The set of traces
+over A is denoted CA . A restriction of a trace τ = he1 , . . . , en i is any trace
+τ 0 = he1 , . . . , ek i for 1 ≤ k ≤ n. We will also use the phrase t is an extension
+of t0 and the notation τ 0 = τ |k. Endomorphisms σ ∈ End(A) act on message
+events and traces: σ(±m) = ±σ(m) and σhe1 , . . . , en i = hσ(e1 ), . . . , σ(en )i.
+     Traces of the form h−m, +mi where m ∈ A are referred to as listener
+traces. The special trace h−x, +xi where x is a variable of sort message
+matches any listener trace.
+
+
+                              t      t        t         = occurs in
+
+
+
+                              +t    −t     −t           = carried within
+
+
+
+
+                    Figure 6: Originates, Gained, Acquired
+
+    Let t be a trace, m a message. m originates in t if it is carried by some
+event on t and the first event on t in which it is carried is a transmission. m is
+gained by t if it is carried by some event t and the first event on t in which it
+is carried is a reception; however, this condition allows for prior occurrences
+of the message m. m is acquired by t if it first occurs on t in a reception
+event and is also carried by that event.
+
+
+
+
+
+
+### 6.1    Roles and Protocols
+
+In a run of a protocol, the behavior of each strand is constrained, in a sense
+made precise below, by a composite structure called a role. A protorole
+over a cryptoalgebra A with atoms B is a structure ρ = (C, N, U ), where
+C ∈ CA , N ⊆ B, and U ⊆ B. The trace of the role ρ is C, its non-origination
+assumptions are N , and its unique origination assumptions are U . In case of
+ambiguity, the components of ρ are denoted (Cρ , Nρ , Uρ ).
+Definition 6.1. A protorole ρ = (C, N, U ) is a role if
+  1. t ∈ N implies t is not carried in C, and all variables in N occur in C.
+
+  2. t ∈ U implies t originates in C.
+
+  3. If a variable x occurs in C then x is an atom or it is acquired in C.
+Equivalently, condition (3) states that a variable x of sort mesg occurs in C
+only if it is acquired in C.
+  A listener trace is any trace of the form h−m, +mi where m is of sort
+mesg.
+Remark 6.2. Any role ρ whose trace is h−x, +xi, x a variable of sort mesg,
+must have Nρ = Uρ = ∅. However if a role is of the form h−m, +mi where
+m is not a variable of sort mesg, then Nρ may be non-empty. For example
+h−{|x|}u , +{|x|}u i where u ∈ skey. However, it is always the case that Uρ = ∅,
+since nothing originates on a listener trace.
+   A listener role is one of the form
+
+                            lsn = (h−x, +xi, ∅, ∅).                         (5)
+
+where x is a variable of sort mesg. This is a legitimate role: (1) and (2) are
+vacuous and the variable x is acquired in the trace.
+    We introduce a pseudorole £, not a role, which is used as a special anno-
+tation for roles of auxiliary traces introduced by the cpsa search algorithm.
+This artifice allows us to distinguish between genuine protocol roles which
+may behave like listener roles and the roles of these auxiliary traces. However
+£ is associated to the listener trace defined previously and accordingly we
+introduce the following (somewhat abusive) notation:
+   • C£ is the listener trace h−x, +xi where x is a variable of sort mesg.
+
+
+   • U£ = N£ = ∅.
+
+   Essentially a trace is constrained by a role if it agrees with an instance of
+the role restricted up to the length of the trace. The term we will actually
+use is role specification which completely determines the trace.
+
+Definition 6.3. A role specification for a trace τ is a structure (ρ, σ) where
+σ ∈ End(A) and either (a) ρ is a role or (b) ρ is the pseudorole £, and the
+following holds
+
+  1. τ is a restriction of σ(Cρ ) and
+
+  2. s-dom σ is the set of variables that occur in the trace Cρ | len Θ(s)τ .
+
+Remark 6.4. Condition (2) means that the substitution σ transforms pre-
+cisely those variables that occur within the role up to the height of the
+strand.
+   Note that the definition of role specification (ρ, σ) for a trace τ does not
+involve origination assumptions. However, the origination assumptions of ρ
+are transported onto τ by the substitution σ. First some notation. Given a
+σ ∈ End(A) and E ⊆ A, [σ]∗ E is the set
+
+                     {σ(t) : t ∈ E, Vars(t) ⊆ s-dom(σ)}.
+
+Definition 6.5. Suppose τ is a trace and (ρ, σ) is a role specification for τ .
+The origination assumptions inherited by τ via (ρ, σ) are
+
+                              N(ρ,σ) = [σ]∗ Nρ ,
+
+and
+                                 U(ρ,σ) = σUs ,
+where Us are the elements of Uρ that originate on before the event at position
+len τ on the role strand Cρ .
+
+Remark 6.6. Since N£ = U£ = ∅, there are no inherited origination assump-
+tions for strands with specification £.
+    A protocol is a set of roles. Let Vars(P ) be the set of variables that occur
+in the traces of the roles in protocol P .
+
+
+
+
+
+## 7     Skeletons
+
+Fix a protocol P for the remainder of the paper. The details of penetrator
+behavior are abstracted away when performing protocol analysis. The ab-
+stracted description is called a realized skeleton. To define this and as an
+essential tool of analysis we introduce structures with increasing specificity.
+In the following A denotes a cryptoalgebra.
+     We begin with a general notion which formalizes a notion of collection
+of “locally linearly ordered” communication events. A node space is a pair
+(I, Θ) where Θ is a map from I to the set of traces over A. Associated to a
+node space A = (I, Θ) are the following objects: The nodes of A is the set
+of pairs (s, i) where s ∈ I and i ≤ len Θ(s). By abuse of notation we write
+(s, i) ∈ A to indicate that (s, i) is a node of A. The elements of the index set
+I are the strands of the node space. Nodes (s, i) and (s0 , j) are on the same
+strand if s = s0 . The set of variables occurring in the traces of A is denoted
+Vars(A). If the variables in Vars(A) are all of base sort, the node space is
+instantiated. For any t ∈ A, OA (t) is the set of nodes at which t originates
+in A, GA (t) is the set of nodes at which t is gained in A, and CA (t) is the set
+of nodes at which t is carried in A. A strand is a node space consisting of a
+single strand.
+     There is no intrinsic association between a node space A and a protocol
+P . However, we can establish such an association by requiring that each
+strand of A be constrained by some specified role. Before stating this condi-
+tion, we state the blanket variable hygiene condition for protoskeletons and
+protocols which we will assume throughout: Vars(P ) ∪ Vars(lsn) is disjoint
+from Vars(Θ).
+     A P -role assignment for a node space A is a mapping A which associates
+to each strand s ∈ I a P -role specification A(s) = (ρs , σs ).
+Remark 7.1. By the variable hygiene requirement, Vars(P ) and Vars(Θ) are
+disjoint. The substitution σs must affect every variable that occurs within
+the role up to the height of the strand.
+   A node space may have no P -role assignments or it may have more than
+one role assignment.
+   Given a node space A and a role assignment A for A, the origination
+assumptions inherited by A from P via A are
+                           [                [
+                     NA =     NA(s) , UA =    UA(s) .
+                             s∈I                s∈I
+
+
+
+The sets N and U are the declared non-origination terms and uniquely orig-
+inating terms of A.
+
+Definition 7.2. Suppose P is a protocol. A protoskeleton for P is a structure
+A = (I, Θ, ≺, N, U ), where (I, Θ) is a node space, N ⊆ B, U ⊆ B, and ≺ is
+a relation on the nodes of A such that there is a role assignment A with the
+following properties:
+
+  1. NA ⊆ N .
+
+  2. UA ⊆ U .
+
+The role assignment A in Definition 7.2 is a protoskeleton validating role
+assignment. In contexts where the protocol is understood, we simply refer to
+a protoskeleton for P as a protoskeleton. If A is a protoskeleton, IA ,ΘA , ≺A ,
+NA , UA are the components of A.
+
+   Protoskeleton validating role assignments for a structure A = (I, Θ, ≺,
+N, U ) can be mixed:
+Remark 7.3. Note that in general, a P -role specification (ρ, σ) for a strand
+need not respect points of origination, that is if t originates at position i on
+Cρ |n, σ(t) may originate at some earlier node on σ(Cρ )|n. However, condi-
+tion (5) of Definition 7.2 states that a protoskeleton must have at least one
+P -role assignment such that all role specifications are origination preserving.
+
+Definition 7.4 (Protomorphism). Let A, B be protoskeletons. A protomor-
+phism from A to B is a pair λ = (ϕ, σ) where ϕ maps nodes of A to nodes
+of B and σ ∈ End(A) is such that:
+
+  1. There exists a map ϕstr : IA → IB such that for all (s, i) ∈ A, ϕ(s, i) =
+     (ϕstr (s), i).
+
+  2. n ∈ nodes(A) implies σ(evt(n)) = evt(ϕ(n)).
+
+  3. σ(NA ) ⊆ NB ;
+
+  4. σ(UA ) ⊆ UB
+
+Remark 7.5. The mapping ϕstr is called the strand mapping. The strand
+mapping is unique. By abuse of notation, in most contexts we will use ϕ to
+denote the strand mapping.
+
+
+                                     ϕ
+                     b                           σ(b)
+
+
+
+
+                                      ϕstr
+
+
+
+                Figure 7: Protomorphism of Protoskeletons
+
+                 λ
+   We write A 99K B when λ is protomorphism.
+                                                                    ϕ,σ
+Definition 7.6 (Structure-preserving). A protomorphism A 99K B is
+structure-preserving if n0 ≺A n1 implies ϕ(n0 ) ≺B ϕ(n1 ).
+
+    Clearly the composition of structure-preserving protomorphisms is a
+structure-preserving protomorphism.
+
+Definition 7.7 (Point of origination preserving morphisms). A protomor-
+         ϕ,σ
+phism A 99K B preserves points of origination if ϕ(OA (t)) ⊆ OB (σ(t)) for all
+t ∈ UA .
+                                                           ϕ,σ
+Definition 7.8 (Homomorphism). A protomorphism A 99K B is a homo-
+morphism if it is structure-preserving and preserves points of origination.
+
+   Definition 7.8 allows the image of an atom in UA to originate at more
+than one point.
+                 λ
+   We write A →  − B when λ is a homomorphism. We use Protom(A, B) to
+denote the set of all protomorphisms from A to B, and Hom(A, B) to denote
+the set of all homomorphisms from A to B.
+
+Proposition 7.9. The composition of homomorphisms between protoskele-
+tons is a homomorphism.
+
+
+
+
+                    (ϕ0 ,σ0 )    (ϕ1 ,σ1 )
+Proof. Suppose A −−−−→ B, B −−−−→ C are homomorphisms. For each t ∈
+UA , σ0 (t) ∈ UB by Property (4) of protomorphisms and thus by the definition
+of homomorphism,
+
+               ϕ1 (ϕ0 (OA (t))) ⊆ ϕ1 (OB (σ0 (t))) ⊆ OC σ1 (σ0 (t))
+
+
+
+   Given a protoskeleton A = (I, Θ, ≺, N, U ) and a receiving node n of A,
+we can define a fragment FA,n = (T, U, N, a) where −a = evt(n) and where
+
+                T = {t | ∃n0 ∈ A, n0 ≺ n and evt(n0 ) = +t}.
+
+We write PA,n to refer to PFA,n .
+   Protoskeletons and protomorphisms form a category as well as protoskele-
+tons and homomorphisms.
+
+
+### 7.1    Preskeletons
+
+We now consider two additional subcategories of the protoskeleton categories.
+These categories will be full subcategories. Accordingly, when we refer to a
+protomorphism or homomorphism we will always regard it as a pair (ϕ, σ).
+
+Definition 7.10. A protoskeleton A = (I, Θ, ≺, N, U ) for a protocol P is a
+preskeleton if
+
+  1. Relation ≺ is transitive, asymmetric, and includes the strand succession
+     relation: (s, i) ⇒ (s, i + 1) for all (s, i + 1) ∈ A.
+
+  2. If s 6= s0 and (s, i) ≺ (s0 , j) then either evt(s, i) = +e and evt(s0 , j) =
+     −e0 , or there exists a node n such that (s, i) ≺ n ≺ (s0 , j).
+
+  3. Each atom in N is carried at no node of A, and each variable in the
+     atom occurs at some node of A.
+
+  4. Each atom in U is carried at some node of A.
+
+  5. If s is any strand such that ρs ∈ P , and t ∈ Uρs such that t originates
+     in Cρs | len Θ(s) at event i, then σ(t) originates in Θ(s) at (s, i).
+
+
+
+
+   +e            ≺              +e0         +e     ≺               ≺      +e0
+                                      =⇒
+                                                          ∃n ∈ A
+
+
+
+      s                          s0         s                             s0
+
+
+
+Figure 8: One Case of Intermediate Node Condition: (2) of Definition 7.10.
+Two remaining cases: −e, −e0 and −e, +e0 .
+
+                                      Protoskeleton    Preskeleton     Skeleton
+ Has valid role assignment                  •               •             •
+ Inherited origination nodes                •               •             •
+ ≺ is a strict partial order                                •             •
+ Origination assumptions satisfied                                        •
+
+
+   Figure 9: Salient differences between Proto, Pre and Proper Skeletons
+
+Definition 7.11. A preskeleton A = (I, Θ, ≺, N, U ) for P is a skeleton
+for P if each atom in U originates on exactly one strand, and the node of
+origination precedes each other node that carries the atom, i.e. for every t ∈
+U , n0 ∈ OA (t) and n1 ∈ CA (t), n1 6= n0 implies n0 ≺ n1 .
+
+    In contexts where the protocol is understood, we simply refer to a skeleton
+for P as a skeleton.
+    We use PSkel(P ), PreSkel(P ) and Skel(P ) to denote the collections of
+valid protoskeletons for P , valid preskeletons for P , and valid skeletons for
+P , respectively. Since the protocol P is fixed for the remainder of the paper,
+the argument P will be mostly omitted.
+
+
+### 7.2       Hierarchies and Commitments
+
+In this section we fix a protocol P . To analyse the cpsa algorithm, we
+need to introduce additional structure on the basic protoskeleton category.
+
+
+
+A protoskeleton refinement category is a category C and a functor F : C −→
+PSkel.
+
+
+### 7.2.1   Assignment Committed Protoskeletons
+
+A pair (A, A) consisting of a protoskeleton A and a P -role assignment A is
+an assignment committed protoskeleton. To make this class of objects into a
+category, we first consider the behavior of role assignments under morphisms.
+There is no universally applicable way that role assignments can be regarded
+as transforming either covariantly, that is pushing the assignments forward
+under morphisms or contravariantly, pulling them back. We can however
+regard them as transforming covariantly in a weaker sense. Suppose A, B
+are node spaces, λ = (ϕ, σ) : A −→ B is a homomorphism of node spaces. If
+                           A = {(ρA    A
+                                  s , σs ) : s ∈ IA },
+                           B = {(ρBt , σtB ) : t ∈ IB }
+are role assignments for A, B respectively such that for all s ∈ IA , ρBϕ(s) = ρA
+                                                                                s
+then the role assignment B is a pushforward of A under λ. Thus instead of
+being a function, “pushforward” is a relation between role assignments.
+Remark 7.12. The definition of pushforward under λ = (ϕ, σ) says nothing
+about the substitutions σ A and σ B . However in the basic cryptoalgebra,
+                               σ ◦ σ A (v) = σ B (v)                         (6)
+for all variables v which occur in Cρs | len Θ(s).
+                                                                      ϕ,σ
+Definition 7.13 (Assignment-preserving). A protomorphism A 99K B is a
+protomorphism of assignment-committed protoskeletons (A, AA ) −→ (B, AB )
+if the role assignment AB is a pushforward of the role assignment AA under
+(ϕ, σ).
+Remark 7.14. It follows immediately from the definitions that
+                               F•→ : (A, A) 7→ A
+maps the class of assignment committed protoskeletons onto the class of
+protoskeletons. Any assignment-preserving protomorphism is a protomor-
+phism, so F•→ can be considered a functor from the category of assignment-
+committed protoskeletons to protoskeletons.
+   We denote the category of assignment-committed protoskeletons by PSkel.
+
+
+
+### 7.2.2   Listener Committed Protoskeletons
+
+Remark 7.15. The definition of protocol P allows for roles ρ such that the
+trace Cρ is a listener strand. However, to conform to the established usage
+in the cpsa specification we will use the term listener to refer to a strand
+which is specified by the listener pseudorole. Accordingly the listener set of
+a role assignment A is
+
+                    L(A) = {s ∈ IA : ∃σ A(s) = (£, σ)}.                    (7)
+
+By extension, we will also call this set the listeners of an assignment commit-
+ted protoskeleton (A, A). Let A be a protoskeleton for protocol P . A valid
+set of listeners for A is a set of strands L ⊆ IA of the form L(A) for some
+role assignment A. The protoskeleton A may contain listener strands not in
+L(A) if the protocol P has listener roles.
+    A listener committed protoskeleton is a pair (A, LA ) where LA is a valid
+set of listeners for A.
+                                              ϕ,σ
+Definition 7.16 (Listener-respecting). A 99K B is a protomorphism of
+listener-committed protoskeletons from (A, LA ) to (B, LB ) if for every strand
+s ∈ A, s ∈/ LA implies ϕ(s) ∈
+                            / LB .
+                   ϕ,σ              ϕ,σ
+   We write A◦ 99K B◦ and A◦ −−→ B◦ to denote that (ϕ, σ) is a pro-
+tomorphism (respectively homomorphism) of listener-committed protoskele-
+tons from A◦ to B◦ .
+Remark 7.17. Similarly, there is a well-defined functor F◦→ from listener
+committed protoskeletons to protoskeletons which simply forgets the listener
+set. Clearly
+                           F•→ = F◦→ ◦ F•→◦ .                            (8)
+Since F•→ is surjective (Remark 7.14) F◦→ is surjective.
+Remark 7.18. It follows immediately from the definitions that
+
+                         F•→◦ : (A, A) 7→ (A, L(A))
+
+maps the class of assignment committed protoskeletons onto the class of lis-
+tener committed protoskeletons. If (ϕ, σ) is a protomorphism of assignment-
+committed protoskeletons, then (ϕ, σ)is also a protomorphism of the corre-
+sponding listener-committed protoskeletons. Thus we can consider F•→◦ as
+a functor.
+
+
+                                                λ
+Definition 7.19. A protomorphism A◦ 99K B◦ is assignment-consistent if
+there exist role assignments A• = (A, AA ), B• = (B, AB ) such that (1) A◦ is
+the listener-committed version of A determined by A• , (2) B◦ is the listener-
+committed version of B determined by B• , and λ is a protomorphism of
+assignment-committed protoskeletons from A• to B• .
+                    λ
+Remark 7.20. A◦ 99K B◦ is assignment-consistent if and only if it is of the
+                                  λ•
+form F•→◦ (λ• ) for some A• 99K B• .
+
+
+### 7.3    Diagrams
+
+We use PSkel• (P ), PreSkel• (P ) and Skel• (P ) to denote the collections of
+assignment committed protoskeletons for P , assignment committed preskele-
+tons for P , and assignment committed skeletons for P , respectively. PSkel◦ (P ),
+PreSkel◦ (P ) and Skel◦ (P ) denote the collections of listener committed pro-
+toskeletons for P , listener committed preskeletons for P , and listener com-
+mitted skeletons for P , respectively.
+Remark 7.21. As a notational heuristic, we use A• , B• and A◦ , B◦ as symbols
+to denote assignment committed and listener committed skeletons (possibly
+proto or pre). Morever, unless explicitly stated to the contrary, in a context in
+which either one of the symbols A• or A◦ are mentioned, the symbol A refers
+to the underlying protoskeleton, and, in a context in which A• is mentioned,
+A◦ refers to the listener-restriction of A• .
+   Let P be a protocol. We have the following diagram:
+                         PSkel• ⇐== PreSkel• ⇐=== Skel•
+
+                     F•→◦
+                              ?             ?            ?
+                         PSkel◦ ⇐== PreSkel◦ ⇐=== Skel◦                      (9)
+
+                        F◦→
+                              ?             ?            ?
+                         PSkel ⇐=== PreSkel ⇐==== Skel
+where the downward arrows are structure removing mappings and leftward
+arrows are inclusion mappings. At this point of the exposition nothing can be
+
+
+said about functoriality of the arrows since no morphisms have been defined
+for any of these collections. That is the object of the next section.
+    The preceding remarks are summarized in the following proposition:
+
+Proposition 7.22. In the diagram (9), the mappings F•→◦ and F◦→ are
+defined and surjective on all the columns.
+
+
+### 7.4    Preservation Properties
+
+In arguments involving objects such as protoskeletons and protomorphisms,
+it is desirable to identify properties of these objects which are preserved under
+some specific transformation or more generally some relation. Some of the
+properties we single out are in fact negations of conditions used to define the
+main categories in the theory.
+     Non-asymmetry of protoskeleton A is the property that there are nodes
+m, n for which m ≺ n and n ≺ m. A non-asymetric protoskeleton is not a
+skeleton.
+
+Proposition 7.23 (Non-asymmetry preserved under structure-preserving
+protomorphisms). If A is a protoskeleton such that ≺A is not asymmetric,
+then there is no structure-preserving protomorphism λ from A to a protoskel-
+eton B.
+
+Proof. If m ≺ n and n ≺ m in A, and λ = (ϕ, σ) is structure-preserving,
+then ϕ(m) ≺ ϕ(n) and ϕ(n) ≺ ϕ(m) in B, so B is not a preskeleton. Note
+that even if ϕ(m) = ϕ(n), ≺ is not asymmetric in B.
+
+Proposition 7.24 (Point of origination non-preservation preserved under
+                       ϕ,σ
+extensions). Suppose A 99K B and t ∈ UA are such that n ∈ OA (t), but
+                         ϕ0 ,σ 0
+ϕ(n) ∈/ OB (σ(t)). If B 99K C is any protomorphism to any protoskeleton,
+then (ϕ0 ◦ ϕ)(n) ∈
+                 / OC ((σ 0 ◦ σ)(t)).
+
+Proof. Note that the message at n carries t in A, so the message at ϕ(n)
+carries σ(t) in B. If ϕ(n) is not a point of origination of σ(t) in B, there must
+be a node n0 = (s, i) where n = (s, j) and i < j, where ϕ(n0 ) carries σ(t).
+Then ϕ0 (ϕ(n0 )) carries σ 0 (σ(t)), so ϕ0 (ϕ(n)) ∈
+                                                  / OC (σ 0 (σ(t))).
+
+Proposition 7.25 (Point of origination preservation preserved under proto-
+                                            ϕ,σ                    ϕ0 ,σ 0
+morphism factoring). Suppose we have A 99K B and we have A 99K C where
+
+
+                  ϕ00 ,σ 00
+there is some B 99K C such that ϕ = ϕ00 ◦ ϕ0 and σ = σ 00 ◦ σ 0 . Then if (ϕ, σ)
+preserves points of origination, (ϕ0 , σ 0 ) preserves points of origination.
+
+Proof. We prove the contrapositive: that if (ϕ0 , σ 0 ) does not preserve points of
+origination then neither does (ϕ, σ). Suppose (ϕ0 , σ 0 ) does not preserve points
+of origination, and suppose t ∈ UA and suppose n ∈ OA (t) are such that
+ϕ0 (n) ∈
+       / OC (σ 0 (t)). By Proposition 7.24, ϕ00 (ϕ0 (n)) = ϕ(n) ∈
+                                                                / OB (σ 00 (σ 0 (t))) =
+OB (σ(t)). Thus, (ϕ, σ) does not preserve points of origination.
+
+Proposition 7.26 (Violation of role-inherited unique origination constraints
+preserved under protomorphisms of assignment-committed protoskeletons).
+Suppose A• is a protoskeleton, B• is a protoskeleton meeting condition (5)
+of the definition of preskeleton and λ is a protomorphism of assignment-
+committed protoskeletons from A• to B• . Then A• meets condition (5) of the
+definition of preskeleton.
+
+Proof. Argue by contradiction. Suppose A• = (A, A) does not meet condi-
+tion (5) of the definition of preskeleton. Then there is a strand s and a t ∈ Uρs
+such that t originates in Cρs | len ΘA (s) at event i but σs (t) does not originate
+in ΘA (s) at event i. Thus σs (t) is carried at an earlier event j on ΘA (s). But
+then σ(σs (t)) is carried at event j in strand ϕ(s) in B• . However, strand ϕ(s)
+is associated in B• with ρs and thus B• does not meet condition (5) of the
+definition of preskeleton.
+
+
+### 7.5     Coverage
+
+If A = (I, Θ, ≺, N, U ) is a protoskeleton and I 0 ⊂ I is any subset, then
+
+                RmvI 0 (A) = (I \ I 0 , Θ|I\I 0 , ≺ |(I\I 0 )×(I\I 0 ) , N, U ).
+
+We are particularly interested in the case where I 0 is a valid listener set for
+A. In that case, RmvI 0 (A) is a preskeleton (or skeleton) if A is a preskeleton
+(or skeleton). If A◦ = (A, LA ) is a listener committed protoskeleton, then
+
+                                 Rmv A◦ = RmvLA (A).                               (10)
+
+Remark 7.27. By definition Rmv maps objects in PSkel◦ to objects in PSkel.
+        λ
+If A◦ 99K B◦ is a protomorphism of listener-committed skeletons then by
+Definition 7.16, λ |Rmv A◦ is a protomorphism Rmv A◦ 99K Rmv B◦ . Thus
+
+
+we can view Rmv as a functor in the protomorphism categories PSkel◦ −→
+PSkel. We will denote λ |Rmv A◦ by Rmv(λ).
+          λ
+    If A◦ →
+          − B◦ is a homomorphism Rmv A◦ →     − Rmv B◦ is a homomorphism.
+Proof: The order preserving property is obvious. Nothing can originate on
+a listener strand (Remark 6.2), therefore deleting any set of listener nodes
+does not affect origination nodes.
+Remark 7.28. If A◦ is a realized skeleton then Rmv(A◦ ) is also realized. Proof:
+Removing listener strands on a preskeleton has no effect on the fragments at
+any of the remaining nodes.
+Definition 7.29. The coverage of a listener committed skeleton A◦ , which
+we denote [[A◦ ]], is the collection of homomorphisms λ |Rmv(A◦ ) as λ ranges
+over homomorphisms A◦ →     − B◦ with B realized.
+    Alternatively,
+                                                                  λ
+         [[A◦ ]] = {(Rmv B◦ , λ |Rmv(A◦ ) ) | B is realized and A◦ →
+                                                                   − B◦ }.   (11)
+Thus the coverage is some collection of homomorphisms Rmv(A◦ ) →
+                                                               − B into
+realized skeletons B.
+
+
+
+## 8     Operators
+
+In this section, we define the notion of an operator, which transforms proto-
+skeletons. We will then define the set of operators that cpsa most depends
+on. In general, an operator on a collection S is a mapping F which whose
+domain consists pairs (a, τ ) where a ∈ S and τ is an auxiliary parameter.
+    An operator for a protocol P is a self-mapping on PSkel(P ). An assignment-
+transforming operator is a partial self-mapping on PSkel• (P ). A listener-
+transforming operator is a partial self-mapping on PSkel◦ (P ). We will also
+use the generic term “operator” informally to refer to an operator on any of
+the protoskeleton categories and as a self-mapping on the category of node
+spaces.
+    In the assignment-transforming operators f we consider below, the pro-
+toskeleton component of f(A, A) depends only on A and the role assignment
+component depends only on A. We will call the role assignment compo-
+nent the role-assignment transformation. A desirable property of the role-
+assignment transformation is that the set of listeners in f(A, A) depends only
+on the set of listener strands in A.
+
+
+Definition 8.1. An assignment-transforming operator f is well-behaved with
+respect to listeners if whenever A and A0 are role assignments for a proto-
+skeleton A which have the same set of pseudolisteners, the role assignments
+of f(A, A) and f(A, A0 ) also have the same set of pseudolisteners.
+
+    Whenever f is an assignment-transforming operator well-behaved with
+respect to listeners, we can view f as describing a well-defined listener-
+transforming operator, which we will also refer to as f, abusing notation.
+Specifically, if LA is a valid listener set for A then let A be a role assignment
+justifying its validity. Since the set of listeners under f(A) depends only on
+LA , we can view that set as the well-defined result of applying f to LA .
+    A linking map Λf associated to an operator f (on any of the protoskele-
+ton categories) associates to any protoskeleton A a protomorphism Λf (A) =
+(ϕf (A), σf (A)) from A to f(A). For each protoskeleton A, Λf (A) is called the
+linking protomorphism. In particular, if the operator f acts on the protoskel-
+eton category PSkel• , for each A• ∈ PSkel• , the linking protomorphism will
+be required to be an assignment-preserving protomorphism.
+Remark 8.2. Suppose (A, A) is an assignment-committed protoskeleton with
+linking protomorphism Λf (A) = (ϕ, σ). Λf (A) is assignment-preserving if
+and only if the role assignment of B of f(A, A) satisfies ρBϕ(s) = ρA
+                                                                    s for every
+strand s in A. In particular ρϕ(s) is a pseudolistener if and only if ρA
+                               B
+                                                                         s is a
+pseudolistener. This remark proves:
+
+Proposition 8.3. Suppose f is an assignment transforming operator with
+linking protomorphism Λf . If for every assignment committed protoskeleton
+(A, A) the node mapping component of Λf (A, A) is surjective, then f is well-
+behaved with respect to listeners.
+
+   cpsa operates at the listener-committed protoskeleton level, so it is im-
+portant that:
+
+   • Operators we use are listener-transforming, and
+
+   • Operators we use have linking protomorphisms that are protomor-
+     phisms of listener-committed protoskeletons from A◦ to f(A◦ ).
+
+Most of the operators we use are actually assignment-transforming operators
+well-behaved with respect to listeners.
+
+
+
+
+
+### 8.1    Suites
+
+A suite is a map from Pskel◦ to a set of listener-transforming operators, that
+is
+          f : Pskel◦ −→ P({f|f is a listener-transforming operator})
+   We use f[A◦ ] to denote {f(A◦ )|f ∈ f(A◦ )}.
+   If f and g are suites, then f ◦ g is a suite where f ◦ g(A◦ ) = {f ◦ g|g ∈
+g(A◦ ), f ∈ f(g(A◦ ))}.
+   At the top level, cpsa is a setwise term reduction system, driven by
+reductions f[·] for various suites.
+
+
+### 8.2    Filters
+
+A filter is a predicate on pairs (A◦ , f) where f is an operator on A◦ . If F
+is a filter and f is a suite, fF is a suite, where fF (A◦ ) = {f|f ∈ f(A◦ ) and
+(A◦ , f) ∈ F }.
+    If F is a filter and f is a listener-transforming operator, then f F is a suite
+which, on input A◦ , is {f} if (A◦ , f) ∈ F and ∅ otherwise.
+
+
+### 8.3    Primitive Operators
+
+In this section we describe some very simple operators from which our more
+complicated test-solving operators are built.
+
+Definition 8.4 (Identity operator). For any protoskeleton A, Id(A) = A.
+The corresponding role-assignment transformation is Id(A) = A.
+   The linking map ΛId is the identity protomorphism:
+
+                               Λf (A) = (IdA , IdA ).
+
+   The linking protomorphism for Id(A) is a protomorphism of assignment-
+commited protoskeletons.
+   If σ is a substitution, we can define an operator Subσ based on σ: basically,
+we apply σ to all algebraic parts of A while leaving its node structure alone.
+
+Definition 8.5 (Substitution operator). If σ ∈ End(A) then we define the
+operator Subσ as follows. If A = (I, Θ, ≺, N, U ) then
+
+                     Subσ (A) = (I, σ ◦ Θ, ≺, σ(N ), σ(U )).
+
+
+The linking map ΛSubσ is defined as follows:
+
+                               ΛSubσ (A) = (IdA , σ)
+
+The role-assignment transformation is defined as follows: If A = {(ρs , σs ) :
+s ∈ I} is a role assignment, then Subσ (A) = {(ρs , σ ◦ σs ) : s ∈ I}.
+
+Remark 8.6. If A = (I, Θ, ≺, N, U ) is a protoskeleton with validating role
+assignment A, Subσ (A) is a protoskeleton with validating role assignment
+Subσ (A). This follows from the definition of protoskeleton (7.2).
+
+                     NSubσ (A) = σ(N ) ⊇ σ(NA ) = NSubσ (A)
+
+and
+                     USubσ (A) = σ(U ) ⊇ σ(UA ) = USubσ (A) .
+Remark 8.7. By Proposition 8.3, the substitution operators are well-behaved
+with respect to assignments.
+    Note that the linking protomorphism ΛSubσ (A) is not necessarily a homo-
+morphism since preservation of nodes of origination may fail. We say that a
+substitution σ is homomorphic if the linking protomorphism of Subσ is a ho-
+momorphism. Note also that the linking protomorphism is a protomorphism
+of listener-committed protoskeletons.
+    The compression operator combines two compatible strands. Recall that
+a strand is a node space consisting of a single strand.
+
+Definition 8.8 (Compression operator). Suppose s, s0 are strands and A is
+a protoskeleton. Comps,s0 (A) is defined only when s, s0 ∈ IA and Θ(s) is a
+prefix of Θ(s0 ) or Θ(s0 ) is a prefix of Θ(s). Assume this is the case. If s, s0
+have different lengths, let smax be the strand out of {s, s0 } of greater length
+and let smin be the other strand; otherwise smax = s and smin = s0 .
+
+                Comps,s0 (A) = (I \ {smin }, Θ|I\{smin } , ≺0 , N, U )
+
+where the relation ≺0 is defined based on the linking protomorphism
+
+                         ΛComps,s0 (A) = (ϕComps,s0 , IdA )
+
+where ϕComps,s0 is the identity on the nodes in I \ {smin } but ϕComps,s0 (smin ) =
+smax .
+
+
+   The relation ≺0 is the smallest transitive relation such that for all n, n0 ∈
+A, if n ≺ n0 then ϕComps,s0 (n) ≺0 ϕComps,s0 (n0 ).
+   The listener transformation of Comps,s0 is defined as follows
+
+                                   LA \ {smin } if {s, s0 } ⊂ LA
+                                
+               Comps,s0 (LA ) =
+                                   LA \ {s, s0 } otherwise
+Remark 8.9. The compression operator is not always viewable as assignment-
+transforming: the main issue is that although Θ(s) is a prefix of Θ(s0 ) this
+does not guarantee that both s and s0 are instances of the same role in all role
+assignments. However, our description of Comps,s0 as a listener-transforming
+operator guarantees that the linking protomorphism will always be a proto-
+morphism of listener-committed protoskeletons.
+Remark 8.10. First a definition: Given a role assignment A = {(ρs , σs ) : s ∈
+I} and strands s, s0 , A(s) is compatible with A(s0 ) if and only if ρs = ρs0 .
+Suppose s, s0 are given. If an an assignment-committed protoskeleton (A, A)
+is such that s, s0 are such that A(s) is compatible with A(s0 ), then one can
+view Comps,s0 as an assignment-transforming operator on (A, A). Moreover
+by Proposition 8.3 the operator is well-behaved with respect to listeners.
+Remark 8.11. It is clear that Comps,s0 (A) is a protoskeleton, regardless of the
+relation ≺0 . However, if A is a preskeleton, Comps,s0 (A) need not be a preskel-
+eton because ≺0 may have a cycle violating Condition 1 of Definition 7.10.
+   Given a protoskeleton A, order enrichment only affects the order relation.
+
+Definition 8.12 (Order enrichment operator). If A = (IA , ΘA , ≺0 , NA , UA ),
+then
+                     OE(A) = (IA , ΘA , ≺0 , NA , UA )
+where ≺0 is the smallest transitive relation such that
+
+  1. If n ≺A n0 then n ≺0 n0 and
+
+  2. If t ∈ U and t originates in A at n, and n0 is any other node at which
+     t is carried then n ≺0 n0 .
+
+The role-assignment transformation is the identity.
+   The linking protomorphism is the identity:
+
+                              ΛOE (A) = (IdA , IdA )
+
+
+
+   The linking protomorphism is clearly a protomorphism of assignment-
+committed protoskeletons.
+Remark 8.13. By Proposition 8.3, the order enrichment operator is well-
+behaved with respect to listeners.
+    Finally, the augmentation operator adds a strand. Recall that for a role
+or pseudorole ρ, Cρ is the trace of ρ.
+
+Definition 8.14 (Augmentation operator). Let A = (I, Θ, ≺, N, U ). Let
+n ∈ A be any reception node. Let ρ ∈ (P ∪ {£}). Let i ≤ |Cρ | such that
+evt Cρ , i is a transmission and let σ be any substitution. Let s? ∈
+                                                                   / IA . Then
+
+                         Augn,ρ,i,σ,s? (A) = (I 0 , Θ0 , ≺0 , N 0 , U 0 )
+
+where:
+
+   • I 0 = I ∪ {s? }.
+
+   • Θ0 (s) = Θ(s) for s ∈ I and Θ0 (s? ) = σ(Cρ |i).
+
+   • (s1 , i1 ) ≺0 (s2 , i2 ) if and only if one of the following holds:
+
+         1. s1 , s2 ∈ I and (s1 , i1 ) ≺ (s2 , i2 ),
+         2. s1 = s2 = s? and i1 < i2 , or
+         3. s1 = s? , s2 ∈ I, and n  (s2 , i2 ).
+
+   • N 0 = N ∪ [σ]∗ Nρ
+
+   • U 0 = U ∪ [σ]∗ Uρ
+
+The augmentation operator has an associated linking protomorphism where
+
+                              ΛAugn,ρ,i,σ,s? (A) = (IdA , IdA ).
+
+The role assignment transformation Augn,ρ,i,σ,s? (A) is equal to A on strands
+in I but maps s? to (ρ, σ).
+
+    Note that Augn,ρ,i,σ,s? (A) may not always be a preskeleton even if A is, but
+ΛAugn,ρ,i,σ,s? (A) is always a homomorphism, and is always a homomorphism of
+assignment-committed protoskeletons.
+
+
+
+Remark 8.15. Any augmentation operator f is well-behaved with respect to
+listeners. This does not immediately follow from Proposition 8.3 since the
+node mapping component of the node mapping component of Λf (A, A) is not
+surjective. However Λf (A, A) only misses those elements in the new strand
+s? and the role for this new strand is prescribed by ρ which is a parameter
+in f.
+Theorem 8.16 (Preskeleton property preserved under primitive operators).
+Let A• and B• be preskeletons and f be an assignment-transforming primitive
+operator on A• such that there is a commutative diagram:
+                                      Λf (A•-)
+                                A•                  f(A• )
+
+                                                    λ0                           (12)
+                                       λ
+
+                                                -
+
+                                                         ?
+                                          B•
+where λ is a structure-preserving protomorphism of assignment-committed
+preskeletons and λ0 is a protomorphism of assignment-committed protoskele-
+tons. Then f(A• ) is a preskeleton.
+Proof. Asymmetry of ≺ (part of Condition (1) of Definition 7.10) is assured
+by Proposition 7.23 and Condition (5) is assured by Proposition 7.26. For
+the remaining properties our proof proceeds by cases, one for each primitive
+operator. Let λ = (ϕ, σ) and let λ0 = (ϕ0 , σ 0 ).
+
+  f = Id: Since Id(A• ) = A• , f(A• ) is a preskeleton, and meets all required
+conditions.
+
+   f = Subσ0 : Since the set of nodes and the ordering of f(A• ) are the same
+as those of A• , it should be clear that f(A• ) meets condition (2) and satisfies
+the remaining properties of (1).
+    Proof of Property (3): Suppose t ∈ Nf(A• ) . If t is carried at a node n of
+f(A• ) then σ 0 (t) ∈ σ 0 (Nf(A• ) ) ⊂ NB• is carried at node ϕ0 (n). This contradicts
+B• being a preskeleton. Therefore t is carried at no node of f(A• ). Next, t is
+of the form σ0 (s) for some some s ∈ NA . Every variable in s occurs at some
+node in A• . Therefore every variable in t occurs at some node in B• .
+    Proof of Property (4). Let t ∈ Uf(A• ) . t is of the form σ0 (s) for some some
+s ∈ NA . s is carried at a node n in A• , and therefore t is carried at node n.
+
+
+   f = Comps,s0 : Note that if f is assignment-transforming in this case then
+A(s), A(s0 ) are compatible (Remark 8.10). The ordering ≺Comps,s0 (A• ) is de-
+fined to be transitive. Moreover, since the linking homomorphism is surjec-
+tive, the ordering ≺Comps,s0 (A• ) includes the strand ordering. Condition (2)
+follows from the fact that ϕComps,s0 (A• ) is defined to be structure-preserving.
+Conditions (3) and (4) follow from the fact that NComps,s0 (A• ) = NA• and
+UComps,s0 (A• ) = UA• , and that every event in A• is present in f(A• ) since we
+eliminate only completely duplicated nodes.
+
+   f = OE: Like Comps,s0 , ≺OE(A• ) is defined to be structure-preserving and
+transitive, and all events in A• are present (at the same node) in OE(A• ), so
+all required conditions are clearly met.
+
+  f = Augn,ρ,i,σ0 ,s? : Here, transitivity of ≺f(A• ) is established as follows. If
+n1 = (s1 , i1 ), n2 = (s2 , i2 ), n3 = (s3 , i3 ) are nodes in f(A• ) and n1 ≺ n2 and
+n2 ≺ n3 then:
+
+    • If s2 ∈ I then s3 must be in I and n2 ≺A• n3 . If n1 ≺A• n2 then by
+      transitivity in A• , n1 ≺A• n3 . If s1 = s? then n ≺A• n2 , so n ≺A• n3
+      and thus n1 ≺f(A• ) n3 .
+
+    • If s2 = s? then s1 = s? also. If s3 = s? then i3 > i2 and i2 > i1 so
+      n1 ≺ n3 . Otherwise, n ≺A• n3 so n1 ≺f(A• ) n3 .
+
+    Condition (2) holds in f(A• ): if n1 = (s1 , i1 ) and n2 = (s2 , i2 ) and n1 ≺ n2
+where s1 6= s2 then there are two cases. If s1 , s2 ∈ I the property holds
+because A• is a preskeleton. Otherwise, it must be the case that s1 = s? and
+s2 ∈ I. If there is no node between n1 and n2 it must be that n2 = n and n1
+is the last node of s? . But the event at n is a reception and the event at the
+last node of s? is a transmission.
+   An obvious corrollary to this theorem is that the same property holds for
+any composition of any number of primitive operators, so long as they are
+each assignment-transforming.
+
+
+
+## 9     Suites and the Setwise Reduction
+
+cpsa proceeds by maintaining a set of listener-committed skeletons A◦ for
+
+
+P . The initial state consists of one skeleton {A◦ } which we call the point of
+view 1 .
+    At each iteration, we rewrite the set by replacing an unrealized skeleton in
+the set with a set of skeletons called the cohort of the unrealized skeleton (for
+a specific critical path in an unrealized node in that skeleton). The cohort cal-
+culation takes place in two phases: first, we calculate the pre-cohort, which is
+a set of listener-committed preskeletons. Then, we calculate the skeletoniza-
+tion of each pre-cohort member, which produces a set listener-committed
+skeletons. We describe the cohort, the pre-cohort, and the skeletonization
+steps as suites.
+    In addition to these suites, cpsa also makes use of certain algorithms
+for arbitrary choices. In this document we pay no attention to how these
+functions are instantiated, we only remark the following:
+
+   • N AM E(A) is a choice of name for a new strand to add to A.
+     N AM E(A) ∈
+               / IA .
+
+   • T EST (A) is a choice of a test (see Definition 10.5) in an unrealized
+     skeleton.
+
+   • U OI(A) is a choice of a unique origination issue. If A does not satisfy
+     the condition of being a skeleton that every atom in UA originates at at
+     most one node, then U OI(A) returns a triple (t, n, n0 ) such that t ∈ UA
+     and n 6= n0 are both in OA (t).
+
+   • SEARCH(S) is a choice of which skeleton to perform the cohort op-
+     eration on. Given a set S of listener-committed skeletons, at least
+     one of which is unrealized, SEARCH(S) returns one of the unrealized
+     skeletons in S.
+
+   • F R(A, ρ, i) is a substitution that maps each variable occurring in Cρ |i
+     to a distinct variable not occurring in A or in any role of the protocol.
+
+
+### 9.1     The Pre-Cohort Suite
+
+The pre-cohort suite is designed to infer additional honest behavior or re-
+strictions on a skeleton in order to make progress in resolving a critical path.
+    Actually, cpsa allows the user to specify a pre-skeleton which is then skeletonized,
+but this is a convenience feature.
+
+
+
+    Suppose A is an unrealized skeleton with valid listener set LA , and that
+n is an unrealized node of A, and that p is a critical path with endpoint ep
+of the term evt A (n) in the fragment FA,n . The pre-cohort suite is
+
+             Pn,p (A◦ ) = cn,p (A◦ ) ∪ an,p (A◦ ) ∪ dn,p (A◦ ) ∪ ln,p (A◦ ),   (13)
+
+where the suites in the union are defined as follows.
+
+Definition 9.1 (Contraction suite).
+
+                          cn,p (A◦ ) = ∪S∈Z {Subσ |σ ∈ S}                      (14)
+
+where Z is a set of Sa,b for each a ∈ Esc(FA,n , ep ) and for each b visited by p
+where Sa,b is a complete set of most general unifiers of a, b.
+
+Definition 9.2 (Regular Augmentation suite).
+
+                   an,p (A◦ ) = {Subσ1 ◦ Augn,ρ,i,σ0 ◦F R(A,ρ,i),s? }          (15)
+
+where σ0 ∈ S0 , σ1 ∈ S1 , s? = N AM E(A) and ρ, i, σ0 , σ1 , S0 , S1 are as defined
+below}.
+
+   • R ∈ P and i is such that CR (i) is defined and is a send event. Let
+     C = CR |i.
+
+   • There is a path pp ∈ CarPath(C(i)) and a term tt such that either (i)
+     the endpoint of pp is a variable not of sort mesg and tt = ep or (ii) the
+     endpoint of pp is a variable of sort mesg and tt ∈ Targ(Esc(F, ep ), ep ).
+
+   • S0 is a set of most general unifiers of tt with the endpoint of
+     F R(A, ρ, i)(pp).
+
+   • S1 is a set of most general maps σ1 such that for all i0 < i and for all
+     paths p0 ∈ CarPath(C(i0 )), if the endpoint of σ1 ((σ0 ◦ F R(A, ρ, i))(p0 ))
+     is σ1 (ep ) then σ1 (p0 ) visits an element of σ1 (Esc(FA,n , ep )).
+
+    Note that it is not obvious that S1 exists, let alone that there is a finite set
+of such maps we can calculate efficiently. However, their existence, and the
+ability of cpsa to identify a covering set of them, is proven in Appendix A.
+
+
+
+
+
+Definition 9.3 (Displacement suite.).
+
+            dn,p (A◦ ) = {Comps,s? ◦ Subσ2 ◦σ1 ◦ Augn,ρ,i,σ0 ◦F R(A,ρ,i),s? }    (16)
+
+where ρ, i, σ0 , σ1 , s? are as in the definition of an,p (A◦ ), σ2 ∈ S, and s, S have
+the properties described below.
+
+   • s is a strand in A and there exists a role assignment A such that s is
+     associated with role ρ.
+
+   • S is a set of most general unifiers of the first i0 events in s and the first
+     i0 events in s0 where i0 is the smaller of |s| and i.
+
+Remark 9.4. Displacement is the only pre-cohort sub-suite that involves the
+compression operator, and is thus the only place where a concern arises as
+to whether operators in the pre-cohort suite can be viewed as assignment-
+transforming. A displacement operator Comps,s? ◦ Subσ2 ◦σ1 ◦ Augn,ρ,i,σ0 ,s? is
+assignment-transforming on (A, A) whenever A associates strand s with ρ,
+because in such cases compression occurs between two strands with the same
+role association, and therefore, the association of the combined strand is
+unambiguous.
+
+Definition 9.5 (Listener augmentation suite.). ln,p (A◦ ) = esln,p (A◦ )∪cpln,p (A◦ )
+where:
+
+   • Escape set listener augmentation. esln,p (A◦ ) = {Augn,£,2,σ,s? |s? =
+     N AM E(A), {|c|}u ∈ Esc(FA,n , ep ) and σ maps the m in the listener role
+     to inv(u)}.
+
+   • Critical path listener augmentation. cpln,p (A◦ ) = {Augn,£,2,σ,s? |s? =
+     N AM E(A), ep = {|c|}u and σ maps the m in the listener role to u}.
+     Note that cpln,p (A◦ ) is ∅ if ep is not an encryption.
+
+
+### 9.2     The Skeletonization Suite
+
+The skeletonization suite is designed to rectify pre-skeletons back into skele-
+tons.
+   The overall process is as follows. If A is not a skeleton, then either it is
+not a skeleton because some atom in U originates on more than one strand,
+or because there are required orderings that are not present. We resolve all
+
+
+of the former issues before the latter. When a restricted atom originates on
+multiple strands, we resolve the problem in one of two ways: either we merge
+two strands on which the atom originates, via unification and compression, or
+we de-originate one of the origination points, in which we apply a substitution
+to the strand so that the atom is gained at an earlier point.
+    The skeletonization suite is S(A◦ ) = {OE ◦ f|f ∈ ur(A◦ )}. The unique
+origination rectification suite, ur, is defined to be {Id} if NUO(A◦ ) is empty,
+where NUO(A◦ ), the set of non-compliant unique origination constraints, is
+defined to be {(t, n, n0 )|t ∈ UA and n and n0 are distinct points of origination
+of t in A}, or otherwise defined recursively as follows:
+
+    ur(A◦ ) = {f ◦ f 0 |(t, n, n0 ) = U OI(A), f 0 ∈ urt,n,n0 (A◦ ), f ∈ ur(f(A◦ ))},
+    where urt,n,n0 (A◦ ) = Mt,n,n0 (A◦ ) ∪ Dt,n,n0 (A◦ ), and where M (the merging
+suite) and D (the deorigination suite) are defined below. Recall that U OI(A)
+outputs a triple in N U O(A) as long as N U O(A) is non-empty.
+Definition 9.6 (Merging suite.). Let n be in strand s and let n0 be in strand
+s0 . Let i be the smaller of the lengths of s and s0 . Note that s and s0 must
+be distinct because for any t there can be only one point of origination per
+strand, and n and n0 are distinct. Then Mt,n,n0 = {Comps,s0 ◦ Subσ |σ ∈ U }
+where U is a set of most general unifiers of Θ(s)|i with Θ(s0 )|i.
+Remark 9.7. Merging is the only skeletonization-related suite that involves
+the compression operator, and is thus the only place where a concern arises as
+to whether operators in the skeletonization suite can be viewed as assignment-
+transforming. A merging operator Comps,s0 ◦Subσ is assignment-transforming
+on (A, A) whenever A associates strands s and s0 with the same role, be-
+cause in such cases compression occurs between two strands with the same
+role association, and therefore, the association of the combined strand is
+unambiguous.
+Definition 9.8 (Deorigination suite.). Let n = (s, i). Let V = {(i0 , pp)|i0 < i
+and pp ∈ CarPath(mesg(s, i0 ))}. Then let Ui0 ,pp be a set of most general
+unifiers of the endpoint of pp with t, if the endpoint of pp is not a variable
+of sort mesg. If pp does terminate in a variable of sort mesg, let Ui0 ,pp be a
+set of most general unifiers of the endpoint of pp with a term that carries t.
+Then Dt,n,n0 = ∪(i0 ,pp)∈V {Subσ |σ ∈ Ui0 ,pp }.
+Remark 9.9. When pp terminates in a variable of sort mesg, Ui0 ,pp is not
+finite. Therefore, if this situation ever comes up, cpsa will not terminate.
+
+
+
+### 9.3          Post-Processing Filters
+
+The post-processing filters filter out operators that are invalid or have failed
+to make progress. Once these filters are defined, we can define the cohort,
+which is cpsa’s high-level reduction step.
+    Let A be a protoskeleton, let LA be a valid listener set for A, and let f be
+an operator defined on A◦ . Let n be an unrealized node of A and let p be a
+critical path of evt A (n) in the fragment FA,n .
+Definition 9.10 (Post-processing filter). The post-processing filter P Pn,p is
+defined to be W F ∩ HC ∩ SFn,p .
+Definition 9.11 (Well-formed filter). W F = {(A◦ , f) such that f(A) is a
+preskeleton}.
+Definition 9.12 (Homomorphism check). HC = {(A◦ , f) such that Λf (A) is
+a homomorphism from A to f(A)}.
+Definition 9.13 (Solved filter). SFn,p is the set of pairs (A◦ , f) such that p
+is weakly solved in Ff(A),ϕ(n) by σ, where Λf(A) = (ϕ, σ).
+   In our proof later it would be desirable to prove that if (A◦ , f) is in SFn,p
+then so is (A◦ , g◦f) for all g. This is the case for some of the solved conditions:
+                                                                                         ϕ,σ
+Remark 9.14. Let n, p be a test in unrealized skeleton A◦ and let A◦ 99K
+   ϕ0 ,σ 0
+B◦ 99K C◦ , and let F = FA,n , F 0 = FB,ϕ(n) , and F 00 = FC,ϕ0 (ϕ(n)) . Then:
+   1. If p, F, F 0 , (ϕ, σ) meet condition Sol1 then so do p, F, F 00 , (ϕ0 ◦ϕ, σ 0 ◦σ).
+   2. If p, F, F 0 , (ϕ, σ) meet condition Sol3 then so do p, F, F 00 , (ϕ0 ◦ϕ, σ 0 ◦σ).
+   3. If p, F, F 0 , (ϕ, σ) meet condition Sol4 then so do p, F, F 00 , (ϕ0 ◦ϕ, σ 0 ◦σ).
+   However, this is not the case generally: progress guaranteed by condition
+Sol2 or Sol5 can be reversed, for instance, by later unifications. What we can
+prove is that these properties are preserved under extensions of an operator
+that factor a map to another protoskeleton in which the same property holds.
+Remark 9.15. Let n, p be a test in unrealized skeleton A◦1 and let
+                                 ϕ1 ,σ1    ϕ2 ,σ2    ϕ3 ,σ3
+                             A◦1 99K A◦2 99K A◦3 99K A◦4 .
+   Let F1 = FA1 ,n , let F2 = FA2 ,ϕ1 (n) , let F3 = FA3 ,ϕ2 (ϕ1 (n)) , and let F4 =
+FA4 ,ϕ3 (ϕ2 (ϕ1 (n))) . Let λ = (ϕ, σ) = (ϕ1 , σ1 ), λ0 = (ϕ0 , σ 0 ) = (ϕ2 ◦ ϕ1 , σ2 ◦ σ1 ),
+and λ00 = (ϕ00 , σ 00 ) = (ϕ3 ◦ ϕ2 ◦ ϕ1 , σ3 ◦ σ2 ◦ σ1 ). Then:
+
+
+  1. If p, F1 , F2 , λ meet condition Sol2 with path p0 , and if p, F1 , F4 , λ00 meet
+     condition Sol2 with path σ3 (σ2 (p0 )), then p, F1 , F3 , λ0 meet condition
+     Sol5 with path σ2 (p0 ).
+
+  2. If p, F1 , F2 , λ meet condition Sol5 with term tt, and if p, F1 , F4 , λ00 meet
+     condition Sol5 with term σ3 (σ2 (tt)) then p, F1 , F3 , λ0 meet condition
+     Sol5 with term σ2 (tt).
+
+    Although these claims are complex, they both boil down to the same
+observation: if two terms have not been unified in A2 but are unified in A3 ,
+they must be unified in A4 . Therefore, knowing they are not unified in both
+A2 and A4 implies they are not unified in A3 . In the case of Sol2, the pairs
+of terms are those visited by (t, π) and those in the image of Esc(F1 , ep ).
+In the case of Sol5, the pairs are the new target term and the image of
+Targ(Esc(F1 , ep )).
+
+
+### 9.4    The Cohort and the CPSA Set Reduction
+
+First, we define the cohort, the top-level suite used in the cpsa algorithm.
+
+Definition 9.16 (The cohort). The cohort, cohn,p (A◦ ), is defined to be
+
+                       cohn,p (A◦ ) = (S ◦ Pn,p )P Pn,p (A◦ ).
+
+    Next we define the reduction relation , on sets of listener-committed
+skeletons.
+
+Definition 9.17 (Setwise reduction). Let S = {(A◦i )|1 ≤ i ≤ k} be a set of
+listener-committed skeletons. If A◦i = SEARCH(S) and (n, p) = T EST (Ai )
+then S  {A◦j |1 ≤ j ≤ k, j 6= i} ∪ cohn,p [A◦i ].
+
+    The overall operation of cpsa is as follows. The user specifies the point
+of view A• along with the protocol P . We calculate the initial set S = {A◦ }.
+Then we proceed as follows:
+
+  1. If ∃T such that S  T , let S ← T , and go to 1.
+
+  2. Else, output S.
+
+
+
+
+
+    cpsa in fact picks a particular element of S and a particular n and p and
+chooses the T resulting from that choice. However, cpsa is configurable to
+make different choices of these sorts, so we simply need to understand that
+cpsa (when it halts) outputs a normal form of the reduction , that is, a
+set S such that ¬∃T : S  T .
+
+
+
+## 10      Suite Completeness
+
+In this section we state and prove varous suite completeness theorems, cul-
+minating in a proof that cpsa’s overall approach is complete.
+    First, we state a number of definitions that should help to simplify and
+clarify the complex theorem statements and proofs to follow. Most of the
+theorems proving the completeness of cpsa are ones that concern proving
+that coverage of a certain type can be maintained while advancing from one
+listener-committed protoskeleton to another via a certain suite. The notion
+of coverage varies for each theorem, and what is essential to understand from
+the lemmas are the particular properties of that coverage, which are distinct
+for each theorem. There is also, in each of these theorems, a complicated
+logical structure, but one that is largely similar for all the theorems. We first
+make definitions reflecting this generic logical structure, and then proceed to
+discuss the various lemmas and theorems.
+
+Definition 10.1 (Coverage property). A coverage context is a tuple C =
+(X, Y, Act) where X, Y are sets and Act is a mapping PSkel ×X × Opr• → X
+where Opr• is the collection of assignment-transforming operators. A cover-
+age property relative to the coverage context C is a set C ⊂ ((PSkel• ×X) ×
+Protom ×Y) such that for all ((A• , β), λ, α) ∈ C, λ is a protomorphism from
+A.
+    If β ∈ X, we use the notation f(A).β to refer to Act(A, β, f). In cases
+where A is unambiguous, we sometimes use the notation f.β.
+
+   If X or Y are sets of tuples themselves, we omit the extra nexting of
+parentheses, as in ((A• , t, n, n0 ), λ, α1 , α2 ).
+
+Definition 10.2 (Suite factoring protomorphisms from protoskeleton un-
+der conditions P guaranteeing conditions Q). Fix a coverage context C =
+(X, Y, Act). Let s be a suite, P and Q coverage properties relative to C, A◦
+a listener-committed protoskeleton, and β ∈ X.
+
+
+   We say s factors protomorphisms from (A◦ , β) under conditions P guar-
+anteeing conditions Q, expressed as
+                                                      s
+                                (A◦ , β) : [P =⇒ Q]                           (17)
+if for all λ, A• , α such that ((A• , β), λ, α) ∈ P and (adhering to the convention
+adopted in Remark 7.21) A• is an assignment committed protoskeleton such
+that F•→◦ (A• ) = A◦ , there is a commutative diagram
+                                       Λf(A)
+                                 A               - f(A)
+
+
+                                       λ                  λ0                  (18)
+
+                                                  -
+                                                          ?
+                                                          B
+where f ∈ s(A◦ ) is assignment-transforming on (A, A) and
+                        ((f(A• ), Act(A, β, f)), λ0 , α) ∈ Q.
+Definition 10.3 (Suite factoring coverings from protoskeleton under condi-
+tions P guaranteeing conditions Q). Fix a coverage context C = (X, Y, Act).
+Let s be a suite, P and Q coverage properties relative to C, A◦ a listener-
+committed protoskeleton, and β ∈ X.
+    We say s factors coverings from (A◦ , β) under conditions P guaranteeing
+conditions Q expressed as
+                                                      s
+                                (A◦ , β) : [[P =⇒ Q]]                         (19)
+if for all λ, A• , α such that ((A• , β), λ, α) ∈ P there exists an operator f ∈
+s(A◦ ) that is assignment-transforming on (A, A) and a λ0 such that
+                         λ|Rmv(A◦ ) = (λ0 ◦ Λf(A◦ ) )|Rmv(A◦ )                (20)
+and ((f(A• ), Act(A, β, f)), λ0 , α) ∈ Q.
+Remark 10.4. This notion is nearly identical to the idea of a suite factoring
+a protomorphism from protoskeleton w.r.t. a predicate, except that the con-
+dition expressed by the commutative diagram (18) can only be considered to
+                                                                        s
+be true modulo listeners. Note the difference in notation: A◦ : [[P =⇒ Q]]
+                                                                         s
+uses double brackets, as in our notation for coverage, whereas A◦ : [P =⇒ Q]
+does not.
+
+
+Definition 10.5 (Test). A test of an unrealized skeleton A◦ is a pair (n, p)
+where n is an unrealized node of A◦ , and p is a critical path of evt A◦ (n) in
+the fragment FA◦ ,n .
+                                                          R
+Definition 10.6 (Equivalence modulo listeners). A◦ ≡ B◦ if and only if
+Rmv(A◦ ) = Rmv(B◦ ).
+                                  R
+   In what follows, we only use ≡ among realized skeletons.
+
+Definition 10.7 (Strict role-generated uniques). Let A• = (A, A) be a pre-
+skeleton and let A0◦ be a protoskeleton and (ϕ, σ) be a protomorphism where
+     ϕ,σ
+A0◦ 99K A◦ . Then A• has strictly role-generated unique origination assump-
+tions over (A0◦ , (ϕ, σ)) if UA = σ(UA0 ) ∪ UA .
+
+Definition 10.8 (Coverage modulo listeners context). Let the cover-
+age modulo listeners context CM be (Opr, (PSkel◦ × PSkel◦ ), ActM ) where
+ActM (A, g, f) = f ◦ g.
+
+Definition 10.9 (Precohort coverage property). The precohort coverage prop-
+erty PCohn,p is defined with respect to the context CM , and includes the set
+of 4-tuples ((A• , g), λ, B◦ , A0◦ ) such that
+
+   • P1. A• is a preskeleton.
+
+   • P2. B◦ is a realized skeleton.
+                                                           R
+   • P3. There exists B0• , a realized skeleton, with B◦ ≡ B0◦ such that λ is
+                                       λ
+      structure-preserving and A• 99K B0• .
+
+   • P4. g(A0◦ ) = A◦ .
+
+   • P5. A• has strictly role-generated unique originations assumptions over
+     (A0◦ , Λg(A0◦ ) ).
+                                      λ0        λ00
+   • P6. For all λ0 such that A 99K C 99K B0 with λ = λ00 ◦ λ0 , p is weakly
+     solved in FC,ϕ0 (n) by σ 0 where λ0 = (ϕ0 , σ 0 ).
+
+Definition 10.10 (Cohort coverage property). The cohort coverage predicate
+Coh is defined with respect to the context CM , and includes the set of 4-tuples
+((A• , g), λ, B◦ , A0◦ ) such that
+
+
+   • C1. A• is a skeleton.
+
+   • P2. B◦ is a realized skeleton.
+                                                                   R
+   • C3. There exists B0• , a realized skeleton, with B◦ ≡ B0◦ such that
+        λ
+     A• →
+        − B0• .
+
+   • P4. g(A0◦ ) = A◦ .
+
+    In the definition of the cohort coverage property, we need to allow for
+existence of some B0 rather than simply use B, due to the the case in which
+f adds a listener strand that had no available image in B.
+    The main theorem to be established first is the completeness of the cpsa
+cohort suite. This is proven given two central lemmas, which we state here
+but prove later. The pre-cohort completeness lemma establishes that the pre-
+cohort produces a complete (in terms of coverage) set of preskeleton outputs
+that pass the solved filter.
+
+Lemma 10.11 (Pre-cohort completeness). Let A◦ be an unrealized skeleton
+                                                         PP Pn,p
+and let (n, p) be any test of A◦ . Then (A◦ , Id) : [[Coh ====⇒ PCohn,p ]].
+
+    We prove Lemma 10.11 in Section 12.
+    The skeletonization completeness lemma establishes that skeletonization
+is complete with regard to homomorphisms to a skeleton, and produces only
+skeletons. Informally: when A → A0 where A is a skeleton but A0 is only
+presumed to be a preskeleton, then any homomorphism from A to a skeleton
+that factors through the map to A0 factors, further, through the linking
+protomorphism of some element of the skeletonization suite on A0 .
+
+Definition 10.12 (Ancestor-aware coverage context). Let the ancestor-aware
+coverage context CA be (Protom, PSkel• , ActA ) where ActA (A, λ, f) = Λf(A) ◦λ.
+
+Definition 10.13 (Skeleton coverage property). Let A◦0 be a skeleton. Then
+the skeleton coverage property SklA0 is defined with respect to the context CA ,
+and includes the set of 3-tuples ((A• , λ0 ), λ, B• ) such that
+
+   • S1. A• is a preskeleton.
+
+   • S2. B• is a skeleton.
+              λ
+   • S3. A◦0 −→
+                A◦ .
+
+
+              λ◦λ
+   • S4. A◦0 −−→
+                 B◦ .
+               λ
+   • S5. A• 99K B• and λ is structure-preserving.
+
+   • S6. A• has strictly role-generated unique origination assumptions over
+     (A◦0 , λ0 ).
+Definition 10.14 (Skeleton homomorphism coverage property). Let A◦0 be
+a skeleton. Then the skeleton homomorphism coverage property SklHomA0
+is defined with respect to the context CA , and includes the set of 3-tuples
+((A• , λ0 ), λ, B• ) that meet conditions S2, S3, S4, S6, and
+   • SH1. A• is a skeleton.
+                   λ
+   • SH5. A• →
+             − B• .
+   In order to discuss the homomorphism check filter properly in the skele-
+tonization completeness lemma, we must first describe the homomorphism
+check filter in a different way. Let HCA,λ = {(A0◦ , f)|Λf (A0 ) ◦ λ is a homo-
+morphism from A to f(A0 )}.
+Lemma 10.15 (Skeletonization completeness). Let A◦0 be a skeleton and let
+                                                                         W F ∩HCA ,λ
+                                   λ                                 S           0 0
+A◦ be a preskeleton such that A◦0 −→
+                                     A◦ . Then (A◦ , λ0 ) : [SklA0 =========⇒
+SklHomA0 ].
+   We prove Lemma 10.15 in Section 11.
+   From these, we can give a proof of Theorem 10.16.
+Theorem 10.16 (cpsa cohort completeness). Let A◦ be an unrealized skele-
+                                                            cohn,p
+ton and let (n, p) be any test of A◦ . Then (A◦ , Id) : [[Coh ===⇒ Coh]].
+Proof. Let A◦ be an unrealized skeleton and let (n, p) be a test of A◦ . Let
+((A• , Id), λ, B◦ , A◦ ) ∈ Coh, with (B0• ) satisfying condition C3.
+                                        PP
+                                       Pn,pn,p
+    By Lemma 10.11, (A◦ , Id) : [[Coh ====⇒ PCohn,p ]]. Let g be an assignment-
+                            PP
+transforming operator in Pn,pn,p and λ0 be such that ((g(A• ), g)λ0 , B◦ , A◦ ) ∈
+PCohn,p and λ|Rmv(A◦ ) = (λ0 ◦ Λg(A) )|Rmv(A◦ ) . Let B00• = (B00 , B 00 ) be an
+assignment-committed realized skeleton satisfying condition P3.
+    We claim that the 3-tuple ((g(A• ), Λg(A) ), λ0 , B00• ) is in SklA .
+   • S1. Guaranteed because (A◦ , g) ∈ W F .
+
+
+   • S2. We already know B00• is a skeleton, so S2 is met.
+
+   • S3. Guaranteed because (A◦ , g) ∈ HC.
+
+   • S4.     We know that λ|Rmv(A◦ ) = (λ0 ◦ Λg(A) )|Rmv(A◦ ) , and we know
+           λ0 ◦Λg(A)
+       A◦0 99K B00◦ . As noted below, λ0 is structure-preserving, and so is
+       Λg since it is a composition of linking maps of primitive operators.
+       Therefore, λ0 ◦ Λg(A) is structure-preserving. Furthermore, it preserves
+       points of origination, since all points of origination occur in Rmv(A◦ ).
+       Therefore, λ0 ◦ Λg(A) is a homomorphism.
+                       λ0
+   • S5. g(A• ) 99K B00• and λ0 is structure-preserving by condition P3.
+
+   • S6. Guaranteed because of conditions P4 and P5.
+
+    Thus, by Lemma 10.15, there is an assignment-transforming h ∈
+  W F ∩HCA,Λg(A)
+S                    and a λ00 such that ((h(g(A• )), Λg(A) ◦ λ0 ), λ00 , B00• ) is in
+SklHomA . Let f = h ◦ g ∈ cohn,p (A◦ ). We claim that the 4-tuple
+((f(A• ), f), λ00 , B◦ , A◦ ) is in Coh.
+
+   • C1. Guaranteed by condition SH1.
+
+   • P2. Guaranteed by condition P2 for the 4-tuple ((A• , Id), λ, B◦ , A◦ ).
+
+   • C3. B00• satisfies this condition. We already know B00• is a realized
+                           R                                             λ00
+     skeleton and that B◦ ≡ B00◦ , and condition SH5 guarantees that A• −→
+     B00• .
+
+   • P4. Applying f to A◦ gives f(A◦ ).
+
+   We know that f ∈ S ◦ Pn,p ; we need only prove that (A◦ , f) ∈ P Pn,p . We
+know (A◦ , f) ∈ W F from condition C1 and (A◦ , f) ∈ HC from condition C3.
+Also, we know that (A◦ , f) ∈ SFn,p by condition P6.
+
+
+### 10.1      Top-level Completeness Proof
+
+Assuming the results of Theorem 10.16, we can prove the main completeness
+result:
+
+
+
+
+Theorem 10.17 (cpsa overall completeness). Let A◦ be the input to
+cpsa and suppose cpsa produces a set S in a finite number of steps dur-
+                                                                                 λ
+ing its setwise reduction. Let HB◦ be the set of homomorphisms A◦ →              − B◦ .
+Then
+                    [
+          [[A◦ ]] =   {(A0 , λ0 ◦ (λ|Rmv(A◦ ) ))|(A0 , λ0 ) ∈ [[B◦ ]], λ ∈ HB◦ }
+                   B◦ ∈S
+
+Proof. Let A◦ be the input to cpsa and suppose cpsa produces S during
+its setwise reduction in a finite number, n, of steps. Let S1 , . . . , Sn be the
+sequence of sets cpsa calculates, where S1 = {A◦ } and Sn = S. For each i
+from 1 to n − 1, let A◦i , ni , pi be such that Si+1 = (Si \ {A◦i }) ∪ cohni ,pi [A◦i ],
+where A◦i = SEARCH(Si ) and (ni , pi ) = T EST (Ai ).
+    Now we must prove that
+                    [
+          [[A◦ ]] =   {(A0 , λ0 ◦ (λ|Rmv(A◦ ) ))|(A0 , λ0 ) ∈ [[B◦ ]], λ ∈ HB◦ }.
+                   B◦ ∈S
+
+   Let (A0 , µ) ∈ [[A◦ ]], and let B0• be any realized skeleton such that
+                                                                 ν
+Rmv(B0◦ ) = A0 , and let A• and ν be such that A• →              − B0• such that
+ν|Rmv(A◦ ) = µ.
+   We define a sequence of tuples (C•i , λi , B•i , νi ) such that
+((C•i , Id), νi , B0◦ , C◦i ) ∈ Coh where (B•i ) satisfies condition C3, such
+            λi
+that A• −   → C•i , and (νi ◦ λi )|Rmv(A◦ ) = µ. The sequence is defined as follows:
+
+   • B•1 = B0• , C•1 = A• , λ1 = ΛId , and ν1 = ν. The tuple (C•1 , λ1 , B•1 , ν1 )
+     clearly has the required properties.
+
+   • If C◦i 6= A◦i then C•i+1 = C•i , B•i+1 = B•i , λi+1 = λi , and νi+1 = νi . All
+     required properties of the tuple are clear.
+
+   • If C◦i = A◦i , then by Theorem 10.16 there is an f ∈ cohni ,pi (A◦i ) and a
+     νi+1 such that ((f(C•i ), f), νi+1 , B0◦ , C◦i ) ∈ Coh and a B•i+1 that satisfies
+     the conditions of property C3. Note that ((f(C•i ), Id), νi+1 , B0◦ , f(C◦i )) ∈
+     Coh and the same B•i+1 satisfies conditions C3, because the only con-
+     dition affected by the changed fields is P4.
+      Define C•i+1 = f(C•i ) and define λi+1 = Λf(Ai ) ◦ λi . Then the tuple
+      (C•i+1 , λi+1 , B•i+1 , νi+1 ) has the required properties:
+
+
+
+
+         – We already know ((f(C•i ), Id), νi+1 , B0◦ , f(C◦i )) ∈ Coh where (B•i+1 )
+           satisfies condition C3.
+         – We know that (νi+1 ◦ Λf(Ai ) )|Rmv(A◦i ) = νi |Rmv(A◦i ) and (νi ◦
+           λi )|Rmv(A◦ ) = µ. Because λi is a homomorphism of listener-
+           committed skeletons, all non-listener strands of A◦ map to non-
+           listener strands of A◦i . Thus, (νi+1 ◦ Λf(A◦i ) ◦ λi )|Rmv(A◦ ) = (νi ◦
+           λi )|Rmv(A◦ ) = µ, and since Λf(A◦i ) ◦ λi = λi+1 , we have that
+           (νi+1 ◦ λi+1 )|Rmv(A◦ ) = µ.
+
+     Thus, we have (C•n , λn , B•n , νn ) with these properties, where C◦n ∈ Sn = S.
+                       νn
+Note that since C◦n −→       B◦n where B◦n is realized, (Rmv(B◦n ), νn |Rmv(C◦n ) ) ∈
+   ◦
+[[Cn ]]. Furthermore, λn ∈ HC◦n and (νn ◦ λn )|Rmv(A◦ ) = µ. Since λn is a
+homomorphism of listener-committed skeletons, all non-listener strands of
+A◦ map to non-listener strands of C◦n , so (νn |Rmv(C◦n ) ◦ λn )|Rmv(A◦ ) = (νn ◦
+λn )|Rmv(A◦ ) = µ.
+     This proves that [[A◦ ]] ⊆ B◦ ∈S {(A0 , λ0 ◦ (λ|Rmv(A◦ ) ))|(A0 , λ0 ) ∈ [[B◦ ]], λ ∈
+                                  S
+HB◦ }. To prove equality we must also establish the other inclusion.
+    Suppose (A0 , µ) ∈ [[B◦ ]] where B◦ ∈ S, and suppose λ ∈ HB◦ . We know
+     λ                                                   ν
+A◦ →− B◦ . Let B0◦ and ν be such that B◦ →               − B0◦ , Rmv(B0◦ ) = A0 , and
+                             ν◦λ
+µ = ν|Rmv(B◦ ) . Then A◦ −−→ B0◦ , and (ν◦λ)|Rmv(A◦ ) = (µ◦(λ|Rmv(A◦ ) )) because
+λ is a homomorphism of listener-committed skeletons. Thus, (Rmv(B0◦ ), (µ ◦
+(λ|Rmv(A◦ ) ))) = (A0 , (µ ◦ (λ|Rmv(A◦ ) ))) ∈ [[A◦ ]]. This completes the proof.
+
+
+
+## 11      Skeletonization
+
+In this section we prove Lemma 10.15.
+Definition 11.1 (Ancestor-aware coverage context with term and node
+pair). Let N be the set of nodes appearing in members of PSkel. Let
+the ancestor-aware coverage context with term and node pair CA2 be
+((Protom × A × N × N ), PSkel• , ActA2 ) where ActA2 (A, (t, n, n0 , λ), f) =
+(σf(A) (t), ϕf(A) (n), ϕf(A) (n0 ), Λf(A) ◦ λ).
+Definition 11.2 (Unique origination issue coverage property). Let A◦0 be
+                             λ0
+a skeleton and let A◦0 −→         A◦ . Then the unique origination issue coverage
+property UrIA0 is defined with respect to the context CA2 , and includes the set
+of 3-tuples ((A• , t, n, n0 , λ0 ), λ, B• ) such that ((A◦ , λ0 ), λ, B• ) ∈ SklA0 and
+
+
+    • UI1. n and n0 are distinct and are both points of origination of t in A.
+    The unique origination issue predicate refers to coverage (in the same
+sense as the skeleton coverage) in which there is a violation of a unique
+origination specification (n, t, t0 ). The next predicate indicates the same kind
+of coverage but with the violation resolved.
+Definition 11.3 (Unique origination issue resolved coverage property). Let
+                                 λ0
+A◦0 be a skeleton and let A◦0 −→      A◦ . Then the unique origination issue resolved
+property UrRA0 is defined with respect to the context CA2 , and includes the
+set of 3-tuples ((A• , t, n, n0 , λ0 ), λ, B• ) such that ((A◦ , λ0 ), λ, B• ) ∈ SklA0 and
+    • UR1. n = n0 or one of n, n0 are not points of origination of t in A.
+    First we state a main lemma about the unique origination rectification
+suite:
+Lemma 11.4 (ur-universality). Let A◦0 be a skeleton and let A◦ be a pre-
+                               λ0
+skeleton such that A◦0 −→           A◦ . Let t be a term in UA and let n and n0 be
+distinct nodes in A which are both points of origination of t in A. Then
+                                urt,n,n0
+(A◦ , t, n, n0 , λ0 ) : [UrIA0 ====⇒ UrRA0 ].
+    In other words, urt,n,n0 can resolve unique origination issues while main-
+taining skeleton coverage.
+    The proof is largely split into two cases: one for using the merging suite
+and one for using the deorigination suite. With a little work these can be
+their own lemmas.
+Definition 11.5 (Unique origination issue (merging) coverage property). Let
+                                 λ0
+A◦0 be a skeleton and let A◦0 −→      A◦ . Then the unique origination issue (merg-
+ing) predicate UrIMA0 is defined with respect to the context CA2 , and includes
+the set of 3-tuples ((A• , t, n, n0 , λ0 ), λ, B• ) such that ((A• , t, n, n0 , λ0 ), λ, B• ) ∈
+UrIA0 and
+    • UIM1. ϕ(n) = ϕ(n0 ) where λ = (ϕ, σ).
+Definition 11.6 (Unique origination issue (deorig) coverage property). Let
+                                  λ0
+A◦0 be a skeleton and let A◦0 −→       A◦ . Then the unique origination issue (de-
+orig) predicate UrIDA0 is defined with respect to the context CA2 , and includes
+the set of 3-tuples ((A• , t, n, n0 , λ0 ), λ, B• ) such that ((A• , t, n, n0 , λ0 ), λ, B• ) ∈
+UrIA0 and
+
+
+    • ¬UIM1. ϕ(n) 6= ϕ(n0 ) where λ = (ϕ, σ).
+Lemma 11.7 (Merging universality). Let A◦0 be a skeleton and let A◦ be a
+                           λ0
+preskeleton such that A◦0 −→  A◦ . Let t be a term in UA and let n and n0
+be distinct nodes in A which are both points of origination of t in A. Then
+                               Mt,n,n0
+(A◦ , t, n, n0 , λ0 ) : [UrIMA0 ====⇒ UrRA0 ].
+                                                                                   λ
+Proof. Let A◦0 be a skeleton and let A◦ be a preskeleton such that A◦0 −→            0
+                                                                                       A◦ .
+Let t be a term in UA and let n and n0 be distinct nodes in A which are both
+points of origination of t in A. Suppose we have ((A• , t, n, n0 , λ0 ), λ, B• ) ∈
+UrIA0 , and let (ϕ, σ) = λ and (s, i) = n.
+    Observe that n and n0 are in different strands (since each strand can only
+originate any atom once), and that ϕ maps these two strands to the same
+strand in B◦ . Let l be the minimum of the lengths of strands s and s0 in A.
+Then in order for (ϕ, σ) to be a well-defined protomorphism, it must be that
+σ is a unifier of msg A (s, j) and msg A (s0 , j) for every 1 ≤ j ≤ l. Let σ0 be a
+most general unifier of Θ(s)|l with Θ(s0 )|l such that σ = σ 0 ◦ σ0 for some σ 0 .
+    Let f = Comps,s0 ◦ Subσ0 ∈ Mt,n,n0 (A◦ ). Let (ϕf , σf ) = Λf(A◦ ) . Let ϕ0 be
+defined strandwise on f(A◦ ) so that ϕ0 (ϕf (s)) = ϕ(s) for all s; note that this is
+possible in f(A) since ϕ(s) = ϕ(s0 ). Note that since (ϕ, σ) is a protomorphism
+of assignment-committed protoskeletons, A assigns both s and s0 to the same
+role, so f in this situation is assignment-transforming.
+    Then we claim that ((f(A• ), σf (t), ϕf (n), ϕf (n0 ), Λf(A) ◦λ0 ), λ0 , B• ) ∈ UrRA0 ,
+where λ0 = (ϕ0 , σ 0 ). We have that ϕf (n) = ϕf (n0 ), so it remains for us to prove
+that ((f(A• ), Λf(A◦ ) ◦ λ0 ), λ0 , B• ) ∈ SklA0 . We proceed through each require-
+ment in the definition of the skeleton coverage predicate:
+    • S1. f(A• ) is a preskeleton by Theorem 8.16.
+
+    • S2. Guaranteed because ((A• , λ0 ), λ, B• ) ∈ SklA0 .
+
+    • S3. We must prove Λf(A◦ ) ◦ λ0 is structure-preserving and that it
+      preserves points of origination. The former property is guaranteed
+      since f is a composition of primitive operators and because λ0 is
+      structure-preserving. Furthermore, it preserves points of origination
+      by Lemma 7.25.
+
+    • S4. λ0 ◦ Λf(A◦ ) ◦ λ0 = λ ◦ λ0 , and by property S4 we previously know
+                 λ◦λ
+      that A◦0 −−→
+                   B◦ .
+
+
+    • S5. We know λ is a protomorphism of assignment-committed proto-
+      skeletons; only the compression operator could have an effect on this,
+      and we have already remarked that the two strands we compress both
+      were assigned to the same role.
+      Let ≺ refer to ≺A◦ . Let ≺M be such that n ≺M n0 only when n = (s, i)
+      and n0 = (s0 , j) or n = (s0 , i) and n0 = (s, j) for some i < j. The
+      ordering ≺f(A◦ ) is the transitive closure of ≺ ∪ ≺M . Thus, n ≺f(A◦ ) n0 if
+      and only if we can define a sequence n = n0 , n1 , . . . , nl = n0 such that
+      for every 1 ≤ i ≤ l, ni−1 ≺ ni or ni−1 ≺M ni .
+      If ni−1 ≺M ni , then ϕ0 (ni−1 ) ≺B ϕ0 (ni ) because ϕ0 (ni−1 ) will precede
+      ϕ0 (ni ) in the same strand in B. If ni−1 ≺A ni then ϕ0 (ni−1 ) ≺ ϕ0 (ni )
+      because ϕ0 (ni−1 ) = ϕ(ni−1 ) and ϕ0 (ni ) = ϕ(ni ), and λ is structure-
+      preserving. So we have that ϕ(n) = ϕ(n0 ) ≺B . . . ≺B ϕ(nl ) = ϕ(n0 )
+      and so ϕ(n) ≺B ϕ(n0 ) because ≺B is transitive.
+
+    • S6. We know that f(A• ) has strictly role-generated unique origination
+      assumptions over (A0 , Λf(A◦ ) ◦ λ0 ) because (A• ) did over (A◦0 , λ0 ) and
+      Uf(A◦ ) = σf(A◦ ) (UA◦ ).
+
+
+Lemma 11.8 (Deorigination universality). Let A◦0 be a skeleton and let A◦
+                                λ0
+be a preskeleton such that A◦0 −→  A◦ . Let t be a term in UA and let n and n0
+be distinct nodes in A which are both points of origination of t in A. Then
+                               Dt,n,n0
+(A◦ , t, n, n0 , λ0 ) : [UrIDA0 ====⇒ UrRA0 ].
+                                                                                    λ
+Proof. Let A◦0 be a skeleton and let A◦ be a preskeleton such that A◦0 −→         0
+                                                                                      A◦ .
+Let t be a term in UA and let n and n be distinct nodes in A which are both
+points of origination of t in A. Suppose we have ((A• , t, n, n0 , λ0 ), λ, B• ) ∈
+UrIA0 , and let (ϕ, σ) = λ and (s, i) = n.
+    Since B is a skeleton, σ(t) cannot originate at both ϕ(n) and ϕ(n0 ). With-
+out loss of generality, assume that ϕ(n) is not a point of origination of σ(t)
+in B.
+    Note that σ(t) is carried at node ϕ(n) so it must be that there is an earlier
+node (s, i0 ) ≺ n such that σ(t) is the termination point of a carried path
+(msg B (ϕ(s, i0 )), π). Let π 0 be the largest prefix of π such that (msg A◦ (s, i0 ), π 0 )
+is a well-defined path; note also that this path is a carried path. Then either
+π = π 0 or (msg B◦ (s, i0 ), π 0 ) terminates at a variable m of sort mesg. (Note
+
+
+that in the latter case we are guaranteed to terminate at a variable of sort
+mesg because of the stipulation that the path is carried.) In the former
+case, σ is a unifier of the endpoint of (msg A (s, i0 ), π) with t, and in the latter
+case σ is a unifier of m with a term that carries t. Either way, we can write
+σ = σ 0 ◦ σ0 where f = Subσ0 ∈ Dt,n,n0 (A◦ ). Let ϕ0 = ϕ.
+    We will show that ((f(A• ), σ0 (t), n, n0 , Λf(A) ◦ λ0 ), λ0 , B• ) ∈ UrRA0 , where
+λ0 = (ϕ0 , σ 0 ). We know that σ0 (t) is carried in msg f(A◦ ) (s, i0 ), so σ0 (t) does
+not originate at node n in f(A◦ ), so we need only prove that ((f(A• ), Λf(A) ◦
+λ0 ), λ0 , B• ) ∈ SklA0 . We proceed through each requirement in the definition
+of the skeleton coverage predicate:
+   • S1. f(A• ) is a preskeleton by Theorem 8.16.
+   • S2. Guaranteed because ((A• , λ0 ), λ, B• ) ∈ SklA0 .
+   • S3. We must prove Λf(A◦ ) ◦ λ0 is structure-preserving and that it
+     preserves points of origination. The former property is guaranteed
+     since f is a composition of primitive operators and because λ0 is
+     structure-preserving. Furthermore, it preserves points of origination
+     by Lemma 7.25.
+   • S4. λ0 ◦ Λf(A◦ ) ◦ λ0 = λ ◦ λ0 , and by property S4 we previously know
+                λ◦λ
+      that A◦0 −−→
+                   B◦ .
+   • S5. Since it is the same as λ on strands, we already know λ0 is a
+     protomorphism of assignment-committed protoskeletons. Furthermore,
+     the orderings in f(A) are the same as the orderings in A, so λ0 must be
+     structure-preserving.
+   • S6. We know that f(A• ) has strictly role-generated unique origination
+     assumptions over (A0 , Λf(A◦ ) ◦ λ0 ) because (A• ) did over (A◦0 , λ0 ) and
+     Uf(A◦ ) = σf(A◦ ) (UA◦ ).
+
+
+   We now give the proof of Lemma 11.4.
+proof of Lemma 11.4. Let A◦0 be a skeleton and let A◦ be a preskeleton such
+            λ0
+that A◦0 −→       A◦ . Let t be a term in UA and let n and n0 be distinct nodes
+in A which are both points of origination of t in A. Suppose we have
+((A• , t, n, n0 , λ0 ), λ, B• ) ∈ UrIA0 , and let (ϕ, σ) = λ and (s, i) = n.
+
+
+       The proof proceeds by cases. One of the following must be the case:
+   Case 1: ϕ(n) = ϕ(n0 ). In this case, ((A• , t, n, n0 , λ0 ), λ, B• ) ∈ UrIA0 , so by
+   Lemma 11.7 there exists an f ∈ Mt,n,n0 (A◦ ) ⊂ urt,n,n0 (A◦ ) and a λ0 such that
+   ((f(A• ), f(t), f(n), f(n0 ), f(λ0 )), λ0 , B• ) ∈ UrRA0 and such that λ = λ0 ◦ Λf(A) .
+   Case 2: ϕ(n) 6= ϕ(n0 ). In this case, ((A• , t, n, n0 , λ0 ), λ, B• ) ∈ UrIA0 , so
+   by Lemma 11.8 there exists an f ∈ Dt,n,n0 (A◦ ) ⊂ urt,n,n0 (A◦ ) and a λ0 such
+   that ((f(A• ), f(t), f(n), f(n0 ), f(λ0 )), λ0 , B• ) ∈ UrRA0 and such that λ = λ0 ◦
+   Λf(A) .
+      Next, we prove a lemma about the order enrichment operator.
+
+   Definition 11.9 (Skeleton coverage without unique origination issues). Let
+   A◦0 be a skeleton. Then skeleton coverage without unique origination issues,
+   SklUA0 , is defined with respect to the context CA , and includes the set of
+   3-tuples ((A• , λ0 ), λ, B• ) in SklA0 such that N U O(A) = ∅.
+
+   Lemma 11.10 (Order enrichment). Let A◦0 be a skeleton and let A◦ be a
+                              λ0                                 oe
+   preskeleton such that A◦0 −→  A◦ . Then (A◦ , λ0 ) : [SklUA0 =⇒ SklHomA0 ],
+   where oe = {OE}.
+                                                                                  λ
+   Proof. Let A◦0 be a skeleton and let A◦ be a preskeleton such that A◦0 −→      0
+                                                                                    A◦ .
+   Let λ0 = (ϕ0 , σ0 ) and let λ = (ϕ, σ).
+       Let ((A• , λ0 ), λ, B• ) ∈ SklUA0 . Then we claim that ((OE(A• ), λ0 ), λ, B• ) ∈
+   SklHomA0 ; note that ΛOE(A◦ ) ◦ λ0 = λ0 . We need only establish that OE(A• )
+   is a skeleton and that λ is a homomorphism.
+       We know that OE(A◦ ) is a preskeleton by Theorem 8.16. To prove that
+   OE(A◦ ) is a skeleton, we need to check two things: first, that each uniquely-
+   originating atom originates on exactly one strand, and second, that the node
+   of origination precedes each other node that carries that atom. The latter
+   condition is guaranteed because all such instances of that requirement are
+   ensured to be in the ordering after applying OE.
+       Each uniquely-originating atom originates on at most one strand in A◦
+   since NUO(A) = ∅. To prove that each uniquely-originating atom orig-
+   inates on at least one strand, we appeal to the fact that A• has strictly
+   role-generated unique origination assumptions over (A◦0 , λ0 ). For every t in
+   Uf(A◦ ) , either:
+
+Case 1: There exists a t0 ∈ UA◦0 such that t = σ0 (t). In this case, because
+        A0 is a skeleton, t0 must originate at a node n ∈ A0 . Therefore, t
+
+
+          originates at ϕ0 (n); this point of origination must be preserved because
+          it is preserved under an extension, namely λ ◦ λ0 .
+
+Case 2: There exists a strand s ∈ OE(A◦ ) with A(s) = (ρs , σs ), and a t0 ∈ Uρs
+        such that σs (t0 ) = t, such that t0 originates in Cρs | len(ΘOE(A◦ ) (s)) at
+        event i. Since OE(A◦ ) is a preskeleton, σs (t) originates in OE(A◦ ) at
+        (s, i).
+
+        Next we must prove that λ is a homomorphism.
+        First we prove that λ preserves points of origination. Let t ∈ UOE(A◦ ) and
+    let n be a point of origination of t in OE(A◦ ). There are two cases. Either:
+
+Case 1: There is a t0 ∈ UA0 and a point n0 ∈ A0 such that σ0 (t0 ) = t and
+        t0 originates at n0 in A0 . This point of origination must be preserved
+        because it is preserved under λ ◦ λ0 .
+
+Case 2: Let n = (s, i0 ). Then A(s) = (ρs , σs ), and there is a t0 ∈ Uρs such
+        that σs (t0 ) = t and such that t0 originates in Cρs | len(ΘA◦ (s)) at event
+        i. Since OE(A◦ ) is a preskeleton, σs (t) originates in OE(A◦ ) at (s, i),
+        and thus i0 = i. Since λ is a protomorphism of assignment-committed
+        protoskeletons, and since B• is a preskeleton, σ(t) must originate at
+        node ϕ(n).
+
+        These cases are exhaustive since A• has strictly role-generated unique
+    origination assumptions over (A0 , λ0 ), and thus so does OE(A• ) since it only
+    differs from A• in its orderings.
+        All that is left is to prove that λ is a structure-preserving protomor-
+    phism from OE(A◦ ) to B◦ . We already know that λ is a structure-preserving
+    protomorphism from A◦ to B◦ , because we know ((A◦ , λ0 ), λ, B• ) ∈ SklA0 .
+    However, OE(A◦ ) may have additional orderings and we must prove these
+    are preserved under λ.
+        Let ≺ refer to ≺A◦ , that is, ≺ refers to the ordering before order-enrichment.
+    Let ≺OE be such that n ≺OE n0 where n, n0 ∈ OE(A◦ ) if and only if there
+    is a t ∈ UOE(A◦ ) that originates at n and is carried at n0 6= n. Recall that
+    ≺OE(A◦ ) is the transitive closure of ≺ ∪ ≺OE . Thus, n ≺OE(A◦ ) n0 if and
+    only if we can define a sequence n = n0 , n1 , . . . , nl = n0 such that for every
+    1 ≤ i ≤ l, ni−1 ≺ ni or ni−1 ≺OE ni .
+        If ni−1 ≺OE ni , there is a term ti−1 originating at ni−1 in f(A◦ ) that is
+    carried at ni . Since λ preserves points of origination, σ(ti−1 ) ∈ UB , σ(ti−1 )
+
+
+originates at ϕ(ni−1 ) in B, and is carried at ϕ(n0i ) in B. Since B is a skeleton,
+ϕ(ni−1 ) ≺B ϕ(ni ). Of course, if ni−1 ≺ ni then ϕ(ni−1 ) ≺B ϕ(ni ) since λ is
+structure preserving from A◦ to B◦ . So we have that ϕ(n) = ϕ(n0 ) ≺B . . . ≺B
+ϕ(nl ) = ϕ(n0 ) and so ϕ(n) ≺B ϕ(n0 ) because ≺B is transitive. This completes
+the proof.
+   Now we can prove Lemma 10.15.
+
+Lemma 10.15 (Skeletonization completeness). Let A◦0 be a skeleton and let
+                                                                                  W F ∩HCA ,λ
+                                        λ                                     S           0 0
+A◦ be a preskeleton such that A◦0 −→
+                                     A◦ . Then (A◦ , λ0 ) : [SklA0 =========⇒
+SklHomA0 ]
+                                                                                      λ
+Proof. Let A◦0 be a skeleton and let A◦ be a preskeleton such that A◦0 −→   0
+                                                                              A◦ ,
+and assume ((A• , λ0 ), µ, B• ) ∈ SklA0 .
+    We define a sequence of tuples ((A•i , λi ), µi , B• , fi ) with 1 ≤ i ≤ k as
+follows:
+
+   1. A•1 = A• , λ1 = λ0 , µ1 = µ. Note that ((A•1 , λ1 ), µ1 , B• ) ∈ SklA0 . We do
+      not yet define f1 ; nonetheless, note that µ1 = µ◦(Λfi−1 (A◦i−1 ) ◦. . .◦Λf1 (A◦1 ) )
+      for i = 1, since the sequence is empty.
+
+   2. For i ≥ 1, if NUO(Ai ) is nonempty, let (ti , ni , n0i ) be U OI(A).
+      We know that ((A•i , ti , ni , n0i , λi ), µi , B• ) ∈ UrIA0 . By Lemma 11.4
+      that there is an fi ∈ urti ,ni ,n0i (A◦i ) and a µi+1 such that
+      ((fi (A•i ), fi (ti ), fi (ni ), fi (n0i ), fi (λi )), µi+1 , B• ) ∈ UrRA0 and µ = µi ◦
+      (Λfi−1 (A◦i−1 ) ◦ . . . ◦ Λf1 (A◦1 ) ).
+      If we let A•i+1 = fi (A•i ) and λi+1                     =     Λfi (A◦i ) ◦ λi then
+      ((A•i+1 , λi+1 ), µi+1 , B• ) ∈ SklA0 .
+
+   3. If i ≥ 1 but NUO(Ai ) is empty then let k = i and let fi = Id.
+
+    By assuming that a k exists we are effectively assuming that this part of
+skeletonization terminates in finitely many steps. However, it clearly must: at
+every step, the sum of the heights of each point of origination of a uniquely
+originating term is strictly decreasing, because when we use the merging
+suite, we reduce the sum by the height of one of the origination points that
+merge, and when we use the deorigination suite, we either destroy a point
+of origination without replacing it, or we replace it at an earlier node in the
+same strand.
+
+
+    Note that fk ∈ ur(A◦k ) since NUO(Ak ) = ∅. Also note that for 1 ≤ i < k, if
+fk ◦. . .◦fi+1 ∈ ur(A◦i+1 ) then fk ◦. . .◦fi ∈ ur(A◦i ). Therefore let g = fk ◦. . .◦f1 ∈
+ur(A◦1 ) = ur(A◦ ), and let f = OE ◦ g ∈ S(A◦ ). Note that as a composition of
+assignment-transforming operators, f is assignment-transforming.
+    Note that we already know that ((g(A• ), Λg(A◦ ) ◦ λ0 ), µ0 , B• ) ∈ SklUA0 .
+Therefore, ((f(A• ), Λf(A◦ ) ◦ λ0 ), µ0 , B• ) ∈ SklHomA0 by Lemma 11.10.
+    We must only prove that (A◦ , f) ∈ W F ∩ HCA0 ,λ0 . f(A◦ ) is clearly a
+preskeleton by Theorem 8.16. Also, Λf(A◦ ) ◦ λ0 is a homomorphism since
+((f(A• ), λ), µ0 , B• ) ∈ SklHomA0 .
+                                                                W F ∩HCA ,λ
+                                                            S           0 0
+    This completes the proof that (A◦ , λ0 ) : [SklA0 =========⇒ SklHomA0 ].
+
+
+
+
+## 12      Pre-Cohort Completeness
+
+In this section we build up to a proof of Lemma 10.11.
+
+
+### 12.1      Preliminaries
+
+First, some definitions. Earlier we defined cohort coverage and precohort cov-
+erage, which were defined in terms of a protomorphism to a realized skeleton
+remove-equivalent to a target. In two of the main lemmas needed to prove
+Lemma 10.11, we get factorization of the homomorphism to the same target;
+we only need that flexibility for the case where we employ listener augmen-
+tation. As a precursor to the definitions we use for these two lemmas, we
+first define direct cohort and precohort coverage.
+Definition 12.1 (Direct coverage context). Let the direct coverage context
+CD be (Opr, (PSkel• × PSkel◦ ), ActD ) where ActD (A, g, f) = f ◦ g.
+Definition 12.2 (Direct cohort coverage). The direct cohort coverage prop-
+erty DCoh is defined with respect to the context CD , and includes the set of
+4-tuples ((A• , g), λ, B• , A0◦ ) such that:
+    • DC1 A• is a skeleton.
+
+    • DC2 B• is a skeleton.
+                 λ
+    • DC3 A• →
+             − B• .
+
+
+   • DC4 g(A0◦ ) = A◦ .
+
+Definition 12.3 (Direct precohort coverage). The direct precohort coverage
+property DPCohn,p is defined with respect to the context CD , and includes the
+set of 4-tuples ((A• , g), λ, B• , A0◦ ) such that:
+
+   • DPC1 A• is a preskeleton.
+
+   • DC2 B• is a skeleton.
+                  λ
+   • DPC3 A• 99K B• , where λ is structure-preserving.
+
+   • DC4 g(A0◦ ) = A◦ .
+
+   • DPC5 A• has strictly role-generated unique origination assumptions
+     over (A0◦ , Λg(A0◦ ) ).
+                                        λ0     λ00
+   • DPC6. For all λ0 such that A 99K C 99K B with λ = λ00 ◦ λ0 , p is weakly
+     solved in FC,ϕ0 (n) by σ 0 where λ0 = (ϕ0 , σ 0 ).
+
+    The three main lemmas in this section will correspond to the contraction,
+regular augmentation, and listener augmentation suites. In each case, we
+will state the lemma as a suite factoring statement; the conditions before
+will be more specific than cohort coverage (or direct cohort coverage) and
+the conditions after will be either precohort or direct precohort coverage.
+
+
+### 12.2     Contractions
+
+For the contraction case, the condition that guarantees a contraction will
+work is the following:
+
+Definition 12.4 (Direct cohort coverage with test destroyed). Let A◦ be an
+unrealized skeleton and let (n, p) be a test. Then the direct cohort coverage
+with test destroyed coverage property DCohTDn,p is defined with respect to
+the context CD , and includes the set of 4-tuples ((A• , g), λ, B• , A0◦ ) such that
+((A• , g), λ, B• , A0◦ ) ∈ DCoh and
+
+   • TD1 σ(p) visits σ(Esc(FA◦ ,n , ep )), where (ϕ, σ) = λ.
+
+   This allows us to state and prove the completeness lemma for the con-
+traction suite.
+
+
+Lemma 12.5 (Contraction completeness). Let A◦ be an unrealized skeleton
+                                                        cHC
+                                                         n,p
+and let (n, p) be a test. Then (A◦ , Id) : [DCohTDn,p ==⇒ DPCohn,p ].
+
+Proof. Let ((A• , Id), λ, B• , A◦ ) ∈ DCohTDn,p , where λ = (ϕ, σ) and p =
+(t, π). Let p0 = (σ(t), π). Since we know p0 visits σ(Esc(FA,n , ep )), σ unifies
+a b visited by p and an a in Esc(FA,n , ep ). Therefore, there is a σ0 ∈ ∪S∈Z S
+such that σ0 unifies a and b, and such that σ = σ 0 ◦ σ0 for some σ 0 , and
+Subσ0 ∈ cn,p . Let f = Subσ0 , and let λ0 = (ϕ, σ 0 ).
+    We claim that ((f(A• ), f), λ0 , B• , A◦ ) ∈ DPCohn,p .
+
+  1. DPC1 is guaranteed by Theorem 8.16.
+
+  2. DC2 is known since ((A• , Id), λ, B• , A◦ ) ∈ DCohTDn,p .
+
+  3. DPC3 Whether λ0 is a structure-preserving protomorphism or not, and
+     whether it is a protomorphism of assignment-committed protoskeletons
+     or not, depends only on its strand mapping, ϕ. Since λ is a homomor-
+     phism, it has these properties and thus so does λ0 .
+
+  4. DC4 is obvious.
+
+  5. DPC5 Since Uf(A) = UA , all unique origination assumptions are directly
+     inherited, so this condition is met.
+
+  6. DPC6 Note that since σ0 unifies a and b, it is immediately clear that
+     (σ0 (t), π) visits σ0 (Esc(FA,n , ep )). By Remark 9.14, this remains true
+     under any extension.
+                                     Λf(A)
+    We need only prove that A◦ −−−→ f(A). It is obvious that Λf(A) is
+structure-preserving, and by Lemma 7.25, since λ preserves points of origi-
+nation, so does Λf(A) .
+
+
+
+
+### 12.3     Listener Augmentation
+
+Next, we address the case of listener augmentation. For this suite, we cannot
+make use of direct versions of our coverage properties, because if we add a
+listener but no corresponding listener is present in B, there is no homomor-
+phism. Rather, we find a proper place to add a listener to B.
+
+
+Definition 12.6 (Cohort coverage with certain values derivable). Let A◦
+be a skeleton and let (n, p) be a test and let ep be the endpoint of p. The
+cohort coverage with certain values derivable coverage property CohCVDn,p
+is defined with respect to the context CM , and includes the set of 4-tuples
+((A• , g), λ, B◦ , A0◦ ) in Coh such that
+   • CVD. Let λ = (ϕ, σ). Then either:
+         – EL. There exists {|c|}u ∈ Esc(FA,n , ep ) such that inv(σ(u)) ∈ SFB0 ,ϕ(n) .
+         – CL. ep = {|c|}u and σ(u) ∈ SFB0 ,ϕ(n) .
+
+Lemma 12.7 (Listener augmentation completeness). Let A◦ be an unrealized
+                                                                     lHC
+                                                                      n,p
+skeleton and let (n, p) be a test. Then (A◦ , Id) : [[CohCVDn,p ==⇒ PCohn,p ]].
+Proof. Let ((A• , Id), λ, B◦ , A◦ ) be in CohCVDn,p with λ = (ϕ, σ). Let B0•
+satisfy condition C3. There are two cases: either EL holds or CL holds. Let
+s? be N AM E(A). Let s0? ∈     / IB0 .
+    If condition EL holds for {|c|}u ∈ Esc FA,n , ep then let f = Augn,lsn,2,σ? ,s?
+where σ ? maps the m in the listener role to inv(u). Note that f ∈ esln,p (A◦ ).
+In this case, let t = inv(u). Note that σ(t) ∈ D(PB0 ,ϕ(n) ) = SFB0 ,ϕ(n) because
+σ(inv(u)) = inv(σ(u)) as u is not a variable of sort mesg.
+    If condition CL holds then let f = Augn,£,2,σ? ,s? where σ ? maps the m in
+the listener role to u. Note that f ∈ cpln,p (A◦ ). In this case, let t = u. Note
+that σ(t) ∈ SFB0 ,ϕ(n) by condition CL.
+    Either way, note that f ∈ ln,p (A◦ ). Let λ0 = (ϕ0 , σ) where ϕ0 = ϕ on
+all strands in A• and ϕ0 (s? ) = s0? . Let f 0 = Fn,(s0? ,1) ◦ Augϕ(n),£,2,σ◦σ? ,s0? ,
+where Fn,n0 is a (non-primitive) operator that forces all transmissions before
+n to be before n0 . Formally, Fn,n0 (A, A) = ((IA , ΘA , ≺0 , NA , UA ), A) where ≺0
+is the transitive closure of ≺A ∪ ≺n,n0 where n1 ≺n,n0 n0 whenever n1 is a
+transmission node such that n1 ≺A n.
+    We claim that ((f(A• ), f), λ0 , B◦ , A◦ ) ∈ PCohn,p , with f 0 (B0• ) satisfying
+condition P3.
+   • P1. We know f(A• ) is a preskeleton by Theorem 8.16.
+   • P2. B◦ is a realized skeleton because ((A• , (Id)), λ, B◦ , A◦ ) ∈ Coh.
+   • P3. To see that f 0 (B0• ) is a skeleton, we need to establish that the nodes
+     in s0? are ordered after all the points of origination of any uniquely-
+     originating atoms they carry. However, we know that σ(t) ∈ D(PB0 ,ϕ(n) )
+
+
+      and thus every uniquely-originating atom carried by σ(t) is also carried
+      by a transmission prior to n in B0 . Since B0 is a skeleton, the origination
+      point of that atom is before that transmission, and that transmission is
+      before both nodes in the new listener in f 0 (B0• ). The only reception in
+      f 0 (B0• ) not in B• is the reception in the listener strand s0? , of σ(t), and
+      σ(t) ∈ D(PB0 ,ϕ(n) ). Since Pf 0 (B0 ),(s0? ,1) = PB0 ,ϕ0 (n) , σ(t) ∈ D(Pf 0 (B0 ),(s0? ,1) ),
+      so the additional reception is realized, and all other receptions in f 0 (B0 )
+      are realized because they are realized in B0 . Therefore, B0• is realized.
+                                              R                             R
+      It should be obvious that B0◦ ≡ f 0 (B0◦ ) and thus B◦ ≡ f 0 (B0◦ ).
+                                                                                 λ0
+      It should be clear that λ0 is a protomorphism f(A• ) 99K f 0 (B0• ); the
+      only role not known to be preserved by the fact that λ is assignment-
+      preserving is the role of s? which is lsn in both f(A• ) and f 0 (B0• ). λ0
+      is structure-preserving: if n1 ≺ n2 in f(A• ) there are two possibilities.
+      The first is that n1 , n2 ∈ A• in which case, λ0 maps both n1 and n2
+      just as λ does, and since λ is structure-preserving, ϕ0 (n1 ) ≺B0 ϕ0 (n2 )
+      so ϕ0 (n1 ) ≺f 0 (B0 ) ϕ0 (n2 ). The other is that n1 is in the strand s? and
+      n  n2 . But then ϕ0 (n1 ) is in the strand s? and since n, n2 ∈ A• ,
+      ϕ0 (n) ≺f 0 (B0 ) ϕ0 (n2 ), and since by the operation of Aug, ϕ0 (n1 ) ≺f 0 (B0 )
+      ϕ0 (n), we have that ϕ0 (n1 ) ≺f 0 (B0 ) ϕ0 (n2 ).
+
+   • P4 is obvious.
+
+   • P5 is true because since £ has no uniquely originating atoms, Uf(A) =
+     UA .
+
+   • P6 Since t is in SFf(A),n , we meet either condition Sol3 or Sol4 of Defi-
+     nition 5.5. By Remark 9.14 this remains true in any extension.
+
+   Furthermore, λ|Rmv(A◦ ) = (λ0 ◦ Λf(A) )|Rmv(A◦ ) because Λf(A) |Rmv(A◦ ) is the
+identity and λ0 is the same as λ on all strands in A.
+                                              Λf(A)
+    We need only prove that A◦ −−−→ f(A). It is obvious that Λf(A) is
+structure-preserving. Since Λf(A) is the identity homomorphism on the al-
+gebra, it preserves points of origination.
+                                   ln,p
+    Thus, (A◦ , Id) : [[CohCVDn,p ==⇒ PCohn,p ]].
+
+
+
+
+
+
+### 12.4     Regular Augmentation
+
+Third, we address the case of regular augmentation. Here, we can use the
+direct form of coverage again, but this time we make very strong assumptions
+about B.
+
+Definition 12.8 (Direct cohort coverage with good augmentation candi-
+date). Let A◦ be an unrealized skeleton and let (n, p) be a test. Then the di-
+rect cohort coverage with good augmentation candidate property DCohGACn,p
+is defined with respect to the context CD , and includes the set of 4-tuples
+((A• , g), λ, B• , A0◦ ) with λ = (ϕ, σ) such that ((A• , g), λ, B• , A0◦ ) ∈ DCoh and
+there exists a strand sB in IB and a 4-tuple (ρ, i, π, tt) with ρ a protocol role,
+i ≤ |Cρ | with event i in Cρ being a transmission, (Cρ (i), π) is a carried path
+ending at a variable, and tt ∈ Targ(Esc(FA,n , ep ), ep ) with (tt, π tt ) a carried
+path ending at ep such that:
+
+   • WFC1. If the endpoint of (Cρ (i), π) is not a variable of sort mesg then
+     tt = ep .
+
+   • FC1. sB is associated with role ρ in B• , and |ΘB (sB )| ≥ i.
+
+   • FC2. (sB , i) ≺B ϕ(n).
+
+   • FC3. The endpoint of (msg B (sA , i), π) is σ(tt).
+
+   • WFC2. For all i0 < i, for all carried paths p0 = (msg B (sB , i0 ), π 0 ) with
+     endpoint σ(ep ), p0 visits σ(Esc(FA,n , ep )).
+
+   • WFC3. Either:
+
+         – WFC3a. The path (msg B (sA , i), π a π tt ) does not visit σ(Esc(FA,n , ep )),
+           or
+         – WFC3b. There is a prefix π 0 of π a π tt such that (msg B (sB , i), π 0 )
+           traverses a term in Esc(FB,ϕ(n) , σ(ep )) and the endpoint of
+           (msg B (sA , i), π 0 ) is not in σ(Targ(Esc(FA,n , ep ), ep )).
+
+    A note on the naming of these conditions: WFC stands for “well-formed
+candidate.” These are the conditions that guarantee that our candidate
+augmentation will be in the an,p suite. FC stands for “factoring candidate.”
+These conditions guarantee that the candidate augmentation results in a
+factoring of the coverage we care about.
+
+
+Lemma 12.9 (Regular augmentation completeness). Let A◦ be an unrealized
+                                                                         aHC
+                                                                          n,p
+skeleton and let (n, p) be a test. Then (A◦ , Id) : [DCohGACn,p ==⇒ PCohn,p ].
+
+Proof. Suppose ((A• , Id), λ, B• , A◦ ) is in DCohGACn,p , with sB , ρ, i, π, tt as
+specified in the definition. Let s? = N AM E(A).
+   Note that the endpoint of (Cρ (i), π) is a variable v. There is a unique
+most general unifier of F R(A, ρ, i)(v) with tt, call it σ0 . Let A0• =
+Augn,ρ,i,σ0 ◦F R(A,ρ,i),N AM E(A) (A• ). We extend λ = (ϕ, σ) to a map (ϕ0 , σ 0 )
+from A0• to B• as follows: ϕ0 = ϕ on all strands other than N AM E(A),
+and ϕ0 (N AM E(A)) = sB . Since sB is an instance of role ρ, ϕ0 preserves role
+associations. Let σ 0 = σ on all variables occurring in A. The only variables
+occurring in A0 that do not occur in A are the variables F C(A, ρ, i)(v 0 ) for v 0 a
+variable occurring in Cρ |i other than v 0 = v. σ 0 (F C(A, ρ, i)(v 0 )) = σB(sB ) (v 0 ).
+                     ϕ0 ,σ 0
+Thus we have A0• 99K B• .
+    Note, by WFC2, that σ 0 is a map such that for all i0 < i, for all carried
+paths p0 ∈ CarPath(C(i0 )) such that the endpoint of σ 0 ((σ0 ◦ F R(A, ρ, i))(p0 ))
+is σ 0 (ep ), p0 visits σ 0 (Esc(FA,n , ep )). Let σ1 be a most general map with this
+property more general than σ 0 , so that σ 0 = σ 00 ◦ σ1 .
+    Then f = Subσ1 ◦ Augn,ρ,i,σ0 ◦F R(A,ρ,i),N AM E(A) ; we claim that f ∈ an,p (A).
+Observe:
+
+    • Cρ (i) is assumed to be a send event in Definition 12.8.
+
+    • If pp = (Cρ (i), π) then the endpoint of pp is a variable v, and if that
+      variable is not of sort mesg then tt = ep , by condition WFC1.
+
+    • σ0 is the most general unifier of tt with v, and thus S0 = {σ0 } so in
+      particular σ0 ∈ S0 .
+
+    • σ1 is a most general map such that for all i0 < i and for all carried
+      paths p0 ∈ CarPath(C(i0 )), if the endpoint of σ1 ((σ0 ◦ F R(A, ρ, i))(p0 ))
+      is σ1 (ep ) then σ1 (p0 ) visits an element of σ1 (Esc(FA,n , ep )).
+
+    Let λ0 = (ϕ0 , σ 00 ). We claim that ((f(A• ), f), λ0 , B• , A◦ ) ∈ DPCohn,p .
+
+    • DPC1 holds by Theorem 8.16.
+
+    • DC2 is already known to be true.
+
+
+
+                           λ0
+   • We know f(A• ) 99K B• . To see that λ0 is structure-preserving, note
+     that this property depends only on ϕ0 , and that ϕ0 = ϕ for all nodes
+     other than those in N AM E(A). To see that ϕ0 is structure-preserving,
+     we need only establish that it is structure-preserving for orderings of
+     the form n1 ≺ n2 with n1 in the strand N AM E(A). Either n2 is also
+     in that strand, in which case ϕ0 (n1 ) ≺ ϕ0 (n2 ) by the inclusion of the
+     strand succession relation, or n2 is not in that strand and n  n2 .
+     But (sB , i) ≺ ϕ(n) so by the structure-preserving property of ϕ and
+     transitivity, ϕ0 (n1 ) ≺B ϕ0 (n2 ). This establishes DPC3.
+   • DC4 is obvious.
+   • DPC5 is guaranteed, because f adds to UA only where required to by
+     Augn,ρ,i,σ0 ◦F R(A,ρ,i),N AM E(A) .
+   • DPC6 is the most complicated to prove.
+       If WFC3a holds, then condition Sol2 applies in both f(A• ) and B• , so
+       it must apply in any intermediate factorization by Remark 9.15.
+       If WFC3b holds, then condition Sol5 applies in B• ; the fact
+       that (msg B (sB , i), π 0 ) traverses rather than visits the escape set
+       establishes that the new potential target term is a proper car-
+       ried substring of an escape set member. Sol5 applies in f(A• ),
+       because (msg f(A) (N AM E(A), i), π a π tt ) is a carried path ending
+       at t0 and thus must have some maximal decryptable subpath
+       (msg f(A) (N AM E(A), i), π 00 ). Furthermore, (msg B (sB , i), π 00 ) must be
+       decryptable. Since (msg B (sB , i), π 0 ) traverses the maximal decryptable
+       subpath of (msg B (sB , i), π a π tt ), so does (msg f(A) (N AM E(A), i), π 0 ).
+       Therefore, Sol5 must apply in any intermediate factorization by Re-
+       mark 9.15.
+                                        Λf(A)
+    We need only prove that A◦ −−−→ f(A). It is obvious that Λf(A) is
+structure-preserving, and by Lemma 7.25, since λ preserves points of origi-
+nation, so does Λf(A) .
+
+
+
+
+### 12.5      Exhaustivity of the Cases
+
+In this section we prove that cohort coverage implies one of the three critical
+coverage properties used in lemmas 12.5, 12.7, and 12.9.
+
+
+    The proof intimiately deals with the four conditions for a test being
+solved. Let A be an unrealized skeleton with test (n, p) and let B be a
+                          ϕ,σ
+realized skeleton with A −−→ B. The four conditions (from Definition 5.5)
+are:
+
+   • Sol1. σ(p) visits σ(Esc(FA,n , ep )).
+
+   • Sol2. There is a carried path from an element of TFA,n to σ(ep ) which
+     does not visit σ(Esc(FA,n , ep )).
+
+   • Sol3. There exists a {|b|}u ∈ Esc(FA,n , ep ) such that σ(inv(u)) ∈ SFB,ϕ(n) .
+
+   • Sol4. ep = {|b|}u and σ(u) ∈ SFB,ϕ(n) .
+
+   First we state and prove the top-level proof, assuming a lemma we will
+prove later.
+
+Lemma 12.10 (Case exhaustivity). Let A◦ be an unrealized skeleton with
+test (n, p), and let ((A• , Id), λ, B◦ , A◦ ) ∈ Coh, with B0• satisfying condition
+C3. Then one of the following holds:
+
+   1. ((A• , Id), λ, B0• , A◦ ) ∈ DCohTDn,p ,
+
+   2. ((A• , Id), λ, B0• , A◦ ) ∈ DCohGACn,p , or
+
+   3. ((A• , Id), λ, B◦ , A◦ ) ∈ CohCVDn,p .
+
+Proof. The main observation is that since σ(p) is not a critical path in B at
+ϕ(n) (where λ = (ϕ, σ)), by Theorem 5.6, p is solved in FB,ϕ(n) by σ.
+   Note that Sol1 is just the same as TD1, so in that case, ((A• , Id), λ, B0• , A◦ ) ∈
+DCohTDn,p .
+   Note also that Sol3 is the same as EL (since σ(inv(u)) = inv(σ(u))), and
+Sol4 is the same as CL, so in either of those two cases, ((A• , Id), λ, B◦ , A◦ ) ∈
+CohCVDn,p .
+   By Lemma 12.13, if neither of the two cases above apply, then there exists
+a good augmentation candidate (ρ, i, π, tt) and a target strand sB0 . Therefore,
+((A• , Id), λ, B0• , A◦ ) ∈ DCohGACn,p .
+   Before we state and prove our lemma guaranteeing the existance of a
+good augmentation candidate, we state and prove two lemmas that will be
+helpful.
+
+
+Lemma 12.11 (Image of the escape set without Sol3). Let A be an unrealized
+                                                                        ϕ,σ
+protoskeleton with test (n, p) and let B be a protoskeleton such that A 99K B,
+and suppose that Sol3 does not hold. Then we have that σ(Esc(FA,n , ep )) ⊂
+Esc(FB,ϕ(n) , σ(ep )).
+
+Proof. Let t ∈ Esc(FA,n , ep ). Then either t = ep and ep ∈ Cl↓ (PFA,n , SFA,n ),
+or t is a term in Fr(PFA,n , SFA,n ) that carries ep .
+    First we observe that σ(Cl↓ (PFA,n , SFA,n )) ⊂ Cl↓ (PFB,ϕ(n) , SFB,ϕ(n) ), which
+takes care of the former case. In the latter case, we also need to show that
+t is not the endpoint of a path that is the proper prefix of another carried
+path in the downward closure. However since we know that in such a case t
+is an encryption {|b|}u , we know that σ(inv(u)) ∈     / SFB,ϕ(n) because Sol3 does
+not hold. Therefore, σ(t) is in the frontier.
+
+Lemma 12.12 (Critical derivability property preserved without Sol4). Let A
+be an unrealized protoskeleton with test (n, p) and let B be a realized skeleton
+              ϕ,σ
+such that A• 99K B• , and suppose that Sol4 does not hold. Then of n0 ≺ ϕ(n)
+is any reception node in B and p0 is any carried path from msg B (n0 ) to σ(ep ),
+p0 visits Esc(PFB,n0 , SFB,ϕ(n) , σ(ep )).
+
+Proof. Since B is realized we know that msg B (n0 ) ∈ D(PFB,n0 , SFB,n0 ). A
+weaker constraint is that msg B (n0 ) ∈ D(PFB,n0 , SFB,ϕ(n) ). By Proposi-
+tion 4.7, p0 must not be a critical path. Since Sol4 does not hold, if
+ep is an encryption {|b|}u we know that σ(u) ∈        / SFB,ϕ(n) . Therefore, ei-
+                   ↓
+ther σ(ep ) ∈ Cl (PFB,n0 , SFB,ϕ(n) ) or p visits Fr(PFB,n0 , SFB,ϕ(n) ). In the for-
+mer case, σep ∈ Esc(PFB,n0 , SFB,ϕ(n) , σ(ep )) and thus in either case p visits
+Esc(PFB,n0 , SFB,ϕ(n) , σ(ep )).
+
+
+Lemma 12.13 (Existence of a good augmentation candidate). Let A• be
+                                                                      ϕ,σ
+an unrealized skeleton and let B• be a realized skeleton with A• −−→ B• with
+λ = (ϕ, σ). Let Sol2 hold, but let neither Sol3 nor Sol4 hold.
+   Then there exists a sB and a 4-tuple (ρ, i, π, tt) such that conditions WFC1,
+WFC2, WFC3, FC1, FC2, and FC3 are satisfied.
+
+Proof. We will show that if Sol2 and neither Sol3 nor Sol4, then
+((A• , Id), λ, B0• , A◦ ) ∈ DCohGACn,p , however this is far from straightfor-
+ward. In brief, the problem is that while Sol2 establishes that there is some
+transmission outside the escape set, that does not make that transmission
+
+
+a candidate for augmentation now. What we need to find is a transmission
+outside the escape set that can serve as a “transforming node” from the
+current escape set: a first new transmission.
+    Let t = ep and let t0 = σ(t). Let E = Esc(FA,n , t) and let E 0 = σ(E). We
+define a sequence of tuples (Ti , ti , πi , πi0 , ni ) for 0 ≤ i ≤ k with the following
+properties:
+
+     1. For i > 0, Ti = E 0 \ {t1 , . . . , ti }, and ti ∈ Ti−1 .
+
+     2. For i > 0, πi0 is a prefix of πi .
+
+     3. (ti , πi ) is a carried path that ends at t0 , and for i > 0, the endpoint of
+        (ti , πi0 ) is not in σ(Targ(E, t)).
+
+     4. For all i ≥ 0, ni ≺ ϕ(n).
+
+     5. There is a carried path from msg B (ni ) ending at t0 that does not visit
+        Ti .
+
+     Note that because E 0 is finite, only a finite sequence can satisfy property
+1.
+    To define the sequence, we let T0 = E 0 . Since Sol2 holds we know there is
+a carried path from an element of TFA,n to t0 that does not visit T0 ; let n0 be
+a any node transmitting such an element, let t0 = t0 , and let π0 = π00 = hi.
+Note that n0 6= ϕ(n) because ϕ(n) is a reception. Note that properties 1, 2,
+and the latter part of 3 are trivial for i = 0, and properties 4 and 5 and the
+first part of 3 are easily observed to be true for i = 0.
+    Let n0i be a minimal node such that msg B (n0i ) contains a carried path
+ending at t0 that does not visit Ti .
+
+Claim 1. Node n0i must contain a transmission event.
+Proof of Claim 1. If n0i is a reception then since B is realized and Sol4 does
+not hold, by Lemma 12.12, all carried paths ending at t0 in msg B (n0i ) must
+visit Esc(PFB,n0 , SFB,ϕ(n) , t0 ). Since there is a path ending at t0 in msg B (n0i )
+                i
+that does not visit Ti , we must conclude that the first element, e, of
+Esc(PFB,n0 , SFB,ϕ(n) , t0 ) visited by that path is not in Ti , and that e contains
+         i
+a carried path ending at t0 that does not visit Ti . However, e can only be in
+Esc(PFB,n0 , SFB,ϕ(n) , t0 ) if an earlier node n0 transmitted a term with a carried
+            i
+
+
+
+
+path q visiting e, such that q does not visit Ti after it visits e, and such that
+every plaintext edge q traverses before e is one for which the inverse key is
+in SFB,ϕ(n) . If q visits Ti it must do so before it visits e, but then it would
+visit Ti at a term σ({|b|}u ) for which inv(u) ∈ SFB,ϕ(n) . Since Sol3 does not
+hold this cannot happen, so n0 is an earlier node than n0i such that msg B (n0 )
+contains a carried path ending at t0 that does not visit Ti .
+
+
+   Define a carried path pi = (msg B (n0i ), αi ) to t0 as follows:
+
+  1. If there is a carried path from msg B (n0i ) to t0 that does not visit E 0 , let
+     pi be such a path.
+
+  2. If there is a carried path from msg B (n0i ) to t0 that visits E 0 but does
+     not visit Ti , it must visit E 0 at a point tj for 1 ≤ j ≤ i. Let αi be such
+     that pi visits tj and such that πj is a suffix of αi .
+
+   Let n0i = (si , hi ) and let ρi be the role associated with si in B. Let βi
+be the maximal prefix of αi such that (Cρi (hi ), βi ) is well-defined. There are
+three cases.
+
+  1. If βi = αi then let tt = t and terminate the sequence, that is, set k = i.
+      Otherwise, (Cρi (hi ), βi ) ends at a variable mi of sort mesg.
+
+  2. If (msg B (n0i ), βi ) ends at an element of σ(Targ(E, t)), let tt ∈ Targ(E, t)
+     such that σ(tt) is the endpoint of (msg B (n0i ), βi ) and set k = i.
+
+  3. Otherwise, (msg B (n0i ), βi ) ends at a non-element of σ(Targ(E, t)). Be-
+     cause ρi meets condition 3 of Definition 6.1, mi must be acquired in ρi .
+     Let h0i be the node at which mi first occurs in Cρi , and let (Cρi (h0i ), γi )
+     be a carried path ending at mi . Note that h0i < hi . Let n00i = (si , h0i ),
+     and note that n00i ≺ n0i  ni . Since σB(si ) (mi ) is both the endpoint
+     of (msg B (n0i ), βi ) and the endpoint of (msg B (n00i ), γi ), we may conclude
+     that qi = (msg B (n00i ), γi a (αi −βi )) is a carried path ending at t0 . By the
+     minimality of n0i , qi visits Ti ; let δi be the largest prefix of (γi a (αi −βi ))
+     such that msg B (n00i ) @ δi = ti+1 ∈ Ti .
+      Note that if γi is a prefix of δi , then σB(si ) (mi )@(δi −γi ) ∈ Ti and there-
+      fore, pi visits Ti , which contradicts our earlier assumption. Therefore,
+      δi is a proper prefix of γi .
+
+
+               0                                0
+      Let πi+1        = (γi − δi ). Let πi+1 = πi+1 a
+                                                      (αi − βi ). Let Ti+1 = E 0 \
+      {t1 , . . . , ti+1 }. Since Sol3 does not hold, by Lemma 12.11 we know
+      that ti+1 ∈ Ti ⊆ E 0 ⊆ Esc(FB,ϕ(n) , t0 ). Since we know ti+1 6= t0 , ti+1
+      must be in Fr(PFB,ϕ(n) , SFB,ϕ(n) ). Therefore, ti+1 must be the endpoint
+      of a maximal SFB,ϕ(n) -decryptable path beginning at an element t? of
+      PFB,ϕ(n) . Since t? cannot be an atom, a variable or sort mesg, or a tag,
+      t? must be a transmission, and therefore there is a node ni+1 ≺ ϕ(n)
+      that transmits t? .
+Claim 2. When we are in case 3 above, (Ti+1 , ti+1 , πi+1 , πi+1 , ni+1 ) satisfy
+properties 1-5.
+Proof of Claim 2. Consider the properties one at a time.
+
+  1. We chose Ti+1 = E 0 \ {t1 , . . . , ti+1 }, and chose ti+1 ∈ Ti .
+  2. Here, πi+1 was explicitly described as an extension of πi+1 , so this is
+     obvious.
+
+  3. First, note that (ti+1 , πi+1 ) is a carried path, since it is a subpath of
+     (msg skelB (n00i ), (δi a (αi − βi ))), which we know is a carried path. Also,
+     (ti+1 , πi+1 ) ends at t0 :
+
+             ti+1 @ πi+1 =      (msg B (n00i ) @ δi ) @ ((γi − δi ) a (αi − βi ))
+                         =      msg B (n00i ) @ (δi a (γi − δi ) a (αi − βi ))
+                         =      msg B (n00i ) @ (γi a (αi − βi ))
+                         =      σB(si ) (mi ) @ (αi − βi )
+                         =      msg B (n0i ) @ (βi a (αi − βi ))
+                         =      msg B (n0i ) @ αi
+                         =      t0
+
+      The endpoint of (ti+1 , πi+1 ) = msg B (n0i ) @ βi , which we know is not an
+      element of σ(Targ(E, t)) since we are in case 3.
+
+  4. We have already noted that ni ≺ ϕ(n).
+
+  5. There is a carried path from msg B (ni ) ending at t0 that does not visit
+     Ti , namely the one whose maximal decryptable subpath is ti .
+
+
+
+   Now we prove that, (ρk , hk , βk , tt) is a good augmentation candidate with
+sB = sk and π tt = (αk − βk ):
+   • WFC1. If the endpoint of (Cρk (hk ), βk ) is not a variable of sort mesg
+     then either tt = t or (msg B (n0 ), αk ) would not be a carried path.
+   • FC1 is obvious.
+   • FC2. n0k = (sB , hk ) ≺ ϕ(n) by property 5 of our sequence.
+   • FC3 is true by construction in the latter case; when αk = βk , the
+     endpoint is t0 = σ(t) = σ(tt).
+   • WFC2 is guaranteed by the minimality of n0k .
+   • WFC3. Note that (tt, π tt ) is a carried path ending at t. Note further
+     that (msg B (n0k ), (βk ) a (αk − βk )) = pk . Thus, if pk does not visit E 0 ,
+     we meet WFC3a.
+       Otherwise, pk visits some tj , and πj is a suffix of αk , so we can write
+       αk = αk0 a πj . Let π 0 = αk0 a πj0 . We know that (msg B (n0k ), π 0 ) traverses
+       E 0 since it visits tj ∈ E 0 , and by Lemma 12.11, (msg B (n0k ), π 0 ) traverses
+       Esc(FB,ϕ(n) , t0 ). We also know, by property 3 of our sequence, that the
+       endpoint of (msg B (n0k ), π 0 ), which is the same as the endpoint of (tj , πj0 ),
+       is not in σ(Targ(E, t)), so we meet WFC3b.
+   This completes the proof of Lemma 12.13.
+
+12.6      Proof of Lemma 10.11
+Lemma 10.11. (Pre-cohort completeness) Let A◦ be an unrealized skeleton
+                                                               PP Pn,p
+and let (n, p) be any test of A◦ . Then (A◦ , Id) : [[Coh ====⇒ PCohn,p ]].
+
+Proof. Suppose ((A• , Id), λ, B◦ , A◦ ) ∈ Coh, with B0• satisfying condition C3.
+   By Lemma 12.10, one of the following three cases applies:
+
+  1. ((A• , Id), λ, B0• , A◦ ) ∈ DCohTDn,p .
+       In this case, by Lemma 12.5, there exists an f ∈ cn,p (A◦ ) ⊂ Pn,p and a
+       λ0 such that ((f(A• ), f), λ0 , B0• , A◦ ) ∈ DPCohn,p .
+
+
+  2. ((A• , Id), λ, B0• , A◦ ) ∈ DCohGACn,p , or
+     In this case, by Lemma 12.9, there exists an f ∈ an,p (A◦ ) ⊂ Pn,p and a
+     λ0 such that ((f(A• ), f), λ0 , B0• , A◦ ) ∈ DPCohn,p .
+     In either case 1 or case 2, we have f ∈ Pn,p and a λ0 such that
+     ((f(A• ), f), λ0 , B0• , A◦ ) ∈ DPCohn,p . Therefore, ((f(A• ), f), λ0 , B◦ , A◦ ) ∈
+     PCohn,p with B0• satisfying condition P3.
+
+  3. ((A• , Id), λ, B◦ , A◦ ) ∈ CohCVDn,p .
+     In this case, by Lemma 12.9, there exists an f ∈ ln,p (A◦ ) ⊂ Pn,p and a
+     λ0 such that ((f(A• ), f), λ0 , B◦ , A◦ ) ∈ PCohn,p .
+
+    We need only prove that (A◦ , f) ∈ P Pn,p to complete the theorem. We
+know that f(A◦ ) is a preskeleton by Theorem 8.16. We also know that
+(A◦ , f) ∈ SFn,p by property P6, with f(A) itself as the intermediate fac-
+toring. Finally, all three of the lemmas established that (A◦ , f) ∈ HC. This
+completes the proof.
+
+
+
+## 13     Enumerability
+
+In this section, we go beyond the concept of completeness and show that
+cpsa enumerates covering realized skeletons.
+
+Theorem 13.1 (cpsa enumerates). For all (A0 , λ) ∈ [[A◦ ]], there exists an
+n ≥ 0 such that if S is the set of skeletons cpsa produces after n setwise
+                                                                         λ0
+reduction operations, there is a realized B0◦ ∈ S and a homomorphism A◦ −→
+B◦ such that (A0 , λ00 ) ∈ [[B◦ ]] and λ = λ00 ◦ (λ0 |Rmv(A◦ ) ).
+
+    To accomplish this cleanly, we need to modify the cpsa algorithm slightly.
+Our approach to proving enumerability is to prove that cpsa maintains a
+nodewise-injective map to the desired target through the cohort complete-
+ness arguments. However, to ensure that we have a nodewise-injective map
+initially, we must modify cpsa to do all possible merges of strands in the
+initial input first.
+
+Definition 13.2 (Merge-all suite). Let
+
+        X(A◦ ) = {Id} ∪ {Comps1 ,s2 ◦ Subσ |s1 6= s2 ∈ IA , σ ∈ Us1 ,s2 },
+
+
+
+   where Us1 ,s2 is a set of most general unifiers of Θ(s1 )|i and Θ(s2 )|i for
+i = min(|Θ(s1 )|, |Θ(s2 )|).
+   Then the merge-all suite is defined to be
+
+                            Ma(A◦ ) = X(A◦ )|IA | .
+
+Lemma 13.3 (Initial nodewise injectivity). If there is a homomorphism from
+                      λ
+the user’s input A◦ → − B◦ with B◦ realized, there is an f ∈ (S ◦ Ma)(A◦ )
+such that f(A◦ ) is a skeleton and there is a nodewise injective λ0 such that
+      λ0
+f(A◦ ) −
+       → B◦ and λ = λ0 ◦ Λf(A) .
+
+Proof. Simply put, for every pair of strands in A that are unified in B, we
+merge one pair of these strands at a time in each application of X until no
+more are needed. After that, we choose Id ∈ X. The result is an operator
+that merges all strands in A◦ that are merged in B◦ . After this, the remaining
+factorization of the original map must be nodewise injective.
+    By Lemma 10.15, λ0 is structure-preserving. Note that f(A) has only
+inherited unique origination assumptions from A under Λf(A) .
+
+                       λ
+Lemma 13.4. If A 99K B and λ is nodewise-injective, and f = OE or f =
+                                   λ0
+Subσ for any σ, such that f(A) 99K B where λ = λ0 ◦ Λf , λ0 is nodewise-
+injective.
+
+Proof. For all such operators, the nodes in f(A) are in one-to-one correspon-
+dance with the nodes in A. Thus, if two nodes f(n1 ) and f(n2 ) in f(A) map
+to the same node in B, then so did n1 and n2 in A, which we assumed was
+not the case.
+   This already shows that much of the proof of completeness holds if we add
+the requirement that λ be nodewise-injective to all the coverage properties.
+What remains is to handle those cases where we use the compression or
+augmentation primitive operators. Fortunately, these come up in only three
+places.
+
+  1. In skeletonization, we use the compression operator in the merging suite
+     mn,p . However, the precondition for Lemma 11.7 renders the merging
+     suite moot when we require a nodewise injective λ, because it requires
+     that ϕ(n) = ϕ(n0 ) for distinct nodes n, n0 .
+
+
+  2. In listener augmentation, we use the augmentation operator to add a
+     listener. If the listener were to map to a node already in the image of
+     A, this would break node injectivity. Fortunately during listener aug-
+     mentation, we adjust the target B to include a new listener specifically
+     to be the image of the new listener added to A, so node-injectivity is
+     always preserved.
+  3. In regular augmentation, we may sometimes augment with a strand
+     whose image is already in λ(A). Specifically, suppose that we have
+     f = Subσ1 ◦ Augn,ρ,i,σ0 ◦F R(A,ρ,i),N AM E(A) and the corresponding λ0 , a ho-
+     momorphism from f(A• ) to B• , but that λ0 is not nodewise-injective.
+     Since λ was nodewise-injective, no node collision can occur unless one of
+     the nodes is in the new strand N AM E(A). Suppose ϕ0 (N AM E(A)) =
+     ϕ0 (s) for some other strand s ∈ IA . Note that σ 0 is a unifier of s
+     with N AM E(A) up to the minimum of their heights; let σ2 be a
+     most general unifier of those terms more general than σ 0 . Then con-
+     sider f 0 = Comps,N AM E(A) ◦ Subσ2 ◦ f. Clearly, there is a λ00 such that
+     λ0 = λ00 ◦ ΛComps,N AM E(A) ◦Subσ2 (A) . f 0 ∈ dn,p (A◦ ) by our definition of the
+     deorigination suite.
+     ((f 0 (A• ), f 0 ), λ00 , B• , A◦ ) ∈ DPCohn,p . Most conditions are easy to estab-
+     lish given that we already know ((f(A• ), f), λ0 , B• , A◦ ) ∈ DPCohn,p ; the
+     only one that is non-trivial is that λ00 is structure-preserving. The proof
+     that λ00 must be structure-preserving essentially follows the argument
+     that merging satisfies condition S5 in Lemma 11.7.
+                   Λf 0 (A)
+     Finally, A◦ −−−→ f 0 (A◦ ). Again it is obvious that Λf 0 (A) is structure-
+     preserving, and by Lemma 7.25, it preserves points of origination. This
+                                                                       (an,p ∪dn,p )HCn,p
+     allows us to conclude that (A◦ , Id) : [NIDCohGACn,p ==========⇒
+     NIPCohn,p ], where NIDCohGAC and NIPCoh, respectively, are the
+     equivalent coverage properties with the additional requirement that
+     the map λ be nodewise-injective.
+     Since an,p ∪ dn,p ⊂ Pn,p , this weakened statement is still strong enough
+     for use in the proof of Lemma 10.11.
+
+    Finally, we prove that maintaining nodewise-injective maps guarantees
+a finite number of cohort steps to a realized skeleton. Note that since we
+maintain nodewise-injective maps, we can use only finitely many operators
+that add nodes to our current skeleton while maintaining coverage of the
+
+
+target realized skeleton. There are only finitely many missing orderings, so
+again we can only use finitely many operators that add additional orderings.
+Since no cohort step consists of only Id, the only way we can fail to reach the
+target (or something covering it) in finitely may steps is for there to be an
+infinite sequence of substitutions, each more specific than the last, factoring a
+specific substitution. And to be more specific, every subsequent substitution
+is a unification. However, it is known (see Lemma A.10) that this cannot be
+the case for our algebra. Thus, either we reach our target in a finite number
+of steps, or we reach something realized before that, in which case we reach
+something covering our target in finitely many steps.
+
+
+References
+ [1] A. Armando, D. Basin, Y. Boichut, Y. Chevalier, L. Compagna, J. Cuel-
+     lar, P. Hankes Drielsma, P.C. Hem, O. Kouchnarenko, J. Mantovani,
+     S. Mdersheim, D. von Oheimb, M. Rusinowitch, J. Santiago, M. Tu-
+     ruani, L. Vigan, and L. Vigneron. The avispa tool for the automated
+     validation of internet security protocols and applications. In Kousha
+     Etessami and Sriram K. Rajamani, editors, Computer Aided Verifica-
+     tion, volume 3576 of Lecture Notes in Computer Science, pages 135–165.
+     Springer Berlin / Heidelberg, 2005.
+ [2] A. Armando and L. Compagna. Sat-based model checking for secu-
+     rity protocols analysis. International Journal of Information Security,
+     7(1):3–32, 2008.
+ [3] M. Backes, S. Lorenz, M. Maffei, and K. Pecina. The CASPA tool:
+     Causality-based abstraction for security protocol analysis. In A. Gupta
+     and S. Malik, editors, CAV, volume 5123 of Lecture Notes in Computer
+     Science, pages 419–422. Springer, 2008.
+ [4] Bruno Blanchet. An efficient cryptographic protocol verifier based on
+     prolog rules. In 14th IEEE Computer Security Foundations Workshop
+     (CSFW-14 2001), pages 82–96, 2001.
+ [5] Y. Boichut, P.C. Heam, O. Kouchnarenko, and F. Oehl. Improvements
+     on the genet and klay technique to automatically verify security pro-
+     tocols. In Proc. International Workshop on Automatic Verification of
+     Infinite-State Systems (AVIS’04), 2004.
+
+
+ [6] R. Corin and S. Etalle. An improved constraint-based system for the ver-
+     ification of security protocols. In Proc. 9th International Static Analysis
+     Symposium (SAS), volume 2477 of Lecture Notes in Computer Science,
+     pages 326–341. Springer, September 2002.
+
+ [7] C.J.F. Cremers. Scyther - Semantics and Verification of Security Pro-
+     tocols. Ph.D. dissertation, Eindhoven University of Technology, 2006.
+
+ [8] C.J.F. Cremers. The Scyther Tool: Verification, falsification, and
+     analysis of security protocols. In Computer Aided Verification, 20th
+     International Conference, CAV 2008, Princeton, USA, Proc., vol-
+     ume 5123/2008 of Lecture Notes in Computer Science, pages 414–418.
+     Springer, 2008.
+
+ [9] Shaddin F. Doghmi, Joshua D. Guttman, and F. Javier Thayer. Search-
+     ing for shapes in cryptographic protocols (extended version). http:
+     //eprint.iacr.org/2006/435, November 2006.
+
+[10] Shaddin F. Doghmi, Joshua D. Guttman, and F. Javier Thayer. Com-
+     pleteness of the authentication tests. In J. Biskup and J. Lopez, editors,
+     European Symposium on Research in Computer Security (ESORICS),
+     number 4734 in LNCS, pages 106–121. Springer-Verlag, September 2007.
+
+[11] Shaddin F. Doghmi, Joshua D. Guttman, and F. Javier Thayer. Search-
+     ing for shapes in cryptographic protocols. In Tools and Algorithms
+     for Construction and Analysis of Systems (TACAS), number 4424 in
+     LNCS, pages 523–538. Springer, March 2007. Extended version at
+     http://eprint.iacr.org/2006/435.
+
+[12] Daniel Dolev and Andrew Yao. On the security of public-key protocols.
+     IEEE Transactions on Information Theory, 29:198–208, 1983.
+
+[13] Santiago Escobar, Catherine Meadows, and Jos Meseguer. Maude-
+     NPA: Cryptographic protocol analysis modulo equational properties. In
+     Alessandro Aldini, Gilles Barthe, and Roberto Gorrieri, editors, Foun-
+     dations of Security Analysis and Design V, volume 5705 of Lecture Notes
+     in Computer Science, pages 1–50. Springer Berlin / Heidelberg, 2009.
+
+[14] Joshua D. Guttman and F. Javier Thayer. Authentication tests and the
+     structure of bundles. Theor. Comput. Sci., 283(2):333–380, 2002.
+
+
+
+[15] G. Lowe. Breaking and fixing the needham-schroeder public-key pro-
+     tocol using FDR. In Proc. 2nd International Conference on Tools and
+     Algorithms for the Construction and Analysis of Systems (TACAS), vol-
+     ume 1055 of Lecture Notes in Computer Science, pages 147–166, 1996.
+[16] C. Meadows. The NRL protocol analyzer: An overview. Journal of
+     Logical Programming, 26(2):113–131, 1996.
+[17] John D. Ramsdell and Joshua D. Guttman. CPSA: A cryptographic
+     protocol shapes analyzer. In Hackage. The MITRE Corporation, 2009.
+     http://hackage.haskell.org/package/cpsa.
+[18] John D. Ramsdell, Joshua D. Guttman, and Paul D. Rowe. The
+     CPSA Specification: A Reduction System for Searching for Shapes in
+     Cryptographic Protocols. The MITRE Corporation, 2009. In http:
+     //hackage.haskell.org/package/cpsa source distribution, doc direc-
+     tory.
+[19] Alan Robinson and Andrei Voronkov. Handbook of Automated Reason-
+     ing. The MIT Press, 2001.
+[20] F. Javier Thayer, Jonathan C. Herzog, and Joshua D. Guttman. Strand
+     spaces: Proving security protocols correct. Journal of Computer Secu-
+     rity, 7(1), 1999.
+[21] M. Turuani. The CL-Atse protocol analyser. In Proc. RTA ’06, volume
+     4098 of Lecture Notes in Computer Science, pages 227–286. Springer,
+     August 2006.
+
+
+A      The cowt Algorithm
+This section describes the algebra specific part of the computation used in
+regular augmentation and displacement.
+   First we recall the definition of the regular augmentation suite:
+
+Definition 9.2 (Regular augmentation suite)
+                   an,p (A◦ ) = {Subσ1 ◦ Augn,ρ,i,σ0 ◦F R(A,ρ,i),s? }
+where σ0 ∈ S0 , σ1 ∈ S1 , s? = N AM E(A) and ρ, i, σ0 , σ1 , S0 , S1 are as defined
+below}.
+
+
+   • R ∈ P and i is such that CR (i) is defined and is a send event. Let
+     C = CR |i.
+
+   • There is a path pp ∈ CarPath(C(i)) and a term tt such that either (i)
+     the endpoint of pp is a variable not of sort mesg and tt = ep or (ii) the
+     endpoint of pp is a variable of sort mesg and tt ∈ Targ(Esc(F, ep ), ep ).
+
+   • S0 is a set of most general unifiers of tt with the endpoint of F R(A, ρ, i)(pp).
+
+   • S1 is a set of most general maps σ1 such that for all i0 < i and for all
+     paths p0 ∈ CarPath(C(i0 )), if the endpoint of σ1 ((σ0 ◦ F R(A, ρ, i))(p0 ))
+     is σ1 (ep ) then σ1 (p0 ) visits an element of σ1 (Esc(FA,n , ep )).
+
+    Note that it is not obvious that S1 exists, let alone that there is a finite
+set of such maps we can calculate efficiently.
+
+Definition A.1 (Carried only within). Message t is carried only within
+set T in t0 , if for all carried paths p ending at t in t0 , p visits T .
+    A message t is carried only within set T in a set of messages T 0 if for all
+t0 ∈ T 0 , t is carried only within T in t0 .
+
+    In calculating the regular augmentation suite, we must find a set S1 of
+most general maps σ1 such that σ1 (ep ) is carried only within σ1 (Esc(FA,n , ep ))
+in {(σ0 ◦ F R(A, ρ, i))(C|i−1 )}.
+
+Definition A.2 (Carried only within problem). A carried only within prob-
+lem is a triple (t, T, T 0 ).
+
+Definition A.3 (Carried only within problem solution). The solution to a
+carried only within problem (t, T, T 0 ) is a complete set of most general unifiers
+S such that for every σ ∈ S, σ(t) is carried only within σ(T ) in σ(T 0 ).
+
+    The notion of a carried only within problem and its solution allows us to
+describe the cpsa approach to computing the regular augmentation suite as
+its own algorithm.
+    A unification problem is a finite set
+                                      ?               ?
+                           E = {t1 = t01 , . . . , tn = t0n },
+
+and a unifier of E is a substitution σ such that σ(t1 ) ≡ σ(t01 ), . . . , σ(tn ) ≡
+σ(t0n ). Definitions in this section follow [19, Chapter 9].
+
+
+      When solving a unification problem E, we rely on the fact that the order
+in which the equations are solved is irrelevant in the following sense. Let
+C(E) be a finite complete set of unifiers for E. Let E = E0 ∪ E1 be a
+decomposition of E, and let S = {σ1 ◦ σ0 | σ0 ∈ C(E0 ) ∧ σ1 ∈ C(σ0 (E1 ))}.
+Then S is a finite complete set of unifiers for E. Decompositions E = E0 ∪E1
+in this section often are such that E0 ⊂ E, and E1 = E. Thus, solving a
+unification problem can be done from a function unify that, on input t and
+t0 , finds a set of most general substitutions σ such that σ(t) = σ(t0 ).
+      In what follows, C({}) = {IdA }.
+      A carried only within solution cannot be directly computed. Given terms t
+and t0 , the unify function finds a most general set of substitutions σ such that
+σ(t) ≡ σ(t0 ), however, the set of carried paths ending at t may become larger
+after we apply a unifying substitution.
+      The remainder of this section describes an iterative procedure that breaks
+the cyclic dependencies. Each step of the iteration improves an approxima-
+tion of a solution to the problem.
+Definition A.4 (Carried only within at a substitution). Message t is carried
+only within T in t0 at substitution σ if for all carried paths p ending at t in t0 ,
+σ(p) visits σ(T ).
+   Each step in the iterative procedure involves finding subsequently more
+specific substitutions such that t is cow T in t0 at σ for each t0 ∈ T 0 . The
+sense in which each step approximates the solution is captured by the fol-
+lowing lemmas.
+   The algorithm uses specific terms rather than equivalence classes of terms.
+Lemma A.5. σ(CarPath(t, t0 )) ⊆ CarPath(σ(t), σ(t0 )).
+Proof. Let p = (t0 , π) be a path that ends at t. Then σ(p) = (σ(t0 ), π), which
+is a path that ends at σ(t). Moreover, p is a carried path if and only if σ(p)
+is.
+      The case in which t = x and t0 = hx, yi, and σ unifies x and y provides
+an example in which the subset relation is proper.
+      Lemma A.5 can be used to show why the problem of finding carried only
+within solutions is non-trivial. If σ(t) ≡ σ(t0 ) and σ E σ 0 , then σ 0 (t) ≡
+σ 0 (t0 ), however, if σ(t) is cow σ(T ) in σ(t0 ) and σ E σ 0 , one cannot conclude
+that σ 0 (t) is cow σ 0 (T ) in σ 0 (t0 ), because by Lemma A.5, it is possible that
+CarPath(σ(t), σ(t0 )) ( CarPath(σ 0 (t), σ 0 (t0 )).
+
+
+    The implementation must consider all possible solutions to the equations.
+It does so by operating on sets of terms and substitutions. Given solutions S
+to some other equations, solve(T, T 0 , S) extends them to include solutions to
+one pair from T and T 0 .
+
+               solve(T, T 0 , S) =
+                 {σ 0 | t ∈ T, t0 ∈ T 0 , σ ∈ S, σ 0 ∈ unify 0 (t, t0 , σ)}
+               unify 0 (t, t0 , σ) = {σ 0 ◦ σ | σ 0 ∈ unify(σ(t), σ(t0 ))}
+
+    An algebra module in cpsa exports unify 0 , not unify, and substitu-
+tion composition is intertwined with unification steps. Obviously, if σ 0 ∈
+unify 0 (t, t0 , σ) then σ E σ 0 .
+    The implementation combines the solutions for single equations by folding
+the substitutions produced by the solve function. The set-oriented version
+of the cow at a substitution function is:
+               fold (t, T, t0 , σ) =
+                  fold 0 (t, T, t0 , σ, {IdA }, CarPath(σ(t), σ(t0 )))
+
+               fold 0 (t, T, t0 , σ, S, {}) = {σ 0 ◦ σ|σ 0 ∈ S}
+               fold 0 (t, T, t0 , σ, S, {p} ∪ P ) =
+                  fold 0 (t, T, t0 , σ, solve(anc(σ(t0 ), p), σ(T ), S), P )
+     The fold function on (t, T, t0 , σ) is meant to return the set of substitutions
+{σ 0 ◦ σ|σ(t) is cow σ(T ) in σ(t0 ) at σ 0 }. However, we do not need to prove
+this behavior specifically to establish the theorems we want to prove. The
+important observation is that t being cow T in t0 at σ is insufficient to
+guarantee that σ(t) is cow σ(T ) in σ(t0 ).
+     Iterating the fold function can be used to find contractions. Potential
+contractions are in cows(t, T, t0 ), where
+                      cows(t, T, t0 ) =
+                        cows 0 (t, T, t0 , IdA )
+
+                      cows 0 (t, T, t0 , σ) =
+                        if σ(t) is cow σ(T ) at σ(t0 ) then
+                           {σ}
+                        else
+                           let
+                           S S = fold (t, T, t0 , σ)       in
+                              σ 0 ∈S cows 0 (t, T, t , σ )
+
+
+
+   We now show the cows function produces the unifiers that make up a
+carried only within solution. It may also produce non-minimal unifiers. An
+additional step is required to remove these unifiers.
+   The cows function terminates because each step in the iteration reduces
+the number of variables in the problem statement. Several lemmas are re-
+quired to show termination.
+
+Lemma A.6. σ 0 ∈ unify 0 (t, t0 , σ) and σ(t) 6≡ σ(t0 ) implies σ C σ 0 .
+
+Proof. We know σ E σ 0 . Assume the negation of the conclusion, that there
+is a substitution σ 00 such that σ = σ 00 ◦ σ 0 . The first hypothesis implies
+σ 0 (t) ≡ σ 0 (t0 ), so σ 00 (σ 0 (t)) ≡ σ 00 (σ 0 (t0 )), a contradiction.
+
+Lemma A.7. σ 0 ∈ fold (t, T, t0 , σ) and σ(t) not cow σ(T ) in σ(t0 ) implies
+σ C σ0.
+
+Proof. If σ(t) not cow σ(T ) in σ(t0 ), there is some position p in
+CarPath(σ(t), σ(t0 )) such that no ancestor of σ(t0 ) @ p is equivalent to any
+member of σ(T ). We know σ E σ 0 (by observation, all outputs of fold extend
+the initial σ), so assume the negation of the conclusion, that there is a substi-
+tution σ 00 such that σ = σ 00 ◦ σ 0 . By the fact that σ 0 ∈ fold (t, T, t0 , σ) we know
+that t is cow T in t0 at σ 0 , so there is a t00 ∈ T and a proper prefix p0 of p such
+that σ 0 (t00 ) ≡ σ 0 (t0 @p0 ). Thus, σ(t00 ) = σ 00 (σ 0 (t00 )) ≡ σ 00 (σ 0 (t0 @p0 )) = σ(t0 @p0 )
+which contradicts what we know about p, as σ(t0 @ p0 ) = σ(t0 ) @ p0 is an an-
+cestor of σ(t0 ) equivalent to σ(t00 ) which is in σ(T ).
+
+
+   Now we prove our three main results about cows. We give sufficient
+conditions to guarantee that cows terminates (Theorem A.8), we prove that
+cows gives answers with the property we want (Theorem A.9), and we prove
+that cows produces a complete set of such outputs (Theorem A.11).
+
+Theorem A.8. If the algebra A has variable-reducing, finitary unification,
+the function cows(t, T, t0 ) terminates on all inputs.
+
+Proof. By an examination of fold , each substitution produced is a unification
+of a set of equations. By Lemma A.7, each substitution produced is strictly
+less general than IdA . Therefore, every substitution produced by fold is a
+non-trivial unification. Since every unification is variable-reducing, there is a
+maximum number of successive non-trivial unifications that can be applied
+
+
+before further unification becomes impossible, namely, the number of vari-
+ables appearing in the original t, T , and t0 . Furthermore, since the unification
+is finitary, we know that every node of the tree of substitutions we explore
+has a finite branching factor. Thus, the entire tree of potential solutions is
+finite, so cows terminates.
+
+Theorem A.9. σ ∈ cows(t, T, t0 ) implies σ(t) is cow σ(T ) in σ(t0 ).
+
+Proof. We prove this by structural induction on the execution of cows. If
+σ ∈ cows(t, T, t0 ) and cows 0 outputs without recursing then σ = IdA and the
+property holds by the required condition in the algorithm.
+    If σ ∈ cows(t, T, t0 ) and cows 0 outputs after recursing, then ∃σ 0 , σ 00 such
+that σ = σ 00 ◦ σ 0 where σ 0 ∈ S and σ 00 ∈ cows0 (t, T, t0 , σ 0 ). By inductive
+assumption, σ 00 (σ 0 (t)) is cow σ 00 (σ 0 (T )) in σ 00 (σ 0 (t0 )). This proves that σ(t)
+is cow σ(T ) in σ(t0 ).
+
+Lemma A.10. For any strand space algebra with variable-reducing unifica-
+tion, the following holds: Let IdA = σ0 E σ1 E . . . be an infinite sequence of
+substitutions all generated over the same finite set of variables, such that for
+every σi , σi Eσ and such that every σi0 (where σi+1 = σi0 ◦σi ) is a most general
+unification. Then for at most finitely many i ≥ 0, σi C σi+1 .
+
+Proof. Let {x1 , . . . , xn } be the finite set of variables over which the sequence
+of substitutions is defined. For each i, define vi to be |V ars(σi (x1 , . . . , xn ))|
+with v0 = n, and let v = |V ars(σ(x1 , . . . , xn ))|. For each i, we know that
+σi0 is a most general unification; if it is a unification of terms which are all
+already equivalent then σi0 must be a renaming and then it cannot be the case
+that σi C σi+1 . If σi0 is a unification of one or more pairs of non-equivalent
+terms, it is variable-reducing, so vi > vi+1 . However, this sort of step can be
+taken at most n − v times.
+
+Theorem A.11. If the algebra A has variable-reducing unification, σ(t) is
+cow σ(T ) in σ(t0 ) implies there exists a substitution σ 0 such that σ 0 E σ and
+σ 0 ∈ cows(t, T, t0 ).2
+
+Proof. We aim to define a sequence of substitutions IdA = σ0 E σ1 . . . E
+σn E σ, such that σn (t) is cow σn (T ) in σn (t0 ), where each σi is produced
+    Note that cows(t, T, t0 ) is a well-defined set regardless of whether a computer could
+calculate it in a finite number of steps.
+
+
+
+incrementally during the cows computation, where σn will serve as the σ 0 in
+the theorem.
+    By saying that σi is “produced incrementally during the cows computa-
+tion” we mean that (i) if i > 0, σi is an output of fold (t, T, t0 , σi−1 ), and
+(ii) if i < n, cows 0 (t, T, t0 , σi ) is a recursive call within the execution of
+cows0 (t, T, t0 , IdA ).
+    We develop the sequence inductively. Note that σ0 = IdA E σ for any
+σ, and that our initial call of cows(t, T, t0 ) establishes that we run cows0 on
+(t, T, t0 , σ0 ).
+    Suppose that we have IdA = σ0 E. . .Eσi Eσ and that we run cows 0 (t, T, t0 , σi ).
+If σi (t) is cow σi (T ) in σi (t0 ) then n = i and our sequence is complete. Oth-
+erwise, we calculate S = fold (t, T, t0 , σi ); we wish to prove that there exists
+a σi+1 ∈ S such that σi E σi+1 E σ.
+    By Lemma A.5, we know that CarPath(σi (t), σi (t0 )) ⊆ CarPath(σ(t), σ(t0 )).
+Let p1 , . . . , pk be the positions in CarPath(σi (t), σi (t0 )). In fold0 , the set S
+initially contains ϕ0 = IdA ; note that ϕ0 ◦ σi E σ. In the next paragraph we
+show how to define a sequence of substitutions ϕ0 E. . .Eϕk in S in successive
+calls to fold 0 , such that ϕl ◦ σi E σ. This sequence will serve to bridge the
+difference between σi and σi+1 .
+    Suppose that ϕl ∈ S in fold 0 when P consists of pl+1 , . . . , pk , and that
+ϕl ◦ σi E σ. Since σ(t) is cow σ(T ) in σ(t0 ), there exists a proper prefix p0l+1
+of pl+1 and a te ∈ T such that σ(t0 @ p0l+1 ) ≡ σ(te ). Note that σi (te ) ∈ σi (T ),
+and that σi (t0 ) @ p0l+1 ∈ anc(σi (t0 ) @ pl+1 )). Thus, fold 0 calls solve(X, Y, S)
+where σi (te ) ∈ X, σi (t0 @ p0l+1 ) ∈ Y , and ϕl ∈ S.
+    Write σ = ψl ◦ ϕl ◦ σi : note that ψl is a unifier of ϕl (te ) and ϕl (t0 @ p0l+1 ).
+Thus, there exists a ψl0 ∈ unify(ϕl (te ), ϕl (t0 @ p0l+1 )) such that ψl0 E ψl . Let
+ϕl+1 = ψl0 ◦ ϕl : note that ψl0 ◦ ϕl E ψl ◦ ϕl so σi E ϕl E ϕl+1 E σ. Note further
+that ϕl+1 ∈ solve(X, Y, S) and thus ϕl+1 is in S in fold 0 when P consists of
+pl+2 , . . . , pk .
+    Consider ϕk : note that σi Eϕk Eσ and that ϕk ∈ S in fold 0 when P = {},
+so ϕk ∈ fold (t, T, t0 , σi ). Let σi+1 = ϕk . Because ϕk is in the output of
+fold (t, T, t0 , σi ), note that we make a recursive call to cows 0 on (t, T, t0 , σi+1 ).
+    In this way we define a (potentially infinite) sequence IdA = σ0 Eσ1 E. . .E
+σi E . . . E σ. Moreover, by Lemma A.7, we know that σ0 C . . . C σi C . . . E σ.
+Note that each substitution is produced by composing a unification with the
+previous substitution. Thus, by Lemma A.10, the sequence must be finite,
+with σn being the last substitution before σ. But the sequence can only
+end at σn if σn (t) is cow σn (T ) in σn (t0 ). If this is the case, then in the
+
+
+recursive call to cows on σn (t), σn (T ), σn (t0 ), IdA is returned, so σn ◦ IdA =
+σn ∈ cows(t, T, t0 ). This completes the proof, with σ 0 = σn .
+    The cows function finds solutions to a single carried only within problem.
+To calculate substitutions, we need the following function, cowt, which finds
+solutions to a set of carried only within problems.
+
+                            cowt(t, T, T 0 ) =
+                              cows(t, T, concat(T 0 ))
+
+   where concat(T 0 ) is a concatenation, by successive pairings, of the mes-
+sages in T 0 .
+
+Lemma A.12. cowt complete terminates cowt(t, T, T 0 ) is a most general set
+of substitutions σ such that σ(t) is carried only within σ(T ) in σ(T 0 ), and
+cowt(t, T, T 0 ) can be calculated in finitely many steps.
+
+Proof. It should be obvious that cowt will terminate. Note that the carried
+paths of concat(T 0 ) are in one-to-one correspondance with the carried paths
+of members of T 0 ; this establishes that cowt gives a complete set of most
+general substitutions such that σ(t) is carried only within σ(T ) in σ(T 0 ),
+because cows is complete.
+```
+
+---
+
 ### `refrences/cpsa-protocol-modeling/manuals/CPSA_Design.md`
 
-*sha256:`d3a9961faa2a` · 1266 lines · 55.8 KB · lang:`markdown` · 4 control chars sanitized*
+*sha256:`d3a9961faa2a` · 1266 lines · 55.8 KB (~14,036 tokens) · lang:`markdown` · 4 control chars sanitized*
 
 ````markdown
 # CPSA Architectural Design and Algorithms
@@ -1751,7 +10305,7 @@ protocol, 13
 
 ### `refrences/cpsa-protocol-modeling/manuals/CPSA_Goals_and_Security.md`
 
-*sha256:`12b9d0a074fd` · 761 lines · 30.9 KB · lang:`markdown` · 6 control chars sanitized*
+*sha256:`12b9d0a074fd` · 761 lines · 30.9 KB (~7,866 tokens) · lang:`markdown` · 6 control chars sanitized*
 
 ````markdown
 # CPSA Security Goals and Invariant Queries
@@ -2517,7 +11071,7 @@ References
 
 ### `refrences/cpsa-protocol-modeling/manuals/CPSA_Primer.md`
 
-*sha256:`ab1cfd631066` · 1488 lines · 69.1 KB · lang:`markdown`*
+*sha256:`ab1cfd631066` · 1488 lines · 69.1 KB (~17,583 tokens) · lang:`markdown`*
 
 ````markdown
 # CPSA Primer: Core Concepts and Foundations
@@ -4011,9 +12565,2260 @@ origination, 9
 
 ---
 
+### `refrences/cpsa-protocol-modeling/manuals/CPSA_Specification.md`
+
+*sha256:`658ae80d2ba4` · 2243 lines · 101.2 KB (~25,089 tokens) · lang:`markdown` · 22 control chars sanitized*
+
+```markdown
+# CPSA Protocol Specification Language
+
+         The CPSA Specification:
+A Reduction System for Searching for Shapes
+        in Cryptographic Protocols
+
+      John D. Ramsdell    Joshua D. Guttman
+          Moses D. Liskov    Paul D. Rowe
+              The MITRE Corporation
+                CPSA Version 4.4.8
+
+                February 27, 2026
+
+    © 2010 The MITRE Corporation. Permission to copy without fee all or part of
+this material is granted provided that the copies are not made or distributed for direct
+commercial advantage, this copyright notice and the title of the publication and its date
+appear, and notice in given that copying is by permission of The MITRE Corporation.
+
+
+
+Contents
+
+
+## 1 Introduction                                                                1
+
+  1.1 Notation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    2
+
+
+## 2 Order-Sorted Message Algebras                                               3
+
+  2.1 Channel Messages . . . . . . . . . . . . . . . . . . . . . . . . .      6
+  2.2 Locations and state messages . . . . . . . . . . . . . . . . . .        7
+
+
+## 3 Strand Spaces and Bundles                                                   9
+
+
+
+## 4 Adversary Model                                                            13
+
+
+
+## 5 Skeletons                                                                  15
+
+  5.1 Blanchet’s Simple Example Protocol . . . . . . . . . . . . . .         17
+  5.2 Dolev-Yao Example 1.3 . . . . . . . . . . . . . . . . . . . . . .      20
+  5.3 Exercise . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   21
+  5.4 External Syntax and Instances . . . . . . . . . . . . . . . . . .      21
+
+
+## 6 Algorithms as Reduction Systems                                            24
+
+
+
+## 7 Primitive Preskeleton Operators                                            26
+
+
+
+## 8 Reductions on Preskeletons                                            28
+
+  8.1 Reduction Systems . . . . . . . . . . . . . . . . . . . . . . . . 29
+
+
+## 9 Penetrator Derivable                                                   31
+
+  9.1 Implementation . . . . . . . . . . . . . . . . . . . . . . . . . . 34
+
+
+## 10 Carried Only Within                                                       36
+
+
+
+
+
+
+## 11 Solving Authentication Tests                                            39
+
+   11.1 Test Solving Steps . . . . . . . . . . . . . . . . . . . . . . . . 41
+   11.2 Augmentation . . . . . . . . . . . . . . . . . . . . . . . . . . . 42
+
+
+## 12 Collapsing and Preconditioning                                         45
+
+
+
+## 13 Generalization                                                         46
+
+
+
+## 14 Skeleton Reduction System                                              49
+
+
+A Penetrator Non-Origination Assumptions                                  51
+
+B Programs Specified by a Role                                            52
+
+C Shape Analysis Sentences                                                 55
+  C.1 Security Goals . . . . . . . . . . . . . . . . . . . . . . . . . . . 55
+
+D Facts and Rules                                                         59
+
+
+
+
+
+                                 Abstract
+
+We describe a term reduction system that enumerates all essentially different
+executions possible for a cryptographic protocol. We call them the shapes of
+the protocol. Naturally occurring protocols have only finitely many, indeed
+very few shapes. Authentication and secrecy properties are easy to deter-
+mine from them, as are attacks and anomalies. Our Cryptographic Protocols
+Shapes Analyzer (cpsa) program is a direct implementation of the reduction
+system described within, and the form of the reduction system is partially
+determined by the implementation.
+
+
+## Chapter 1
+
+
+Introduction
+
+The Cryptographic Protocol Shapes Analyzer (cpsa) attempts to enumerate
+all essentially different executions possible for a cryptographic protocol. We
+call them the shapes of the protocol. Naturally occurring protocols have only
+finitely many, indeed very few shapes. Authentication and secrecy properties
+are easy to determine from them, as are attacks and anomalies.
+    The shapes analysis is performed within a pure Dolev-Yao model. The
+cpsa program reads a sequence of problem descriptions, and prints the steps
+it used to solve each problem. For each input problem, cpsa is given some
+initial behavior, and it descovers what shapes are compatible with it. Nor-
+mally, the initial behavior is from the point of view of one participant. The
+analysis reveals what the other participants must have done, given the par-
+ticipant’s view.
+    This document specifies the cpsa program using a term reduction system.
+Chapter 2 describes message algebras as order-sorted quotient term algebras.
+Chapter 3 presents an implementation-oriented view of strand spaces. Chap-
+ter 4 details the model of the adversary. The formal definition of a partial
+run of a protocol is called a skeleton, and is introduced in Chapter 5.
+    The term reduction systems used to specify the algorithm is presented
+in Chapter 6, and the primitive reduction rules are in Chapter 7. The rules
+used to transform terms called preskeletons into skeletons are in Chapter 8.
+    The algorithm used to model adversarial behavior is in Chapter 9. The
+algorithms used to infer what else must have happened given a partial de-
+scription of a run of a protocol as skeleton is in Chapters 10 and 11. Chap-
+ters 13 and 12 find most general descriptions of cpsa answers—the shapes.
+Finally, Chapter 14 assembles reduction rules into one system that specifies
+
+
+the cpsa program.
+    Appendix A describes an extension to Strand Space theory that models
+passwords and related concepts. Appendix B details the sense in which a
+protocol role can be viewed as an abstraction of a program. Appendix C
+describes a formula in the language of order-sorted first-order logic for each
+problem and its shapes found by cpsa. The formula is called a shape analysis
+sentence. The formula is modeled by all skeletons that describe full runs of
+a protocol when cpsa finds all the shapes for the problem.
+    cpsa’s search is based on a high-level algorithm that was claimed to
+be complete, i.e. every shape can in fact be found in a finite number of
+steps [5, 8]. Further theoretical work [10] showed classes of executions that
+are not found by the algorithm, however it also showed that every omitted
+execution requires an unnatural interpretation of a protocol’s roles. Hence
+the algorithm is complete relative to natural role semantics. See [13, Ap-
+pendix B] for more on omitted executions.
+    A cpsa release includes two other documents, the cpsa Design [12] and
+the cpsa Primer [13]. The design document describes details of the cpsa
+implementation that would clutter this one. It should be read by anyone
+interesting in reading and modifying the source code. The cpsa Primer
+provides an overview of cpsa, and is worth reading before this document is
+approached.
+
+
+
+### 1.1       Notation
+
+A finite sequence is a function from an initial segment of the natural numbers.
+The length of a sequence X is |X|, and sequence X = ⟨X(0), . . . , X(n − 1)⟩
+for n = |X|. Alternatively, ⟨x0 , x1 , . . . , xn−1 ⟩ = x0 :: x1 :: . . . :: xn−1 :: ⟨⟩. If S
+is a set, then S ∗ is the set of finite sequences of S, and S + is the non-empty
+finite sequences of S. The concatenation of sequences X0 and X1 is X0 ⌢ X1 .
+The prefix of sequence X of length n is X † n.
+    Generally, when discussing terms, a lowercase Latin letter is used to de-
+note a term, and an uppercase Latin letter is used to denote a set of terms
+or a sequence of terms.
+
+
+
+
+
+
+## Chapter 2
+
+
+Order-Sorted Message Algebras
+
+cpsa models a message by an equivalence class of terms over a signature. A
+sort system is used to classify messages. cpsa depends on the sort system
+to allow it to treat a variable that represents an asymmetric key differently
+from a variable that represents an arbitrary message. In particular, cpsa uses
+order-sorted quotient term algebras [6] for message algebras. This formalism
+enables the use of well-known algorithms for unification and matching in the
+presences of equations and sorts [2].
+    This paper makes no attempt to provide a general introduction to order-
+sorted quotient term algebras. We use a message algebra called the Basic
+Crypto Algebra (bca), which is the main algebra used by cpsa.
+    There are six bca sorts: mesg, the sort of all messages, skey, the sort
+of symmetric keys, akey, the sort of asymmetric keys, name, the sort of
+participant names, and text and data for ordinary values. Sort mesg is
+sometimes written as ⊤ and the other sorts are called base sorts. All base
+sorts are subsorts of mesg. The function symbols, or operations, used to
+form terms are given by the signature in Figure 2.1.
+    Each variable x used to form a term has a unique sort s, written x : s.
+Variable set X is an indexed set of sets of variables, Xs = {x | x : s}. For
+bca, Xmesg , Xskey , Xakey , Xname , Xtext , and Xdata partition the set of
+variables in X. By abuse of notation, at times, we write X for the set of
+variables in X.
+    The Basic Crypto Quotient Term Algebra A generated by variable set X
+is displayed in Figure 2.2. The union of the messages in A is set of terms
+generated by X, and A partitions the set of terms into a set of equivalence
+classes induced by the equations. Terms t0 and t1 are equivalent, written
+
+
+           Sorts: name, text, data, skey, akey < mesg
+             Base sorts: name, text, data, skey, akey
+            Carried positions: • denotes a carried position.
+       {| • |}(·) : mesg × mesg → mesg      Encryption
+       #(·) : mesg → mesg                   Hashing
+       (•, •) : mesg × mesg → mesg          Pairing
+       “. . . ” : mesg                      Tag constants
+       K(·) : name → akey                   Public key of name
+       (·)−1 : akey → akey                  Inverse of key
+       ltk(·, ·) : name × name → skey       Long term key
+                  Equation: (x−1 )−1 ≈ x for x : akey
+
+
+          Figure 2.1: Basic Crypto Signature and Equation
+
+
+
+
+    Askey = {{x} | x ∈ Xskey } ∪ {{ltk(a, b)} | a ∈ Xname , b ∈ Xname }
+    Aakey = {{x−2n | n ∈ N} | x ∈ Xakey }
+               ∪ {{x−2n−1 | n ∈ N} | x ∈ Xakey }
+               ∪ {{Kx−2n | n ∈ N} | x ∈ Xname }
+               ∪ {{Kx−2n−1 | n ∈ N} | x ∈ Xname }
+    Aname = {{x} | x ∈ Xname }
+     Atext = {{x} | x ∈ Xtext }
+    Adata = {{x} | x ∈ Xdata }
+        B = Askey ∪ Aakey ∪ Aname ∪ Atext ∪ Adata
+       A0 = B ∪ {{x} | x ∈ Xmesg } ∪ {{x} | x is a tag constant }
+      n+1
+     A     = An ∪ {{(t0 , t1 ) | t0 ∈ T0 , t1 ∈ T1 } | T0 ∈ An , T1 ∈ An }
+                ∪ {{{|t0 |}t1 | t0 ∈ T0 , t1 ∈ T1 } | T0 ∈ An , T1 ∈ An }
+             S ∪ {{#t     | t ∈ T } | T ∈ An }
+A = Amesg = n∈N An
+
+              Figure 2.2: bca Messages A and Atoms B
+
+
+
+
+t0 ≡ t1 , iff t0 ∈ T ∧ t1 ∈ T for some T ∈ A. The canonical representative
+of a message is the t in {t′ | t′ ≡ t} with the fewest occurrences of the (·)−1
+operation.
+    Keys, names, data, and texts in the algebra are called atoms and are
+members of B. We write t : B iff {t′ | t′ ≡ t} ∈ B. Note that encryption
+is defined with an encryption key of sort mesg. When the encryption key
+is of sort akey this is meant to model asymmetric encryption: otherwise,
+this models symmetric encryption. Note that even complex messages such
+as encryptions can be used as encryption keys in the symmetric sense.
+    To find the decryption key associated with an encryption, one must ex-
+clude the case in which the key is a variable of sort mesg, as there is no way
+to determine if the encryption operation denotes symmetric or asymmetric
+encryption. Therefore, the decryption key associated with encryption key t
+is inv (t).
+                       
+                        invk(t)     if t : akey;
+             inv (t) =   undefined if t is a variable of sort mesg;
+                         t           otherwise.
+                       
+
+    An important property possessed by the algebra is that for all T ∈ A, if
+there are any encryptions in T then all members of T are encryptions. As
+a result, a message can be identified as representing an encryption and if it
+is, decomposed into its plaintext and its decryption key. This property is a
+consequence of the fact that equations relate atoms, not arbitrary messages.
+A similar property holds for pairs and hashes. A hash is treated as a kind of
+encryption in which the term that is hashed is the encryption key.
+    We write AX when it is important to identify the variable set X that
+generates the algebra. Given two variable sets X and Y , a substitution is
+an order-sorted map σ : X → AY such that σ(x) ̸= x for only finitely many
+elements of X. For a substitution σ, the domain is the set of variables
+Dom(σ) = {x | σ(x) ̸= x} and the range is the set Ran(σ) = {σ(x) |
+x ∈ Dom(σ)}. Substitution σ0 is more general than σ1 , written σ0 ⊴ σ1 ,
+if there exists a substitution σ2 such that ∀x σ1 (x) ≡ σ2 (σ0 (x)). Given a
+substitution σ : X → AY , the unique homomorphism σ ∗ : AX → AY induced
+by σ is also denoted σ.
+    A position p is a finite sequence of natural numbers. The term in t that
+
+
+
+
+
+occurs at p, written t @ p, is:
+
+                       t @ ⟨⟩ = t;
+                       (t0 , t1 ) @ i :: p = ti @ p for i ∈ {0, 1};
+                       {|t0 |}t1 @ i :: p = ti @ p for i ∈ {0, 1};
+                       t−1 @ 0 :: p = t @ p.
+
+A term t occurs in term t′ if t = t′ @ p for some p. A message T occurs
+in message T ′ if the canonical representative of T occurs in the canonical
+representative of T ′ .
+   A carried term is one that can be extracted from a message reception
+assuming plaintext is extractable from encryptions. The positions at which
+term t is carried in t′ is carpos(t, t′ ), where
+
+                                {⟨⟩} if t′ ≡ t, else
+                             
+                             
+                             
+                                {0 :: p | p ∈ carpos(t, t1 )}
+                             
+                             
+                             
+                             
+                                        if t′ = {|t0 |}t1 , else
+                             
+            carpos(t, t′ ) =
+                             
+                               {i :: p | i ∈ {0, 1}, p ∈ carpos(t, ti )}
+                                        if t′ = (t0 , t1 ) else
+                             
+                             
+                             
+                             
+                                ∅       otherwise.
+                             
+
+     Term t carries t′ if carpos(t′ , t) is not empty, and t′ ⊑ t when t′ is car-
+ried by t. Note that for all terms t0 , t1 , t′0 , t′1 , if t0 ≡ t1 and t′0 ≡ t′1 , then
+carpos(t0 , t′0 ) = carpos(t1 , t′1 ). We write t′ ⊑p t when p ∈ carpos(t′ , t) and
+t @ p ≡ t′ .
+     In what follows, we will often conflate a term with the message of which
+it is a member, and use lowercase letters to denote both.
+
+
+
+### 2.1      Channel Messages
+
+As of cpsa version 4.2, messages can optionally be transported on a channel.
+For t ∈ AX , a plain message is written [t], and when the message is bound
+to channel c, it is written [c, t].
+    The channel message algebra adds two sorts to the underlying message
+algebra, chan and chmsg, and two operations to the signature:
+
+                  [·] : mesg → chmsg        Plain message
+               [·, ·] : chan × mesg → chmsg Channel message
+
+
+
+Let X be a bca variable set, and X̄ be a variable set that adds channel
+variables to X. If AX is the algebra associated with sort mesg, then ĀX̄ is
+the algebra associated with sort chmsg, the Basic Crypto Channel Algebra
+generated from X̄.
+   Positions are extended to channel messages as follows:
+
+                              m @ ⟨⟩ = m;
+                              [t] @ 0 :: p = t @ p;
+                              [c, t] @ 1 :: p = t @ p.
+
+The set of carried positions is extended to channel messages in the obvious
+way. The plain message [t] will often be written as t when the context
+disambiguates the reference.
+
+
+
+### 2.2      Locations and state messages
+
+The cpsa 4 treatment of state makes two additions to the message algebra.
+First, we introduce a new sort of channel, called locations and written locn.
+These are handled exactly like chans in building channel messages:
+
+            [·] : mesg → chmsg                 Plain message
+         [·, ·] : (chan ∪ locn) × mesg → chmsg Channel message
+
+We also add a new sort to the underlying message sorts, the sort of points
+pval, which are a base sort.
+            Sorts: pval, name, text, data, skey, akey < mesg
+              Base sorts: pval, name, text, data, skey, akey
+We leave the operators and equations unchanged. cpsa protocol specifica-
+tions never mention point values explicitly, but the cpsa loader incorporates
+them whenever it reads roles that load state values from locations or store
+them into locations.
+    The state value is a pair (pt, t) consisting of a point pt : pval and the user-
+specified message term t; the point occurring when a state value is stored into
+a location is always assumed to be uniquely originating. This ensures that
+loads that receive the same value (including the point component) are in fact
+observing the same state transition event. This allows cpsa to reconstruct
+the state histories of different state registers.
+
+
+    Thus, when m is a message, it may be a plain message [t] or a channel
+message [c, t], where either c : chan or c : locn. In case c : locn, cpsa
+always arranges that t is a pair of the form t = (pt, t0 ) where pt : pval and
+t0 is a point-free term.
+
+
+
+
+
+
+## Chapter 3
+
+
+Strand Spaces and Bundles
+
+When using strand space theory, one normally hypothesizes the existence of
+a single global strand space. This is a very reasonable assumption for the-
+oretical analysis, but from the point view of an implementer, it turns out
+that it is better to assume there are many local strand spaces and the de-
+sign specification task is to describe the relations between these local spaces.
+Our reformulation of strand space notation provides an implementation ori-
+ented way of describing the concept of a local strand space, and a direct
+link between from algorithm specification to the data structures used in the
+implementation.
+    A run of a protocol is viewed as an exchange of messages by a finite set
+of local sessions of the protocol. Each local session is called a strand. The
+behavior of a strand, its trace, is a sequence of messaging events. An event
+is either a message transmission or a reception.
+    An outbound message m ∈ ĀX is written as +m, and a message m is
+written as −m.
+
+State events: Stores and loads. When m = [c, (pt, t0 )] for c : locn and
+pt : pval, +m is a store event, in which the value t0 is written into the
+location c, and −m is a load event, in which the value t0 is read out of the
+location c. In the latter case, pt may be the point associated with an earlier
+store event e that wrote t0 into c. In this case, our theory will ensure that e
+is the most recent store event involving c.
+
+Traces and strand spaces. The set of traces over ĀX is CX = (±ĀX )+ .
+A message originates in a trace if it is carried by some event and the first
+
+
+event in which it is carried is outbound. A message is gained by a trace if it
+is carried by some event and the first event in which it is carried is inbound.
+A message is acquired by a trace if it first occurs in a reception event and is
+also carried by that event.
+    Abstractly, a strand space is a multiset of traces, but since we wish to
+name each element, a strand space ΘX over algebra ĀX is defined to be a
+sequence of traces in CX . A strand s is a member of the domain of ΘX , and
+its trace is ΘX (s).
+    Message events occur at nodes in a strand space. For each strand s, there
+is a node for every event in Θ(s). The nodes of strand space Θ are {(s, i) |
+s ∈ Dom(Θ), 0 ≤ i < |Θ(s)|}, the event at a node is evt Θ (s, i) = Θ(s)(i),
+and the message at a node is msg Θ (s, i) = m such that evt Θ (s, i) = ±m.
+Just as a position names a subterm within another term, a strand names a
+trace within a strand space, and a node names an event in a strand space.
+The relation ⇒ defined by {(s, i − 1) ⇒ (s, i) | s ∈ Dom(Θ), 1 ≤ i < |Θ(s)|}
+is called the strand succession relation.
+    A bundle in strand space Θ is a finite directed acyclic graph Υ(Θ, →),
+where the vertices are the nodes of Θ, and an edge represents communica-
+tion (→) or strand succession (⇒). For communication, if n0 → n1 , then
+there is a channel message m such that evt Θ (n0 ) = +m and evt Θ (n1 ) = −m.
+For each reception node n1 , there is a unique transmission node n0 with
+n0 → n1 .
+    Each acyclic graph has a transitive irreflexive relation ≺ on its vertices.
+The relation specifies the causal ordering of nodes in a bundle. An transitive
+irreflexive binary relation is also called a strict partial order.
+
+Authentic and confidential channels. An atom uniquely originates in
+a bundle if it originates in the trace of exactly one strand. An atom is non-
+originating in a bundle if it originates on no strand, but each of its variables
+occurs in some strand’s trace. A channel is authenticated if only regular
+strands in a bundle use it to transmit messages. A channel is confidential if
+only regular strands in a bundle use it to receive messages.
+
+Channel properties of locations. Every location is regarded as a con-
+fidential channel. Thus, we are modeling long term state registers that are
+associated with devices under the control of regular (i.e. compliant) par-
+ticipants. The adversary never observes a location directly; the adversary
+
+
+
+observes only messages from regular participants that may reflect the con-
+tents of locations. The adversary may store certain values directly, namely
+the possible initial values for a location. Thus, we rely on the adversary
+to initialize locations values. Other values that can be produced only by a
+state transition cannot be inserted by the adversary; only a regular partic-
+ipant’s store event can cause them. The protocol specification determines
+the sufficient conditions for these non-initial values, or, as we will call them,
+generated state values. Naturally, messages the adversary delivers to regular
+participants may affect what generated state values they subsequently store.
+
+Roles. In a run of a protocol, the behavior of each strand is constrained by
+a role in a protocol. Adversarial strands are constrained by roles as are non-
+adversarial strands. What follows is the definition of a role before channels
+and channel messages were introduced into cpsa, followed by a discussion of
+the additions caused by channels.
+    Given an ĀY , and C ∈ CY , N ⊆ BY , and U ⊆ BY , if:
+  1. t ∈ N implies t is not carried in C, and all variables in N occur in C;
+  2. t ∈ U implies t originates in C;
+  3. if variable x occurs in C then x is an atom or it is acquired in C; and
+  4. the trace of a role may not match the pattern ⟨−m, +m, . . .⟩,
+then rY (C, N, U ) is a role over ĀY . The trace of rY (C, N, U ) is C, its non-
+origination assumptions are N , and its unique origination assumptions are U .
+Item (4) is meant to ensure that listeners, which are introduced on Page 17,
+cannot be confused with protocol constrained strands.
+     A protocol P is a set of roles. Let Vars(P ) be the set of variables that
+occur in the traces of the roles in protocol P .
+     A bundle Υ(ΘX , →) is a run of protocol P if there is a role mapping
+rl : ΘX → P that satisfies properties for each s ∈ Dom(ΘX ). Assuming
+rl (s) = rY (C, N, U ) and X and Y share no variables, and let h = |ΘX (s)|, the
+properties are (1) h ≤ |C|, (2) there is a homomorphism σ : ĀY → ĀX such
+that σ ◦ C † h = ΘX (s), (3) Dom(σ) is the set of variables that occur in C † h,
+(4) if the variables in t ∈ N occur in Dom(σ), then σ(t) is non-originating in
+Υ(ΘX , →), and (5) if t ∈ U originates at index i in C, and i < h, then σ(t)
+uniquely originates in Υ(ΘX , →) at node (s, i). Origination assumptions in
+bundles specified by roles are called inherited origination assumptions.
+
+
+Roles and channels. The introduction of channels adds two new fields to
+a role, a set of channels assumed to be authenticated, and a set of channels
+assumed to be confidential. For a bundle to be a run of a protocol, the
+inherited channel assumptions must be honored by the bundle. State adds
+no other fields to the role data structure, although when c : locn, c will
+always be among the confidential channels.
+
+
+
+
+
+
+## Chapter 4
+
+
+Adversary Model
+
+A fixed set of penetrator roles encodes the adversary model associated with
+a message algebra. For the Basic Crypto Algebra, there are nine roles. Each
+role makes no origination assumptions, and the trace of each role is given
+in Figure 4.1. The first line of the figure specifies many traces, one for each
+base sort, and a trace for each tag.
+    A strand exhibits non-adversarial behavior when its role is not a pen-
+etrator role. A non-adversarial strand is called a regular strand as is its
+role.
+    The penetrator cannot use a non-originating atom to encrypt or decrypt a
+message, because every key it uses must be carried in a message. Consider a
+uniquely originating atom that originates on a regular strand. The penetrator
+cannot make the atom using a create role, because the atom would originate
+in more than one trace. Therefore, the penetrator can use a uniquely orig-
+inating atom to encrypt or decrypt a message only if it is transmitted by a
+regular strand unprotected by encryption.
+    When a channel is authenticated, the penetrator cannot send a message
+
+       Create(z : B)         ⟨+z⟩                 ⟨+“. . . ”⟩
+       Pair(x, y : ⊤)        ⟨−x, −y, +(x, y)⟩    ⟨−(x, y), +x, +y⟩
+       Encrypt(x, y : ⊤)     ⟨−x, −y, +{|x|}y ⟩   ⟨−{|x|}y , − inv (y), +x⟩
+       Hash(x : ⊤)           ⟨−x, +#x⟩
+       Chan(c : Ch, x : ⊤)   ⟨−x, +[c, x]⟩        ⟨−[c, x], +x⟩
+
+         Figure 4.1: Basic Crypto Algebra Penetrator Role Traces
+
+
+
+on it. When a channel is confidential, the penetrator cannot receive a message
+on it.
+
+
+
+
+
+
+## Chapter 5
+
+
+Skeletons
+
+The details of penetrator behavior are abstracted away when performing
+protocol analysis. The abstracted description of a bundle is called a realized
+skeleton, which is defined using a protoskeleton. A protoskeleton over ĀX is
+kX (rl , P, ΘX , ≺, N, U ), where rl : Dom(ΘX ) → P is a role map, the sets X
+and Vars(P ) are disjoint, ΘX is a sequence of traces in CX , ≺ is a relation on
+the nodes in ΘX , N ⊆ BX are its non-origination assumptions, and U ⊆ BX
+are its unique origination assumptions. Unlike a strand space, the sort of a
+variable in X need not be a base sort.
+    The introduction of channels adds two new fields to a skeleton, a set of
+channels assumed to be authenticated, and a set of channels assumed to be
+confidential. The implications of the additions is straightforward, and we
+simply retain the original description of skeletons.
+    Assume the strands in bundle Υ(ΘX , →) have been permuted so that
+regular strands precede penetrator strands in sequence ΘX , and rl demon-
+strates the bundle is a run of protocol P . Let P ′ be P without penetrator
+roles. Skeleton kX (rl ′ , P ′ , Θ′X , ≺, N, U ) realizes the bundle if rl ′ and Θ′X are
+the truncations of rl and ΘX respectively that omit penetrator strands from
+their domains, ≺ is the transitive irreflexive relation associated with the
+bundle without penetrator nodes, N is the set of non-originating atoms with
+variables that occur in Θ′X , and U is the set of atoms that uniquely originate
+and are carried by some regular event.
+    A protoskeleton kX (rl , P, ΘX , ≺, N, U ) is a preskeleton if the following
+properties hold.
+   1. Sequence rl demonstrates that the strands in Dom(ΘX ) satisfy the
+      conditions for being a part of a run of protocol P .
+
+
+   2. Relation ≺ is transitive, irreflexive, and includes the strand succession
+      relation (⇒).
+
+   3. If n ≺ n′ , then either n ⇒ n′ , evt ΘX (n) = +t and evt ΘX (n′ ) = −t′ , or
+      n ≺ n′′ ≺ n′ for some n′′ .
+
+   4. Each atom in N is carried by no event, and each variable in the atom
+      occurs in some event.
+
+   5. Each atom in U is carried by some event.
+
+   6. N includes the non-originating atoms inherited from roles via the role
+      map.
+
+   7. U includes the uniquely originating atoms inherited from roles via the
+      role map.
+
+    Let Ok (t) be the set of nodes at which t originates in preskeleton k,
+and Gk (t) be the set of nodes at which t is gained in k. Preskeleton
+kX (rl , P, ΘX , ≺, N, U ) is a skeleton if each atom in U originates on at most
+one strand, and the node of origination precedes each node that gains the
+atom, i.e. for every t ∈ U , n0 ∈ Ok (t) and n1 ∈ Gk (t) implies n0 ≺ n1 .
+    Let k0 = kX (rl0 , P, Θ0 , ≺0 , N0 , U0 ) and k1 = kY (rl1 , P, Θ1 , ≺1 , N1 , U1 ) be
+preskeletons. There is a preskeleton homomorphism from k0 to k1 if ϕ and σ
+are maps with the following properties:
+
+   1. ϕ maps strands of k0 into those of k1 , and nodes as ϕ((s, i)) = (ϕ(s), i),
+      that is ϕ is in Dom(Θ0 ) → Dom(Θ1 );
+
+   2. σ : ĀX → ĀY is a message algebra homomorphism;
+
+   3. n ∈ nodes(Θ0 ) implies σ(evt Θ0 (n)) = evt Θ1 (ϕ(n));
+
+   4. n0 ≺0 n1 implies ϕ(n0 ) ≺1 ϕ(n1 );
+
+   5. σ(N0 ) ⊆ N1 ;
+
+   6. σ(U0 ) ⊆ U1 ;
+
+   7. t ∈ U0 implies ϕ(Ok0 (t)) ⊆ Ok1 (σ(t)).
+
+
+
+
+    A homomorphism is strandwise injective if its strand map is injective.
+Two preskeletons are isomorphic if they are related by strandwise injective
+homomorphism in both directions. A homomorphism is nodewise isomorphic
+if the strand map ϕ implies a bijection on nodes, and n0 ≺1 n1 implies
+ϕ−1 (n0 ) ≺0 ϕ−1 (n1 ). A skeleton is realized if there is a nodewise isomorphic
+homomorphism from it to a skeleton that realizes a bundle, and message
+component of the homomorphism is injective.
+    Our formalism requires that every protocol include a listener role of the
+form: lsn(x : ⊤) = r(⟨−x, +x⟩, ∅, ∅). Instances of this role are sometimes used
+to make penetrator derived messages visible in skeletons. We say skeleton k
+realizes modulo listeners bundle Υ(Θ, →) if k realizes Υ(Θ′ , →′ ) and Υ(Θ, →)
+is the result of removing listener strands, and adjusting the communication
+ordering → appropriately.
+    The set of bundles denoted by preskeleton k, [[k]], is:
+                          ϕ,σ
+           [[k]] = {Υ | k 7−→ k ′ and k ′ realizes modulo listeners Υ}
+A cpsa algorithm is complete if when given a preskeleton k, either the al-
+gorithm diverges, or else it terminates       and produces a finite set of realized
+skeletons K, such that [[k]] = k′ ∈K [[k ′ ]].
+                              S
+
+
+
+5.1      Blanchet’s Simple Example Protocol
+The following protocol is a simplified version of the Denning-Sacco key dis-
+tribution protocol [4] due to Bruno Blanchet.
+                                A → B : {|{|s|}a−1 |}b
+                                B → A : {|d|}s
+Symmetric key s is freshly generated, asymmetric keys a−1 and b−1 are un-
+compromised, and the goal of the protocol is to keep data d secret. The
+protocol was constructed with a known flaw for expository purposes.
+    This cpsa description of the protocol has an initiator and a responder
+role.
+           init(a, b : A, s : S, d : D) = r(⟨+{|{|s|}a−1 |}b , −{|d|}s ⟩, ∅, ∅)
+          resp(a, b : A, s : S, d : D) = r(⟨−{|{|s|}a−1 |}b , +{|d|}s ⟩, ∅, ∅)
+where we use A for sort akey, S for sort skey, and D for sort data to
+save space. The algebra for the initiator role is generated from X, where
+XA = {a, b}, XS = {s}, XD = {d}, Xtext = ∅, Xname = ∅, and X⊤ = ∅.
+
+
+    An interesting point of view for analysis is to see if the authentication
+goals of the initiator are met. To do so, we assume there was full length run
+of an initiator strand, and let cpsa determine what else must have happened.
+Let variable set Y = a, b : A, s : S, d : D. The point-of-view skeleton is:
+       kY (⟨init(a0 , b0 , s0 , d0 )⟩,                             Role map
+           {init(a0 , b0 , s0 , d0 ), resp(a1 , b1 , s1 , d1 )},   Protocol
+           ⟨⟨+{|{|s|}a−1 |}b , −{|d|}s ⟩⟩,                         Traces
+           ∅,                                                      Node orderings
+           {a−1 , b−1 },                                           Non-origination
+           {s})                                                    Unique origination
+where the variable set that generates the algebra for the initiator and respon-
+der roles have been renamed so as to avoid conflicts with the variable set Y
+used by the skeleton.
+    The skeleton produced by cpsa for this problem follows. Notice that the
+two strands agree on the key b used in the outermost encryption of their
+first message, and indication that the authentication goals of the initiator
+are met. See Figure 5.1 to see the structure of the shape.
+       kY (⟨init(a0 , b0 , s0 , d0 ), resp(a1 , b1 , s1 , d1 )⟩,   Role map
+           {init(a0 , b0 , s0 , d0 ), resp(a1 , b1 , s1 , d1 )},   Protocol
+           ⟨⟨+{|{|s|}a−1 |}b , −{|d|}s ⟩,                          Traces
+            ⟨−{|{|s|}a−1 |}b , +{|d|}s ⟩⟩,
+           {(0, 0) ≺ (1, 0), (1, 1) ≺ (0, 1)},                     Node orderings
+           {a−1 , b−1 },                                           Non-origination
+           {s})                                                    Unique origination
+The homomorphism from the point-of-view skeleton to the shape is
+                         (⟨1⟩, {a 7→ a, b 7→ b, s 7→ s, d 7→ d}).
+    An analysis of the authentication goals for the responder shows the flaw
+built into the protocol. To do the analysis, assume there was a full length run
+of a responder strand, and let cpsa determine what else must have happened.
+In this case, the point-of-view skeleton is:
+       kY (⟨resp(a0 , b0 , s0 , d0 )⟩,                             Role map
+           {init(a0 , b0 , s0 , d0 ), resp(a1 , b1 , s1 , d1 )},   Protocol
+           ⟨⟨−{|{|s|}a−1 |}b , +{|d|}s ⟩⟩,                         Traces
+           ∅,                                                      Node orderings
+           {a−1 , b−1 },                                           Non-origination
+           {s})                                                    Unique origination
+
+
+                            init        resp          resp         init
+
+
+                             •            /•            •o             •
+
+                                                       
+                             •o           •             •
+
+                     Figure 5.1: Shapes for Blanchet’s Protocol
+
+    The shape generated by cpsa follows. An early indication of a problem
+is the variable set for the shape has three asymmetric keys. Let variable set
+Z = a, b, b′ : A, s : S, d : D. The shape is:
+
+      kZ (⟨resp(a0 , b0 , s0 , d0 ), init(a1 , b1 , s1 , d1 )⟩,   Role map
+          {init(a0 , b0 , s0 , d0 ), resp(a1 , b1 , s1 , d1 )},   Protocol
+          ⟨⟨−{|{|s|}a−1 |}b , +{|d|}s ⟩,                          Traces
+           ⟨+{|{|s|}a−1 |}b′ ⟩⟩,                                  Note key is b′ not b!
+          {(1, 0) ≺ (0, 0)},                                      Node orderings
+          {a−1 , b−1 },                                           Non-origination
+          {s})                                                    Unique origination
+
+   Notice that the two strands do not agree on the key used in the outermost
+encryption of their first message—an authentication failure. To see that the
+authentication failure leads to the failure to protect the secrecy of data d,
+the protocol is analyzed using the following point-of-view:
+
+   kY (⟨resp(a0 , b0 , s0 , d0 ), lsn(x)⟩,                                 Role map
+       {init(a0 , b0 , s0 , d0 ), resp(a1 , b1 , s1 , d1 ), lsn(x)},       Protocol
+       ⟨⟨−{|{|s|}a−1 |}b , +{|d|}s ⟩, ⟨−d, +d⟩⟩,                           Traces
+       {(0, 1) ≺ (1, 0)},                                                  Node orderings
+       {a−1 , b−1 },                                                       Non-origination
+       {s, d})                                                             Unique origination
+
+   cpsa finds a shape that shows how data d is revealed to the adversary.
+
+
+
+
+
+5.2      Dolev-Yao Example 1.3
+The intended run of the protocol in the Dolev-Yao Example 1.3 is:
+                                  A → B : {|{|m|}b , a|}b
+                                  B → A : {|{|m|}a , b|}a
+
+assuming text m is freshly generated, and asymmetric keys a−1 and b−1 are
+uncompromised.
+    The cpsa description of the protocol also has an initiator and a responder
+role.
+          init(a, b : A, m : D) = r(⟨+{|{|m|}b , a|}b , −{|{|m|}a , b|}a ⟩, ∅, ∅)
+         resp(a, b : A, m : ⊤) = r(⟨−{|{|m|}b , a|}b , +{|{|m|}a , b|}a ⟩, ∅, ∅)
+
+    An interesting point of view for analysis is to see if m is kept secret after
+the initiator sends its message. Let variable set Z = a, b : A, m : D. The
+initial scenario preskeleton is:
+      kZ (⟨init(a0 , b0 , m0 ), lsn(x)⟩,                            Role map
+          {init(a0 , b0 , m0 ), resp(a1 , b1 , m1 ), lsn(x)},       Protocol
+          ⟨⟨+{|{|m|}b , a|}b ⟩, ⟨−m⟩⟩,                              Traces
+          ∅,                                                        Node orderings
+          {a−1 , b−1 },                                             Non-origination
+          {m})                                                      Unique origination
+
+where the variable set that generates the algebra for the initiator role has
+been renamed so as to avoid conflicts with the variable set Z used by the
+preskeleton.
+   cpsa determines m is not kept secret by producing the shape in Fig-
+ure 5.2. The added strands in the shape are instances of responder roles.
+The strands in the shape are:
+                  ⟨+{|{|m|}b , a|}b ⟩
+                  ⟨−m⟩
+                  ⟨−{|{|m|}b , a′ |}b , +{|{|m|}a′ , b|}a′ ⟩
+                  ⟨−{|{|{|m|}b , a|}b , a′′ |}b , +{|{|{|m|}b , a|}a′′ , b|}a′′ ⟩
+
+The non-origination and unique origination assumptions are as they are in
+the initial scenario preskeleton. An interesting exercise left for the reader is
+to produce a bundle that is realized by the shape.
+
+
+                        init               resp        resp
+
+
+                          •                             /•
+
+
+                                                         
+                                              •o         •
+
+                                              
+                                   •o         •
+
+                                    
+                                   •
+
+                  Figure 5.2: Dolev-Yao Example 1.3 Shape
+
+
+### 5.3      Exercise
+
+Consider the following roles.
+
+                     init(a, b : A) = r(⟨+(a, b), −(b, a)⟩, ∅, ∅)
+                    resp(a, b : A) = r(⟨−(a, b), +(b, a)⟩, ∅, ∅)
+
+Let X = x, y : A and k = kX (⟨init(a, b), resp(a, b), resp(a, b)⟩,
+                             {init(a, b), resp(a, b)},
+                             ⟨⟨+(x, y), −(y, x)⟩,
+                              ⟨−(x, y), +(y, x)⟩,
+                              ⟨−(x, y), +(y, x)⟩⟩,
+                             Node ordering in Figure 5.3,
+                             ∅,
+                             ∅)
+   What is [[k]]?
+   One member is shown in Figure 5.4.
+
+
+
+### 5.4      External Syntax and Instances
+
+The external syntax used by cpsa is a little different than what has been
+described here. In the external syntax, the trace and the role associated
+with a strand is specified by an instance. An instance is of the form i(r, h, σ),
+
+
+                init       resp      resp
+
+
+                  •        /•         ,•
+
+
+                                      
+                  • lo      •          •
+
+              Figure 5.3: Exercise Skeleton
+
+
+
+
+       init   ⟨+(x, y), −(y, x)⟩
+       resp   ⟨−(x, y), +(y, x)⟩
+       resp   ⟨−(x, y), +(y, x)⟩
+       pair   ⟨−(y, x), −(y, x), +((y, x), (y, x))⟩
+       sep    ⟨−((y, x), (y, x)), +(y, x)⟩
+
+      init      resp       resp       pair      sep
+
+
+       •         /•         ,•
+
+
+                               
+                  •         •          /•
+
+
+                                       - •
+
+
+                                            
+                                        •        /•
+
+
+                                                 
+       •o                                         •
+
+Figure 5.4: A Bundle Realized by the Example Skeleton
+
+
+
+
+where r is a role, h specifies the length of a trace instantiated from the role,
+and σ specifies how to instantiate the variables in the role to obtain the trace.
+Thus when r = rY (C, N, U ), the trace associated with i(r, h, σ) is σ ◦ C † h.
+An instance is well-formed if 1 ≤ h ≤ |C|, and Dom(σ) is the set of variables
+that occur in C † h.
+     In the external syntax, the role map and sequence of traces are replaced
+by a sequence of instances. So for preskeleton kX (rl , P, ΘX , ≺, N, U ), the
+external syntax is kX (P, I, ≺, N, U ), where for each s ∈ Dom(Θx ), I(s) =
+i(r, h, σ), r = rl (s), and the trace of i(r, h, σ) is ΘX (s).
+
+
+
+
+
+
+## Chapter 6
+
+
+Algorithms as Reduction
+Systems
+
+Algorithms in this paper are specified as abstract reduction systems [1, Chap-
+ter 2]. A reduction system is a pair (A, →), where reduction → is a binary
+relation → ⊆ A × A. Element x ∈ A is a normal form if there is no y such
+that x → y. The transitive closure of → is →+ . The reflexive transitive
+closure of → is →∗ . A reduction is confluent if x →∗ y0 and x →∗ y1 implies
+there is a z such that y0 →∗ z and y1 →∗ z. A reduction is terminating
+if there are no infinite descending chains. A reduction is convergent if it is
+confluent and terminating.
+    Let K be the set of preskeletons. Algorithms are specified as reduction
+systems of the form (K, →), which are then used to specify a related setwise
+reduction system of the form (2K , ↠). Setwise reduction systems are the
+ones with the interesting normal forms and confluence properties. In a setwise
+reduction system, reduction rewrites one element of a set to a set of elements.
+
+Definition 6.1 (Setwise Reduction System). The setwise reduction system
+of binary relation ⇝⊆ K × 2K is a reduction system (2K , ↠), where for each
+K0 ∈ 2K , K0 ↠ K1 if for some k0 ∈ K0 , k0 ⇝ K2 , K1 = K2 ∪ (K0 \ {k0 }),
+and K1 ̸= K0 .
+
+   The cpsa algorithm will be specified as a setwise term reduction system,
+where the initial problem is given a singleton in 2K , and the answers computed
+by an implementation of the algorithm are a normal form of the setwise
+reduction relation ↠k defined in Chapter 14.
+
+
+
+    In what follows the relation k ⇝ K is defined in terms of →⊆ K × K by
+specifying {k} ↠ K using →, so the ⇝ relation is not explicitly defined.
+    We regard sets of preskeletons as factored by isomorphism, where each
+set has at most one representative of the equivalence class of isomorphic
+preskeletons. The definition of isomorphic preskeletons is given on Page 17.
+    The cpsa Design [12] describes an extension of a message algebra signa-
+ture that models the data structures used in the cpsa program. The terms
+over the extended signature include ones that model preskeletons. Sets of
+terms of sort preskeleton are the domain of our setwise reduction systems.
+
+
+
+
+
+
+## Chapter 7
+
+
+Primitive Preskeleton
+Operators
+
+The are four primitive operators on preskeletons used by cpsa to solve
+authentication tests. Each operator is a partial map from preskeletons to
+preskeletons.
+
+Definition 7.1 (Substitution Operator). For order-sorted substitution σ : X →
+AY , the operator Sσ is:
+
+                Sσ (kX (rl , P, ΘX , ≺, N, U )) =
+                  kY (rl , P, s 7→ σ ◦ ΘX (s), ≺, σ(N ), σ(U ))
+
+   For k ′ = Sσ (k), there is a homomorphism from k to k ′ only if for all
+t ∈ Uk , Ok (t) ⊆ Ok′ (σ(t)). The structure preserving maps associated with
+the homomorphism are ϕid and σ.
+
+Definition 7.2 (Compression Operator). For distinct strands s and s′ , op-
+erator Cs,s′ compresses strand s into s′ .
+
+                    Cs,s′ (kX (rl , P, ΘX , ≺, N, U )) =
+                      kX (rl ◦ ϕ′s , P, ΘX ◦ ϕ′s , ≺′ , N, U )
+
+where                              
+                                       j + 1 if j ≥ s
+                       ϕ′s (j) =
+                                       j     otherwise,
+
+
+
+
+relation ≺′ is the transitive closure of ϕs,s′ (≺), and
+
+                                      ϕs (s′ ) if j = s
+                                    
+                        ϕs,s′ (j) =
+                                     ϕs (j) otherwise
+                                      j − 1 if j > s
+                          ϕs (j) =
+                                      j        otherwise.
+
+    The compression operator is only used when ΘX (s) is a prefix of ΘX (s′ ),
+and when there is a homomorphism from k to Cs,s′ (k). The structure pre-
+serving maps associated with the homomorphism are ϕs,s′ and σid . Note that
+the compression operator is defined only when relation ≺′ is asymmetric, and
+that ϕs,s′ ◦ ϕ′s = ϕid .
+
+Definition 7.3 (Ordering Enrichment Operator). Operator O applied to k
+enriches ≺k by adding all elements implied by unique origination. That
+is O(k) = kX (rl , P, ΘX , ≺′ , N, U )), where k = kX (rl , P, ΘX , ≺, N, U ) and
+≺′ = (≺ ∪{(n0 , n1 ) | n0 ∈ O(k, t) ∧ n1 ∈ G(k, t)})∗ .
+
+   The ordering enrichment operator is total and idempotent. The struc-
+ture preserving maps associated with the operator’s homomorphism are ϕid
+and σid , i.e. the homomorphism is an embedding.
+
+Definition 7.4 (Augmentation Operator). For node n, role r, and trace C,
+operator An,r,C is:
+
+                     An,r,C (kX (rl , P, ΘX , ≺, N, U )) =
+                       kX ′ (rl ⌢ r, P, ΘX (s) ⌢ C, ≺′ , N ′ , U ′ )
+
+where X ′ is X extended to include the variables in C, ≺′ is the minimal
+extension of ≺ such that (|ΘX | + 1, |C|) ≺′ n, N ′ is N extended with non-
+origination assumptions inherited from r by C, and likewise for U ′ .
+
+    The structure preserving maps associated with the augmentation opera-
+tor’s homomorphism are ϕid and σid , i.e. the homomorphism is an embedding.
+
+
+
+
+
+
+## Chapter 8
+
+
+Reductions on Preskeletons
+
+This chapter describes the algorithm used to transform a preskeleton into a
+skeleton as a setwise term reduction system (K, ↠). Recall that the relation
+k ⇝ K in Chapter 6 is defined in terms of →⊆ K × K by specifying {k} ↠ K
+using →. Additionally, when k = k(rl , P, Θ, ≺, N, U ), Uk is used to name U ,
+and so forth for other components of k.
+    If a preskeleton k is not a skeleton, then it is either because some t ∈ Uk
+actually originates at more than one node, or because for some t ∈ Uk ,
+there is a node n1 ∈ Gk (t), and a node n0 ∈ Ok (t) such that n0 ⊀k n1 . A
+preskeleton in which an atom assumed to be uniquely originating originates
+more than once is simply expunged. The second obstruction is resolved by
+enriching node orderings. A hulled preskeleton is a preskeleton in which every
+uniquely originating atom originates at most once, but it may lack some node
+orderings needed to be a skeleton.
+    Skeletons may contain “effectively equivalent” strands. After converting
+preskeletons to skeletons, a preskeleton reduction system may remove effec-
+tively equivalent strands using a process called thinning. A skeleton without
+any effectively equivalent strands is called a thinned skeleton.
+
+Definition 8.1 (Hulling Reduction). A non-hulled preskeleton k is expunged.
+                                           H
+The setwise hulling reduction rule is {k} −↠ {} when k is not hulled.
+
+Definition 8.2 (Order Enrichment). Suppose hulled preskeleton k0 is not a
+skeleton. Hulled preskeleton k0 reduces to skeleton k1 by order enrichment,
+             O
+written k0 −→ k1 , iff k1 is the result of adding node orderings implied by
+origination. That is, ≺k1 = (≺k0 ∪ {(n0 , n1 ) | n0 ∈ O(k0 , t) ∧ n1 ∈ G(k0 , t)})∗ .
+
+
+
+There is a homomorphism from k0 to k1 that is an embedding. For the
+                                           O           O
+setwise order enrichment reduction, {k0 } −↠ {k1 | k0 −→ k1 } when k0 is a
+hulled preskeleton that is not a skeleton.
+   The thinning operator Ts removes an effectively equivalent strand.
+Definition 8.3 (Thinning). Two strands s and s′ in a skeleton k are effec-
+tively equivalent if k with s removed and k with s′ removed are isomorphic.
+(Page 17 defines isomorphic skeletons.) Skeleton k0 reduces to skeleton k1
+                           Ts
+by thinning, written k0 −→     k1 , if and only if there exists a strand s′ that
+is effectively equivalent to s in k0 and k1 is isomorphic to both k0 with s
+                                                     Ts
+removed and k0 with s′ removed. In detail, k0 −→         k1 if and only if there
+                  ′
+exists a strand s such that
+  1. strands s and s′ are not in the image of k0 ’s strand map from the
+     point-of-view skeleton;
+  2. Θk0 (s) is isomorphic to Θk0 (s′ );
+  3. let k1 be k0 with strand s removed, along with extraneous origination
+     assumptions;
+  4. let k2 be k0 with strand s′ removed, along with extraneous origination
+     assumptions;
+  5. k1 is isomorphic to k2 .
+                                              Ts           sT
+    For the setwise thinning reduction, {k0 } −↠ {k1 | k0 −→ k1 }, when there
+                      Ts
+is a k1 such that k0 −→ k1 .
+    Thinning in cpsa is also implemented for the case of sets of multiple
+strands rather than pairs of individual strands. The correctness of thinning
+has yet to be demonstrated.
+
+
+
+### 8.1      Reduction Systems
+
+Notice that a setwise hulling reduction may produce the empty set, but a
+setwise order enrichment and thinning reduction never does.
+   There are two preskeleton reduction systems, one with thinning, and one
+                                                S     H      O
+without. For the one without, let reduction ↠= s,s′ −↠ ∪ −↠.
+
+
+Definition 8.4 (Preskeleton Reduction System). Preskeleton k0 reduces to
+                         skel
+skeleton k1 , written k0 −→ k1 , if {k0 } ↠∗ K, k1 ∈ K, and K is a normal
+form of ↠.
+                         skel
+   For each skeleton k, k −→ k.
+                                        S      H    O  S Ts
+   When using thinning, let reduction ↠= s,s′ −↠ ∪ −↠ ∪ s −↠.
+
+Definition 8.5 (Preskeleton Reduction System with Thinning). Preskele-
+                                                   tskel
+ton k0 reduces to thinned skeleton k1 , written k0 −→ k1 , if {k0 } ↠∗ K,
+k1 ∈ K, and K is a normal form of ↠.
+                                 tskel
+   For each thinned skeleton k, k −→ k.
+
+
+
+
+
+
+## Chapter 9
+
+
+Penetrator Derivable
+
+For each algebra, the powers of the adversary are defined by a set of roles.
+For the Basic Crypto Signature in Figure 2.1, the traces of the penetrator
+roles are in Figure 9.1. Penetrator roles make no origination assumptions.
+    The context in which penetrator strands appear determine the messages
+the adversary can derive. The context includes previously sent messages
+and atoms it is forbidden to originate. An atom that is assumed to be non-
+originating must be avoided as is a uniquely originating atom that is assumed
+to originate on a regular strand.
+    The ternary relation Tp : Ta ⊢ t states that message t is penetrator
+derivable from previously sent messages Tp while avoiding atoms Ta . The
+relation is defined by a set of inference rules. Most of the rules are justified by
+a penetrator role that when instantiated, derives a message in the conclusion
+
+                base(t) = ⟨+t⟩, where t is an atom
+                  tag(t) = ⟨+t⟩, where t is a tag
+            pair (t0 , t1 ) = ⟨−t0 , −t1 , +(t0 , t1 )⟩
+             sep(t0 , t1 ) = ⟨−(t0 , t1 ), +t0 , +t1 ⟩
+             enc(t0 , t1 ) = ⟨−t0 , −t1 , +{|t0 |}t1 ⟩
+             dec(t0 , t1 ) = ⟨−{|t0 |}t1 , −t2 , +t0 ⟩, where t2 = inv (t1 )
+                hash(t) = ⟨−t, +#t⟩
+               put(c, t) = ⟨−t, +[c, t]⟩
+              take(c, t) = ⟨−[c, t], +t⟩
+
+                         Figure 9.1: Penetrator Traces
+
+
+
+of the rule. Note there are no rules that pertain to channel messages. Channel
+messages are handled elsewhere.
+    The first rule states that no additional penetrator behavior is required to
+derive t if it has been previously sent.
+                                    t ∈ Tp
+                                                                          (9.1)
+                                  Tp : Ta ⊢ t
+
+By base(t):
+                            t an atom      t∈/ Ta
+                                                                          (9.2)
+                                 Tp : Ta ⊢ t
+By tag(“. . . ”):
+                                Tp : ta ⊢ “. . . ”                        (9.3)
+By pair (t0 , t1 ):
+                         Tp : Ta ⊢ t0     Tp : Ta ⊢ t1
+                                                                          (9.4)
+                               Tp : Ta ⊢ (t0 , t1 )
+By sep(t0 , t1 ):
+                               Tp : Ta ⊢ (t0 , t1 )
+                                                                          (9.5)
+                                 Tp : Ta ⊢ t0
+By sep(t0 , t1 ):
+                               Tp : Ta ⊢ (t0 , t1 )
+                                                                          (9.6)
+                                 Tp : Ta ⊢ t1
+By enc(t, k):
+                          Tp : Ta ⊢ t     Tp : Ta ⊢ k
+                                                                          (9.7)
+                                Tp : Ta ⊢ {|t|}k
+By dec(t, k):
+                      Tp : Ta ⊢ {|t|}k     Tp : Ta ⊢ inv k
+                                                                          (9.8)
+                                   Tp : Ta ⊢ t
+By hash(t):
+                          Tp : Ta ⊢ t     Tp : Ta ⊢ k
+                                                                          (9.9)
+                                 Tp : Ta ⊢ #t
+A non-base sorted variable is derivable in a bundle that instantiates it with
+any message other than an element of X⊤ .
+                                   t ∈ X⊤
+                                                                        (9.10)
+                                  Tp : Ta ⊢ t
+
+
+Definition 9.1 (Sent Channel Messages). The sent channel messages of
+skeleton k at n is sntchmsg(k, n) = {msg k (n0 ) | n0 ≺k n, n0 is transmitting}.
+
+Definition 9.2 (Public Messages). The public messages of skeleton k at n
+is
+       pubmsg(k, n) = {t | [t] ∈ M } ∪ {t | [c, t] ∈ M ∧ c ∈
+                                                           / conf (k)},
+where M = sntchmsg(k, n), and conf (k) is the set of channels assumed to
+be confidential in k.
+
+Definition 9.3 (Avoidance Set). The avoidance set of skeleton k is avoid (k) =
+Nk ∪ {t | t ∈ Uk ∧ |Ok (t)| = 1}.
+
+   An atom in avoid (k) is not available to the penetrator, except if it is
+exposed by a messages transmission. Clearly, only uniquely originating atoms
+can be exposed.
+
+Definition 9.4 (Derivable Before). A channel message m is derivable before
+reception node n in skeleton k, written der (k, n, t), if
+
+  1. m ∈ sntchmsg(k, n),
+
+  2. m = [t] and Tp : Ta ⊢ t, or
+
+  3. m = [c, t], c ∈
+                   / auth k, and Tp : Ta ⊢ t,
+
+where Tp = pubmsg(k, n), Ta = avoid (k), and auth(k) is the set of channels
+assumed to be authenticated in k.
+
+Definition 9.5 (Realized Node). A reception node n is realized in skeleton k
+if msg k (n) is derivable before n in k.
+
+   Notice that one can read off penetrator behavior from the proof tree used
+to demonstrate that msg k (n) is derivable before n in k. For example, if
+a decryption step is required by the proof, an instance of the penetrator’s
+decryption role is indicated. In a bundle, for a non-base sorted variable,
+there is a substitution that maps the variable to a message that is not a non-
+base sorted variable. The substitution determines the penetrator behavior
+associated with the variable.
+
+Conjecture 9.1 (Realized Skeleton). A skeleton is realized if and only if all
+of its reception nodes are realized.
+
+
+Partial Proof. Given a skeleton k in which all of its reception nodes are real-
+ized, the combination of the regular behavior in the skeleton, the penetrator
+behavior specified by the proof trees used to demonstrate each node is real-
+ized, and a substitution for non-base sorted variables determines a bundle.
+The skeleton of the bundle may have more non-originating atoms than is
+in Nk , however since the extra non-originating atoms are derivable by the
+bundle that realizes k, the proof trees for those atoms specify any additional
+penetrator behavior required.
+    The “only if” part of this proof has yet to be completed.
+
+
+
+### 9.1      Implementation
+
+The derivable before a node predicate is implemented using auxiliary func-
+tions.
+
+Definition 9.6 (Buildable). Message t is buildable from previously sent mes-
+sages Tp while avoiding Ta , written bld (t, Tp , Ta ), if Tp : Ta ⊢ t without the
+use of Inference Rules 9.5, 9.6, and 9.8.
+
+   Consider the following reduction system based on Inference Rules 9.5,
+9.10, 9.6, and 9.8.
+
+                   Tp : Ta → Tp : Ta \ {t}                      if t ∈ Tp and t ∈ Ta
+                   Tp : Ta → Tp \ {x} : Ta                      if x ∈ Tp and x ∈ X⊤
+    {(t0 , t1 )} ∪ Tp : Ta → {t0 , t1 , (t0 , t1 )} ∪ Tp : Ta   if t0 or t1 ∈/ Tp
+    {{|t0 |}t1 } ∪ Tp : Ta → {t0 , {|t0 |}t1 } ∪ Tp : Ta        if t0 ∈
+                                                                      / Tp and
+                                                                bld (inv (t1 ), Tp , Ta )
+
+Definition 9.7 (Decompose). Previously sent messages Tp and avoidance
+set Ta decompose to Tp′ , Ta′ , written decompose(Tp , Ta ) = (Tp′ , Ta′ ), if Tp :
+Ta →∗ Tp′ : Ta′ and (Tp′ , Ta′ ) is a normal form of reduction →.
+
+   The penetrator derivable predicate Tp : Ta ⊢ t is implemented as
+
+                        Tp : Ta ⊢ t =
+                          let Tp′ , Ta′ = decompose(Tp , Ta ) in
+                          bld (t, Tp′ , Ta′ )
+   The decomposition at a node function is
+
+
+
+               dcmp(k, n) =
+                 decompose(pubmsg(k, n), avoid (k))
+The derivable before a node predicate is implemented as
+                   der (k, n, t) =
+                     let Tp , Ta = dcmp(k, n) in
+                     bld (t, Tp , Ta )
+
+
+
+
+
+
+## Chapter 10
+
+
+Carried Only Within
+
+A set of encryptions Te protects critical message t in message t′ if t is carried
+by t′ only within a member of Te . The definition of the carried only within
+(cow) relation to follow makes this concept precise. The concept is used
+when solving authentication tests (Chapter 11).
+
+Definition 10.1 (Ancestors). Let t′ = t @ p. The ancestors of t′ in t at p is
+the set anc(t, p) = {t @ p′ | p′ a proper prefix of p}.
+
+Definition 10.2 (Carried Only Within). Message t is carried only within
+set Te in t′ if for all carried positions p of t in t′ , there exists an ancestor ta ∈
+anc(t′ , p) and te ∈ Te such that ta ≡ te .
+
+   The function defines carpos(t, t′ ) is defined on Page 6, the set of positions
+at which t′ carries t. The interface to each algebra exports unify 0 , where
+
+               unify 0 (t, t′ , σ) = {σ ′ ◦ σ | σ ′ ∈ unify(σ(t), σ(t′ ))}.
+
+Unification is extended to channel messages as:
+
+             unify0 ([t], [t′ ], σ) = unify0 (t, t′ , σ)
+             unify0 ([c, t], [c′ , t′ ], σ) =
+                  {σ ′′ | σ ′ ∈ unify0 (c, c′ , σ) ∧ σ ′′ ∈ unify0 (t, t′ , σ ′ )}
+
+   The details of a reduction on skeletons called a augmentation will be
+described in Section 11.2. In simplified form, for an augmentation, given t, Te ,
+and t′ , one must find all most general unifiers σ such that σ(t) is carried only
+within set σ(Te ) in σ(t′ ).
+
+
+cows(t, T, t′ ) =
+  cows 0 (t, T, t′ , σid )   — σid is the identity subst
+
+cows 0 (t, T, t′ , σ) =
+  if σ(t) is cow σ(T ) at σ(t′ ) then
+     {σ}
+  else
+     let S = fold (t, T, t′ , σ) in
+                              ′   ′
+     S
+        σ ′ ∈S cows 0 (t, T, t , σ )
+
+
+fold (t, T, t′ , σ) =
+   {σ ′ ◦ σ | σ ′ ∈ fold 0 (σ(T ), σ(t′ ), {σid }, carpos(σ(t), σ(t′ )))}
+
+fold 0 (T, t′ , S, {}) = S
+fold 0 (T, t′ , S, ⟨p⟩ ⌢ P ) =
+   fold 0 (T, t′ , solve(anc(t′ , p), T, S), P )
+
+solve(T, T ′ , S) =
+  {σ ′ | t ∈ T, t′ ∈ T ′ , σ ∈ S, σ ′ ∈ unify 0 (t, t′ , σ)}
+
+
+                  Figure 10.1: The cows Function
+
+
+
+
+
+              fold (t, T, t′ , σ) =
+                 fold 0 (t, T, t′ , σ, {σid }, carpos(σ(t), σ(t′ )))
+
+              fold 0 (t, T, t′ , σ, S, {}) = {σ ′ ◦ σ|σ ′ ∈ S}
+              fold 0 (t, T, t′ , σ, S, ⟨p⟩ ⌢ P ) =
+                 fold 0 (t, T, t′ , σ, solve(anc(σ(t′ ), p), σ(T ), S), P )
+
+
+                  Figure 10.2: The Alternate fold Function
+
+    A carried only within solution cannot be directly computed using Defi-
+nition 10.2. Given terms ta and te , the unify 0 function finds substitutions σ
+such σ(ta ) ≡ σ(te ), however, the carried positions carpos(σ(t), σ(t′ )), are
+used before the unify 0 function computes the substitution σ. Figure 10.1
+displays the iterative procedure that breaks the cyclic dependencies. Each
+step of the iteration improves an approximation of a solution to the problem.
+The correctness of this function is shown in [9], although for a version of the
+algorithm with the alternate definition for the function fold in Figure 10.2.
+
+
+
+
+
+
+## Chapter 11
+
+
+Solving Authentication Tests
+
+Definition 11.1 (Protectors). The protectors of t are encryptions that carry t
+and cannot be decrypted. Function prot(Tp , Ta , t) is undefined if bld (t, Tp , Ta ),
+otherwise
+
+    prot(Tp , Ta , t) = {{|t0 |}t1 ∈ Tp | t0 carries t and ¬ bld (inv (t1 ), Tp , Ta )}
+
+Definition 11.2 (Escape Set). The escape set for message tc at n in skele-
+ton k, esc(k, n, tc ), contains encryptions and channel messages. Function
+esc(k, n, tc ) = prot(tc , Tp , Ta ) ∪ M , where (Tp , Ta ) = dcmp(k, n) (See Defini-
+tion 9.7), and M is the set of sent channel messages with confidential channels
+that carry tc . It is undefined when tc is derivable in k at n.
+
+Definition 11.3 (Critical Position, Critical Message). Position p is a critical
+position at n in k if for m = msg k (n)
+
+   1. p is a carried position in m,
+
+   2. m @ p is not derivable before n in k,
+
+   3. either
+
+       (a) m @ p ∈ Uk ,
+       (b) m @ p = #t1 ,
+       (c) m @ p = {|t0 |}t1 and t1 is not derivable before n in k, or
+       (d) m = [c, t], p = ⟨⟩, and c ∈ auth(k).
+
+
+
+  4. anc(t, p) ∩ esc(k, n, t @ p) = ∅.
+
+The message at a critical position is called a critical message.
+
+Definition 11.4 (Authentication Test). The triple (k, n, p) is an authenti-
+cation test iff p is a critical position at reception node n in k.
+
+     An authentication test is a nonce test if the critical message is an atom,
+it is a channel test if the critical message is a channel message, otherwise it
+is an encryption test. (A hash is treated as a kind of encryption in which
+the term that is hashed is the encryption key.) Observe that every critical
+message at a node in a skeleton is not derivable at the node.
+
+Conjecture 11.1. A reception node is unrealized iff it has a critical position.
+
+Definition 11.5 (Target Messages). Let Te be a set of messages, and tc be
+a message. The set of target messages is
+
+   targ(tc , Te ) = {tc } ∪ {tt | te ∈ Te , p ∈ carpos(tc , te ), tt ∈ anc(te , p)} \ Te .
+
+Definition 11.6 (Critical Position Solved). Suppose p is a critical position
+                     ϕ,σ
+at n in k0 and k0 7−→ k1 . Let t = msg k0 (n)@p, and T = esc(k0 , n, t). Critical
+position p is solved in k1 after k0 at n if:
+
+  1. anc(msg k1 (ϕ(n)), p) ∩ σ(T ) ̸= ∅, or
+
+  2. for some tp ∈ sntchmsg(k1 , ϕ(n)), σ(t) is not carried only within σ(T )
+     in tp , or
+
+  3. targ(σ(t), σ(T )) \ σ(targ(t, T )) ̸= ∅ and there are variables in k’s pro-
+     tocol that are not atoms, or
+
+  4. the decryption key of a member of σ(T ) is derivable before ϕ(n) in k1 ,
+     or
+
+  5. σ(t) is an encryption and its encryption key is derivable before ϕ(n)
+     in k1 .
+
+
+
+
+
+
+### 11.1        Test Solving Steps
+
+A step used to solve a test is a contraction (Definition 11.7), a regular aug-
+mentation (Definition 11.8), a displacement (Definition 11.9), or a listener
+augmentation (Definition 11.10).
+Definition 11.7 (Contraction). Let p be a critical position at n in k, t =
+msg k (n), and Te = esc(k, n, t@p). Suppose there is a substitution σ such that
+for some ta ∈ anc(t, p), te ∈ Te , σ(ta ) = σ(te ). Skeleton k1 is a contraction if
+   Sσ      tskel
+k −→   k0 −→ k1 .
+   cpsa computes a set of substitutions for each critical position, and then
+removes some substitutions to form a complete set of most general unifiers.
+Only most general unifiers are used for contractions.
+Definition 11.8 (Regular Augmentation). Suppose substitution σ, non-
+listener role r, and trace C are selected as described in Section 11.2. Skele-
+                                       σ             S        An,r,C      tskel
+ton k2 is a regular augmentation if k −→ k0 −→ k1 −→ k2 .
+Definition 11.9 (Displacement). Let substitution σ, non-listener role r, and
+trace C be selected as described in Section 11.2, and there be a preskeleton k1
+               S       An,r,C
+such that k −→   σ
+                    k0 −→ k1 . Suppose there are strands s and s′ , where one
+of them is the newly created strand, and a most general unifier σ ′ such
+that σ ′ (Θk1 (s)(j)) ≡ σ ′ (Θk1 (s′ )(j)) for 0 ≤ j < |Θk1 (s)|. Skeleton k4 is a
+                    σ S ′       Cs,s′       tskel
+displacement if k1 −→ k2 −→ k3 −→ k4 .
+Definition 11.10 (Listener Augmentation). Let p be a critical position at n
+in k, tc = msg k (n) @ p, and Te = esc(k, n, tc ). For each {|t0 |}t1 ∈ Te , skele-
+                                                         An,lsn,C      tskel
+ton k1 is a listener augmentation if k −→ k0 −→ k1 and C listens for
+inv (t1 ), i.e. C = ⟨− inv (t1 ), + inv (t1 )⟩. If tc = {|t0 |}t1 , then skeleton k1 is a
+                                 An,lsn,C       tskel
+listener augmentation if k −→ k0 −→ k1 and C = ⟨−t1 , +t1 ⟩.
+   For regular augmentation and displacement, cpsa removes solutions that
+lead to skeletons that are less general than other solutions, that is, when
+there is a homomorphism from a solution to the omitted solution.
+Definition 11.11 (Cohort Member). For unrealized node n in a skeleton k0 ,
+                           n,p
+and a position p at n, k0 −→ k1 asserts that k1 is a member of the cohort of k0 ,
+where k1 is derived using contraction, regular augmentation, displacement,
+
+
+or listener augmentation, and p is solved in k1 after k0 at n. For the setwise
+                                     n,p       n,p
+cohort member reduction, {k0 } −↠ {k1 | k0 −→ k1 }, when n is unrealized
+in k0 , and p is a critical position at n.
+                                                          n0 ,p0   n1 ,p1   nℓ−1 ,pℓ−1
+Conjecture 11.2 (Critical Message Solved). If k0 −→ k1 −→ . . . −→ kℓ
+is a sequence of cohort member reductions, then for positive ℓ, p0 is solved
+in kℓ after k0 at n0 .
+
+
+
+### 11.2        Augmentation
+
+Let tc be the critical message that demonstrates n is a test node in skeleton k.
+For each triple (σ, r, C) that satisfies some properties, there is a potential
+                               tskel   An,r,Cσ   S
+regular augmentation with −→ ◦ −→ ◦ −→.          When successful, the message t
+in the last event of the added strand is outbound, carries σ(tc ), but σ(tc ) is
+not carried only within escape set σ(Te ) in t, where Te = esc(k, n, tc ), the
+escape set. Moreover, for every other message t in the strand, σ(tc ) is carried
+only within escape set σ(Te ) in t. The last event in the strand is called a
+transforming event, as this event no longer protects the critical message, but
+events that precede it do.
+    cpsa computes the parameters for a set of augmentation steps as follows.
+Suppose skeleton k = kX ( , P, , , , ). First, compute the target messages,
+Tt = targ(tc , Te ). Next, for each non-listener role r(Cr , Nr , Ur ) ∈ P and each
+index h where Cr (h) = +t, a transmission, do the following.
+
+Create fresh variables: Let σr be a sort preserving variable renaming,
+    where the domain is the variables that occur in Cr †h, and every variable
+    in the range does not occur in X or in P .
+
+Insert critical message: For each message t′ carried by t, and each tt ∈
+     targ(tc , Te ), consider most general unifiers σ ′ where, σ ′ (t′ ) = σ ′ (tt ) and
+     σr ⊴ σ ′ . (In other words, σ ′ = σ0 ◦ σr for some σ0 .)
+
+Ensure previous events do not transform: For each σ ′ , find most gen-
+    eral unifiers σ such that for 0 ≤ i < h, σ(tc ) is carried only within
+    σ(Te ) at σ(C(i)) and σ ′ ⊴ σ. The function cowt, presented in Fig-
+    ure 11.1, performs the explorations, producing the substitutions S ′ =
+    cowt(tc , Te , Cr † h, S). Function fold is defined in Figure 10.1. Let Sr,h
+    be the set S ′ with non-most general unifiers removed.
+
+
+                cowt(t,
+                  S T, C, S) =
+                    σ∈S cowt 0 (t, T, C, σ)
+
+
+                cowt 0 (t, T, C, σ) =
+                  if ∀t ±t ∈ C → σ(t) is cow σ(T ) at σ(t′ ) then
+                     {σ}
+                  else
+                     cowt(t, T, C, foldn(t, T, C, {σ}))
+
+                foldn(t, T, ⟨⟩, S) = S
+                foldn(t, T, ⟨±t′ ⟩S
+                                  ⌢
+                                    C, S) =
+                   foldn(t, T, C, σ∈S fold (t, T, t′ , σ))
+
+
+                             Figure 11.1: The cowt Function
+
+Ensure last event transforms: For each σ ∈ Sr,h , if σ(tc ) is not carried
+    only with σ(Te ) at σ(C(h)), try augmenting with parameters n, r,
+    σ ◦ C † h, and σ.
+    For target terms to be the reasonable set for insertion of the critical mes-
+sage, one must require that variables of sort message are acquired. This fact
+needs to be explained and noted as another reason for the acquired variable
+constraint.
+    The following example shows the need for Item 3 in the definition of a
+solved critical position. The protocol has two roles.
+
+     init(a : N, n1 , n2 : D, k : A) = r(⟨+{|n1 , {|a, n2 |}k |}k , −{|a, n1 |}k ⟩, ∅, ∅)
+       resp(n1 : D, m : ⊤, k : A) = r(⟨−{|n1 , m|}k , +m⟩, ∅, ∅)
+where we use N for sort name, D for sort data A for sort akey, and ⊤ for
+sort mesg to save space. Notice the responder declares m to be of sort mesg.
+    The point-of-view skeleton k0 is:
+        kY (⟨init(a′ , n′1 , n′2 , k ′ )⟩                              Role map
+            {init(a′ , n′1 , n′2 , k ′ ), resp(n′′1 , m′′ , k ′′ )},   Protocol
+            ⟨⟨+{|n1 , {|a, n2 |}k |}k , −{|a, n1 |}k ⟩⟩,               Traces
+            ∅,                                                         Node orderings
+            {k −1 },                                                   Non-origination
+            {n1 })                                                     Unique origination
+
+
+where Y = a : N, n1 , n2 : D, k : A.
+    cpsa finds the nonce test (k0 , (0, 1), ⟨0, 1⟩) with critical message n1 . The
+escape set E = esc(k0 , (0, 1), n1 ) = {{|n1 , {|a, n2 |}k |}k }.
+    cpsa solves this test to produce skeleton k1 with a displacement that
+                                          ϕ,σ
+simply equates n1 and n2 . Thus, k0 7−→ k1 where ϕ = ⟨0⟩ and σ = {n1 7→
+n2 }.
+    Consider Definition 11.6, the definition of critical position solved. Item 1
+does not apply because an ancestor of the image of the critical position does
+not match E. Item 2 does not apply because (k1 , (0, 1), ⟨0, 1⟩) is a nonce
+test. Item 4 does not apply because the key that protects the member of
+the escape set is non-originating. Finally, Item 5 does not apply because the
+critical message is not an encryption.
+    Item 3 applies in this example because
+
+                    targs(n1 , E) = {n1 , (n1 , {|a, n2 |}k )}
+              targs(σ(n1 ), σ(E)) = {n2 , (n2 , {|a, n2 |}k ), (a, n2 )}.
+
+so targs(σ(n1 ), σ(E)) \ σ(targs(n1 , E)) = {(a, n2 )}.
+    Once n1 and n2 have been equated, cpsa easily finds the one shape by
+adding a responder instance. The shape corresponds to a rather odd use of
+the initiator role. The instance of that role picks a fresh value for n1 and
+then makes use of that value for its n2 parameter. See Appendix B for more
+on the relation between roles and the programs they specify.
+
+
+
+
+
+
+## Chapter 12
+
+
+Collapsing and Preconditioning
+
+The input preskeleton is preconditioned before it is subjected to authen-
+tication test solving. The preskeleton is converted to a skeleton and then
+collapsing is applied so as to ensure all shapes are found. Collapsing handles
+the case in which strands merged in the input lead to shapes.
+
+Definition 12.1 (Collapsing). Let k0 and k1 be two skeletons such that
+there are two strands, s and s′ , and a most general unifier σ such that
+σ(Θk0 (s)(j)) ≡ σ(Θk0 (s′ )(j)) for all 0 ≤ j < |Θk0 (s)|. Then k0 collapses
+                  clp          S         Cs,s′   skel
+                                  σ
+to k1 , written k0 −→ k1 , if k0 −→ k −→ k ′ −→ k1 .
+
+Definition 12.2 (Preconditioning). For point-of-view preskeleton k0 , k0 is
+                                   pre              skel   clp
+preconditioned to k1 , written k0 −→ k1 , if k0 −→ k (−→)∗ k1 .
+
+
+
+
+
+
+## Chapter 13
+
+
+Generalization
+
+The cohort reduction system produces a set of realized skeletons. General-
+ization attempts to convert that set into a set of skeletons. Not all possible
+cases are implemented due to performance issues, so it is not uncommon to
+find a realized skeleton in the output of a run of cpsa that is not a shape.
+
+Conjecture 13.1 (Shape Completeness). Without generalization, cpsa pro-
+duces a complete set of shapes among the realized skeletons in its output.
+
+Definition 13.1 (Generalize). A skeleton k0 generalizes skeleton k1 , written
+     <
+k1 −→k k0 , if both k0 and k1 are realized, k0 and k1 are not isomorphic, there
+is a homomorphism from a point-of-view skeleton k to k0 , and a strandwise
+injective homomorphism k0 7→ k1 .
+                                                             ≤
+    If skeletons are allowed to be isomorphic, we write k1 −→k k0 , and note
+       ≤
+that −→k defines a partial ordering. Therefore, there are maximal elements
+in the partial ordering. A shape associated with a preskeleton is a maximally
+generalized realized skeleton derived from the preskeleton.
+                                                                     pre
+Definition 13.2 (Shape). Let k0 be a preskeleton such that k0 −→ k for
+some skeleton k, and let k1 be a realized skeleton such that k 7→ k1 . Skele-
+                               ≤
+ton k2 is a shape of k0 if k1 −→k k2 , and k2 is maximal among skeletons that
+generalize k1 .
+
+    There are four generalization reductions used to transform a realized
+skeleton into its shapes: deletion, weakening, forgetting, and separation.
+
+
+
+Definition 13.3 (Deletion). Skeleton k0 generalizes by deletion skeleton k1 ,
+            Dn               <          skel
+written k1 −→  k k0 , if k1 −→k k0 , k2 −→ k0 , and k2 is the result of deleting
+node n in k1 and all of the nodes that follow it in its strand.
+
+Definition 13.4 (Weakening). Skeleton k0 generalizes by weakening skele-
+                    Wn,n′             <            skel
+ton k1 , written k1 −→ k k0 , if k1 −→k k0 , k2 −→ k0 , and k2 is k1 except
+≺k2 = (≺k1 \ {(n, n′ )})∗ .
+
+Definition 13.5 (Forgetting). Skeleton k0 generalizes by origination as-
+                                              Ft               <          skel
+sumption forgetting skeleton k1 , written k1 −→  k k0 , if k1 −→k k0 , k2 −→ k0 ,
+and k2 is k1 except Uk2 = Uk1 \ {t} and Nk2 = Nk1 \ {t}.
+
+    Sometimes a more general skeleton can be found by replacing some oc-
+currences of one variable by a fresh variable. For variable separation, the
+location of an occurrence of a variable is defined using a skeleton’s instance.
+Recall that in the external syntax, strand s in skeleton k is described by an
+instance of the form i(r, h, σ). (Instances are introduced in Section 5.4.)
+
+Definition 13.6 (Location). Variable x is at location (s, y, p) in k if the
+instance at Θk (s) is i(r, h, σ) and x = σ(y) @ p.
+
+Definition 13.7 (Variable Separation). Skeleton k0 generalizes by variable
+                                      Vt               <          skel
+separation skeleton k1 , written k1 −→   k k0 , if k1 −→k k0 , k2 −→ k0 , and k2
+is k1 except t is a variable that occurs in multiple locations in k1 , and k2 is
+the result of replacing t with a variable t0 of the same sort at a proper subset
+of t’s locations, where t0 occurs nowhere in k1 .
+
+    When separating a non-originating term, both the term and its clone are
+non-originating. When separating a uniquely originating term, either the
+term or its clone is uniquely originating.
+    What happens when separating t in k into t and t0 , and ltk(t, t) ∈ Nk ?
+Should a skeleton k0 with ltk(t, t0 ) ∈ Nk0 be a candidate separation? Cur-
+rently, only skeletons k1 with ltk(t, t) ∈ Nk1 and ltk(t0 , t0 ) ∈ Nk1 are consid-
+ered.
+                                                     gen      S Dn        S    Wn,n′
+Definition 13.8 (Generalization). The reduction −→k = n −→            k ∪ n,n′ −→ k
+  S Ft        S Vt
+∪ t −→    k ∪ t −→k is the generalization relation. For the setwise general-
+                         gen                  gen
+ization reduction, {k0 } −↠k {k1 } when k0 −→k k1 .
+
+
+
+    The fact that each generalization reduction replaces a singleton with just
+a singleton requires explanation. It’s simply a matter of performance. If
+all possibilities are considered, cpsa run time would become dominated by
+generalization. Since generalization failures do not interfere with producing
+a complete description of the input, an approximation of the set of shapes is
+okay.
+                                                    gen
+Conjecture 13.2 (Generalization). The relation −↠k is terminating.
+
+
+Discussion
+In [5], the shapes of a point-of-view skeleton are said to be minimal, in
+the partial ordering induced by injective homomorphism, among all realized
+homomorphic images of the point-of-view skeleton. Minimal corresponds to
+maximally generalized. The need for origination assumption forgetting was
+not known when [5] was written. Generalization by variable separation uses
+non-carried positions, and in particular, positions that traverse an atom edge.
+Algebras in previous strand space papers have no concept of a position that
+traverses an atom edge, and therefore cannot be used to specify generalization
+by variable separation.
+    Variable separation can be expensive when there are many possible ways
+to separate variables. The implementation simply truncates the search when
+it grows too large. The current implementation never attempts to separate
+channel variables.
+
+
+
+
+
+
+## Chapter 14
+
+
+Skeleton Reduction System
+
+                     co    gen
+Let reduction ↠k = (−↠ ∪ −↠k )+ . This reduction system specifies the cpsa
+program.
+
+Conjecture 14.1. The reduction ↠k is confluent.
+
+Conjecture 14.2 (Soundness). Let k0 be a preskeleton and k be an unreal-
+                           pre
+ized skeleton such that k0 −→ k. Skeleton k1 is a shape of k0 if {k} ↠k K,
+k1 ∈ K, and K is a normal form.
+
+   The set of bundles denoted by preskeleton k, [[k]] is defined on Page 17.
+
+Conjecture 14.3 (Completeness). Let k0 be a preskeleton and k be an
+                                      pre
+unrealized
+         S    skeleton   such that k0 −→  k. For all K such that {k} ↠k K,
+[[k0 ]] = k1 ∈K [[k1 ]].
+
+
+
+
+
+Acknowledgement
+
+Carolyn Talcott and Leonard Monk provided valuable feedback on drafts of
+this document.
+
+
+
+
+
+Appendix A
+
+Penetrator Non-Origination
+Assumptions
+
+Penetrator non-origination assumptions have been added as an extension to
+the basic strand space theory. An atom is penetrator non-originating in a
+bundle if it originates on no penetrator strand, but each of its variables occurs
+in some strand’s trace.
+    Penetrator non-origination assumptions can be used to model passwords.
+Several regular participants might know a password and originate it in a run
+of a protocol, but an idealized password is one the penetrator cannot guess.
+    A penetrator non-originating atom is similar to a non-originating atom,
+except in that it can be carried. There are two definitions that require
+change. Penetrator non-originating atoms must be added to the avoidance
+set of Definition 9.3. When the message at a critical position is an atom (see
+Definition 11.3, Item 3), instead of being uniquely originating, and can also
+be penetrator non-originating.
+
+
+
+
+
+Appendix B
+
+Programs Specified by a Role
+
+Given the definitions in Chapter 3, a role can be viewed as an abstraction of
+a program, and a strand as an abstraction of a run of a program. But what
+program is specified by a role?
+    Consider a role that contains the event −{|t0 |}t1 . If the program has the
+decryption key inv (t1 ) before the message is received, the program could
+decrypt the message and extract t0 . Alternatively, if the program has {|t0 |}t1 ,
+or has t0 and the encryption key t1 , it might check to see if the received
+message is the same as the expected message, and abort the run if not.
+    Here is an example of when the second behavior is desired. In cpsa,
+before hashing was part of the algebra, an encryption was used to represent
+hashing. The hash of t, #t, expanded to {|“hash”, t|}h , where h was an
+asymmetric key known to all, but no one knew h−1 . The tag “hash” was
+added to the encryption so as to ensure a hash was never confused with
+other uses of encryption.
+    A role does not specify a valid program if the only possible way of in-
+terpreting the event −#t is by using h−1 to decrypt {|“hash”, t|}h . The
+remainder of this section describes how this class of specification errors is
+detected for the Basic Crypto Algebra.
+    The behaviors associated with a trace depend on the set of messages
+available initially. The behaviors are specified by a data flow relation, T0 , C ▷
+T1 . For trace C, the relation T0 , C ▷ T1 asserts that when messages T0 are
+available initially, there is a behavior of C that produces messages T1 .
+    A derivation tree used to demonstrate T0 , C ▷ T1 shows the steps that
+enable the flow of data. The tree can be linearized, and thus specifies a
+sequential program that implements the role.
+
+
+    The data flow relation is defined with the aid of a data flow relation for
+a sequence of events, T0 , C ▷ T1 .
+
+                                      T0 , ⟨±t⟩ ▷ T T, C ▷ T1
+                  T, ⟨⟩ ▷ T
+                                           T0 , ⟨±t⟩ ⌢ C ▷ T1
+   The T0 , ⟨±t⟩ ▷ T1 relation is defined using the T0 , C ▷ T1 relation. An
+outbound message can be formed if it is available initially
+                                         t∈T
+                                     T, ⟨+t⟩ ▷ T
+or if it can be formed by construction.
+                                                                            
+                 T, ⟨+t1 , . . . , +tn ⟩ ▷ T          f (t1 , . . . , tn )
+                 T, ⟨+f (t1 , . . . , tn )⟩ ▷ T       not an atom
+   An inbound message makes atoms and acquired variables available.
+                T, ⟨−t⟩ ▷ T ∪ {t} [t an atom or a variable]
+When the decryption key is available, the contents of the encryption are
+also available. Furthermore, the encryption can be sent in future messages
+without access to its encryption key.
+                     T0 , ⟨+ inv (t1 )⟩ ▷ T0 T0 , ⟨−t0 ⟩ ▷ T1
+                         T0 , ⟨−{|t0 |}t1 ⟩ ▷ T1 ∪ {{|t0 |}t1 }
+A received encryption that can be sent ensures the encryption agrees with
+currently available terms and makes nothing new available.
+                                 T, ⟨+{|t0 |}t1 ⟩ ▷ T
+                                 T, ⟨−{|t0 |}t1 ⟩ ▷ T
+   Consider an operation f other than the encryption operation. The order
+in which messages that occur in a message constructed using f are made
+available may determine if the decryption key of an encryption is available.
+All possible orderings must be explored. Let πn be a permutation on the
+domain of a sequence of length n.
+                                                                          
+                T0 , ⟨−t1 , . . . , −tn ⟩ ◦ πn ▷ T1   f (t1 , . . . , tn )
+                 T0 , ⟨−f (t1 , . . . , tn )⟩ ▷ T1    not an atom
+   The data flow relation is used to find initial sets of atoms that are com-
+patible with some behavior of a trace that produces messages.
+
+
+               proc(a, n, Kb , Ka−1 )            proc(a, n, Kb , Ka )
+                 send({|a, n|}Kb );                send({|a, n|}Kb );
+                 x0 ← recv();                      x0 ← recv();
+                 x1 ← decrypt(x0 , Ka−1 );         x1 ← {|n|}Ka ;
+                 x1 ̸= n → fail;                   x0 ̸= x1 → fail;
+               end                               end
+
+
+Figure B.1: Two programs that implement the role ⟨+{|a, n|}Kb , −{|n|}Ka ⟩.
+
+Definition B.1 (Trace Parameters). The set of atoms T0 are parameters of
+trace C if T0 , C ▷ T1 for some T1 , and T0 is minimal, that is for all T0′ such
+that T0′ , C ▷ T1 , T0′ ̸⊂ T0 .
+
+    The role ⟨+{|a, n|}Kb , −{|n|}Ka ⟩ has two sets of parameters, {a, n, Kb , Ka−1 }
+and {a, n, Kb , Ka }. See Figure B for two examples of programs that imple-
+ment the role, using distinct parameter sets.
+    The cpsa distribution contains a program that computes the set of pa-
+rameters of a role. It was used to find an error in a role’s use of hashing as
+described at the beginning of this section. The role in question is the verifier
+role that is part of an attestation protocol [3]. In an earlier version of the
+role, every set of parameters included the decryption key of the encryption
+used as a hash. The role was so complicated that inspection did not reveal
+the error.
+    Note that this section is specific to the basic crypto algebra in the sense
+that all non-atomic operations are assumed to be constructable, and encryp-
+tion has the specific de-construction recipe shown. Although carried positions
+were not mentioned in this section, the inference system specifies the same
+concept. In fact, in future work we hope to show that the inference system is
+all one needs to define, and that which positions are carried, which are pro-
+tected, and which sorts are atoms can be defined in terms of the inferences
+available.
+
+
+
+
+
+Appendix C
+
+Shape Analysis Sentences
+
+For each point-of-view skeleton and its shapes found by cpsa, there is a
+formula in a language of order-sorted first-order logic called  W a shape analy-
+sis sentence. The sentence has a special form, ∀X(Ψ ⊃ i ∃Yi (∆i ∧ Φi )),
+where Ψ, ∆i , and Φi are conjunctions of atomic formulas and X and Yi are
+variable sets. This fragment of first-order logic is called coherent logic. For-
+mula Ψ describes the point-of-view skeleton k0 . For each homomorphism to
+               δi
+a shape, k0 7−→   ki , formula ∆i describes the structure preserving maps δi ,
+and the shape ki is described by Φi .
+    An interpretation of a shape analysis sentence is a skeleton. If cpsa finds
+all of the shapes and the homomorphisms associated with a point-of-view
+skeleton, the analysis’ sentence is satisfied in all realized skeletons. Let Σ be
+a shape analysis sentence and Ψ be a security goal. If Σ ⊃ Ψ is a theorem in
+order-sorted first-order logic, then Ψ is satisfied in all realized skeletons and
+its protocol achieves this goal.
+    Shape analysis sentences are closely related to security goals in [7], and
+were motivated by that work. This material was extracted from [11], the
+paper that introduced shape analysis sentences.
+
+
+C.1       Security Goals
+The signature for security goal terms extends the one used for the underlying
+message algebra with sort Z. Variables of this sort denote strands.
+   Security goals make use of protocol specific and protocol independent
+predicates. For each role rY (C, N, U ) ∈ P , there are strand length predicates
+
+
+
+and strand parameter predicates. There are |C| unary length predicates
+P [r, h] : Z, with 1 ≤ h ≤ |r|. Relative to skeleton k, P [r, h](z) asserts
+that strand z in k is an instance of r and has a length of at least h. For
+each variable x : S that occurs in C, there is a binary parameter predicate
+P [r, x] : Z × S. Relative to skeleton k, P [r, x](z, t) asserts that strand z in k
+is an instance of r in which x is instantiated as t.
+    For each base sort B, there are unary predicates non : B and uniq : B.
+non(t) asserts t is non-originating in k and uniq(t) asserts t uniquely originates
+in k.
+    Let m be the length of the longest role in P . There are m2 precedence
+predicates prec[i, j] : Z × Z for 0 ≤ i, j < m. prec[i, j](x, y) asserts that node
+(x, i) is before node (y, j) in k. There are 3m origin predicates uniq-at[i] :
+B ×Z, with 0 ≤ i < m and B as before. uniq-at[i](t, z) asserts that t uniquely
+originates in k at node (z, i). The predicate false has arity zero and, of course,
+equality is binary.
+    To improve the readability of formulas to follow, we write prec(x, i, y, j)
+for prec[i, j](x, y) and uniq-at(t, z, i) for uniq-at[i](t, z).
+    Let k = kX (P, I, ≺, N, U ) and let ≺− be the transitive reduction of ≺.
+Recall that ΘX is the strand space defined by I, see Section 5.4. We de-
+fine F(k) = (Y, Φ), where Φ is k’s skeleton formula, and Y is the formula’s
+variable set. For F(k) = (Y, Φ), the variable set Y is X augmented with a
+fresh variable of sort Z for each strand in k. Let Z(s) be the strand variable
+associated with strand s ∈ Dom(I).
+    The formula Φ is a conjunction of atomic formulas composed as follows.
+   • For each s ∈ Dom(I), let I(s) = i(r, h, σ) and z = Z(s). Assert
+     P [r, h](z). Let r = r(C, N, U ). For each variable x ∈ Vars(C † h) and
+     term t = σ(x), assert P [r, x](z, t).
+   • For each (s, i) ≺− (s′ , i′ ) such that s ̸= s′ , assert prec(Z(s), i, Z(s′ ), i′ ).
+   • For each t ∈ N , assert non(t).
+   • For each t ∈ U and (s, i) ∈ Ok (t), assert uniq-at(t, Z(s), i).
+   • For each t ∈ U without a point of origination in k, assert uniq(t).
+   Given a set of homomorphisms δi : k0 7→ ki , its shape analysis sentence is
+                                             _
+               S(δi : k0 7→ ki ) = ∀X0 (Φ0 ⊃   ∃Xi (∆i ∧ Φi )),         (C.1)
+                                                   i
+
+
+
+        ∀a0 , b0 : A, s0 : S, d0 : D, z0 : Z(
+          resp 2 (z0 ) ∧ resp a (z0 , a0 ) ∧ resp b (z0 , b0 )
+               ∧ resp s (z0 , s0 ) ∧ resp d (z0 , d0 )
+               ∧ non(a−1 0 ) ∧ non(b0 )
+                                        −1
+
+          ⊃
+          ∃a1 , b1 , b2 : A, s1 : S, d1 : D, z1 , z2 : Z(
+              z0 = z1 ∧ a0 = a1 ∧ b0 = b1 ∧ s0 = s1 ∧ d0 = d1
+                 ∧ resp 2 (z1 ) ∧ resp a (z1 , a1 ) ∧ resp b (z1 , b1 )
+                 ∧ resp s (z1 , s1 ) ∧ resp d (z1 , d1 )
+                 ∧ init 1 (z2 ) ∧ init a (z2 , a1 ) ∧ init b (z2 , b2 ) ∧ init s (z2 , s1 )
+                 ∧ uniq-at(s1 , z2 , 0) ∧ prec(z2 , 0, z1 , 0)
+                 ∧ non(a−1                −1
+                           1 ) ∧ non(b1 )))
+
+
+       Figure C.1: Shape Analysis Sentence for Blanchet’s Protocol
+
+where F(k0 ) = (X0 , Φ0 ). The same procedure produces Xi and Φi for
+shape ki with one proviso—the variables in Xi that also occur in X0 must be
+renamed to avoid trouble while encoding the structure preserving maps δi .
+    The structure preserving maps δi = (ϕi , σi ) are encoded in ∆i by a con-
+junction of equalities. Map σi is coded as equalities between a message alge-
+bra variable in the domain of σi and the term it maps to. Map ϕi is coded as
+equalities between strand variables in Φ0 and strand variables in Φi . Let Z0
+be the strand variables freshly generated for k0 , and Zi be the ones generated
+for ki . The strand mapping part of ∆i is
+                             ^
+                                   Z0 (s) = Zi (ϕi (s)).
+                              s∈Dom(Z0 )
+
+
+    The shape analysis sentence for the second analysis of Blanchet’s Sim-
+ple Example Protocol in Section 5.1 is displayed in Figure C.1. The strand
+length predicate P [r, h](z) is written rh (z), and the strand parameter predi-
+cate P [r, x](z, t) is written rx (z, t) with the protocol left implicit.
+
+Semantics of Skeleton Formulas. Let k = kX (P, I, ≺, N, U ) and ΘX be
+its strand space. When formula Φ is satisfied in skeleton k with order-sorted
+variable assignment α, we write k, α |= Φ. For x : S ∈ X, α(x) is in the
+carrier set of ĀX for sort S. For x : Z, α(x) ∈ Dom(ΘX ). We write ᾱ when α
+
+
+
+is extended to terms in the obvious way. When sentence Σ is satisfied in
+skeleton k, we write k |= Σ.
+
+   • k, α |= P [r, h](z) iff h ≤ |ΘX (s)|, and for some σ,
+
+                                 ΘX (s) † h = σ ◦ C † h
+
+      where s = α(z) and r = r(C, N, U ).
+
+   • k, α |= P [r, x](y, t) iff for some σ with σ(x) = ᾱ(t),
+
+                                 ΘX (s) † h = σ ◦ C † h
+
+      where s = α(z), r = r(C, N, U ), and h is the smallest ℓ such that x
+      occurs in C † ℓ.
+
+   • k, α |= prec(x, i, y, j) iff (α(x), i) ≺ (α(y), j).
+
+   • k, α |= non(t) iff ᾱ(t) ∈ N .
+
+   • k, α |= uniq(t) iff ᾱ(t) ∈ U .
+
+   • k, α |= uniq-at(t, z, i) iff ᾱ(t) ∈ U and (α(z), i) ∈ Ok (ᾱ(t)).
+
+   • k, α |= y = z iff ᾱ(y) = ᾱ(z).
+
+    Let Σ be a shape analysis sentence and Ψ be a security goal. If Σ ⊃ Ψ is
+a theorem in order-sorted first-order logic, then Ψ is satisfied in all realized
+skeletons and its protocol achieves this goal.
+
+Channel Formulas. This appendix has not been updated to reflect the
+inclusion of channels into cpsa, but the changes made are straightforward.
+There are two new unary predicate symbols, auth and conf, that are similar
+to non except their argument must be a variable of sort chan. For skeleton k
+and variable assignment α, auth(c) is satisfied iff α(c) ∈ auth(k), and conf(c)
+is satisfied iff α(c) ∈ conf (k).
+
+
+
+
+
+Appendix D
+
+Facts and Rules
+
+Support for facts and rules was introduced in version 4.1 of cpsa.
+    Each skeleton includes a small database of facts. A fact is a named
+relation among fact terms. A fact term is either a strand of the skeleton or
+an algebra term. For example, in skeleton k, a user may want to note that
+strand 0 owns the private key for a by asserting fact (owns, ⟨0, a−1 ⟩).
+    Each protocol includes a small collection of rules. A rule is a sentence in
+the goal language presented in Section C.1. A rule is an axiom added to a
+protocol. cpsa uses the axiom as a rewrite rule to derive zero or more new
+skeletons from a skeleton produced during a cohort step.
+
+
+
+
+
+Bibliography
+
+[1] Franz Baader and Tobias Nipkow. Term Rewriting and All That. Cam-
+    bridge University Press, 1998.
+[2] Franz Baader and Wayne Snyder. Unification theory. In Alan Robin-
+    son and Andrei Voronkov, editors, Handbook of Automated Reasoning,
+    volume 1, chapter 8. The MIT Press, 2001. https://www.cs.bu.edu/
+    fac/snyder/publications/UnifChapter.pdf.
+[3] George Coker, Joshua Guttman, Peter Loscocco, Amy Herzog, Jonathan
+    Millen, Brian O’Hanlon, John Ramsdell, Ariel Segall, Justin Sheehy, and
+    Brian Sniffen. Principles of remote attestation. International Journal
+    of Information Security, 10:63–81, 2011. 10.1007/s10207-011-0124-7.
+[4] Dorothy E. Denning and Giovanni M. Sacco. Timestamps in key distri-
+    bution protocols. Communications of the ACM, 24(8):533–536, August
+    1981.
+[5] Shaddin F. Doghmi, Joshua D. Guttman, and F. Javier Thayer. Search-
+    ing for shapes in cryptographic protocols. In Tools and Algorithms
+    for Construction and Analysis of Systems (TACAS), number 4424 in
+    LNCS, pages 523–538. Springer, March 2007. Extended version at
+    http://eprint.iacr.org/2006/435.
+[6] Joseph A. Goguen and Jose Meseguer. Order-sorted algebra I: Equa-
+    tional deduction for multiple inheritance, overloading, exceptions and
+    partial operations. Theoretical Computer Science, 105(2):217–273, 1992.
+[7] Joshua D. Guttman. Security theorems via model theory. In Ex-
+    press: Expressiveness in Concurrency, Workshop affiliated with Con-
+    cur, September 2009. Post-proceedings to appear in EPTCS, http:
+    //www.eptcs.org/.
+
+
+ [8] Joshua D. Guttman. Shapes: Surveying crypto protocol runs. In
+     Veronique Cortier and Steve Kremer, editors, Formal Models and Tech-
+     niques for Analyzing Security Protocols, volume 5 of Cryptology and
+     Information Security Series. IOS Press, 2011.
+
+ [9] Moses Liskov and John D. Ramsdell. Implementing strand space al-
+     gebras. http://www.ccs.neu.edu/home/ramsdell/papers/algimpl.
+     pdf, 2011.
+
+[10] Moses D. Liskov, Paul D. Rowe, and F. Javier Thayer. Completeness of
+     CPSA. Technical Report MTR110479, The MITRE Corporation, 2011.
+
+[11] John D. Ramsdell. Deducing security goals from shape analysis sen-
+     tences. The MITRE Corporation, April 2012. http://arxiv.org/abs/
+     1204.0480.
+
+[12] John D. Ramsdell and Joshua D. Guttman. CPSA Design. The MITRE
+     Corporation, 2009. In https://github.com/mitre/cpsaexp source dis-
+     tribution, doc directory.
+
+[13] John D. Ramsdell and Joshua D. Guttman. CPSA Primer. The MITRE
+     Corporation, 2009. In https://github.com/mitre/cpsaexp source dis-
+     tribution, doc directory.
+
+
+
+
+
+Index
+
+acquired, 10                          escape set, 39
+ancestors, 36                         event, 9
+atoms, 5                              evt, 10
+authenticated channel, 10
+authentication test, 40               fact term, 59
+avoidance set, 33                     forgetting, 47
+
+base sorts, 3                         gained, 10
+buildable, 34                         hash, 5, 40
+bundle, 10                            homomorphism
+carpos, 6                                 algebra, 5
+carried positions, 6                      nodewise isomorphic, 17
+carried only within, 36                   preskeleton, 16
+carried positions, 36                     strandwise injective, 17
+carries, 6                            hulled preskeleton, 28
+channel message, 6                    inherited origination assumptions, 11
+channel test, 40                      instance, 21
+cohort, 41                            inverse key, 5
+communication, 10                     isomorphic preskeletons, 17
+confidential channel, 10
+contraction, 41                       listener augmentation, 41
+cows, 37                              listener role, 17
+critical position, 39                 locations, 7
+
+deletion, 47                          more general substitution, 5
+derivable before, 33                  msg, 10
+displacement, 41
+domain, 5                             nodes, 10
+                                      nodewise isomorphic homomorphism,
+effectively equivalent strands, 29            17
+encryption test, 40                   non-originating, 10
+
+
+   penetrator, 51                      thinned, 28
+nonce test, 40                    solved critical position, 40
+normal form, 24                   sorts, 3
+                                  strand, 9
+occurs in, 6                      strand space, 10
+operations, 3                     strand succession, 10
+operators, 26                     strandwise injective homomorphism,
+originates, 9                              17
+parameters, 54                    strict partial order, 10
+partial order                     substitution, 5
+    strict, 10                    target messages, 40
+penetrator non-originating, 51    thinned skeleton, 28
+points, 7                         thinning, 28
+position, 5                       trace, 9
+preskeleton, 15                   transforming event, 42
+    hulled, 28                    tskel , 30
+preskeleton homomorphism, 16
+preskeletons                      unify, 36
+    isomorphic, 17                uniquely originates, 10
+protectors, 39
+protocol, 11                      variable separation, 47
+public messages, 33               variable set, 3
+                                  Vars, 11
+range, 5
+realized skeleton, 15, 17         weakening, 47
+regular strand, 13
+regular augmentation, 41
+role, 11
+run of protocol, 11
+
+sent channel messages, 33
+sequence, 2
+setwise reduction system, 24
+shape, 46
+shape analysis sentence, 55
+skel , 30
+skeleton, 16
+     realized, 15, 17
+```
+
+---
+
 ### `refrences/cpsa-protocol-modeling/manuals/Dolev_Yao_Model_Paper.md`
 
-*sha256:`f3b6a15e18ab` · 737 lines · 72.6 KB · lang:`markdown`*
+*sha256:`f3b6a15e18ab` · 737 lines · 72.6 KB (~18,487 tokens) · lang:`markdown`*
 
 ```markdown
 # On the Security of Public Key Protocols (Dolev-Yao Paper)
@@ -4759,7 +15564,7 @@ CA.                                                                             
 
 ### `refrences/cpsa-protocol-modeling/manuals/INDEX.md`
 
-*sha256:`94091ccb3718` · 20 lines · 1.5 KB · lang:`markdown`*
+*sha256:`94091ccb3718` · 20 lines · 1.5 KB (~395 tokens) · lang:`markdown`*
 
 ```markdown
 # CPSA 4 Complete Transcribed Manuals & Documentation Index
@@ -4788,7 +15593,7 @@ All official CPSA 4 documentation, user manuals, formal semantics, and papers tr
 
 ### `refrences/cpsa-protocol-modeling/manuals/Role_Translations.md`
 
-*sha256:`7506fa3c09a3` · 739 lines · 38.8 KB · lang:`markdown` · 114 control chars sanitized*
+*sha256:`7506fa3c09a3` · 739 lines · 38.8 KB (~9,794 tokens) · lang:`markdown` · 114 control chars sanitized*
 
 ```markdown
 # Role Translation Patterns and Strands in CPSA
@@ -5536,7 +16341,7 @@ use, you will need to obtain permission directly from the copyright holder.
 
 ### `refrences/cpsa-protocol-modeling/pdf_manual/CPSA4ManualRefrence.md`
 
-*sha256:`bbaff3167e65` · 454 lines · 24.7 KB · lang:`markdown`*
+*sha256:`bbaff3167e65` · 454 lines · 24.7 KB (~6,218 tokens) · lang:`markdown`*
 
 ````markdown
 # Cryptographic Protocol Shapes Analyzer (CPSA 4)
@@ -5999,7 +16804,7 @@ Communication can occur over abstract channels with intrinsic security guarantee
 
 ### `refrences/cpsa-protocol-modeling/references/algebra-and-macros.md`
 
-*sha256:`cdd941475ceb` · 85 lines · 3.4 KB · lang:`markdown`*
+*sha256:`cdd941475ceb` · 85 lines · 3.4 KB (~876 tokens) · lang:`markdown`*
 
 ````markdown
 # Message algebra, macros, and lang
@@ -6093,7 +16898,7 @@ be consistent within a project.
 
 ### `refrences/cpsa-protocol-modeling/references/cpsa-4.4.9-keyword-and-grammar-spec.md`
 
-*sha256:`9b1415adf58d` · 362 lines · 14.9 KB · lang:`markdown`*
+*sha256:`9b1415adf58d` · 362 lines · 14.9 KB (~3,811 tokens) · lang:`markdown`*
 
 ````markdown
 # MITRE CPSA 4.4.9 Complete Keyword & Grammar Specification
@@ -6464,7 +17269,7 @@ Every entry defines:
 
 ### `refrences/cpsa-protocol-modeling/references/declarations.md`
 
-*sha256:`243df357076e` · 52 lines · 3.2 KB · lang:`markdown`*
+*sha256:`243df357076e` · 52 lines · 3.2 KB (~812 tokens) · lang:`markdown`*
 
 ```markdown
 # Origination and Freshness Declarations
@@ -6525,7 +17330,7 @@ This generates:
 
 ### `refrences/cpsa-protocol-modeling/references/goals-and-skeletons.md`
 
-*sha256:`4dbdf7dac552` · 74 lines · 3.7 KB · lang:`markdown`*
+*sha256:`4dbdf7dac552` · 74 lines · 3.7 KB (~940 tokens) · lang:`markdown`*
 
 ````markdown
 # Goals and skeletons
@@ -6608,7 +17413,7 @@ sender."
 
 ### `refrences/cpsa-protocol-modeling/references/reading-output.md`
 
-*sha256:`1e9b1c714d4d` · 58 lines · 2.6 KB · lang:`markdown`*
+*sha256:`1e9b1c714d4d` · 58 lines · 2.6 KB (~652 tokens) · lang:`markdown`*
 
 ````markdown
 # Reading CPSA output
@@ -6675,7 +17480,7 @@ CPSA is manufacturing strands, and usually point at the term to simplify.
 
 ### `refrences/cpsa-protocol-modeling/references/roletran-and-compiler-diagnostics.md`
 
-*sha256:`3e8560f56c54` · 122 lines · 7.5 KB · lang:`markdown`*
+*sha256:`3e8560f56c54` · 122 lines · 7.5 KB (~1,909 tokens) · lang:`markdown`*
 
 ````markdown
 # Verification Engine & Closed-Loop Self-Healing
@@ -6806,7 +17611,7 @@ Evaluates BM25, Dense, Hybrid RRF-60, Hybrid RRF-20, and Two-Stage Rerank. Hybri
 
 ### `refrences/cpsa-protocol-modeling/references/state.md`
 
-*sha256:`42040f1ef6bd` · 64 lines · 2.5 KB · lang:`markdown`*
+*sha256:`42040f1ef6bd` · 64 lines · 2.5 KB (~639 tokens) · lang:`markdown`*
 
 ````markdown
 # State: load, stor, gen-st
@@ -6879,7 +17684,7 @@ much better than a reader assuming they were checked.
 
 ### `refrences/cpsa-protocol-modeling/references/termination.md`
 
-*sha256:`9966e6ff230e` · 66 lines · 3.1 KB · lang:`markdown`*
+*sha256:`9966e6ff230e` · 66 lines · 3.1 KB (~797 tokens) · lang:`markdown`*
 
 ````markdown
 # Termination, limits, and heap
@@ -6954,7 +17759,7 @@ as a completed analysis.
 
 ### `refrences/cpsa-protocol-modeling/templates/single-procedure(scm_file_in_txt).txt`
 
-*sha256:`4e847fbd18e6` · 49 lines · 1.4 KB · lang:`text`*
+*sha256:`4e847fbd18e6` · 49 lines · 1.4 KB (~363 tokens) · lang:`text`*
 
 ```text
 ;;; Template: one procedure, two roles, one goal, two points of view.
@@ -7012,7 +17817,7 @@ as a completed analysis.
 
 ### `refrences/internet/guides_markdown/caves_attestation_protocol_cpsa.txt`
 
-*sha256:`faa24fc5df67` · 2427 lines · 94.5 KB · lang:`text` · 186 control chars sanitized*
+*sha256:`faa24fc5df67` · 2427 lines · 94.5 KB (~23,934 tokens) · lang:`text` · 186 control chars sanitized*
 
 ```text
                                        MTR090213
@@ -9447,7 +20252,7 @@ A.9    Scenario
 
 ### `refrences/internet/guides_markdown/cpsa.cabal.txt`
 
-*sha256:`87e804778516` · 502 lines · 22.8 KB · lang:`text`*
+*sha256:`87e804778516` · 502 lines · 22.8 KB (~5,826 tokens) · lang:`text`*
 
 ```text
 Name:                   cpsa
@@ -9958,7 +20763,7 @@ Executable cpsa4dl
 
 ### `refrences/internet/guides_markdown/cpsa4roletran.md`
 
-*sha256:`73e76f3632c6` · 187 lines · 7.3 KB · lang:`markdown`*
+*sha256:`73e76f3632c6` · 187 lines · 7.3 KB (~1,879 tokens) · lang:`markdown`*
 
 ````markdown
 # CPSA4 Roletran
@@ -10154,7 +20959,7 @@ possesses the private companion key by receiving a nonce unencrypted
 
 ### `refrences/internet/guides_markdown/cpsa_cribsheet.md`
 
-*sha256:`c754963d3600` · 85 lines · 4.1 KB · lang:`markdown`*
+*sha256:`c754963d3600` · 85 lines · 4.1 KB (~1,043 tokens) · lang:`markdown`*
 
 ````markdown
 # CPSA Official Quick Reference & Syntax Cribsheet
@@ -10248,7 +21053,7 @@ EXISTENTIAL  <- CONJUNCTION | (exists (GVDECL*) CONJUNCTION)
 
 ### `refrences/internet/guides_markdown/cpsa_index.md`
 
-*sha256:`63de7979a246` · 140 lines · 5.7 KB · lang:`markdown`*
+*sha256:`63de7979a246` · 140 lines · 5.7 KB (~1,450 tokens) · lang:`markdown`*
 
 ```markdown
 [CPSA User Guide]
@@ -10397,7 +21202,7 @@ The specification describes the CPSA
 
 ### `refrences/internet/guides_markdown/cpsadesign.txt`
 
-*sha256:`14df5f7f6d9d` · 1233 lines · 57.1 KB · lang:`text` · 43 control chars sanitized*
+*sha256:`14df5f7f6d9d` · 1233 lines · 57.1 KB (~14,354 tokens) · lang:`text` · 43 control chars sanitized*
 
 ```text
           CPSA Design
@@ -11638,7 +22443,7 @@ protocol, 13
 
 ### `refrences/internet/guides_markdown/cpsafoundation.txt`
 
-*sha256:`597b9243743f` · 505 lines · 22.5 KB · lang:`text` · 14 control chars sanitized*
+*sha256:`597b9243743f` · 505 lines · 22.5 KB (~5,562 tokens) · lang:`text` · 14 control chars sanitized*
 
 ```text
      Strand Spaces with Channels and Rules
@@ -12151,7 +22956,7 @@ References
 
 ### `refrences/internet/guides_markdown/cpsagoals.txt`
 
-*sha256:`e1417eb94a3f` · 719 lines · 31.4 KB · lang:`text` · 25 control chars sanitized*
+*sha256:`e1417eb94a3f` · 719 lines · 31.4 KB (~7,978 tokens) · lang:`text` · 25 control chars sanitized*
 
 ```text
              CPSA Security Goals and Rules
@@ -12878,7 +23683,7 @@ References
 
 ### `refrences/internet/guides_markdown/cpsaintroslides.txt`
 
-*sha256:`cce004031ed4` · 357 lines · 8.6 KB · lang:`text` · 24 control chars sanitized*
+*sha256:`cce004031ed4` · 357 lines · 8.6 KB (~2,183 tokens) · lang:`text` · 24 control chars sanitized*
 
 ```text
     Symbolic Cryptographic Protocol
@@ -13243,7 +24048,7 @@ Corrected Blanchet Shape
 
 ### `refrences/internet/guides_markdown/cpsaprimer.txt`
 
-*sha256:`5953cf0f5a35` · 1423 lines · 70.1 KB · lang:`text` · 37 control chars sanitized*
+*sha256:`5953cf0f5a35` · 1423 lines · 70.1 KB (~17,848 tokens) · lang:`text` · 37 control chars sanitized*
 
 ```text
                                CPSA Primer
@@ -14674,7 +25479,7 @@ origination, 9
 
 ### `refrences/internet/guides_markdown/cpsauser.md`
 
-*sha256:`1505ade240c0` · 1202 lines · 49.0 KB · lang:`markdown`*
+*sha256:`1505ade240c0` · 1202 lines · 49.0 KB (~12,556 tokens) · lang:`markdown`*
 
 ```markdown
 # CPSA 4.4 User Guide
@@ -15885,7 +26690,7 @@ is by permission of The MITRE Corporation.
 
 ### `refrences/internet/guides_markdown/doghmi_guttman_thayer_searching_for_shapes.txt`
 
-*sha256:`ae2b7fb34c7a` · 1641 lines · 98.4 KB · lang:`text` · 74 control chars sanitized*
+*sha256:`ae2b7fb34c7a` · 1641 lines · 98.4 KB (~24,762 tokens) · lang:`text` · 74 control chars sanitized*
 
 ```text
 Searching for Shapes in Cryptographic Protocols
@@ -17534,7 +28339,7 @@ References
 
 ### `refrences/internet/guides_markdown/formal_support_standardizing_protocols_state.txt`
 
-*sha256:`9f07ee6f7a7b` · 1233 lines · 76.9 KB · lang:`text` · 86 control chars sanitized*
+*sha256:`9f07ee6f7a7b` · 1233 lines · 76.9 KB (~19,420 tokens) · lang:`text` · 86 control chars sanitized*
 
 ```text
                                                      Formal Support for Standardizing
@@ -18775,7 +29580,7 @@ References
 
 ### `refrences/internet/guides_markdown/guttman_protocol_composition_auth_tests.txt`
 
-*sha256:`2632a67bbc11` · 1304 lines · 80.3 KB · lang:`text` · 71 control chars sanitized*
+*sha256:`2632a67bbc11` · 1304 lines · 80.3 KB (~20,209 tokens) · lang:`text` · 71 control chars sanitized*
 
 ```text
            Cryptographic Protocol Composition
@@ -20087,7 +30892,7 @@ October 6, 2008                                                                 
 
 ### `refrences/internet/guides_markdown/hackage_cpsa_overview.md`
 
-*sha256:`be6fbdcf372d` · 289 lines · 10.2 KB · lang:`markdown`*
+*sha256:`be6fbdcf372d` · 289 lines · 10.2 KB (~2,617 tokens) · lang:`markdown`*
 
 ```markdown
 Hackage :: [Package]
@@ -20385,7 +31190,7 @@ terms of the form (ltk a a).
 
 ### `refrences/internet/guides_markdown/hybrid_analysis_protocols_with_state_cpsa.txt`
 
-*sha256:`fb789f13894a` · 918 lines · 51.1 KB · lang:`text` · 23 control chars sanitized*
+*sha256:`fb789f13894a` · 918 lines · 51.1 KB (~12,849 tokens) · lang:`text` · 23 control chars sanitized*
 
 ```text
                                                           A Hybrid Analysis for
@@ -21311,7 +32116,7 @@ References
 
 ### `refrences/internet/guides_markdown/ramsdell_deducing_security_goals_cpsa.txt`
 
-*sha256:`e7cf14593c72` · 775 lines · 41.4 KB · lang:`text` · 28 control chars sanitized*
+*sha256:`e7cf14593c72` · 775 lines · 41.4 KB (~10,293 tokens) · lang:`text` · 28 control chars sanitized*
 
 ```text
                                                     Deducing Security Goals From
@@ -22094,7 +32899,7 @@ Furthermore, sprec(x, y) ⊃ prec(x, y).
 
 ### `refrences/internet/guides_markdown/readme.md`
 
-*sha256:`6c18f13fc558` · 1 lines · 0.0 KB · lang:`markdown`*
+*sha256:`6c18f13fc558` · 1 lines · 0.0 KB (~2 tokens) · lang:`markdown`*
 
 ```markdown
 Start here.
@@ -22104,7 +32909,7 @@ Start here.
 
 ### `refrences/internet/guides_markdown/roletran.txt`
 
-*sha256:`15299af30aa2` · 716 lines · 38.7 KB · lang:`text` · 129 control chars sanitized*
+*sha256:`15299af30aa2` · 716 lines · 38.7 KB (~9,767 tokens) · lang:`text` · 129 control chars sanitized*
 
 ```text
           Cryptographic Protocol Analysis and
@@ -22828,7 +33633,7 @@ use, you will need to obtain permission directly from the copyright holder.
 
 ### `refrences/internet/guides_markdown/security_theorems_via_model_theory.txt`
 
-*sha256:`7f3ae0614fad` · 744 lines · 55.1 KB · lang:`text` · 33 control chars sanitized*
+*sha256:`7f3ae0614fad` · 744 lines · 55.1 KB (~13,711 tokens) · lang:`text` · 33 control chars sanitized*
 
 ```text
                           Security Theorems via Model Theory∗

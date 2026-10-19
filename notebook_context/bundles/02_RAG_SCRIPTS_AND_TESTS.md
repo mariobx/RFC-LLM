@@ -2,7 +2,7 @@
 
 > Tier 3 — Operational RAG chunking/embedding/enrichment pipeline scripts (`refrences/scripts/`), shell pipeline runner (`refrences/run_rag_pipeline.sh`), retrieval evaluation and clustering scripts (`refrences/reports/`), LaTeX report source, and the complete pytest unit and integration test suite (`tests/`).
 
-*Generated: 2026-10-14 16:18:38 UTC · Git: `main` @ `f572f106cef2` · Tier: Tier 3 — Operational Scripts, Pipelines & Test Suites · Files: 13*
+*Generated: 2026-10-19 21:48:59 UTC · Git: `main` @ `9d27f26fb814` · Tier: Tier 3 — Operational Scripts, Pipelines & Test Suites · Files: 14 · Estimated Tokens: ~51,906*
 
 ## Table of Contents
 
@@ -16,6 +16,7 @@
 - [`refrences/scripts/04_build_embeddings.py`](#refrencesscripts04-build-embeddingspy)
 - [`refrences/scripts/05_enrich_doc_chunks.py`](#refrencesscripts05-enrich-doc-chunkspy)
 - [`tests/test_code_generation_and_verification.py`](#teststest-code-generation-and-verificationpy)
+- [`tests/test_cpsa_scoping_and_prompts.py`](#teststest-cpsa-scoping-and-promptspy)
 - [`tests/test_document_ingestion.py`](#teststest-document-ingestionpy)
 - [`tests/test_main_pipeline_orchestrator.py`](#teststest-main-pipeline-orchestratorpy)
 - [`tests/test_visualizer_and_events.py`](#teststest-visualizer-and-eventspy)
@@ -24,7 +25,7 @@
 
 ### `refrences/reports/evaluate_rag.py`
 
-*sha256:`43ff894da40f` · 590 lines · 25.8 KB · lang:`python`*
+*sha256:`43ff894da40f` · 590 lines · 25.8 KB (~6,596 tokens) · lang:`python`*
 
 ```python
 #!/usr/bin/env python3
@@ -623,7 +624,7 @@ if __name__ == "__main__":
 
 ### `refrences/reports/plot_clusters.py`
 
-*sha256:`8ef9166c5e29` · 1278 lines · 49.0 KB · lang:`python`*
+*sha256:`8ef9166c5e29` · 1278 lines · 49.0 KB (~12,553 tokens) · lang:`python`*
 
 ```python
 #!/usr/bin/env python3
@@ -1910,7 +1911,7 @@ if __name__ == "__main__":
 
 ### `refrences/reports/rag_evaluation_report.tex`
 
-*sha256:`8a0c8f6ee076` · 103 lines · 6.4 KB · lang:`latex`*
+*sha256:`8a0c8f6ee076` · 103 lines · 6.4 KB (~1,627 tokens) · lang:`latex`*
 
 ```latex
 \documentclass[10pt,twocolumn]{article}
@@ -2022,7 +2023,7 @@ Hybrid Convex-AST (Score Fusion)     & 76.0\% & 93.0\% & 97.7\% & 0.845 & 0.539 
 
 ### `refrences/run_rag_pipeline.sh`
 
-*sha256:`1c48f0d10d91` · 74 lines · 2.3 KB · lang:`bash`*
+*sha256:`1c48f0d10d91` · 74 lines · 2.3 KB (~584 tokens) · lang:`bash`*
 
 ```bash
 #!/usr/bin/env bash
@@ -2105,7 +2106,7 @@ echo "============================================================"
 
 ### `refrences/scripts/01_extract_chunks.py`
 
-*sha256:`8f2e9bcd7fa7` · 624 lines · 26.0 KB · lang:`python`*
+*sha256:`8f2e9bcd7fa7` · 624 lines · 26.0 KB (~6,655 tokens) · lang:`python`*
 
 ```python
 #!/usr/bin/env python3
@@ -2738,7 +2739,7 @@ if __name__ == "__main__":
 
 ### `refrences/scripts/02_extract_code_examples.py`
 
-*sha256:`15d8adabeeb7` · 513 lines · 22.9 KB · lang:`python`*
+*sha256:`15d8adabeeb7` · 513 lines · 22.9 KB (~5,858 tokens) · lang:`python`*
 
 ```python
 #!/usr/bin/env python3
@@ -3260,7 +3261,7 @@ if __name__ == "__main__":
 
 ### `refrences/scripts/03_query_rag.py`
 
-*sha256:`108c13835a78` · 438 lines · 18.5 KB · lang:`python`*
+*sha256:`108c13835a78` · 438 lines · 18.5 KB (~4,740 tokens) · lang:`python`*
 
 ```python
 #!/usr/bin/env python3
@@ -3707,7 +3708,7 @@ if __name__ == "__main__":
 
 ### `refrences/scripts/04_build_embeddings.py`
 
-*sha256:`4ddfc900a6ae` · 260 lines · 10.4 KB · lang:`python`*
+*sha256:`4ddfc900a6ae` · 260 lines · 10.4 KB (~2,672 tokens) · lang:`python`*
 
 ```python
 #!/usr/bin/env python3
@@ -3976,7 +3977,7 @@ if __name__ == "__main__":
 
 ### `refrences/scripts/05_enrich_doc_chunks.py`
 
-*sha256:`741a60e69395` · 207 lines · 7.9 KB · lang:`python`*
+*sha256:`741a60e69395` · 207 lines · 7.9 KB (~2,021 tokens) · lang:`python`*
 
 ```python
 #!/usr/bin/env python3
@@ -4192,7 +4193,7 @@ if __name__ == "__main__":
 
 ### `tests/test_code_generation_and_verification.py`
 
-*sha256:`827647dc908b` · 332 lines · 14.2 KB · lang:`python`*
+*sha256:`827647dc908b` · 332 lines · 14.2 KB (~3,631 tokens) · lang:`python`*
 
 ```python
 """Unit and Integration Tests for Code Generation and Verification Engine."""
@@ -4529,9 +4530,178 @@ def test_clean_rag_diagnostic_query_sanitization():
 
 ---
 
+### `tests/test_cpsa_scoping_and_prompts.py`
+
+*sha256:`e5bd0e9a7fec` · 160 lines · 6.8 KB (~1,732 tokens) · lang:`python`*
+
+```python
+"""Unit Tests for MITRE CPSA 4.4.9 Keyword/Sort Scoping and Externalized .prompts/ Loader."""
+
+from pathlib import Path
+import pytest
+
+from src.intermediate_representation.algebraic_sorts import CPSASortEnum
+from src.intermediate_representation.cpsa_grammar import validate_cpsa_term_syntax
+from src.intermediate_representation.protocol_syntax_tree import (
+    CPSAPreskeleton,
+    CPSAProtocolRole,
+    CPSAProtocolSpecification,
+    CPSAStrandInstance,
+    CPSATraceEvent,
+    CPSAVariableDeclaration,
+)
+from src.prompt_loader import (
+    PROMPT_APPLICABILITY_GATE,
+    PROMPT_COMPILER_REPAIR,
+    PROMPT_PROTOCOL_EXTRACTION,
+    PROMPT_RAG_QUERY_FORMULATION,
+    PROMPT_SCHEMA_SELF_CORRECTION,
+    PROMPT_SECTION_ROUTER,
+    build_schema_system_prompt,
+    load_prompt,
+)
+
+
+def test_externalized_prompts_load_from_disk_and_fallback(tmp_path: Path):
+    """Verify all 6 prompt templates in .prompts/ exist, load cleanly, and support fallback."""
+    for prompt_filename in (
+        PROMPT_APPLICABILITY_GATE,
+        PROMPT_SECTION_ROUTER,
+        PROMPT_PROTOCOL_EXTRACTION,
+        PROMPT_SCHEMA_SELF_CORRECTION,
+        PROMPT_RAG_QUERY_FORMULATION,
+        PROMPT_COMPILER_REPAIR,
+    ):
+        text = load_prompt(prompt_filename)
+        assert len(text) > 100
+
+    # Verify schema attachment helper
+    schema_prompt = build_schema_system_prompt(PROMPT_PROTOCOL_EXTRACTION, CPSAProtocolSpecification)
+    assert "Respond strictly with a valid JSON object matching this schema:" in schema_prompt
+    assert '"CPSAProtocolSpecification"' in schema_prompt
+
+    # Verify fallback when directory has no files
+    fallback_text = load_prompt(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
+    assert "MITRE CPSA 4.4.9" in fallback_text
+
+
+def test_logic_only_sorts_forbidden_in_role_and_skeleton_vars():
+    """Tables 10.2 & 10.4 vs Table 7.1: strd, indx, and fact are forbidden in role/skeleton vars."""
+    for bad_sort in (CPSASortEnum.STRD, CPSASortEnum.INDX, CPSASortEnum.FACT):
+        with pytest.raises(ValueError, match="first-order logic sort"):
+            CPSAVariableDeclaration(name="node_idx", sort=bad_sort)
+
+
+def test_diffie_hellman_sorts_forbidden_under_basic_algebra():
+    """Table 10.2: rndx, expt, and base sorts are forbidden when protocol message_algebra is 'basic'."""
+    with pytest.raises(ValueError, match="Diffie-Hellman variable sort 'rndx'"):
+        CPSAProtocolSpecification(
+            protocol_name="dh_sort_in_basic",
+            message_algebra="basic",
+            roles=[
+                CPSAProtocolRole(
+                    role_name="initiator",
+                    variables=[
+                        CPSAVariableDeclaration(name="ch", sort=CPSASortEnum.CHAN),
+                        CPSAVariableDeclaration(name="x", sort=CPSASortEnum.RNDX),
+                    ],
+                    trace=[
+                        CPSATraceEvent(direction="send", channel="ch", message_term="x"),
+                    ],
+                )
+            ],
+        )
+
+
+def test_structural_keywords_forbidden_inside_message_terms():
+    """Tables 10.1, 10.3, 10.5: structural keywords (defrole, send, vars, etc.) cannot be term operators."""
+    for bad_kw in ("defrole", "defskeleton", "send", "recv", "vars", "trace", "uniq-orig", "deflistener"):
+        with pytest.raises(ValueError, match=f"Structural CPSA keyword '{bad_kw}'"):
+            validate_cpsa_term_syntax([bad_kw, "x"])
+
+
+def test_role_and_skeleton_keyword_scoping_separation():
+    """Tables 10.1 & 10.6: skeleton keywords cannot appear in defrole and role keywords cannot appear in defskeleton."""
+    # 1. Skeleton keyword 'listeners' or 'strands' inside CPSAProtocolRole must fail
+    with pytest.raises(ValueError, match="preskeleton-only keyword"):
+        CPSAProtocolRole.model_validate({
+            "role_name": "client",
+            "variables": [{"name": "x", "sort": "text"}],
+            "trace": [{"direction": "send", "message_term": "x"}],
+            "listeners": ["x"],
+        })
+
+    # 2. Role keyword 'trace' or 'inputs' inside CPSAPreskeleton must fail
+    with pytest.raises(ValueError, match="role-only keyword"):
+        CPSAPreskeleton.model_validate({
+            "protocol_name": "proto",
+            "strands": [{"role_name": "client"}],
+            "trace": [{"direction": "send", "message_term": "x"}],
+        })
+
+
+def test_equation_10_1_forbids_mesg_sort_as_encryption_key():
+    """Equation 10.1: variables declared with sort 'mesg' cannot be used as encryption keys in (enc ...)."""
+    with pytest.raises(ValueError, match="Equation 10.1"):
+        CPSAProtocolRole(
+            role_name="sender",
+            variables=[
+                CPSAVariableDeclaration(name="payload", sort=CPSASortEnum.TEXT),
+                CPSAVariableDeclaration(name="generic_key", sort=CPSASortEnum.MESG),
+            ],
+            trace=[
+                CPSATraceEvent(
+                    direction="send",
+                    channel="ch",
+                    message_term=["enc", "payload", "generic_key"],
+                )
+            ],
+        )
+
+
+def test_stateful_load_stor_event_serialization_and_roletran_invariants():
+    """Verify Table 10.1 load/stor 2-arg serialization, 2-arg pubk ordering, and cpsa4roletran input/output sanitization."""
+    # 1. load/stor must emit 2 arguments after direction: [load, locn, term]
+    load_evt = CPSATraceEvent(direction="load", location="state_cell", message_term="secret_val")
+    assert load_evt.to_cpsa_json() == ["load", "state_cell", "secret_val"]
+
+    # 2. Role serialization enforces roletran invariants and 2-arg pubk argument order
+    role = CPSAProtocolRole(
+        role_name="initiator",
+        variables=[
+            CPSAVariableDeclaration(name="server_id", sort=CPSASortEnum.NAME),
+            CPSAVariableDeclaration(name="fresh_nonce", sort=CPSASortEnum.TEXT),
+        ],
+        trace=[
+            CPSATraceEvent(
+                direction="send",
+                channel="ch",
+                message_term=["enc", "fresh_nonce", ["pubk", "server_id", "enc_tag"]],
+            )
+        ],
+        unique_originating=["fresh_nonce"],
+        # Intentionally include fresh_nonce and a compound cat in inputs, and repeat server_id in outputs
+        inputs=["server_id", "fresh_nonce", ["cat", "server_id", "fresh_nonce"]],
+        outputs=["fresh_nonce", "server_id"],
+    )
+    role_json = role.to_cpsa_json()
+    role_str = str(role_json)
+
+    # Channel 'ch' auto-declared in vars and auto-added to inputs
+    assert "['ch', 'chan']" in role_str
+    # 2-arg pubk normalized to ['pubk', '"enc_tag"', 'server_id']
+    assert "['pubk', '\"enc_tag\"', 'server_id']" in role_str
+    # 'fresh_nonce' (uniq-orig) and ['cat', ...] stripped from inputs
+    assert "['inputs', 'ch', 'server_id']" in role_str
+    # 'server_id' (an input) stripped from outputs, leaving only 'fresh_nonce'
+    assert "['outputs', 'fresh_nonce']" in role_str
+```
+
+---
+
 ### `tests/test_document_ingestion.py`
 
-*sha256:`38caae01f6fb` · 98 lines · 3.3 KB · lang:`python`*
+*sha256:`38caae01f6fb` · 98 lines · 3.3 KB (~844 tokens) · lang:`python`*
 
 ```python
 """Unit & Integration Tests for Document Ingestion Subsystem (Stage 1)."""
@@ -4638,7 +4808,7 @@ def test_heuristic_section_router_tls(tls_rfc_text: str):
 
 ### `tests/test_main_pipeline_orchestrator.py`
 
-*sha256:`e585514ba572` · 131 lines · 5.6 KB · lang:`python`*
+*sha256:`e585514ba572` · 131 lines · 5.6 KB (~1,441 tokens) · lang:`python`*
 
 ```python
 """Integration tests for Main Pipeline Orchestrator."""
@@ -4778,7 +4948,7 @@ def test_pipeline_e2e_successful_synthesis_and_build(tmp_path: Path, mock_valid_
 
 ### `tests/test_visualizer_and_events.py`
 
-*sha256:`9833d4b0fe7a` · 110 lines · 3.7 KB · lang:`python`*
+*sha256:`9833d4b0fe7a` · 110 lines · 3.7 KB (~952 tokens) · lang:`python`*
 
 ```python
 """Unit and integration tests for Pipeline Event Bus, Cycle Detection, and Visualizer Server."""
