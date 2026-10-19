@@ -2,7 +2,7 @@
 
 > Tier 1/3 Domain Reference — Curated CPSA 4.4.9 protocol modeling skill definitions, complete official MITRE User Manual and Specification, grammar and roletran references, Dolev-Yao theoretical guides, and transcribed CPSA documentation.
 
-*Generated: 2026-10-19 21:48:59 UTC · Git: `main` @ `9d27f26fb814` · Tier: Tier 1/3 — Domain Reference Documentation & Modeling Guides · Files: 40 · Estimated Tokens: ~432,327*
+*Generated: 2026-10-19 22:11:31 UTC · Git: `main` @ `81040c26a432` · Tier: Tier 1/3 — Domain Reference Documentation & Modeling Guides · Files: 40 · Estimated Tokens: ~432,327*
 
 ## Table of Contents
 

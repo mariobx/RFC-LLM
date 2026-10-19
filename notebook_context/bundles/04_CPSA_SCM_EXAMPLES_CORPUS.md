@@ -2,7 +2,7 @@
 
 > Tier 3 Reference Corpus — Complete collection of 148 official MITRE CPSA `.scm` protocol specifications, heralds, macros, defroles, and security goals used for few-shot RAG grounding and grammar verification.
 
-*Generated: 2026-10-19 21:48:59 UTC · Git: `main` @ `9d27f26fb814` · Tier: Tier 3 — Domain Reference Code Corpus (.scm) · Files: 148 · Estimated Tokens: ~88,246*
+*Generated: 2026-10-19 22:11:31 UTC · Git: `main` @ `81040c26a432` · Tier: Tier 3 — Domain Reference Code Corpus (.scm) · Files: 148 · Estimated Tokens: ~88,246*
 
 ## Table of Contents
 

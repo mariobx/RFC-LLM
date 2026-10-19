@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis pipeline (`src/`), including RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, live web visualizer, root `rfc-llm` CLI entrypoint, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-10-19 21:48:59 UTC · Git: `main` @ `9d27f26fb814` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 39 · Estimated Tokens: ~107,909*
+*Generated: 2026-10-19 22:11:31 UTC · Git: `main` @ `81040c26a432` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 39 · Estimated Tokens: ~107,909*
 
 ## Table of Contents
 

@@ -2,7 +2,7 @@
 
 > Tier 3 — Operational RAG chunking/embedding/enrichment pipeline scripts (`refrences/scripts/`), shell pipeline runner (`refrences/run_rag_pipeline.sh`), retrieval evaluation and clustering scripts (`refrences/reports/`), LaTeX report source, and the complete pytest unit and integration test suite (`tests/`).
 
-*Generated: 2026-10-19 21:48:59 UTC · Git: `main` @ `9d27f26fb814` · Tier: Tier 3 — Operational Scripts, Pipelines & Test Suites · Files: 14 · Estimated Tokens: ~51,906*
+*Generated: 2026-10-19 22:11:31 UTC · Git: `main` @ `81040c26a432` · Tier: Tier 3 — Operational Scripts, Pipelines & Test Suites · Files: 14 · Estimated Tokens: ~51,906*
 
 ## Table of Contents
 

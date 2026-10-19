@@ -50,6 +50,7 @@
         "LICENSE",
         "requirements.txt",
         "pytest.ini",
+        ".env.example",
         ".gitignore",
         "logs/.gitignore",
         "docs/**/*.md"
@@ -59,6 +60,7 @@
         "LICENSE",
         "requirements.txt",
         "pytest.ini",
+        ".env.example",
         ".gitignore",
         "logs/.gitignore"
       ]
