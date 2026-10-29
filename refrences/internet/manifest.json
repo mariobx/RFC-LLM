@@ -9,7 +9,7 @@
         "title": "Analysis of the CAVES Attestation Protocol using CPSA",
         "author": "Paul D. Rowe et al. (arXiv:1207.0418)",
         "type": "Case Study Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/caves_attestation_protocol_cpsa.pdf"
+        "path": "refrences/internet/papers_pdf/caves_attestation_protocol_cpsa.pdf"
       },
       {
         "filename": "cpsa4manual.pdf",
@@ -17,7 +17,7 @@
         "title": "CPSA 4 Manual",
         "author": "John D. Ramsdell, Paul D. Rowe, et al.",
         "type": "Official Manual",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/cpsa4manual.pdf"
+        "path": "refrences/internet/papers_pdf/cpsa4manual.pdf"
       },
       {
         "filename": "cpsadesign.pdf",
@@ -25,7 +25,7 @@
         "title": "CPSA Design",
         "author": "John D. Ramsdell",
         "type": "Architecture & Algorithms",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/cpsadesign.pdf"
+        "path": "refrences/internet/papers_pdf/cpsadesign.pdf"
       },
       {
         "filename": "cpsafoundation.pdf",
@@ -33,7 +33,7 @@
         "title": "CPSA Foundations",
         "author": "Joshua D. Guttman",
         "type": "Theoretical Foundations",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/cpsafoundation.pdf"
+        "path": "refrences/internet/papers_pdf/cpsafoundation.pdf"
       },
       {
         "filename": "cpsagoals.pdf",
@@ -41,7 +41,7 @@
         "title": "Security Goals and Rules in CPSA",
         "author": "Paul D. Rowe",
         "type": "Logic & Goal Language",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/cpsagoals.pdf"
+        "path": "refrences/internet/papers_pdf/cpsagoals.pdf"
       },
       {
         "filename": "cpsaintroslides.pdf",
@@ -49,7 +49,7 @@
         "title": "CPSA Introduction Slides",
         "author": "MITRE Corporation",
         "type": "Slide Deck",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/cpsaintroslides.pdf"
+        "path": "refrences/internet/papers_pdf/cpsaintroslides.pdf"
       },
       {
         "filename": "cpsaprimer.pdf",
@@ -57,7 +57,7 @@
         "title": "CPSA Primer",
         "author": "John D. Ramsdell",
         "type": "Tutorial & Intro",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/cpsaprimer.pdf"
+        "path": "refrences/internet/papers_pdf/cpsaprimer.pdf"
       },
       {
         "filename": "cpsaspec.pdf",
@@ -65,7 +65,7 @@
         "title": "CPSA Specification",
         "author": "MITRE Corporation",
         "type": "Formal Mathematical Spec",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/cpsaspec.pdf"
+        "path": "refrences/internet/papers_pdf/cpsaspec.pdf"
       },
       {
         "filename": "doghmi_guttman_thayer_searching_for_shapes.pdf",
@@ -73,7 +73,7 @@
         "title": "Searching for Shapes in Cryptographic Protocols",
         "author": "Shaddin F. Doghmi, Joshua D. Guttman, F. Javier Thayer (TACAS / IACR 2006/435)",
         "type": "Academic Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/doghmi_guttman_thayer_searching_for_shapes.pdf"
+        "path": "refrences/internet/papers_pdf/doghmi_guttman_thayer_searching_for_shapes.pdf"
       },
       {
         "filename": "formal_support_standardizing_protocols_state.pdf",
@@ -81,7 +81,7 @@
         "title": "Formal Support for Standardizing Protocols with State",
         "author": "Joshua D. Guttman, Moses D. Liskov, Paul D. Rowe (arXiv:1509.07552)",
         "type": "Standardization Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/formal_support_standardizing_protocols_state.pdf"
+        "path": "refrences/internet/papers_pdf/formal_support_standardizing_protocols_state.pdf"
       },
       {
         "filename": "guttman_protocol_composition_auth_tests.pdf",
@@ -89,7 +89,7 @@
         "title": "Cryptographic Protocol Composition via Authentication Tests",
         "author": "Joshua D. Guttman (IACR 2008/430)",
         "type": "Academic Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/guttman_protocol_composition_auth_tests.pdf"
+        "path": "refrences/internet/papers_pdf/guttman_protocol_composition_auth_tests.pdf"
       },
       {
         "filename": "hybrid_analysis_protocols_with_state_cpsa.pdf",
@@ -97,7 +97,7 @@
         "title": "A Hybrid Analysis for Security Protocols with State",
         "author": "Paul D. Rowe, Joshua D. Guttman (arXiv:1404.3899)",
         "type": "Academic Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/hybrid_analysis_protocols_with_state_cpsa.pdf"
+        "path": "refrences/internet/papers_pdf/hybrid_analysis_protocols_with_state_cpsa.pdf"
       },
       {
         "filename": "ramsdell_deducing_security_goals_cpsa.pdf",
@@ -105,7 +105,7 @@
         "title": "Deducing Security Goals From Shape Analysis Sentences",
         "author": "John D. Ramsdell (arXiv:1204.0480)",
         "type": "Academic Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/ramsdell_deducing_security_goals_cpsa.pdf"
+        "path": "refrences/internet/papers_pdf/ramsdell_deducing_security_goals_cpsa.pdf"
       },
       {
         "filename": "ramsdell_shapes_analyzer_overview.pdf",
@@ -113,7 +113,7 @@
         "title": "A Cryptographic Protocol Shapes Analyzer",
         "author": "John D. Ramsdell et al. (arXiv:0805.3169)",
         "type": "Academic Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/ramsdell_shapes_analyzer_overview.pdf"
+        "path": "refrences/internet/papers_pdf/ramsdell_shapes_analyzer_overview.pdf"
       },
       {
         "filename": "roletran.pdf",
@@ -121,7 +121,7 @@
         "title": "CPSA Roletran: Modeling Protocol Roles with State",
         "author": "John D. Ramsdell",
         "type": "State & Transitions",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/roletran.pdf"
+        "path": "refrences/internet/papers_pdf/roletran.pdf"
       },
       {
         "filename": "security_theorems_via_model_theory.pdf",
@@ -129,7 +129,7 @@
         "title": "Security Theorems via Model Theory",
         "author": "Joshua D. Guttman (arXiv:0911.2036)",
         "type": "Theoretical Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/papers_pdf/security_theorems_via_model_theory.pdf"
+        "path": "refrences/internet/papers_pdf/security_theorems_via_model_theory.pdf"
       }
     ],
     "guides_markdown": [
@@ -139,7 +139,7 @@
         "title": "Analysis of the CAVES Attestation Protocol using CPSA",
         "author": "Paul D. Rowe et al. (arXiv:1207.0418)",
         "type": "Case Study Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/caves_attestation_protocol_cpsa.txt"
+        "path": "refrences/internet/guides_markdown/caves_attestation_protocol_cpsa.txt"
       },
       {
         "filename": "cpsa.cabal.txt",
@@ -147,7 +147,7 @@
         "title": "cpsa.cabal.txt",
         "author": "MITRE / Community",
         "type": "guides_markdown",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/cpsa.cabal.txt"
+        "path": "refrences/internet/guides_markdown/cpsa.cabal.txt"
       },
       {
         "filename": "cpsa4manual.txt",
@@ -155,7 +155,7 @@
         "title": "CPSA 4 Manual",
         "author": "John D. Ramsdell, Paul D. Rowe, et al.",
         "type": "Official Manual",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/cpsa4manual.txt"
+        "path": "refrences/internet/guides_markdown/cpsa4manual.txt"
       },
       {
         "filename": "cpsa4roletran.md",
@@ -163,7 +163,7 @@
         "title": "CPSA 4 Roletran Guide",
         "author": "MITRE Corporation",
         "type": "Markdown Spec",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/cpsa4roletran.md"
+        "path": "refrences/internet/guides_markdown/cpsa4roletran.md"
       },
       {
         "filename": "cpsadesign.txt",
@@ -171,7 +171,7 @@
         "title": "CPSA Design",
         "author": "John D. Ramsdell",
         "type": "Architecture & Algorithms",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/cpsadesign.txt"
+        "path": "refrences/internet/guides_markdown/cpsadesign.txt"
       },
       {
         "filename": "cpsafoundation.txt",
@@ -179,7 +179,7 @@
         "title": "CPSA Foundations",
         "author": "Joshua D. Guttman",
         "type": "Theoretical Foundations",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/cpsafoundation.txt"
+        "path": "refrences/internet/guides_markdown/cpsafoundation.txt"
       },
       {
         "filename": "cpsagoals.txt",
@@ -187,7 +187,7 @@
         "title": "Security Goals and Rules in CPSA",
         "author": "Paul D. Rowe",
         "type": "Logic & Goal Language",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/cpsagoals.txt"
+        "path": "refrences/internet/guides_markdown/cpsagoals.txt"
       },
       {
         "filename": "cpsaintroslides.txt",
@@ -195,7 +195,7 @@
         "title": "CPSA Introduction Slides",
         "author": "MITRE Corporation",
         "type": "Slide Deck",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/cpsaintroslides.txt"
+        "path": "refrences/internet/guides_markdown/cpsaintroslides.txt"
       },
       {
         "filename": "cpsaprimer.txt",
@@ -203,7 +203,7 @@
         "title": "CPSA Primer",
         "author": "John D. Ramsdell",
         "type": "Tutorial & Intro",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/cpsaprimer.txt"
+        "path": "refrences/internet/guides_markdown/cpsaprimer.txt"
       },
       {
         "filename": "cpsaspec.txt",
@@ -211,7 +211,7 @@
         "title": "CPSA Specification",
         "author": "MITRE Corporation",
         "type": "Formal Mathematical Spec",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/cpsaspec.txt"
+        "path": "refrences/internet/guides_markdown/cpsaspec.txt"
       },
       {
         "filename": "doghmi_guttman_thayer_searching_for_shapes.txt",
@@ -219,7 +219,7 @@
         "title": "Searching for Shapes in Cryptographic Protocols",
         "author": "Shaddin F. Doghmi, Joshua D. Guttman, F. Javier Thayer (TACAS / IACR 2006/435)",
         "type": "Academic Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/doghmi_guttman_thayer_searching_for_shapes.txt"
+        "path": "refrences/internet/guides_markdown/doghmi_guttman_thayer_searching_for_shapes.txt"
       },
       {
         "filename": "formal_support_standardizing_protocols_state.txt",
@@ -227,7 +227,7 @@
         "title": "Formal Support for Standardizing Protocols with State",
         "author": "Joshua D. Guttman, Moses D. Liskov, Paul D. Rowe (arXiv:1509.07552)",
         "type": "Standardization Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/formal_support_standardizing_protocols_state.txt"
+        "path": "refrences/internet/guides_markdown/formal_support_standardizing_protocols_state.txt"
       },
       {
         "filename": "guttman_protocol_composition_auth_tests.txt",
@@ -235,7 +235,7 @@
         "title": "Cryptographic Protocol Composition via Authentication Tests",
         "author": "Joshua D. Guttman (IACR 2008/430)",
         "type": "Academic Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/guttman_protocol_composition_auth_tests.txt"
+        "path": "refrences/internet/guides_markdown/guttman_protocol_composition_auth_tests.txt"
       },
       {
         "filename": "hybrid_analysis_protocols_with_state_cpsa.txt",
@@ -243,7 +243,7 @@
         "title": "A Hybrid Analysis for Security Protocols with State",
         "author": "Paul D. Rowe, Joshua D. Guttman (arXiv:1404.3899)",
         "type": "Academic Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/hybrid_analysis_protocols_with_state_cpsa.txt"
+        "path": "refrences/internet/guides_markdown/hybrid_analysis_protocols_with_state_cpsa.txt"
       },
       {
         "filename": "ramsdell_deducing_security_goals_cpsa.txt",
@@ -251,7 +251,7 @@
         "title": "Deducing Security Goals From Shape Analysis Sentences",
         "author": "John D. Ramsdell (arXiv:1204.0480)",
         "type": "Academic Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/ramsdell_deducing_security_goals_cpsa.txt"
+        "path": "refrences/internet/guides_markdown/ramsdell_deducing_security_goals_cpsa.txt"
       },
       {
         "filename": "ramsdell_shapes_analyzer_overview.txt",
@@ -259,7 +259,7 @@
         "title": "A Cryptographic Protocol Shapes Analyzer",
         "author": "John D. Ramsdell et al. (arXiv:0805.3169)",
         "type": "Academic Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/ramsdell_shapes_analyzer_overview.txt"
+        "path": "refrences/internet/guides_markdown/ramsdell_shapes_analyzer_overview.txt"
       },
       {
         "filename": "roletran.txt",
@@ -267,7 +267,7 @@
         "title": "CPSA Roletran: Modeling Protocol Roles with State",
         "author": "John D. Ramsdell",
         "type": "State & Transitions",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/roletran.txt"
+        "path": "refrences/internet/guides_markdown/roletran.txt"
       },
       {
         "filename": "security_theorems_via_model_theory.txt",
@@ -275,7 +275,7 @@
         "title": "Security Theorems via Model Theory",
         "author": "Joshua D. Guttman (arXiv:0911.2036)",
         "type": "Theoretical Paper",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/guides_markdown/security_theorems_via_model_theory.txt"
+        "path": "refrences/internet/guides_markdown/security_theorems_via_model_theory.txt"
       }
     ],
     "docs_html": [
@@ -285,7 +285,7 @@
         "title": "CPSA User Guide",
         "author": "MITRE Corporation",
         "type": "HTML User Manual",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/docs_html/cpsauser.html"
+        "path": "refrences/internet/docs_html/cpsauser.html"
       },
       {
         "filename": "hackage_cpsa_overview.html",
@@ -293,7 +293,7 @@
         "title": "hackage_cpsa_overview.html",
         "author": "MITRE / Community",
         "type": "docs_html",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/docs_html/hackage_cpsa_overview.html"
+        "path": "refrences/internet/docs_html/hackage_cpsa_overview.html"
       },
       {
         "filename": "index.html",
@@ -301,7 +301,7 @@
         "title": "index.html",
         "author": "MITRE / Community",
         "type": "docs_html",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/docs_html/index.html"
+        "path": "refrences/internet/docs_html/index.html"
       },
       {
         "filename": "readme.html",
@@ -309,7 +309,7 @@
         "title": "readme.html",
         "author": "MITRE / Community",
         "type": "docs_html",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/docs_html/readme.html"
+        "path": "refrences/internet/docs_html/readme.html"
       }
     ],
     "examples_scm": [
@@ -319,7 +319,7 @@
         "title": "DH_hack.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/DH_hack.scm"
+        "path": "refrences/internet/examples_scm/DH_hack.scm"
       },
       {
         "filename": "ab.scm",
@@ -327,7 +327,7 @@
         "title": "ab.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/ab.scm"
+        "path": "refrences/internet/examples_scm/ab.scm"
       },
       {
         "filename": "abc.scm",
@@ -335,7 +335,7 @@
         "title": "abc.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/abc.scm"
+        "path": "refrences/internet/examples_scm/abc.scm"
       },
       {
         "filename": "aik.scm",
@@ -343,7 +343,7 @@
         "title": "aik.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/aik.scm"
+        "path": "refrences/internet/examples_scm/aik.scm"
       },
       {
         "filename": "atomic-open-closed.scm",
@@ -351,7 +351,7 @@
         "title": "atomic-open-closed.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/atomic-open-closed.scm"
+        "path": "refrences/internet/examples_scm/atomic-open-closed.scm"
       },
       {
         "filename": "attest.scm",
@@ -359,7 +359,7 @@
         "title": "attest.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/attest.scm"
+        "path": "refrences/internet/examples_scm/attest.scm"
       },
       {
         "filename": "auth-enc.scm",
@@ -367,7 +367,7 @@
         "title": "auth-enc.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/auth-enc.scm"
+        "path": "refrences/internet/examples_scm/auth-enc.scm"
       },
       {
         "filename": "auth-hash.scm",
@@ -375,7 +375,7 @@
         "title": "auth-hash.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/auth-hash.scm"
+        "path": "refrences/internet/examples_scm/auth-hash.scm"
       },
       {
         "filename": "blanchet-strandmax.scm",
@@ -383,7 +383,7 @@
         "title": "blanchet-strandmax.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/blanchet-strandmax.scm"
+        "path": "refrences/internet/examples_scm/blanchet-strandmax.scm"
       },
       {
         "filename": "blanchet.scm",
@@ -391,7 +391,7 @@
         "title": "blanchet.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/blanchet.scm"
+        "path": "refrences/internet/examples_scm/blanchet.scm"
       },
       {
         "filename": "bug_example.scm",
@@ -399,7 +399,7 @@
         "title": "bug_example.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/bug_example.scm"
+        "path": "refrences/internet/examples_scm/bug_example.scm"
       },
       {
         "filename": "cert_lang.scm",
@@ -407,7 +407,7 @@
         "title": "cert_lang.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/cert_lang.scm"
+        "path": "refrences/internet/examples_scm/cert_lang.scm"
       },
       {
         "filename": "chan-envelope.scm",
@@ -415,7 +415,7 @@
         "title": "chan-envelope.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/chan-envelope.scm"
+        "path": "refrences/internet/examples_scm/chan-envelope.scm"
       },
       {
         "filename": "chan-perrig-song.scm",
@@ -423,7 +423,7 @@
         "title": "chan-perrig-song.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/chan-perrig-song.scm"
+        "path": "refrences/internet/examples_scm/chan-perrig-song.scm"
       },
       {
         "filename": "chan-unilateral.scm",
@@ -431,7 +431,7 @@
         "title": "chan-unilateral.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/chan-unilateral.scm"
+        "path": "refrences/internet/examples_scm/chan-unilateral.scm"
       },
       {
         "filename": "chan-yahalom-role-decl.scm",
@@ -439,7 +439,7 @@
         "title": "chan-yahalom-role-decl.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/chan-yahalom-role-decl.scm"
+        "path": "refrences/internet/examples_scm/chan-yahalom-role-decl.scm"
       },
       {
         "filename": "chan-yahalom.scm",
@@ -447,7 +447,7 @@
         "title": "chan-yahalom.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/chan-yahalom.scm"
+        "path": "refrences/internet/examples_scm/chan-yahalom.scm"
       },
       {
         "filename": "commitment.scm",
@@ -455,7 +455,7 @@
         "title": "commitment.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/commitment.scm"
+        "path": "refrences/internet/examples_scm/commitment.scm"
       },
       {
         "filename": "comp_test.scm",
@@ -463,7 +463,7 @@
         "title": "comp_test.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/comp_test.scm"
+        "path": "refrences/internet/examples_scm/comp_test.scm"
       },
       {
         "filename": "completeness-test.scm",
@@ -471,7 +471,7 @@
         "title": "completeness-test.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/completeness-test.scm"
+        "path": "refrences/internet/examples_scm/completeness-test.scm"
       },
       {
         "filename": "crushing.scm",
@@ -479,7 +479,7 @@
         "title": "crushing.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/crushing.scm"
+        "path": "refrences/internet/examples_scm/crushing.scm"
       },
       {
         "filename": "dass_simple.scm",
@@ -487,7 +487,7 @@
         "title": "dass_simple.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/dass_simple.scm"
+        "path": "refrences/internet/examples_scm/dass_simple.scm"
       },
       {
         "filename": "denning-sacco.scm",
@@ -495,7 +495,7 @@
         "title": "denning-sacco.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/denning-sacco.scm"
+        "path": "refrences/internet/examples_scm/denning-sacco.scm"
       },
       {
         "filename": "deorig_contract.scm",
@@ -503,7 +503,7 @@
         "title": "deorig_contract.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/deorig_contract.scm"
+        "path": "refrences/internet/examples_scm/deorig_contract.scm"
       },
       {
         "filename": "deorig_mesg.scm",
@@ -511,7 +511,7 @@
         "title": "deorig_mesg.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/deorig_mesg.scm"
+        "path": "refrences/internet/examples_scm/deorig_mesg.scm"
       },
       {
         "filename": "deorig_simple.scm",
@@ -519,7 +519,7 @@
         "title": "deorig_simple.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/deorig_simple.scm"
+        "path": "refrences/internet/examples_scm/deorig_simple.scm"
       },
       {
         "filename": "dh-ca_hack.scm",
@@ -527,7 +527,7 @@
         "title": "dh-ca_hack.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/dh-ca_hack.scm"
+        "path": "refrences/internet/examples_scm/dh-ca_hack.scm"
       },
       {
         "filename": "dh_encrypt_hack.scm",
@@ -535,7 +535,7 @@
         "title": "dh_encrypt_hack.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/dh_encrypt_hack.scm"
+        "path": "refrences/internet/examples_scm/dh_encrypt_hack.scm"
       },
       {
         "filename": "dh_group_sig.scm",
@@ -543,7 +543,7 @@
         "title": "dh_group_sig.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/dh_group_sig.scm"
+        "path": "refrences/internet/examples_scm/dh_group_sig.scm"
       },
       {
         "filename": "dh_group_sig_auth_failure.scm",
@@ -551,7 +551,7 @@
         "title": "dh_group_sig_auth_failure.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/dh_group_sig_auth_failure.scm"
+        "path": "refrences/internet/examples_scm/dh_group_sig_auth_failure.scm"
       },
       {
         "filename": "dh_mim_hack.scm",
@@ -559,7 +559,7 @@
         "title": "dh_mim_hack.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/dh_mim_hack.scm"
+        "path": "refrences/internet/examples_scm/dh_mim_hack.scm"
       },
       {
         "filename": "dhnsl_hack.scm",
@@ -567,7 +567,7 @@
         "title": "dhnsl_hack.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/dhnsl_hack.scm"
+        "path": "refrences/internet/examples_scm/dhnsl_hack.scm"
       },
       {
         "filename": "dhstatic-state.scm",
@@ -575,7 +575,7 @@
         "title": "dhstatic-state.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/dhstatic-state.scm"
+        "path": "refrences/internet/examples_scm/dhstatic-state.scm"
       },
       {
         "filename": "disclosure.scm",
@@ -583,7 +583,7 @@
         "title": "disclosure.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/disclosure.scm"
+        "path": "refrences/internet/examples_scm/disclosure.scm"
       },
       {
         "filename": "doorsep.scm",
@@ -591,7 +591,7 @@
         "title": "doorsep.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/doorsep.scm"
+        "path": "refrences/internet/examples_scm/doorsep.scm"
       },
       {
         "filename": "doorsep2invk.scm",
@@ -599,7 +599,7 @@
         "title": "doorsep2invk.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/doorsep2invk.scm"
+        "path": "refrences/internet/examples_scm/doorsep2invk.scm"
       },
       {
         "filename": "encsig.scm",
@@ -607,7 +607,7 @@
         "title": "encsig.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/encsig.scm"
+        "path": "refrences/internet/examples_scm/encsig.scm"
       },
       {
         "filename": "envelope.scm",
@@ -615,7 +615,7 @@
         "title": "envelope.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/envelope.scm"
+        "path": "refrences/internet/examples_scm/envelope.scm"
       },
       {
         "filename": "epmo-hash.scm",
@@ -623,7 +623,7 @@
         "title": "epmo-hash.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/epmo-hash.scm"
+        "path": "refrences/internet/examples_scm/epmo-hash.scm"
       },
       {
         "filename": "epmo-key-hash.scm",
@@ -631,7 +631,7 @@
         "title": "epmo-key-hash.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/epmo-key-hash.scm"
+        "path": "refrences/internet/examples_scm/epmo-key-hash.scm"
       },
       {
         "filename": "epmo.scm",
@@ -639,7 +639,7 @@
         "title": "epmo.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/epmo.scm"
+        "path": "refrences/internet/examples_scm/epmo.scm"
       },
       {
         "filename": "epmo_acctnum-key-hash.scm",
@@ -647,7 +647,7 @@
         "title": "epmo_acctnum-key-hash.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/epmo_acctnum-key-hash.scm"
+        "path": "refrences/internet/examples_scm/epmo_acctnum-key-hash.scm"
       },
       {
         "filename": "expand.scm",
@@ -655,7 +655,7 @@
         "title": "expand.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/expand.scm"
+        "path": "refrences/internet/examples_scm/expand.scm"
       },
       {
         "filename": "facts.scm",
@@ -663,7 +663,7 @@
         "title": "facts.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/facts.scm"
+        "path": "refrences/internet/examples_scm/facts.scm"
       },
       {
         "filename": "factvar.scm",
@@ -671,7 +671,7 @@
         "title": "factvar.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/factvar.scm"
+        "path": "refrences/internet/examples_scm/factvar.scm"
       },
       {
         "filename": "ffgg.scm",
@@ -679,7 +679,7 @@
         "title": "ffgg.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/ffgg.scm"
+        "path": "refrences/internet/examples_scm/ffgg.scm"
       },
       {
         "filename": "fluffy_draft03_gske.scm",
@@ -687,7 +687,7 @@
         "title": "fluffy_draft03_gske.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/fluffy_draft03_gske.scm"
+        "path": "refrences/internet/examples_scm/fluffy_draft03_gske.scm"
       },
       {
         "filename": "fragile_pruning.scm",
@@ -695,7 +695,7 @@
         "title": "fragile_pruning.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/fragile_pruning.scm"
+        "path": "refrences/internet/examples_scm/fragile_pruning.scm"
       },
       {
         "filename": "goals.scm",
@@ -703,7 +703,7 @@
         "title": "goals.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/goals.scm"
+        "path": "refrences/internet/examples_scm/goals.scm"
       },
       {
         "filename": "goalsvar.scm",
@@ -711,7 +711,7 @@
         "title": "goalsvar.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/goalsvar.scm"
+        "path": "refrences/internet/examples_scm/goalsvar.scm"
       },
       {
         "filename": "hashtest-key-hash.scm",
@@ -719,7 +719,7 @@
         "title": "hashtest-key-hash.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/hashtest-key-hash.scm"
+        "path": "refrences/internet/examples_scm/hashtest-key-hash.scm"
       },
       {
         "filename": "hashtest.scm",
@@ -727,7 +727,7 @@
         "title": "hashtest.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/hashtest.scm"
+        "path": "refrences/internet/examples_scm/hashtest.scm"
       },
       {
         "filename": "incompleteness_example.scm",
@@ -735,7 +735,7 @@
         "title": "incompleteness_example.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/incompleteness_example.scm"
+        "path": "refrences/internet/examples_scm/incompleteness_example.scm"
       },
       {
         "filename": "isoreject-corrected.scm",
@@ -743,7 +743,7 @@
         "title": "isoreject-corrected.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/isoreject-corrected.scm"
+        "path": "refrences/internet/examples_scm/isoreject-corrected.scm"
       },
       {
         "filename": "isoreject.scm",
@@ -751,7 +751,7 @@
         "title": "isoreject.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/isoreject.scm"
+        "path": "refrences/internet/examples_scm/isoreject.scm"
       },
       {
         "filename": "kelly1.scm",
@@ -759,7 +759,7 @@
         "title": "kelly1.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/kelly1.scm"
+        "path": "refrences/internet/examples_scm/kelly1.scm"
       },
       {
         "filename": "kerberos.scm",
@@ -767,7 +767,7 @@
         "title": "kerberos.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/kerberos.scm"
+        "path": "refrences/internet/examples_scm/kerberos.scm"
       },
       {
         "filename": "locn_envelope.scm",
@@ -775,7 +775,7 @@
         "title": "locn_envelope.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/locn_envelope.scm"
+        "path": "refrences/internet/examples_scm/locn_envelope.scm"
       },
       {
         "filename": "missing_contraction.scm",
@@ -783,7 +783,7 @@
         "title": "missing_contraction.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/missing_contraction.scm"
+        "path": "refrences/internet/examples_scm/missing_contraction.scm"
       },
       {
         "filename": "neq_test.scm",
@@ -791,7 +791,7 @@
         "title": "neq_test.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/neq_test.scm"
+        "path": "refrences/internet/examples_scm/neq_test.scm"
       },
       {
         "filename": "neuman-stubblebine.scm",
@@ -799,7 +799,7 @@
         "title": "neuman-stubblebine.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/neuman-stubblebine.scm"
+        "path": "refrences/internet/examples_scm/neuman-stubblebine.scm"
       },
       {
         "filename": "no_contraction.scm",
@@ -807,7 +807,7 @@
         "title": "no_contraction.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/no_contraction.scm"
+        "path": "refrences/internet/examples_scm/no_contraction.scm"
       },
       {
         "filename": "non_transforming.scm",
@@ -815,7 +815,7 @@
         "title": "non_transforming.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/non_transforming.scm"
+        "path": "refrences/internet/examples_scm/non_transforming.scm"
       },
       {
         "filename": "nonaug-prune.scm",
@@ -823,7 +823,7 @@
         "title": "nonaug-prune.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/nonaug-prune.scm"
+        "path": "refrences/internet/examples_scm/nonaug-prune.scm"
       },
       {
         "filename": "ns-l.scm",
@@ -831,7 +831,7 @@
         "title": "ns-l.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/ns-l.scm"
+        "path": "refrences/internet/examples_scm/ns-l.scm"
       },
       {
         "filename": "ns-rebinding.scm",
@@ -839,7 +839,7 @@
         "title": "ns-rebinding.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/ns-rebinding.scm"
+        "path": "refrences/internet/examples_scm/ns-rebinding.scm"
       },
       {
         "filename": "ns.scm",
@@ -847,7 +847,7 @@
         "title": "ns.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/ns.scm"
+        "path": "refrences/internet/examples_scm/ns.scm"
       },
       {
         "filename": "nsl3.scm",
@@ -855,7 +855,7 @@
         "title": "nsl3.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/nsl3.scm"
+        "path": "refrences/internet/examples_scm/nsl3.scm"
       },
       {
         "filename": "nslsk.scm",
@@ -863,7 +863,7 @@
         "title": "nslsk.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/nslsk.scm"
+        "path": "refrences/internet/examples_scm/nslsk.scm"
       },
       {
         "filename": "open-closed-multiloc.scm",
@@ -871,7 +871,7 @@
         "title": "open-closed-multiloc.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/open-closed-multiloc.scm"
+        "path": "refrences/internet/examples_scm/open-closed-multiloc.scm"
       },
       {
         "filename": "open-closed-tag.scm",
@@ -879,7 +879,7 @@
         "title": "open-closed-tag.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/open-closed-tag.scm"
+        "path": "refrences/internet/examples_scm/open-closed-tag.scm"
       },
       {
         "filename": "open-closed.scm",
@@ -887,7 +887,7 @@
         "title": "open-closed.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/open-closed.scm"
+        "path": "refrences/internet/examples_scm/open-closed.scm"
       },
       {
         "filename": "or.scm",
@@ -895,7 +895,7 @@
         "title": "or.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/or.scm"
+        "path": "refrences/internet/examples_scm/or.scm"
       },
       {
         "filename": "ordered.scm",
@@ -903,7 +903,7 @@
         "title": "ordered.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/ordered.scm"
+        "path": "refrences/internet/examples_scm/ordered.scm"
       },
       {
         "filename": "orderedvar.scm",
@@ -911,7 +911,7 @@
         "title": "orderedvar.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/orderedvar.scm"
+        "path": "refrences/internet/examples_scm/orderedvar.scm"
       },
       {
         "filename": "pca.scm",
@@ -919,7 +919,7 @@
         "title": "pca.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/pca.scm"
+        "path": "refrences/internet/examples_scm/pca.scm"
       },
       {
         "filename": "pen-non-orig-test.scm",
@@ -927,7 +927,7 @@
         "title": "pen-non-orig-test.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/pen-non-orig-test.scm"
+        "path": "refrences/internet/examples_scm/pen-non-orig-test.scm"
       },
       {
         "filename": "pfs-via-pubkey.scm",
@@ -935,7 +935,7 @@
         "title": "pfs-via-pubkey.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/pfs-via-pubkey.scm"
+        "path": "refrences/internet/examples_scm/pfs-via-pubkey.scm"
       },
       {
         "filename": "pkinit.scm",
@@ -943,7 +943,7 @@
         "title": "pkinit.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/pkinit.scm"
+        "path": "refrences/internet/examples_scm/pkinit.scm"
       },
       {
         "filename": "preprocess.scm",
@@ -951,7 +951,7 @@
         "title": "preprocess.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/preprocess.scm"
+        "path": "refrences/internet/examples_scm/preprocess.scm"
       },
       {
         "filename": "print.scm",
@@ -959,7 +959,7 @@
         "title": "print.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/print.scm"
+        "path": "refrences/internet/examples_scm/print.scm"
       },
       {
         "filename": "prottrans.scm",
@@ -967,7 +967,7 @@
         "title": "prottrans.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/prottrans.scm"
+        "path": "refrences/internet/examples_scm/prottrans.scm"
       },
       {
         "filename": "pruning1.scm",
@@ -975,7 +975,7 @@
         "title": "pruning1.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/pruning1.scm"
+        "path": "refrences/internet/examples_scm/pruning1.scm"
       },
       {
         "filename": "puzzle_example.scm",
@@ -983,7 +983,7 @@
         "title": "puzzle_example.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/puzzle_example.scm"
+        "path": "refrences/internet/examples_scm/puzzle_example.scm"
       },
       {
         "filename": "reflect.scm",
@@ -991,7 +991,7 @@
         "title": "reflect.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/reflect.scm"
+        "path": "refrences/internet/examples_scm/reflect.scm"
       },
       {
         "filename": "renamings.scm",
@@ -999,7 +999,7 @@
         "title": "renamings.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/renamings.scm"
+        "path": "refrences/internet/examples_scm/renamings.scm"
       },
       {
         "filename": "role_uniq.scm",
@@ -1007,7 +1007,7 @@
         "title": "role_uniq.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/role_uniq.scm"
+        "path": "refrences/internet/examples_scm/role_uniq.scm"
       },
       {
         "filename": "rule-node.scm",
@@ -1015,7 +1015,7 @@
         "title": "rule-node.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/rule-node.scm"
+        "path": "refrences/internet/examples_scm/rule-node.scm"
       },
       {
         "filename": "rule-order.scm",
@@ -1023,7 +1023,7 @@
         "title": "rule-order.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/rule-order.scm"
+        "path": "refrences/internet/examples_scm/rule-order.scm"
       },
       {
         "filename": "rules.scm",
@@ -1031,7 +1031,7 @@
         "title": "rules.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/rules.scm"
+        "path": "refrences/internet/examples_scm/rules.scm"
       },
       {
         "filename": "sigenc.scm",
@@ -1039,7 +1039,7 @@
         "title": "sigenc.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/sigenc.scm"
+        "path": "refrences/internet/examples_scm/sigenc.scm"
       },
       {
         "filename": "sorted_epmo_acctnum.scm",
@@ -1047,7 +1047,7 @@
         "title": "sorted_epmo_acctnum.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/sorted_epmo_acctnum.scm"
+        "path": "refrences/internet/examples_scm/sorted_epmo_acctnum.scm"
       },
       {
         "filename": "sts.scm",
@@ -1055,7 +1055,7 @@
         "title": "sts.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/sts.scm"
+        "path": "refrences/internet/examples_scm/sts.scm"
       },
       {
         "filename": "sts_non_role.scm",
@@ -1063,7 +1063,7 @@
         "title": "sts_non_role.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/sts_non_role.scm"
+        "path": "refrences/internet/examples_scm/sts_non_role.scm"
       },
       {
         "filename": "sts_weakened_reflect.scm",
@@ -1071,7 +1071,7 @@
         "title": "sts_weakened_reflect.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/sts_weakened_reflect.scm"
+        "path": "refrences/internet/examples_scm/sts_weakened_reflect.scm"
       },
       {
         "filename": "subatomic-open-closed-test-genrule.scm",
@@ -1079,7 +1079,7 @@
         "title": "subatomic-open-closed-test-genrule.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/subatomic-open-closed-test-genrule.scm"
+        "path": "refrences/internet/examples_scm/subatomic-open-closed-test-genrule.scm"
       },
       {
         "filename": "subatomic-open-closed.scm",
@@ -1087,7 +1087,7 @@
         "title": "subatomic-open-closed.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/subatomic-open-closed.scm"
+        "path": "refrences/internet/examples_scm/subatomic-open-closed.scm"
       },
       {
         "filename": "sync_locn_envelope.scm",
@@ -1095,7 +1095,7 @@
         "title": "sync_locn_envelope.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/sync_locn_envelope.scm"
+        "path": "refrences/internet/examples_scm/sync_locn_envelope.scm"
       },
       {
         "filename": "targetterms1.scm",
@@ -1103,7 +1103,7 @@
         "title": "targetterms1.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/targetterms1.scm"
+        "path": "refrences/internet/examples_scm/targetterms1.scm"
       },
       {
         "filename": "targetterms2.scm",
@@ -1111,7 +1111,7 @@
         "title": "targetterms2.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/targetterms2.scm"
+        "path": "refrences/internet/examples_scm/targetterms2.scm"
       },
       {
         "filename": "targetterms6.scm",
@@ -1119,7 +1119,7 @@
         "title": "targetterms6.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/targetterms6.scm"
+        "path": "refrences/internet/examples_scm/targetterms6.scm"
       },
       {
         "filename": "targetterms8.scm",
@@ -1127,7 +1127,7 @@
         "title": "targetterms8.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/targetterms8.scm"
+        "path": "refrences/internet/examples_scm/targetterms8.scm"
       },
       {
         "filename": "thisthat.scm",
@@ -1135,7 +1135,7 @@
         "title": "thisthat.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/thisthat.scm"
+        "path": "refrences/internet/examples_scm/thisthat.scm"
       },
       {
         "filename": "tickle-unique.scm",
@@ -1143,7 +1143,7 @@
         "title": "tickle-unique.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/tickle-unique.scm"
+        "path": "refrences/internet/examples_scm/tickle-unique.scm"
       },
       {
         "filename": "timestamping.scm",
@@ -1151,7 +1151,7 @@
         "title": "timestamping.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/timestamping.scm"
+        "path": "refrences/internet/examples_scm/timestamping.scm"
       },
       {
         "filename": "trust-anchor.scm",
@@ -1159,7 +1159,7 @@
         "title": "trust-anchor.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/trust-anchor.scm"
+        "path": "refrences/internet/examples_scm/trust-anchor.scm"
       },
       {
         "filename": "ugen-at.scm",
@@ -1167,7 +1167,7 @@
         "title": "ugen-at.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/ugen-at.scm"
+        "path": "refrences/internet/examples_scm/ugen-at.scm"
       },
       {
         "filename": "ugo.scm",
@@ -1175,7 +1175,7 @@
         "title": "ugo.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/ugo.scm"
+        "path": "refrences/internet/examples_scm/ugo.scm"
       },
       {
         "filename": "uncarried_keys.scm",
@@ -1183,7 +1183,7 @@
         "title": "uncarried_keys.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/uncarried_keys.scm"
+        "path": "refrences/internet/examples_scm/uncarried_keys.scm"
       },
       {
         "filename": "unilateral.scm",
@@ -1191,7 +1191,7 @@
         "title": "unilateral.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/unilateral.scm"
+        "path": "refrences/internet/examples_scm/unilateral.scm"
       },
       {
         "filename": "uniq-at.scm",
@@ -1199,7 +1199,7 @@
         "title": "uniq-at.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/uniq-at.scm"
+        "path": "refrences/internet/examples_scm/uniq-at.scm"
       },
       {
         "filename": "uniq-gen-test.scm",
@@ -1207,7 +1207,7 @@
         "title": "uniq-gen-test.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/uniq-gen-test.scm"
+        "path": "refrences/internet/examples_scm/uniq-gen-test.scm"
       },
       {
         "filename": "uo.scm",
@@ -1215,7 +1215,7 @@
         "title": "uo.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/uo.scm"
+        "path": "refrences/internet/examples_scm/uo.scm"
       },
       {
         "filename": "wang-hash.scm",
@@ -1223,7 +1223,7 @@
         "title": "wang-hash.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/wang-hash.scm"
+        "path": "refrences/internet/examples_scm/wang-hash.scm"
       },
       {
         "filename": "wang-key-hash.scm",
@@ -1231,7 +1231,7 @@
         "title": "wang-key-hash.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/wang-key-hash.scm"
+        "path": "refrences/internet/examples_scm/wang-key-hash.scm"
       },
       {
         "filename": "weird.scm",
@@ -1239,7 +1239,7 @@
         "title": "weird.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/weird.scm"
+        "path": "refrences/internet/examples_scm/weird.scm"
       },
       {
         "filename": "wonthull.scm",
@@ -1247,7 +1247,7 @@
         "title": "wonthull.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/wonthull.scm"
+        "path": "refrences/internet/examples_scm/wonthull.scm"
       },
       {
         "filename": "wonthull2.scm",
@@ -1255,7 +1255,7 @@
         "title": "wonthull2.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/wonthull2.scm"
+        "path": "refrences/internet/examples_scm/wonthull2.scm"
       },
       {
         "filename": "wonthull3.scm",
@@ -1263,7 +1263,7 @@
         "title": "wonthull3.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/wonthull3.scm"
+        "path": "refrences/internet/examples_scm/wonthull3.scm"
       },
       {
         "filename": "woolam.scm",
@@ -1271,7 +1271,7 @@
         "title": "woolam.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/woolam.scm"
+        "path": "refrences/internet/examples_scm/woolam.scm"
       },
       {
         "filename": "yahalom-6.3.6.scm",
@@ -1279,7 +1279,7 @@
         "title": "yahalom-6.3.6.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/yahalom-6.3.6.scm"
+        "path": "refrences/internet/examples_scm/yahalom-6.3.6.scm"
       },
       {
         "filename": "yahalom-forward.scm",
@@ -1287,7 +1287,7 @@
         "title": "yahalom-forward.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/yahalom-forward.scm"
+        "path": "refrences/internet/examples_scm/yahalom-forward.scm"
       },
       {
         "filename": "yahalom.scm",
@@ -1295,7 +1295,7 @@
         "title": "yahalom.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/yahalom.scm"
+        "path": "refrences/internet/examples_scm/yahalom.scm"
       },
       {
         "filename": "yes-or-no.scm",
@@ -1303,7 +1303,7 @@
         "title": "yes-or-no.scm",
         "author": "MITRE / Community",
         "type": "examples_scm",
-        "path": "/home/mario/Work/RFC-LLM/refrences/internet/examples_scm/yes-or-no.scm"
+        "path": "refrences/internet/examples_scm/yes-or-no.scm"
       }
     ]
   }

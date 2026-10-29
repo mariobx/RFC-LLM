@@ -1,5 +1,7 @@
 """Comprehensive Structured Logging Subsystem for RFC-LLM Pipeline."""
 
+import csv
+import datetime
 import logging
 import sys
 from pathlib import Path
@@ -45,15 +47,21 @@ def configure_pipeline_logging(
 
     root_logger = logging.getLogger("rfc_llm")
     root_logger.setLevel(log_level)
+    root_logger.propagate = False
 
-    # Avoid duplicate handlers on re-entry
+    # Avoid duplicate handlers and prevent file descriptor leaks on re-entry across batch runs
     if root_logger.hasHandlers():
-        root_logger.handlers.clear()
+        for existing_handler in list(root_logger.handlers):
+            root_logger.removeHandler(existing_handler)
+            try:
+                existing_handler.close()
+            except Exception:
+                pass
 
-    # Silence third-party litellm loggers completely
-    for _noisy_logger in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router"):
+    # Silence third-party litellm, HTTP client, and visualizer access loggers
+    for _noisy_logger in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router", "aiohttp.access", "openai", "openai._base_client", "httpx", "httpcore"):
         _nl = logging.getLogger(_noisy_logger)
-        _nl.setLevel(logging.ERROR)
+        _nl.setLevel(logging.WARNING if _noisy_logger == "aiohttp.access" else logging.ERROR)
         _nl.propagate = False
 
     # 1. Console Handler
@@ -115,7 +123,6 @@ class PipelineMetricsCSVLogger:
     def _ensure_header(self) -> None:
         self.csv_path.parent.mkdir(parents=True, exist_ok=True)
         if not self.csv_path.exists() or self.csv_path.stat().st_size == 0:
-            import csv
             with open(self.csv_path, mode="w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerow(self.CSV_HEADER)
@@ -135,8 +142,6 @@ class PipelineMetricsCSVLogger:
         duration_seconds: float = 0.0,
         error_message: Optional[str] = None,
     ) -> None:
-        import csv
-        import datetime
         now_iso = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sec_str = ";".join(selected_sections) if selected_sections else ""
         row = [

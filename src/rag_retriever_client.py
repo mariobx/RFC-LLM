@@ -14,6 +14,7 @@ from src.pipeline_events import GLOBAL_EVENT_BUS
 logger = get_pipeline_logger("rag_retriever")
 
 _GLOBAL_RETRIEVER: Optional[Any] = None
+LAST_RETRIEVED_CHUNK_IDS: List[str] = []
 
 
 def get_cpsa_manual_retriever() -> Optional[Any]:
@@ -42,6 +43,8 @@ def retrieve_cpsa_manual_guidance(
     """Executes a hybrid BM25 + Dense RRF search over the MITRE CPSA 4.4.9 corpus,
     emits a `rag_retrieval` telemetry event, and returns formatted reference blocks.
     """
+    global LAST_RETRIEVED_CHUNK_IDS
+    LAST_RETRIEVED_CHUNK_IDS = []
     retriever = get_cpsa_manual_retriever()
     if not retriever:
         return fallback_message
@@ -57,6 +60,7 @@ def retrieve_cpsa_manual_guidance(
             chunk_source = chunk.get("source_file") or chunk.get("source") or "MITRE Manual"
             chunk_text = chunk.get("text") or chunk.get("content") or ""
 
+            LAST_RETRIEVED_CHUNK_IDS.append(str(chunk_id))
             formatted_blocks.append(
                 f"--- {header_prefix} {idx}: {chunk_title} ({chunk_source}) ---\n{chunk_text[:800]}"
             )

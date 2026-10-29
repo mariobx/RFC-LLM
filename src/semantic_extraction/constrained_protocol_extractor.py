@@ -9,6 +9,7 @@ grounding, 1-shot self-healing schema correction, and the mandatory
 import json
 import time
 from typing import List, Optional
+import json_repair
 import litellm
 from pydantic import ValidationError
 
@@ -23,21 +24,17 @@ from src.prompt_loader import (
     PROMPT_PROTOCOL_EXTRACTION,
     PROMPT_SCHEMA_SELF_CORRECTION,
     build_schema_system_prompt,
-    load_prompt,
+    load_prompt_spec,
 )
-from src.rag_retriever_client import (
-    get_cpsa_manual_retriever,
-    retrieve_cpsa_manual_guidance,
-)
+from src.rag_retriever_client import retrieve_cpsa_manual_guidance
 from src.system_config import SYSTEM_CONFIG
 
 logger = get_pipeline_logger("protocol_extractor")
 
-# Legacy helper alias preserved for compatibility
-_get_retriever = get_cpsa_manual_retriever
-
-# Loaded from .prompts/03_protocol_extraction.md
-EXTRACTION_SYSTEM_PROMPT: str = load_prompt(PROMPT_PROTOCOL_EXTRACTION)
+LAST_EXTRACTION_METADATA: dict = {
+    "schema_self_correction_triggered": False,
+    "schema_validation_error": None,
+}
 
 
 def extract_protocol_specification(
@@ -47,7 +44,14 @@ def extract_protocol_specification(
     model: Optional[str] = None,
 ) -> CPSAProtocolSpecification:
     """Extracts a validated CPSAProtocolSpecification from verbatim RFC text."""
-    model_name = model or SYSTEM_CONFIG.DEFAULT_EXTRACTION_MODEL
+    global LAST_EXTRACTION_METADATA
+    LAST_EXTRACTION_METADATA = {
+        "schema_self_correction_triggered": False,
+        "schema_validation_error": None,
+    }
+    extraction_spec = load_prompt_spec(PROMPT_PROTOCOL_EXTRACTION)
+    model_name = model or extraction_spec.model
+    sampling_temp = extraction_spec.temperature if extraction_spec.temperature is not None else 0.0
     logger.info("Extracting CPSAProtocolSpecification for '%s' using %s", protocol_name, model_name)
 
     # 1. Retrieve RAG Grounding Context
@@ -81,7 +85,7 @@ def extract_protocol_specification(
         CPSAProtocolSpecification,
     )
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=0.0)
+    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
     response = None
     for retry_idx in range(3):
         try:
@@ -92,7 +96,8 @@ def extract_protocol_specification(
                     {"role": "user", "content": user_prompt},
                 ],
                 response_format={"type": "json_object"},
-                timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+                timeout=extraction_spec.timeout,
+                num_retries=0,
             )
             break
         except Exception as exc:
@@ -116,25 +121,31 @@ def extract_protocol_specification(
     try:
         parsed_data = json.loads(raw_content)
     except Exception:
-        import json_repair
         parsed_data = json_repair.loads(raw_content)
 
     try:
         specification = CPSAProtocolSpecification.model_validate(parsed_data)
     except ValidationError as validation_error:
+        LAST_EXTRACTION_METADATA["schema_self_correction_triggered"] = True
+        LAST_EXTRACTION_METADATA["schema_validation_error"] = str(validation_error)
         logger.warning(
             "Stage 2 schema validation error encountered: %s. Initiating 1-shot self-healing correction...",
             validation_error,
         )
-        correction_template = load_prompt(PROMPT_SCHEMA_SELF_CORRECTION)
+        corr_spec = load_prompt_spec(PROMPT_SCHEMA_SELF_CORRECTION)
+        correction_template = corr_spec.body
         if "{validation_error}" in correction_template:
             correction_prompt = correction_template.replace("{validation_error}", str(validation_error))
         else:
             correction_prompt = f"{correction_template}\n\nValidation Errors:\n{validation_error}"
 
+        corr_model = model or corr_spec.model
+        corr_temp = corr_spec.temperature if corr_spec.temperature is not None else 0.0
+        corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(corr_model, temperature=corr_temp)
+
         try:
             correction_response = litellm.completion(
-                **llm_kwargs,
+                **corr_kwargs,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
@@ -142,13 +153,13 @@ def extract_protocol_specification(
                     {"role": "user", "content": correction_prompt},
                 ],
                 response_format={"type": "json_object"},
-                timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+                timeout=corr_spec.timeout,
+                num_retries=0,
             )
             corrected_content = correction_response.choices[0].message.content
             try:
                 corrected_data = json.loads(corrected_content)
             except Exception:
-                import json_repair
                 corrected_data = json_repair.loads(corrected_content)
             specification = CPSAProtocolSpecification.model_validate(corrected_data)
             logger.info("Stage 2 self-healing correction SUCCEEDED")

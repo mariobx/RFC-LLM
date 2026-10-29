@@ -8,7 +8,7 @@ Every entry defines:
 3. **Context / Scope**: Where the keyword may appear in a `.scm` file.
 4. **Semantics**: Dolev-Yao strand space and order-sorted algebraic interpretation.
 5. **Scheme S-Expression**: Concrete `.scm` snippet.
-6. **Pydantic Model / Field**: Corresponding Python type in `src/intermediate_representation/protocol_syntax_tree.py`.
+6. **Pydantic Model / Field**: Corresponding Python type in [`src/intermediate_representation/protocol_syntax_tree.py`](../src/intermediate_representation/protocol_syntax_tree.py).
 7. **Compiler Diagnostic**: Error emitted by `cpsa4`, `cpsa4json`, or `cpsa4roletran` if misused.
 
 ---
@@ -93,7 +93,7 @@ Every entry defines:
       (implies (fact trusted a)
                (non-orig (privk a)))))
   ```
-- **Pydantic**: `CPSAProtocolSpecification.rules`
+- **Pydantic**: Supported in CPSA 4.4.9 grammar; role/skeleton `facts` assertions map to `CPSAProtocolRole.facts` and `CPSAPreskeleton.facts`.
 
 ### `defgenrule`
 - **Grammar**: `(defgenrule id sentence alist)`
@@ -115,7 +115,7 @@ Every entry defines:
         (exists ((y strd))
           (and (p "resp" y 2) (p "resp" "n" y n))))))
   ```
-- **Pydantic**: `CPSAPreskeleton.goal`
+- **Pydantic**: Supported in CPSA 4.4.9 first-order goal syntax; RFC-LLM verifies authentication and confidentiality structurally via 3-POV `CPSAPreskeleton` blocks and `CPSAProtocolSpecification.primary_secrecy_goals`.
 
 ### `deflemma`
 - **Grammar**: `(deflemma id sentence alist)`

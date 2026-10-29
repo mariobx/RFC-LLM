@@ -147,9 +147,10 @@ class CPSASemanticRetriever:
 
             breadcrumb = chunk.get('breadcrumb') or chunk.get('chapter', '')
             summary = chunk.get('scenario_summary', '')
+            ctx_hdr = chunk.get('context_header', '')
             tags_str = " ".join(chunk.get('tags', []))
             doc_tokens = tokenize(
-                f"{chunk.get('title', '')} {chunk.get('title', '')} {breadcrumb} {summary} {tags_str} {chunk.get('text', '')}"
+                f"{chunk.get('title', '')} {chunk.get('title', '')} {breadcrumb} {ctx_hdr} {summary} {tags_str} {chunk.get('text', '')}"
             )
             doc_len = self.doc_lengths[idx] if idx < len(self.doc_lengths) else len(doc_tokens)
             doc_freq = Counter(doc_tokens)
@@ -225,7 +226,7 @@ class CPSASemanticRetriever:
         Unified search supporting:
         - 'bm25': pure lexical keyword search
         - 'dense': pure vector cosine similarity
-        - 'hybrid': Steep RRF (k=20) combining BM25 and dense similarity
+        - 'hybrid': Convex MinMax fusion (0.55 dense + 0.45 BM25) with AST keyword boost
         - rerank=True: Cross-Encoder full token attention reranking via FlashRank ONNX.
         """
         if not self.chunks:
@@ -394,7 +395,7 @@ def main():
     parser.add_argument("query", type=str, help="Search query, technical phrase, or error message.")
     parser.add_argument("--top-k", "-k", type=int, default=3, help="Number of results to return (default: 3).")
     parser.add_argument("--mode", "-m", type=str, choices=["hybrid", "bm25", "dense"], default="hybrid",
-                        help="Retrieval mode: 'hybrid' (RRF, default), 'bm25', or 'dense'.")
+                        help="Retrieval mode: 'hybrid' (Convex MinMax fusion, default), 'bm25', or 'dense'.")
     parser.add_argument("--source", "-s", type=str, default=None, help="Filter by source file substring.")
     parser.add_argument("--type", "-t", type=str, default=None, help="Filter by chunk_type ('documentation' or 'code_example').")
     args = parser.parse_args()

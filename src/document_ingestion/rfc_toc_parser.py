@@ -105,7 +105,7 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
         body_heading_pattern = re.compile(
             r"^(?P<sec_id>(?:[0-9]+(?:\.[0-9]+)*)|(?:[A-Z]\.[0-9]+))\.?\s+(?P<title>[A-Z][A-Za-z0-9\s\-_,:()'\"]{3,60})$"
         )
-        for idx, line in enumerate(lines):
+        for line in lines:
             match = body_heading_pattern.match(line)
             if match:
                 sec_id = match.group("sec_id").strip()

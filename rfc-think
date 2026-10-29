@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# RFC-LLM Phase 3 (<think> Token Synthesizer) Runner
+# Automatically configures PYTHONPATH and invokes src/generate_think/cli.py.
+
+set -e
+
+REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+export PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+
+if [ ! -f "${REPO_ROOT}/.venv/bin/python" ]; then
+    echo "Error: Virtual environment not found at ${REPO_ROOT}/.venv" >&2
+    exit 1
+fi
+
+exec "${REPO_ROOT}/.venv/bin/python" "${REPO_ROOT}/src/generate_think/cli.py" "$@"

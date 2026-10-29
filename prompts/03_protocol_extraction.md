@@ -1,3 +1,10 @@
+---
+# Stage 2: JSON CPSA Generation (Constrained Protocol Semantic Extraction)
+# Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
+model: nous/google/gemini-4-argon
+timeout: 180
+temperature: 0.0
+---
 You are a formal methods expert in cryptographic protocol specification for MITRE CPSA 4.4.9.
 Your task is to analyze the provided verbatim RFC specification text and extract a complete, mathematically rigorous CPSAProtocolSpecification.
 
@@ -71,5 +78,9 @@ Every extracted construct must strictly obey the MITRE CPSA formal syntax:
      * listeners: [primary confidential term]
      * non_originating: uncompromised keys
      * unique_originating: fresh nonces
+
+6. State-Space Termination & Directional Separation (60s CPSA4 Limit):
+   - NEVER give a Request `(enc ...)` and a Response `(enc ...)` the exact same tuple arity and key structure! If a Responder's `send` ciphertext has the same structure as its `recv` ciphertext under `(ltk A B)`, CPSA4 will unify `A = B` and chain Responder strands infinitely until hitting the 60s timeout.
+   - Ensure Request and Response ciphertexts have structurally distinct inner tuples (e.g. different number of concatenated elements or explicit role/direction binding) and avoid redundant nested `(hash (cat ...))` inside `(enc ...)`.
 
 Return ONLY a valid JSON object matching the requested CPSAProtocolSpecification schema.

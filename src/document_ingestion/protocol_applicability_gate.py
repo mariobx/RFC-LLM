@@ -7,6 +7,7 @@ eligible for MITRE CPSA 4.4.9 formal verification.
 
 import json
 from typing import List, Optional
+import json_repair
 import litellm
 from pydantic import BaseModel, Field
 
@@ -15,7 +16,7 @@ from src.logging_config import get_pipeline_logger
 from src.prompt_loader import (
     PROMPT_APPLICABILITY_GATE,
     build_schema_system_prompt,
-    load_prompt,
+    load_prompt_spec,
 )
 from src.system_config import SYSTEM_CONFIG
 
@@ -41,10 +42,6 @@ class ProtocolApplicabilityReport(BaseModel):
     rationale: str = Field(..., description="Justification for acceptance or rejection")
 
 
-# Loaded from .prompts/01_applicability_gate.md
-GATEKEEPER_SYSTEM_PROMPT: str = load_prompt(PROMPT_APPLICABILITY_GATE)
-
-
 def evaluate_protocol_applicability(
     rfc_id: str,
     title: str,
@@ -54,7 +51,9 @@ def evaluate_protocol_applicability(
     model: Optional[str] = None,
 ) -> ProtocolApplicabilityReport:
     """Evaluates an RFC using its frontmatter and entire TOC to determine CPSA eligibility."""
-    model_name = model or SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL
+    prompt_spec = load_prompt_spec(PROMPT_APPLICABILITY_GATE)
+    model_name = model or prompt_spec.model
+    sampling_temp = prompt_spec.temperature if prompt_spec.temperature is not None else 0.0
     logger.info("Evaluating protocol applicability for %s: '%s' using model %s", rfc_id, title, model_name)
 
     toc_summary = "\n".join(f"{entry.section_id} {entry.title}" for entry in toc_entries)
@@ -74,7 +73,7 @@ def evaluate_protocol_applicability(
     )
 
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=0.0)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
         response = litellm.completion(
             **llm_kwargs,
             messages=[
@@ -82,14 +81,13 @@ def evaluate_protocol_applicability(
                 {"role": "user", "content": user_prompt},
             ],
             response_format={"type": "json_object"},
-            timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+            timeout=prompt_spec.timeout,
         )
 
         raw_content = response.choices[0].message.content
         try:
             report_data = json.loads(raw_content)
         except Exception:
-            import json_repair
             report_data = json_repair.loads(raw_content)
 
         report = ProtocolApplicabilityReport.model_validate(report_data)

@@ -73,15 +73,21 @@ def mock_valid_spec() -> CPSAProtocolSpecification:
 
 
 def test_pipeline_rejects_ineligible_rfc(tmp_path: Path):
-    """Pipeline immediately halts on administrative or MIB documents at Stage 1a."""
+    """Pipeline immediately halts on administrative or MIB documents at Stage 1a without creating dead RFC folders."""
+    import json
     mib_rfc_path = SYSTEM_CONFIG.RFCS_DIR / "rfc2358.txt"
+    rfc_out = tmp_path / "rfc2358_out"
     summary = run_rfc_translation_pipeline(
         rfc_file_path=mib_rfc_path,
-        output_dir=tmp_path / "rfc2358_out",
+        output_dir=rfc_out,
     )
     assert summary.is_eligible is False
     assert summary.build_successful is False
+    assert not rfc_out.exists()
     assert any(k in (summary.error_message or "").lower() for k in ["mib", "managed objects"])
+    idx_data = json.loads((tmp_path / "metadata_index.json").read_text(encoding="utf-8"))
+    assert idx_data["total_ineligible_filtered"] == 1
+    assert idx_data["rfc_directories"] == []
 
 
 def test_pipeline_e2e_successful_synthesis_and_build(tmp_path: Path, mock_valid_spec: CPSAProtocolSpecification):
@@ -129,3 +135,23 @@ def test_pipeline_e2e_successful_synthesis_and_build(tmp_path: Path, mock_valid_
         assert summary.build_artifacts.shapes_graph_xhtml_path.exists()
         assert summary.build_artifacts.shapes_txt_path.exists()
         assert summary.build_artifacts.shapes_count >= 1
+        assert summary.trajectory_json_path is not None
+        assert summary.trajectory_json_path.exists()
+        assert summary.quality_tier in ("GOLD", "SILVER", "BRONZE")
+
+        import json
+        traj = json.loads(summary.trajectory_json_path.read_text(encoding="utf-8"))
+        assert "models_used" not in traj
+        assert "stage5_preflight_gate" in traj
+        assert "stage6_cpsa4_solver" in traj
+        assert "exploration_telemetry_from_txt" in traj["stage6_cpsa4_solver"]
+        assert "shapes_analysis_from_shapes_txt" in traj["stage6_cpsa4_solver"]
+        assert "quality_assessment" in traj
+        assert traj["final_verified_output"]["final_scm_with_header"].startswith(";;; [RFC-ID:")
+
+        master_index = tmp_path / "metadata_index.json"
+        assert master_index.exists()
+        idx_payload = json.loads(master_index.read_text(encoding="utf-8"))
+        assert str(summary.trajectory_json_path.resolve()) in idx_payload["metadata_json_files"]
+        assert str((tmp_path / "rfc9999_out").resolve()) in idx_payload["rfc_directories"]
+

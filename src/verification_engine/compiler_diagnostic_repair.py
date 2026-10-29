@@ -10,15 +10,17 @@ import json
 import re
 import time
 from typing import Literal, Optional
+import json_repair
 import litellm
 
+from src import rag_retriever_client
 from src.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
 from src.logging_config import get_pipeline_logger
 from src.prompt_loader import (
     PROMPT_COMPILER_REPAIR,
     PROMPT_RAG_QUERY_FORMULATION,
     build_schema_system_prompt,
-    load_prompt,
+    load_prompt_spec,
 )
 from src.rag_retriever_client import (
     get_cpsa_manual_retriever,
@@ -31,12 +33,10 @@ from src.system_config import SYSTEM_CONFIG
 
 logger = get_pipeline_logger("diagnostic_repair")
 
-# Legacy helper alias preserved for compatibility
-_get_retriever = get_cpsa_manual_retriever
-
-# Loaded from .prompts/06_compiler_repair.md and .prompts/05_rag_query_formulation.md
-REPAIR_SYSTEM_PROMPT: str = load_prompt(PROMPT_COMPILER_REPAIR)
-DIAGNOSTIC_QUERY_SYSTEM_PROMPT: str = load_prompt(PROMPT_RAG_QUERY_FORMULATION)
+LAST_REPAIR_METADATA: dict = {
+    "rag_query": None,
+    "retrieved_chunk_ids": [],
+}
 
 
 def fallback_sanitize_diagnostic_query(diagnostic: str, failure_stage: str) -> str:
@@ -69,10 +69,12 @@ def formulate_rag_diagnostic_query(
     """Uses a dedicated LLM call to formulate a targeted conceptual query for the MITRE CPSA manual,
     purging concrete variable names and local file paths. Falls back to deterministic sanitization if offline.
     """
-    query_model = model or SYSTEM_CONFIG.DEFAULT_QUERY_MODEL
+    query_spec = load_prompt_spec(PROMPT_RAG_QUERY_FORMULATION)
+    query_model = model or query_spec.model
+    sampling_temp = query_spec.temperature if query_spec.temperature is not None else 0.0
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(query_model, temperature=0.0)
-        system_prompt = load_prompt(PROMPT_RAG_QUERY_FORMULATION)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(query_model, temperature=sampling_temp)
+        system_prompt = query_spec.body
         user_prompt = f"Failure Stage: {failure_stage}\nCompiler Diagnostic:\n{diagnostic}"
         response = litellm.completion(
             **llm_kwargs,
@@ -80,7 +82,7 @@ def formulate_rag_diagnostic_query(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            timeout=10,
+            timeout=query_spec.timeout,
         )
         raw_content = response.choices[0].message.content
         if raw_content:
@@ -93,15 +95,6 @@ def formulate_rag_diagnostic_query(
     return fallback_sanitize_diagnostic_query(diagnostic, failure_stage)
 
 
-def clean_rag_diagnostic_query(
-    diagnostic: str,
-    failure_stage: str,
-    model: Optional[str] = None,
-) -> str:
-    """Legacy alias routing to LLM query formulation."""
-    return formulate_rag_diagnostic_query(diagnostic, failure_stage, model=model)
-
-
 def repair_protocol_specification(
     failing_spec: CPSAProtocolSpecification,
     error_diagnostic: str,
@@ -112,16 +105,19 @@ def repair_protocol_specification(
     cycle_detected: bool = False,
 ) -> CPSAProtocolSpecification:
     """Uses RAG-guided diagnostic repair to patch a failing CPSAProtocolSpecification."""
-    model_name = model or SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL
+    repair_spec = load_prompt_spec(PROMPT_COMPILER_REPAIR)
+    model_name = model or repair_spec.model
     logger.info(
-        "Executing RAG-guided repair for stage '%s' (cycle_detected=%s) with diagnostic: %s",
+        "Executing RAG-guided repair for stage '%s' using %s (cycle_detected=%s) with diagnostic: %s",
         failure_stage,
+        model_name,
         cycle_detected,
         error_diagnostic,
     )
 
     # 1. Formulate RAG query and retrieve manual guidance only when a retriever is available
-    retriever = _get_retriever()
+    global LAST_REPAIR_METADATA
+    retriever = get_cpsa_manual_retriever()
     if retriever:
         rag_query = formulate_rag_diagnostic_query(
             error_diagnostic,
@@ -136,7 +132,15 @@ def repair_protocol_specification(
             top_k=2,
             fallback_message="Review standard CPSA executability and preskeleton assumption rules.",
         )
+        LAST_REPAIR_METADATA = {
+            "rag_query": rag_query,
+            "retrieved_chunk_ids": list(rag_retriever_client.LAST_RETRIEVED_CHUNK_IDS),
+        }
     else:
+        LAST_REPAIR_METADATA = {
+            "rag_query": None,
+            "retrieved_chunk_ids": [],
+        }
         guidance_text = "Review standard CPSA executability and preskeleton assumption rules."
 
     cycle_warning = ""
@@ -167,7 +171,8 @@ def repair_protocol_specification(
     )
 
     # Use higher temperature if cycle detected to break greedy minimum
-    sampling_temperature = 0.4 if cycle_detected else 0.0
+    base_temp = repair_spec.temperature if repair_spec.temperature is not None else 0.0
+    sampling_temperature = max(0.4, base_temp) if cycle_detected else base_temp
     system_prompt = build_schema_system_prompt(
         PROMPT_COMPILER_REPAIR,
         CPSAProtocolSpecification,
@@ -184,7 +189,8 @@ def repair_protocol_specification(
                     {"role": "user", "content": user_prompt},
                 ],
                 response_format={"type": "json_object"},
-                timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+                timeout=repair_spec.timeout,
+                num_retries=0,
             )
             break
         except Exception as exc:
@@ -207,7 +213,6 @@ def repair_protocol_specification(
     try:
         parsed_data = json.loads(raw_content)
     except Exception:
-        import json_repair
         parsed_data = json_repair.loads(raw_content)
 
     repaired_spec = CPSAProtocolSpecification.model_validate(parsed_data)

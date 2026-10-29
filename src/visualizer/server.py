@@ -1,10 +1,13 @@
-"""Asynchronous web server for live RFC-to-CPSA synthesis visualization."""
+"""Asynchronous web server for live and offline multi-RFC synthesis visualization."""
 
 import asyncio
 import json
 import logging
+import socket
+import threading
+import time
 from pathlib import Path
-from typing import Set
+from typing import Any, Dict, List, Optional, Set
 from aiohttp import web
 
 from src.system_config import SYSTEM_CONFIG
@@ -14,9 +17,337 @@ logger = logging.getLogger("rfc_llm.visualizer")
 
 HTML_TEMPLATE_PATH = Path(__file__).parent / "static" / "index.html"
 
+# Lazy lightweight chunk-id -> {title, source_file, snippet} lookup cache for offline hydration
+_MANUAL_CHUNK_LOOKUP: Optional[Dict[str, Dict[str, str]]] = None
+
+
+def _get_manual_chunk_lookup() -> Dict[str, Dict[str, str]]:
+    """Loads compact chunk metadata once from manual_chunks.jsonl for offline RAG card hydration."""
+    global _MANUAL_CHUNK_LOOKUP
+    if _MANUAL_CHUNK_LOOKUP is not None:
+        return _MANUAL_CHUNK_LOOKUP
+
+    lookup: Dict[str, Dict[str, str]] = {}
+    jsonl_path = SYSTEM_CONFIG.CHUNKS_DIR / "manual_chunks.jsonl"
+    if jsonl_path.exists():
+        try:
+            with open(jsonl_path, "r", encoding="utf-8", errors="ignore") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    obj = json.loads(line)
+                    cid = str(obj.get("chunk_id") or obj.get("id") or "")
+                    if cid:
+                        txt = obj.get("text") or obj.get("content") or ""
+                        lookup[cid] = {
+                            "chunk_id": cid,
+                            "title": obj.get("title") or obj.get("breadcrumb") or f"Chunk #{cid}",
+                            "source_file": obj.get("source_file") or "MITRE Manual",
+                            "snippet": txt[:280].strip() + ("..." if len(txt) > 280 else ""),
+                        }
+        except Exception:
+            pass
+    _MANUAL_CHUNK_LOOKUP = lookup
+    return lookup
+
+
+def _resolve_chunks_by_ids(chunk_ids: List[Any]) -> List[Dict[str, str]]:
+    lookup = _get_manual_chunk_lookup()
+    resolved = []
+    for raw_id in chunk_ids or []:
+        cid = str(raw_id)
+        if cid in lookup:
+            resolved.append(lookup[cid])
+        else:
+            resolved.append({
+                "chunk_id": cid,
+                "title": f"MITRE CPSA Manual Chunk #{cid}",
+                "source_file": "manual_chunks.jsonl",
+                "snippet": "",
+            })
+    return resolved
+
+
+def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
+    """Hydrates a single numbered RFC tab on demand from disk (<rfc_dir>/events.jsonl + <stem>_trajectory.json)."""
+    rfc_dir = Path(tab_summary["rfc_dir"]) if tab_summary.get("rfc_dir") else None
+    traj_path = Path(tab_summary["trajectory_path"]) if tab_summary.get("trajectory_path") else None
+    if (not traj_path or not traj_path.exists()) and rfc_dir and rfc_dir.exists():
+        candidates = sorted(rfc_dir.glob("*_trajectory.json"))
+        if candidates:
+            traj_path = candidates[0]
+
+    traj: Dict[str, Any] = {}
+    if traj_path and traj_path.exists():
+        try:
+            traj = json.loads(traj_path.read_text(encoding="utf-8", errors="ignore"))
+        except Exception:
+            traj = {}
+
+    meta = traj.get("rfc_metadata", {})
+    s2 = traj.get("stage2_initial_extraction", {})
+    s5 = traj.get("stage5_preflight_gate", {})
+    s6 = traj.get("stage6_cpsa4_solver", {})
+    qa = traj.get("quality_assessment", {})
+    final_out = traj.get("final_verified_output", {})
+
+    # 1. Verbatim RFC Slice
+    verbatim_slice = meta.get("verbatim_rfc_slice") or ""
+    if not verbatim_slice and rfc_dir and (rfc_dir / "verbatim_slice.txt").exists():
+        verbatim_slice = (rfc_dir / "verbatim_slice.txt").read_text(encoding="utf-8", errors="ignore")
+
+    # 2. Build Ordered Per-Attempt Time-Travel Snapshots
+    attempts: List[Dict[str, Any]] = []
+    s5_repairs = s5.get("repair_attempts") or []
+    s6_repairs = s6.get("repair_attempts") or []
+
+    initial_ast = s2.get("initial_ast")
+    initial_scm = s2.get("initial_scm")
+    if not initial_scm and s5_repairs:
+        initial_scm = s5_repairs[0].get("rejected_scm")
+    if not initial_scm and s6_repairs:
+        initial_scm = s6_repairs[0].get("rejected_scm")
+
+    # Determine whether Attempt 0 passed directly or what diagnostic rejected it
+    attempt0_diag: Optional[str] = None
+    if s5_repairs:
+        attempt0_diag = s5_repairs[0].get("parsed_diagnostic") or s5_repairs[0].get("raw_stderr")
+        attempt0_status = "REJECTED"
+    elif s6_repairs:
+        attempt0_diag = s6_repairs[0].get("parsed_diagnostic") or s6_repairs[0].get("raw_stderr")
+        attempt0_status = "REJECTED"
+    elif s2.get("schema_validation_error") and not initial_ast:
+        attempt0_diag = s2.get("schema_validation_error")
+        attempt0_status = "FAILED"
+    elif s6.get("final_passed"):
+        attempt0_status = "PASSED"
+    elif initial_ast or initial_scm:
+        attempt0_diag = tab_summary.get("error_message")
+        attempt0_status = "GENERATED"
+    else:
+        attempt0_diag = tab_summary.get("error_message") or "Initial JSON extraction did not complete."
+        attempt0_status = "FAILED"
+
+    attempts.append({
+        "attempt_number": 0,
+        "attempt_id": "attempt_0",
+        "label": "Attempt 0 | Initial",
+        "stage": "Stage 2/3: Initial JSON & .scm Synthesis",
+        "status": attempt0_status,
+        "cycle_detected": False,
+        "scm": initial_scm or "; No .scm emitted on Attempt 0.",
+        "ast": initial_ast,
+        "diagnostic": attempt0_diag,
+        "rag_query": None,
+        "retrieved_chunks": [],
+    })
+
+    seq_num = 0
+    for idx, rep in enumerate(s5_repairs):
+        seq_num += 1
+        # Diagnostic that this repair produced on the NEXT check (if another repair followed)
+        next_diag = None
+        if not rep.get("passed_after_repair"):
+            if idx + 1 < len(s5_repairs):
+                next_diag = s5_repairs[idx + 1].get("parsed_diagnostic")
+            elif rep.get("repair_exception"):
+                next_diag = rep.get("repair_exception")
+        attempts.append({
+            "attempt_number": seq_num,
+            "attempt_id": f"roletran_{rep.get('attempt_number', idx + 1)}",
+            "label": f"Attempt {seq_num} | Roletran Repair",
+            "stage": f"Stage 5: Roletran Self-Healing (#{rep.get('attempt_number', idx + 1)})",
+            "status": "PASSED" if rep.get("passed_after_repair") else "REJECTED",
+            "cycle_detected": bool(rep.get("cycle_detected", False)),
+            "scm": rep.get("repaired_scm") or rep.get("rejected_scm") or "; Repair failed to emit .scm",
+            "rejected_scm": rep.get("rejected_scm"),
+            "ast": rep.get("repaired_ast") or rep.get("rejected_ast"),
+            "trigger_diagnostic": rep.get("parsed_diagnostic") or rep.get("raw_stderr"),
+            "diagnostic": rep.get("parsed_diagnostic") or rep.get("repair_exception") or next_diag,
+            "rag_query": rep.get("rag_query"),
+            "retrieved_chunks": _resolve_chunks_by_ids(rep.get("retrieved_chunk_ids", [])),
+        })
+
+    for idx, rep in enumerate(s6_repairs):
+        seq_num += 1
+        attempts.append({
+            "attempt_number": seq_num,
+            "attempt_id": f"solver_{rep.get('attempt_number', idx + 1)}",
+            "label": f"Attempt {seq_num} | CPSA Repair",
+            "stage": f"Stage 6: CPSA Compilation Self-Healing (#{rep.get('attempt_number', idx + 1)})",
+            "status": "PASSED" if rep.get("passed_after_repair") else "REJECTED",
+            "cycle_detected": bool(rep.get("cycle_detected", False)),
+            "scm": rep.get("repaired_scm") or rep.get("rejected_scm") or "; Repair failed to emit .scm",
+            "rejected_scm": rep.get("rejected_scm"),
+            "ast": rep.get("repaired_ast") or rep.get("rejected_ast"),
+            "trigger_diagnostic": rep.get("parsed_diagnostic") or rep.get("raw_stderr"),
+            "diagnostic": rep.get("parsed_diagnostic") or rep.get("repair_exception") or rep.get("raw_stderr"),
+            "rag_query": rep.get("rag_query"),
+            "retrieved_chunks": _resolve_chunks_by_ids(rep.get("retrieved_chunk_ids", [])),
+        })
+
+    final_scm = final_out.get("final_scm_with_header")
+    final_ast = final_out.get("final_ast")
+    if not final_scm and tab_summary.get("scm_path") and Path(tab_summary["scm_path"]).exists():
+        final_scm = Path(tab_summary["scm_path"]).read_text(encoding="utf-8", errors="ignore")
+
+    if final_scm or final_ast:
+        tier = qa.get("quality_tier") or tab_summary.get("quality_tier") or "REJECTED"
+        shapes_n = int(
+            s6.get("shapes_analysis_from_shapes_txt", {}).get(
+                "total_realized_shapes", tab_summary.get("shapes_count", 0)
+            )
+        )
+        solver_ok = bool(s6.get("final_passed") or tab_summary.get("status") == "VERIFIED")
+        final_label = f"Final | {tier} ({shapes_n} Shapes)" if solver_ok else f"Final | {tier}"
+        attempts.append({
+            "attempt_number": seq_num + 1,
+            "attempt_id": "final",
+            "label": final_label,
+            "stage": "Final Synthesized Artifact",
+            "status": "VERIFIED" if solver_ok else "FAILED",
+            "cycle_detected": False,
+            "scm": final_scm or "; No final .scm file.",
+            "ast": final_ast,
+            "diagnostic": None if solver_ok else tab_summary.get("error_message"),
+            "rag_query": None,
+            "retrieved_chunks": [],
+        })
+
+    # 3. Load Chronological Events (from events.jsonl if available, else synthesize from trajectory)
+    events: List[Dict[str, Any]] = []
+    events_jsonl_path = (
+        Path(tab_summary["events_jsonl"])
+        if tab_summary.get("events_jsonl")
+        else (rfc_dir / "events.jsonl" if rfc_dir else None)
+    )
+    if events_jsonl_path and events_jsonl_path.exists():
+        try:
+            with open(events_jsonl_path, "r", encoding="utf-8", errors="ignore") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if line:
+                        events.append(json.loads(line))
+        except Exception:
+            events = []
+
+    if not events:
+        events = _synthesize_events_from_trajectory(tab_summary, traj, attempts)
+
+    # Check if this tab is currently the active live tab and append any newer in-memory events
+    active_state = GLOBAL_EVENT_BUS.get_active_state()
+    if active_state.get("tab_index") == tab_summary.get("tab_index") and active_state.get("events"):
+        if not events_jsonl_path or not events_jsonl_path.exists():
+            events = active_state["events"]
+
+    shapes_xhtml = tab_summary.get("shapes_xhtml")
+    if not shapes_xhtml and rfc_dir and rfc_dir.exists():
+        xhtmls = sorted(rfc_dir.glob("*_shapes.xhtml"))
+        if xhtmls:
+            shapes_xhtml = str(xhtmls[0])
+
+    return {
+        "tab": {**tab_summary, "shapes_xhtml": shapes_xhtml},
+        "rfc_metadata": meta,
+        "quality_assessment": qa,
+        "verbatim_slice": verbatim_slice,
+        "shapes_xhtml": shapes_xhtml,
+        "attempts": attempts,
+        "events": events,
+    }
+
+
+def _synthesize_events_from_trajectory(
+    tab_summary: Dict[str, Any],
+    traj: Dict[str, Any],
+    attempts: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Synthesizes clean replay events and RAG cards for legacy runs created prior to events.jsonl."""
+    base_ts = time.time()
+    evts: List[Dict[str, Any]] = []
+    meta = traj.get("rfc_metadata", {})
+    s2 = traj.get("stage2_initial_extraction", {})
+    s5 = traj.get("stage5_preflight_gate", {})
+    s6 = traj.get("stage6_cpsa4_solver", {})
+    tab_idx = tab_summary.get("tab_index")
+    rfc_id = tab_summary.get("rfc_id")
+
+    def _push(offset: float, etype: str, stage: Optional[int], data: Dict[str, Any]):
+        evts.append({
+            "timestamp": base_ts + offset,
+            "event_type": etype,
+            "stage": stage,
+            "stage_name": None,
+            "rfc_id": rfc_id,
+            "tab_index": tab_idx,
+            "data": data,
+        })
+
+    _push(0.0, "pipeline_started", 1, {"rfc_id": rfc_id, "rfc_file": rfc_id})
+    _push(0.1, "stage_completed", 1, {"protocol_name": tab_summary.get("protocol_name")})
+    if meta.get("selected_sections"):
+        _push(0.2, "slice_ready", 1, {
+            "sections": meta.get("selected_sections", []),
+            "line_count": meta.get("sliced_lines_count", 0),
+        })
+
+    if s2.get("initial_ast"):
+        _push(0.3, "stage_completed", 2, {
+            "roles_count": len(s2["initial_ast"].get("roles", [])),
+            "skeletons_count": len(s2["initial_ast"].get("skeletons", [])),
+        })
+        _push(0.4, "stage_completed", 3, {"scm_path": tab_summary.get("scm_path")})
+    else:
+        err = s2.get("schema_validation_error") or tab_summary.get("error_message") or "Extraction failed"
+        _push(0.3, "stage_failed", 2, {"error_message": err})
+        _push(0.4, "pipeline_failed", 2, {"error_message": err})
+        return evts
+
+    t_off = 0.5
+    for att in attempts:
+        if att["attempt_id"] in ("attempt_0", "final"):
+            continue
+        is_roletran = att["attempt_id"].startswith("roletran_")
+        st_num = 5 if is_roletran else 6
+        if att.get("rag_query") or att.get("retrieved_chunks"):
+            _push(t_off, "rag_retrieval", st_num, {
+                "purpose": att["stage"],
+                "query": att.get("rag_query") or "",
+                "chunks": att.get("retrieved_chunks") or [],
+            })
+            t_off += 0.05
+        _push(t_off, "repair_attempt", st_num, {
+            "attempt": att["attempt_number"],
+            "max_attempts": SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS,
+            "diagnostic": att.get("diagnostic") or "",
+            "cycle_detected": att.get("cycle_detected", False),
+        })
+        t_off += 0.05
+
+    if s5.get("final_passed"):
+        _push(t_off, "stage_completed", 4, {"status": "passed"})
+        _push(t_off + 0.02, "stage_completed", 5, {"status": "passed", "attempts": s5.get("total_attempts", 0)})
+    else:
+        _push(t_off, "stage_failed", 5, {"reason": "Roletran executability unfulfilled"})
+
+    if s6.get("final_passed") or tab_summary.get("status") == "VERIFIED":
+        _push(t_off + 0.1, "pipeline_completed", 6, {
+            "success": True,
+            "protocol_name": tab_summary.get("protocol_name"),
+            "shapes_count": tab_summary.get("shapes_count", 0),
+            "quality_tier": tab_summary.get("quality_tier"),
+            "shapes_xhtml": tab_summary.get("shapes_xhtml"),
+        })
+    else:
+        _push(t_off + 0.1, "stage_failed", 6, {"error_message": tab_summary.get("error_message")})
+        _push(t_off + 0.12, "pipeline_failed", 6, {"error_message": tab_summary.get("error_message")})
+
+    return evts
+
 
 class VisualizerServer:
-    """Manages SSE streaming, artifact serving, and dashboard state."""
+    """Manages SSE streaming, lazy per-tab hydration, and dashboard state."""
 
     def __init__(self, host: str = "127.0.0.1", port: int = 8080):
         self.host = host
@@ -32,8 +363,63 @@ class VisualizerServer:
         self.app.router.add_get("/", self.handle_index)
         self.app.router.add_get("/api/events", self.handle_sse)
         self.app.router.add_get("/api/history", self.handle_history)
+        self.app.router.add_get("/api/tabs", self.handle_tabs)
+        self.app.router.add_get("/api/active", self.handle_active)
+        self.app.router.add_get("/api/tab/{tab_index}", self.handle_tab_detail)
+        self.app.router.add_get("/api/filtered", self.handle_filtered)
+        self.app.router.add_get("/api/models", self.handle_models)
         self.app.router.add_get("/api/artifact", self.handle_artifact)
-        self.app.router.add_static("/output", SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR, show_index=True)
+        if SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR.exists():
+            self.app.router.add_static("/output", SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR, show_index=True)
+
+    async def handle_models(self, request: web.Request) -> web.Response:
+        """Returns the live stage-specific models resolved from prompts/*.md frontmatter."""
+        return web.json_response({
+            "router_model": SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL,
+            "section_router_model": SYSTEM_CONFIG.DEFAULT_SECTION_ROUTER_MODEL,
+            "extraction_model": SYSTEM_CONFIG.DEFAULT_EXTRACTION_MODEL,
+            "correction_model": SYSTEM_CONFIG.DEFAULT_CORRECTION_MODEL,
+            "repair_model": SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL,
+            "query_model": SYSTEM_CONFIG.DEFAULT_QUERY_MODEL,
+            "think_model": SYSTEM_CONFIG.DEFAULT_THINK_MODEL,
+            "cpsa_timeout_seconds": SYSTEM_CONFIG.CPSA_TIMEOUT_SECONDS,
+        })
+
+    async def handle_tabs(self, request: web.Request) -> web.Response:
+        """Returns the compact O(N) tab summary list and filtered count."""
+        return web.json_response(GLOBAL_EVENT_BUS.get_tabs_overview())
+
+    async def handle_active(self, request: web.Request) -> web.Response:
+        """Returns the bounded in-memory event stream for the currently running RFC only."""
+        return web.json_response(GLOBAL_EVENT_BUS.get_active_state())
+
+    async def handle_tab_detail(self, request: web.Request) -> web.Response:
+        """Hydrates a numbered tab (#1..#N) on demand from disk JSON artifacts."""
+        raw_idx = request.match_info.get("tab_index", "")
+        try:
+            tab_idx = int(raw_idx)
+        except ValueError:
+            return web.json_response({"error": f"Invalid tab_index: {raw_idx}"}, status=400)
+
+        tab_summary = GLOBAL_EVENT_BUS.get_tab_summary(tab_idx)
+        if not tab_summary:
+            return web.json_response({"error": f"Tab #{tab_idx} not found"}, status=404)
+
+        payload = hydrate_tab_payload(tab_summary)
+        return web.json_response(payload)
+
+    async def handle_filtered(self, request: web.Request) -> web.Response:
+        """Returns paginated disqualified/filtered RFCs for the collapsible drawer."""
+        try:
+            offset = int(request.query.get("offset", "0"))
+        except ValueError:
+            offset = 0
+        try:
+            limit = int(request.query.get("limit", "100"))
+        except ValueError:
+            limit = 100
+        query = request.query.get("q", "")
+        return web.json_response(GLOBAL_EVENT_BUS.get_filtered_slice(offset=offset, limit=limit, query=query))
 
     def _on_bus_event(self, event: PipelineEvent):
         """Dispatches an event from the pipeline event bus to all connected web clients thread-safely."""
@@ -59,23 +445,39 @@ class VisualizerServer:
         return web.Response(text=content, content_type="text/html")
 
     async def handle_history(self, request: web.Request) -> web.Response:
-        """Returns JSON array of past events for state reconstruction on page load."""
+        """Returns JSON array of active RFC events (bounded)."""
         history = [e.model_dump() for e in GLOBAL_EVENT_BUS.get_history()]
         return web.json_response(history)
 
+    def _is_allowed_artifact_path(self, resolved_path: Path) -> bool:
+        """Restricts /api/artifact reads strictly to pipeline output directories and rejects dotfiles."""
+        if resolved_path.name.startswith("."):
+            return False
+        allowed_roots = [SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR.resolve()]
+        overview = GLOBAL_EVENT_BUS.get_tabs_overview()
+        run_dir = overview.get("run_directory")
+        if run_dir:
+            allowed_roots.append(Path(run_dir).resolve())
+        for tab in overview.get("accepted_tabs", []):
+            rfc_dir = tab.get("rfc_dir")
+            if rfc_dir:
+                allowed_roots.append(Path(rfc_dir).resolve())
+        return any(resolved_path.is_relative_to(root) for root in allowed_roots)
+
     async def handle_artifact(self, request: web.Request) -> web.Response:
-        """Serves synthesized code or MITRE verification output files."""
+        """Serves synthesized code or MITRE verification output files within authorized run directories."""
         filepath_str = request.query.get("path")
         if not filepath_str:
             return web.Response(text="Missing 'path' parameter", status=400)
 
         path = Path(filepath_str).resolve()
-        if not path.exists():
-            return web.Response(text=f"Artifact not found: {path}", status=404)
+        if not self._is_allowed_artifact_path(path):
+            return web.Response(text="Forbidden: path outside authorized output directories", status=403)
+        if not path.exists() or not path.is_file():
+            return web.Response(text=f"Artifact not found: {path.name}", status=404)
 
-        # Content-type detection
         content_type = "text/plain"
-        if path.suffix == ".xhtml" or path.suffix == ".html":
+        if path.suffix in (".xhtml", ".html"):
             content_type = "application/xhtml+xml"
         elif path.suffix == ".svg":
             content_type = "image/svg+xml"
@@ -106,7 +508,6 @@ class VisualizerServer:
         client_queue: asyncio.Queue = asyncio.Queue()
         self._sse_clients.add(client_queue)
 
-        # Initial ping
         await response.write(b": ping\n\n")
 
         try:
@@ -116,7 +517,6 @@ class VisualizerServer:
                     sse_msg = event.to_sse_message().encode("utf-8")
                     await response.write(sse_msg)
                 except asyncio.TimeoutError:
-                    # Keep-alive heartbeat
                     await response.write(b": heartbeat\n\n")
         except (asyncio.CancelledError, ConnectionResetError):
             pass
@@ -127,10 +527,7 @@ class VisualizerServer:
 
 
 def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
-    """Starts the visualizer server in a background daemon thread."""
-    import threading
-    import socket
-    import time
+    """Starts the visualizer server in a background daemon thread with access_log disabled."""
 
     def _is_port_available(p: int) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -147,7 +544,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         server.loop = loop
-        runner = web.AppRunner(server.app)
+        runner = web.AppRunner(server.app, access_log=None)
         loop.run_until_complete(runner.setup())
         site = web.TCPSite(runner, host, actual_port)
         loop.run_until_complete(site.start())

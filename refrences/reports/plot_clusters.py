@@ -44,14 +44,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CHUNKS_DIR = BASE_DIR / "chunks"
 REPORTS_DIR = BASE_DIR / "reports"
 REPO_ROOT = BASE_DIR.parent
-DOWNLOADS_DIR = Path("/home/mario/Downloads")
 
 NPY_PATH = CHUNKS_DIR / "embeddings.npy"
 META_PATH = CHUNKS_DIR / "embeddings_meta.json"
 JSONL_PATH = CHUNKS_DIR / "manual_chunks.jsonl"
 OUT_HTML_PATH = REPORTS_DIR / "embedding_clusters.html"
 ROOT_HTML_PATH = REPO_ROOT / "embedding_clusters.html"
-DL_HTML_PATH = DOWNLOADS_DIR / "embedding_clusters.html"
 
 # Mathematically optimal 12-color palette: 150° chromatic stride in HCL space + distinct glyphs
 CATEGORY_CONFIG = {
@@ -1253,24 +1251,17 @@ def main():
     with open(OUT_HTML_PATH, "w", encoding="utf-8") as f:
         f.write(full_html_content)
 
-    # Copy to repo root and downloads folder
+    # Copy to repo root
     try:
         with open(ROOT_HTML_PATH, "w", encoding="utf-8") as f:
             f.write(full_html_content)
     except Exception as e:
         print(f"Warning: Could not copy to root: {e}", file=sys.stderr)
 
-    try:
-        with open(DL_HTML_PATH, "w", encoding="utf-8") as f:
-            f.write(full_html_content)
-    except Exception as e:
-        print(f"Warning: Could not copy to downloads: {e}", file=sys.stderr)
-
     print(f"\n========================================================")
     print(f"Strict Top-10 Highlight Visualizer Generated Successfully!")
     print(f"Primary File: {OUT_HTML_PATH}")
     print(f"Root Workspace File: {ROOT_HTML_PATH}")
-    print(f"User Downloads: {DL_HTML_PATH}")
     print(f"Total Points Indexed: {len(search_corpus)}")
     print(f"========================================================\n")
 

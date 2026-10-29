@@ -1,131 +1,92 @@
-# Tiered Model Routing & Configuration
+# Tiered Model Routing & YAML Frontmatter Configuration
 
-## 1. Multi-Model Architecture Rationale
+## 1. Multi-Stage Routing Rationale
 
-Using a single large frontier model (e.g. Claude Opus or GPT-4o) across all stages of the RFC-to-CPSA pipeline is slow and unnecessarily expensive:
-- Document applicability checks and TOC parsing process 10,000+ line tables of contents but require simple boolean decisions.
-- Diagnostic query formulation requires stripping concrete variables into abstract search keywords, where frontier reasoning is overkill and high latency hurts iteration speed.
-- Semantic extraction demands rigorous formal reasoning, zero operator hallucinations, and strict Pydantic JSON adherence.
-- Compiler repair requires multi-turn code debugging where expensive per-token billing accumulates rapidly across 5–15 iterative self-healing passes.
+Using a single frontier model across every stage of RFC-to-CPSA synthesis and `<think>` curation wastes latency and compute:
+- **Document Intake** (`Stage 1c` & `1d`) scans full RFC tables of contents and requires fast, low-cost structured classification and section number selection.
+- **RAG Query Formulation** (`Stage 5` & `6`) abstracts raw compiler diagnostics into 3-6 conceptual keywords where low latency (`15s` timeout) keeps iterative repair fast.
+- **JSON CPSA Generation** (`Stage 2` + 1-shot retry) requires strict adherence to MITRE CPSA 4.4.9 Tables 10.1-10.6, Equation 10.1, and nested Pydantic AST schemas.
+- **Compiler Diagnostic Repair** (`Stage 5` & `6`) performs multi-turn AST surgery guided by `cpsa4roletran` / `cpsa4` diagnostics and retrieved manual chunks.
+- **Hindsight Reasoning Synthesis** (`Phase 3`) produces cohesive, forward-looking `<think>...</think>` monologues from verified trajectories.
 
-RFC-LLM decouples model invocation across four specialized task tiers:
-
-```
-                  ┌────────────────────────────────────────────────────────┐
-                  │                 RFC-LLM Task Tiers                     │
-                  └──────────────────────────┬─────────────────────────────┘
-                                             │
-      ┌───────────────────────┬──────────────┴───────────────┬───────────────────────┐
-      ▼                       ▼                              ▼                       ▼
- [Tier 1: Query]     [Tier 2: Router/Gate]        [Tier 3: Extraction]        [Tier 4: Repair]
-  DeepSeek-Chat           DeepSeek-Chat              Claude Haiku 5.5          Claude Haiku 5.5
-(Abstract RAG Query) (High Context / Low Cost)    (Strict Formal AST)        (Iterative Repair)
-```
+RFC-LLM decouples model selection, HTTP timeouts, and sampling temperatures **per prompt file** using YAML frontmatter in [`prompts/*.md`](../prompts/README.md), while keeping `.env` strictly reserved for API credentials and base endpoint URLs.
 
 ---
 
-## 2. Model Task Assignments & Customizable Prompts (`.prompts/`)
+## 2. YAML Frontmatter Routing in `prompts/*.md` ([`src/prompt_loader.py`](../src/prompt_loader.py))
 
-All system prompts for these four tiers are externalized in `.prompts/` and loaded dynamically at runtime via `src/prompt_loader.py`.
+Every prompt file in `prompts/01_applicability_gate.md` through `prompts/07_think_token_synthesizer.md` begins with a YAML frontmatter block configuring `model`, `timeout` (seconds), and `temperature`:
 
-### 2.1 RAG Diagnostic Query Formulation (`LLM_QUERY_MODEL`)
-- **Active Model**: `nous/deepseek/deepseek-chat`
-- **Prompt Template**: `.prompts/05_rag_query_formulation.md`
-- **CLI Flag**: `--query-model`
-- **Task**: Takes raw compiler error diagnostics from `cpsa4roletran` or `cpsa4` (e.g. `"Roletran REJECT: :6:6: Received term cannot be fully destructured"`) and abstracts them into a 3–6 word conceptual search query for the MITRE CPSA manual (e.g. `"roletran trace reception term destructuring"`).
-- **Why DeepSeek-Chat**:
-  - Fast, low-cost inference via Nous Portal.
-  - Strong conceptual abstraction without leaking concrete protocol identifiers (e.g. `client_random`, `edhoc.scm`).
+```markdown
+---
+model: nous/google/gemini-4-argon
+timeout: 180
+temperature: 0.0
+---
+You are a formal methods expert in cryptographic protocol specification for MITRE CPSA 4.4.9...
+```
 
-### 2.2 TOC Router & Document Gatekeeper (`LLM_ROUTER_MODEL`)
-- **Active Model**: `nous/deepseek/deepseek-chat`
-- **Prompt Templates**: `.prompts/01_applicability_gate.md`, `.prompts/02_section_router.md`
-- **CLI Flag**: `--router-model`
-- **Tasks**:
-  1. `protocol_applicability_gate.py`: Classifies whether an RFC describes an interactive security protocol.
-  2. `handshake_section_router.py`: Selects the exact section numbers defining message exchanges from 70+ TOC entries.
-- **Why DeepSeek-Chat**:
-  - Handles massive Table of Contents context effortlessly.
-  - Cost per million tokens is a fraction of frontier models.
-  - High accuracy for structured classification and JSON selection.
+### 2.1 Per-Stage Prompt & Routing Catalog
 
-### 2.3 Protocol Semantic Extraction (`LLM_EXTRACTION_MODEL`)
-- **Active Model**: `nous/anthropic/claude-haiku-5.5`
-- **Prompt Templates**: `.prompts/03_protocol_extraction.md`, `.prompts/04_schema_self_correction.md`
-- **CLI Flag**: `--extraction-model`
-- **Task**: Analyzes verbatim RFC section slices (typically 200–600 lines) and constructs the complete `CPSAProtocolSpecification` AST (variables, traces, channels, 3 preskeletons).
-- **Why Claude Haiku 5.5**:
-  - Superior adherence to strict negative constraints (never outputting `aenc`, never nesting dicts in message terms).
-  - Eliminates syntax errors during first-pass extraction.
+| Prompt File | Stage / Task | Default Frontmatter `model` | `timeout` | `temperature` | CLI Override Flag |
+|---|---|---|---|---|---|
+| [`prompts/01_applicability_gate.md`](../prompts/01_applicability_gate.md) | **Stage 1c**: Document Intake (Applicability Gate) | `nous/z-ai/glm-5.3` | `180` | `0.0` | `--router-model` / `--model` |
+| [`prompts/02_section_router.md`](../prompts/02_section_router.md) | **Stage 1d**: Document Intake (Section Router) | `nous/z-ai/glm-5.3` | `180` | `0.0` | `--router-model` / `--model` |
+| [`prompts/03_protocol_extraction.md`](../prompts/03_protocol_extraction.md) | **Stage 2**: JSON CPSA Generation | `nous/google/gemini-4-argon` | `180` | `0.0` | `--extraction-model` / `--model` |
+| [`prompts/04_schema_self_correction.md`](../prompts/04_schema_self_correction.md) | **Stage 2 (Retry)**: 1-Shot Schema Self-Correction | `nous/google/gemini-4-argon` | `180` | `0.0` | `--extraction-model` / `--model` |
+| [`prompts/05_rag_query_formulation.md`](../prompts/05_rag_query_formulation.md) | **Stage 5 & 6**: RAG Diagnostic Query Formulation | `nous/anthropic/claude-haiku-5.5` | `15` | `0.0` | `--query-model` / `--model` |
+| [`prompts/06_compiler_repair.md`](../prompts/06_compiler_repair.md) | **Stage 5 & 6**: Self-Healing Compiler Repair | `nous/google/gemini-3.8-flash` | `180` | `0.0` | `--repair-model` / `--model` |
+| [`prompts/07_think_token_synthesizer.md`](../prompts/07_think_token_synthesizer.md) | **Phase 3**: Hindsight Reasoning (`<think>`) Synthesizer | `gemini/gemini-3.5-flash-lite` | `180` | `0.2` | `./rfc-think --model` |
 
-### 2.4 Self-Healing Compiler Repair (`LLM_REPAIR_MODEL`)
-- **Active Model**: `nous/anthropic/claude-haiku-5.5`
-- **Prompt Template**: `.prompts/06_compiler_repair.md`
-- **CLI Flag**: `--repair-model`
-- **Task**: Takes a failing AST, the compiler diagnostic, and retrieved MITRE manual passages, then surgically mutates the AST to fix constructibility or scope errors.
-- **Why Claude Haiku 5.5**:
-  - High formal methods reasoning precision and strict adherence to Pydantic AST and CPSA 4.4.9 scoping constraints during multi-pass compiler repair.
+### 2.2 Zero-Restart Live Hot-Reloading
+[`load_prompt_spec()`](../src/prompt_loader.py) reads and parses `prompts/<filename>.md` dynamically from disk on **every LLM invocation**:
+- Editing `model:`, `timeout:`, `temperature:`, or system prompt instructions in any `prompts/*.md` file takes effect immediately on the next LLM call—including mid-batch across thousands of RFCs—with zero process restart.
+- `parse_prompt_frontmatter()` strips the `--- ... ---` YAML header before sending the prompt body to LiteLLM and automatically appends the target Pydantic JSON schema in Python (`build_schema_system_prompt()`).
 
 ---
 
-## 3. Unified Nous Research Portal Integration
+## 3. Clean `.env` Specification (Credentials & Base Endpoints Only)
 
-All third-party models (Claude, DeepSeek, Qwen) route through the **Nous Research Portal** (`portal.nousresearch.com` / `https://inference-api.nousresearch.com/v1`) using LiteLLM's `openai/` proxy protocol.
+Model names and timeouts are **never** configured in `.env`. As defined in [`.env.example`](../.env.example) and loaded by [`src/system_config.py`](../src/system_config.py), `.env` holds **only** API credentials and base endpoint URLs:
 
-### 3.1 Implementation in `src/system_config.py`
-Any model slug starting with `nous/` or `nousresearch/` is automatically intercepted:
-```python
-if model_name.startswith("nous/") or model_name.startswith("nousresearch/"):
-    clean_model = model_name.split("/", 1)[1]  # e.g. "anthropic/claude-haiku-5.5"
-    return {
-        "model": f"openai/{clean_model}",
-        "api_key": self.NOUS_API_KEY,
-        "api_base": self.NOUS_API_BASE,
-        "temperature": temperature,
-    }
-```
-
-### 3.2 Configuration File (`.env`)
 ```bash
-# Nous Research Portal Credentials
-NOUS_API_KEY=sk-nous-...
+# 1. Cloud & Unified Proxy Credentials
+GEMINI_API_KEY=your_gemini_api_key_here
+NOUS_API_KEY=your_nous_api_key_here
 NOUS_API_BASE=https://inference-api.nousresearch.com/v1
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
-# Google Gemini Credentials (Optional Fallback)
-GEMINI_API_KEY=AIzaSy...
-
-# Decoupled Model Routing
-LLM_QUERY_MODEL=nous/deepseek/deepseek-chat
-LLM_ROUTER_MODEL=nous/deepseek/deepseek-chat
-LLM_EXTRACTION_MODEL=nous/anthropic/claude-haiku-5.5
-LLM_REPAIR_MODEL=nous/anthropic/claude-haiku-5.5
-
-# Subprocess & HTTP Timeouts (Seconds)
-SUBPROCESS_TIMEOUT_SECONDS=180
-ROLETRAN_TIMEOUT_SECONDS=30
+# 2. Local & Tailscale Model Base Endpoints
+OLLAMA_API_BASE=http://localhost:11434
+STRATA_API_BASE=http://localhost:11435/v1
 ```
 
 ---
 
-## 4. Local Workstation Model Endpoints (`100.77.124.9`)
+## 4. Supported Provider Prefixes
 
-When running local open-weight models instead of cloud APIs, inference requests route over Tailscale to the workstation (`100.77.124.9`):
+[`SYSTEM_CONFIG.get_llm_kwargs()`](../src/system_config.py) resolves provider credentials, OpenAI-compatible proxy URLs, and sampling parameters automatically from the model prefix in `prompts/*.md` (or CLI override flags):
 
-| Runtime Service | Base Endpoint | OpenAI-Compatible Endpoint | Usage in RFC-LLM |
-| :--- | :--- | :--- | :--- |
-| **Desktop Ollama (Standard GPU)** | `http://100.77.124.9:11434` | `http://100.77.124.9:11434/v1` | `OLLAMA_API_BASE=http://100.77.124.9:11434` with `ollama/<model>` slugs |
-| **Strata (Strix Halo HIP)** | `http://100.77.124.9:11435` | `http://100.77.124.9:11435/v1` | OpenAI-compatible proxy (`openai/<model>` via `http://100.77.124.9:11435/v1`) |
+| Model Prefix | Example Slug | Endpoint / Credential Resolution in `src/system_config.py` |
+| :--- | :--- | :--- |
+| `nous/<model>` | `nous/google/gemini-4-argon` | Strips `nous/`, routes as `openai/<model>` via `NOUS_API_BASE` + `NOUS_API_KEY` |
+| `strata/<model>` | `strata/unsloth-iq4_xs` | Routes as `openai/strata/<model>` to `STRATA_API_BASE` (default local Strix Halo HIP endpoint `http://localhost:11435/v1`) |
+| `ollama/<model>` | `ollama/qwen2.5:7b-instruct` | Routes via `OLLAMA_API_BASE` (`http://localhost:11434`; also serves `ollama/nomic-embed-text` for hybrid RAG) |
+| `gemini/<model>` | `gemini/gemini-3.5-flash-lite` | Authenticates with `GEMINI_API_KEY` (omits `temperature=0.0` per Gemini 3+ recommendation; forwards `temperature > 0.0`) |
+| `openai/<model>` | `openai/gpt-4.1` | Authenticates directly with `OPENAI_API_KEY` |
+| `anthropic/<model>` | `anthropic/claude-sonnet-4-5` | Authenticates directly with `ANTHROPIC_API_KEY` |
 
 ---
 
-## 5. Fallback Hierarchy
+## 5. Resolution Precedence & Built-In Fallbacks
 
-In [`src/system_config.py`](file:///home/mario/Work/RFC-LLM/src/system_config.py), `SystemEnvironmentConfig` validates task model assignments using a `@model_validator`:
-1. If `LLM_EXTRACTION_MODEL` is blank, falls back to `MODEL_NAME` (global default).
-2. If `LLM_ROUTER_MODEL` is blank, falls back to `MODEL_NAME`.
-3. If `LLM_REPAIR_MODEL` is blank, falls back to `MODEL_NAME`.
-4. If `LLM_QUERY_MODEL` is blank, falls back to `MODEL_NAME`.
-5. If `MODEL_NAME` is blank, defaults to `gemini/gemini-3.5-flash-lite`.
+For every LLM call, [`resolve_prompt_model()`](../src/prompt_loader.py) and [`load_prompt_spec()`](../src/prompt_loader.py) resolve configuration in strict precedence order:
+1. **Explicit CLI Override** (highest priority): One-off session flags passed to `./rfc-llm` (`--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, or global `--model`) or `./rfc-think` (`--model`).
+2. **Live YAML Frontmatter**: The `model:`, `timeout:`, and `temperature:` values currently saved at the top of the stage's `prompts/0*.md` file.
+3. **Built-In `_FALLBACK_METADATA`**: Stage-specific defaults in [`src/prompt_loader.py`](../src/prompt_loader.py) (with `GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"` and `SYSTEM_CONFIG.LLM_TIMEOUT_SECONDS = 180`) if a frontmatter key or prompt file is omitted.
 
-This guarantees that leaving any specific task env var empty does not crash the pipeline.
-
+Non-LLM compiler execution bounds are enforced deterministically in [`src/system_config.py`](../src/system_config.py):
+- `CPSA_TIMEOUT_SECONDS = 60` (hard 60-second process-group `SIGKILL` cap on MITRE `make` / `cpsa4` compilation).
+- `ROLETRAN_TIMEOUT_SECONDS = 15` (15-second cap on `cpsa4roletran` / `cpsa4 -l 1` pre-flight checks).
+- `MAX_REPAIR_ATTEMPTS = 50` (maximum self-healing iterations per verification stage).

@@ -1,32 +1,30 @@
 # RFC-LLM Master Blueprint: Complete Engineering Specification & Rebuild Guide
 
 > **Target Audience**: Systems Engineers, Formal Methods Researchers, and Compiler Developers.  
-> **Purpose**: A clean-room, zero-assumptions specification detailing the architecture, theoretical foundation, grammar invariants, verification loops, and operational mechanics of the RFC-to-CPSA synthesis engine. This document enables anyone to understand, maintain, or completely rebuild the system from scratch.
+> **Purpose**: A clean-room, zero-assumptions specification detailing the architecture, theoretical foundation, grammar invariants, YAML-routed verification loops, virtualized observability, and Phase 3 dataset curation of the RFC-to-CPSA synthesis engine.
 
 ---
 
 ## 1. System Philosophy & Foundational Theory
 
 ### 1.1 The Core Problem
-IETF Requests for Comments (RFCs) define the global standard for communication and security protocols (e.g., TLS, IKEv2, EDHOC, Kerberos, SSH). However:
-- RFCs are written in ambiguous, semi-structured natural English accompanied by informal ASCII ladder diagrams and byte-level packet layouts.
-- Cryptographic security guarantees (secrecy, mutual authentication, forward secrecy, replay resistance) require formal verification using mathematical tools like the **MITRE Cryptographic Protocol Shapes Analyzer (CPSA 4.4.9)**.
-- Hand-crafting CPSA Scheme S-expressions (`.scm`) is error-prone, requiring deep expertise in order-sorted algebras, strand spaces, and procedural executability semantics.
+IETF Requests for Comments (RFCs) define communication and security protocols (TLS, IKEv2, EDHOC, Kerberos, SSH) using semi-structured English prose, ASCII ladder diagrams, and byte-level packet layouts. Formal verification in the **MITRE Cryptographic Protocol Shapes Analyzer (CPSA 4.4.9)** requires order-sorted algebraic S-expressions under Dolev-Yao strand space and procedural executability semantics.
 
 ### 1.2 Why Direct LLM Code Generation Fails
-Prompting general-purpose LLMs directly to generate CPSA Scheme S-expressions fails catastrophically due to three distinct failure modes:
-1. **Operator Hallucination**: LLMs mix syntax from ProVerif (`aenc`, `senc`), Tamarin, or standard programming languages into CPSA terms, which strictly allow only a tiny algebraic signature (`enc`, `hash`, `cat`, `pubk`, `privk`, `invk`, `ltk`, `bltk`, `exp`, `gen`, `mul`, `rec`).
-2. **Grammar & Metadata Inversion**: LLMs frequently embed variable declarations or dictionaries (e.g. `{"name": "session_key", "description": "..."}`) directly inside message payload terms rather than using atomic string identifiers and declaring them under `(vars ...)`.
-3. **Execution Deadlocks in Shape Realization**: LLMs naively insert secrecy listener strands (`deflistener`) into the primary point-of-view (POV) skeleton. In CPSA's strand space semantics, a listener on an uncompromised secret cannot be realized by the penetrator; this terminates the search tree with "0 shapes", completely blinding the analyzer to the bilateral handshake authentication shapes.
+Prompting an LLM to directly emit raw CPSA `.scm` strings fails due to three structural defects:
+1. **Operator Hallucination**: Mixing ProVerif or Tamarin syntax (`aenc`, `senc`, `mac`) into CPSA terms, which authorize only a strict algebraic signature (`enc`, `hash`, `cat`, `pubk`, `privk`, `invk`, `ltk`, `bltk`, `exp`, `gen`, `mul`, `rec`, `one`).
+2. **Grammar & Metadata Inversion**: Embedding variable dictionaries (`{"name": "session_key", "description": "..."}`) directly inside message terms instead of declaring variables under `(vars ...)` and referencing atomic identifiers.
+3. **Listener Pruning in POV Skeletons**: Placing `(deflistener secret)` inside a participant's primary point-of-view (POV) `defskeleton`. When a secret is secure, the penetrator cannot realize the listener node, causing CPSA to prune the entire branch to `0` shapes and hiding the completed bilateral authentication shape.
 
-### 1.3 The RFC-LLM Solution: Staged Compiler Pipeline
-RFC-LLM solves this by treating protocol formalization as a **multi-stage verified compiler pipeline**:
-- Slices tens of thousands of lines of RFC down to verbatim handshake exchanges via Table of Contents (TOC) routing.
-- Uses an intermediate representation (IR) enforced by strict Pydantic schemas with custom grammar desugaring.
-- Emits Scheme S-expressions deterministically via `cpsa4json`.
-- Validates protocols statically through a pre-flight executability gate (`cpsa4roletran` for basic algebra, `cpsa4 -l 1` for Diffie-Hellman algebra).
-- Closes the loop with an automated self-healing repair cycle guided by dynamic RAG over the authoritative MITRE manual.
-- Emits real-time state events to a live reactive web monitor.
+### 1.3 The RFC-LLM Solution: Staged Compiler & Trajectory Factory
+RFC-LLM treats protocol formalization as a **6-stage verified compiler pipeline** (`./rfc-llm`) paired with a **Phase 3 hindsight reasoning synthesizer** (`./rfc-think`):
+- **Stage 1 (`Document Intake`)**: Filters non-protocols in <1 ms via regex, parses the TOC, verifies cryptographic applicability, routes handshake sections, and slices verbatim specification text (`verbatim_slice.txt`).
+- **Stage 2 (`JSON CPSA Generation`)**: Extracts a strongly-typed Pydantic AST enforcing Tables 10.1-10.6, Equation 10.1, positional keyword scoping, 1-shot schema self-correction, and 3-POV skeleton separation.
+- **Stage 3 (`CPSA4json -> scm`)**: Deterministically serializes native CPSA JSON arrays and compiles them to `.scm` via `cpsa4json`.
+- **Stage 4 (`Roletran Check`)**: Pre-flight validates executability in milliseconds via `cpsa4roletran` (`basic` algebra) or `cpsa4 -l 1` (`diffie-hellman` algebra) under a `15s` timeout.
+- **Stage 5 (`Self-Healing Loop`)**: Intercepts compiler errors, detects AST oscillations via SHA-256 hashing, formulates conceptual RAG queries (`15s` timeout), retrieves MITRE manual chunks, and repairs the AST up to `50` attempts.
+- **Stage 6 (`CPSA Compilation`)**: Runs `cpsa4init` + `make` (`cpsa4`, `cpsa4shapes`, `cpsa4graph`) under a hard 60-second process-group `SIGKILL` cap, computes `GOLD`/`SILVER`/`BRONZE`/`REJECTED` quality tiers, and writes `<protocol>_trajectory.json`.
+- **Phase 3 (`./rfc-think`)**: Synthesizes forward-looking 5-step `<think>...</think>` monologues with compiler backtracking (`<protocol>_think.json`) and exports `sft_train.jsonl` + contrastive `dpo_pairs.jsonl` for AMD ROCm Megatron-LM MoE post-training.
 
 ---
 
@@ -34,50 +32,54 @@ RFC-LLM solves this by treating protocol formalization as a **multi-stage verifi
 
 ```mermaid
 flowchart TD
-    subgraph Ingestion ["Stage 0 & 1: Ingestion & Boundary Slicing"]
-        A["Raw RFC Document (.txt)"] --> B["Tier 0: Header & Category Filter\n(rfc_header_filter.py)"]
+    subgraph Stage1 ["Stage 1: Document Intake"]
+        A["Raw RFC Document (.txt)"] --> B["Tier 0 Header Filter\n(rfc_header_filter.py)"]
         B -->|Eligible| C["TOC Parser\n(rfc_toc_parser.py)"]
-        B -->|Disqualified| X1["Pipeline Terminated (Ineligible)"]
-        C --> D["Tier 1: Applicability Gatekeeper\n(protocol_applicability_gate.py)"]
-        D -->|Crypto Protocol| E["Handshake Section Router\n(handshake_section_router.py)"]
-        D -->|Not Crypto Protocol| X2["Pipeline Terminated (Ineligible)"]
-        E --> F["Verbatim Section Slicer\n(verbatim_section_slicer.py)"]
+        B -->|Disqualified| X1["Recorded in filtered_rfcs\n(No Folder / No Tab)"]
+        C --> D["Stage 1c Applicability Gate\n(prompts/01_applicability_gate.md)"]
+        D -->|Crypto Protocol| E["Stage 1d Section Router\n(prompts/02_section_router.md)"]
+        D -->|Not Crypto Protocol| X1
+        E --> F["Verbatim Section Slicer\n(verbatim_slice.txt)"]
     end
 
-    subgraph Extraction ["Stage 2: Semantic Extraction & AST"]
-        F --> G["Constrained Semantic Extractor\n(constrained_protocol_extractor.py)\n[Claude Haiku 5.5 + RAG]"]
-        G --> H{"Pydantic AST Validation\n(protocol_syntax_tree.py)"}
-        H -->|Validation Error| I["1-Shot Self-Correction Loop\n(Error Feedback -> Fixed JSON)"]
+    subgraph Stage2 ["Stage 2: JSON CPSA Generation"]
+        F --> G["Constrained Semantic Extractor\n(prompts/03_protocol_extraction.md + Hybrid RAG)"]
+        G --> H{"Pydantic Scoped AST Validation\n(protocol_syntax_tree.py)"}
+        H -->|Validation Error| I["1-Shot Self-Correction\n(prompts/04_schema_self_correction.md)"]
         I --> H
-        H -->|Validated AST| J["CPSAProtocolSpecification AST"]
+        H -->|Valid + 3-POV Enforced| J["CPSAProtocolSpecification AST"]
     end
 
-    subgraph Compilation ["Stage 3: Scheme Emission"]
-        J --> K["JSON AST Serializer\n(cpsa_json_serializer.py)"]
-        K --> L["Scheme Emitter via cpsa4json\n(cpsa_scheme_emitter.py)"]
-        L --> M["Compiled SCM File (.scm)"]
+    subgraph Stage3 ["Stage 3: CPSA4json -> scm"]
+        J --> K["Native CPSA JSON Serializer\n(cpsa_json_serializer.py)"]
+        K --> L["cpsa4json Emitter\n(cpsa_scheme_emitter.py)"]
+        L --> M["Compiled Scheme File (<protocol>.scm)"]
     end
 
-    subgraph Verification ["Stage 4, 5, 6: Verification & Self-Healing"]
-        M --> N{"Pre-Flight Executability Gate\n(roletran_executability_gate.py)"}
-        N -->|Basic Algebra| N1["cpsa4roletran Pre-Flight"]
-        N -->|Diffie-Hellman| N2["cpsa4 Pre-Flight (-l 1)"]
-        N1 -->|Rejected| O["Self-Healing Repair Engine\n(compiler_diagnostic_repair.py)"]
+    subgraph Verification ["Stages 4, 5, 6: Verification, Self-Healing & Compilation"]
+        M --> N{"Stage 4: Roletran Check (15s)\n(roletran_executability_gate.py)"}
+        N -->|Basic Algebra| N1["cpsa4roletran"]
+        N -->|Diffie-Hellman| N2["cpsa4 -l 1"]
+        N1 -->|Rejected| O["Stage 5: Self-Healing Loop (Max 50)\n(compiler_diagnostic_repair.py)"]
         N2 -->|Rejected| O
-        O --> O1["Cycle Detection (MD5 AST Cache)"]
-        O1 --> O2["RAG Query Formulation (Gemini)"]
-        O2 --> O3["Hybrid RAG Search (Manual Chunks)"]
-        O3 --> O4["AST Mutation / Repair (DeepSeek)"]
+        O --> O1["SHA-256 AST Cycle Detection\n(Temp Boost -> 0.4)"]
+        O1 --> O2["RAG Query Formulation (15s)\n(prompts/05_rag_query_formulation.md)"]
+        O2 --> O3["Hybrid RAG Search\n(manual_chunks.jsonl)"]
+        O3 --> O4["AST Repair (180s)\n(prompts/06_compiler_repair.md)"]
         O4 --> J
-        N1 -->|Passed| P["MITRE Build Orchestrator\n(mitre_build_orchestrator.py)"]
+        N1 -->|Passed| P["Stage 6: CPSA Compilation (Hard 60s SIGKILL Cap)\n(mitre_build_orchestrator.py)"]
         N2 -->|Passed| P
-        P --> Q["cpsa4 Solver Engine"]
-        Q --> R["cpsa4shapes Shape Extractor"]
-        R --> S["Interactive SVG / XHTML Shapes\n(protocol_shapes.xhtml)"]
+        P -->|Build / Timeout Error| O
+        P -->|Verified| Q["Quality Tier & Trajectory Exporter\n(<protocol>_trajectory.json + metadata_index.json)"]
     end
 
-    subgraph Observability ["Real-Time Observability"]
-        GLOBAL_EVENT_BUS["Pipeline Event Bus\n(pipeline_events.py)"] -.-> DASHBOARD["Live Web Visualizer\n(server.py @ http://127.0.0.1:8080)"]
+    subgraph Phase3 ["Phase 3: Hindsight Reasoning Synthesizer (./rfc-think)"]
+        Q --> T1["DSPy / Deterministic <think> Synthesis\n(prompts/07_think_token_synthesizer.md)"]
+        T1 --> T2["<protocol>_think.json + sft_train.jsonl + dpo_pairs.jsonl"]
+    end
+
+    subgraph Observability ["O(1)-RAM Multi-RFC Observability"]
+        BUS["PipelineEventBus (events.jsonl)\n(pipeline_events.py)"] -.-> UI["Virtualized #1..#N Web Visualizer\n(server.py + --view Offline Replay)"]
     end
 ```
 
@@ -85,7 +87,7 @@ flowchart TD
 
 ## 3. Strict MITRE CPSA 4.4.9 Manual Grounding
 
-The intermediate representation and validator are grounded 1-to-1 in Chapters 2, 3, 4, 10 and Tables 10.1 through 10.6 of the MITRE CPSA Manual.
+The intermediate representation ([`src/intermediate_representation/`](../src/intermediate_representation/)) enforces Chapters 2, 3, 4, 10 and Tables 10.1 through 10.6 of the MITRE CPSA 4.4.9 Manual.
 
 ### 3.1 Top-Level Input Syntax (Table 10.1)
 ```
@@ -108,172 +110,124 @@ strand     ::= (defstrand id integer maplet*)
 maplet     ::= (term term)
 ```
 
-**Critical Invariant**:
-- When `alg` is `diffie-hellman`, the `herald` declaration **must** specify `(algebra diffie-hellman)`. Otherwise, CPSA defaults to `basic` algebra and crashes with `Expecting terms in algebra basic`.
+**Herald Algebra Invariant**:
+- When `alg` is `diffie-hellman`, the `herald` declaration **must** include `(algebra diffie-hellman)`. Otherwise, CPSA defaults to `basic` algebra and fails with `Expecting terms in algebra basic`.
 
 ### 3.2 Order-Sorted Message Algebras (Tables 10.2 & 10.4)
 
 | Sort Keyword | Meaning | Algebra | Allowed in `uniq-orig`? |
 |---|---|---|---|
-| `name` | Principal identity (e.g. `client_identity`, `server_identity`) | Basic & DH | No (identities are long-term) |
-| `text` | Fresh nonces and random tokens (e.g. `client_random`, `server_random`) | Basic & DH | **Yes** |
-| `data` | Arbitrary payloads, secrets, premaster secrets | Basic & DH | **Yes** |
-| `skey` | Symmetric encryption keys (used in `enc` key position) | Basic & DH | **Yes** |
-| `akey` | Asymmetric key variables | Basic & DH | No (held keys) |
-| `chan` | Communication channels (e.g. `handshake_channel`) | Basic & DH | No |
+| `name` | Principal identity (`client_identity`, `server_identity`) | Basic & DH | No |
+| `text` | Fresh nonces and challenge tokens (`client_random`) | Basic & DH | **Yes** |
+| `data` | Arbitrary payloads, secrets, application data | Basic & DH | **Yes** |
+| `skey` | Symmetric encryption keys | Basic & DH | **Yes** |
+| `akey` | Asymmetric key variables (inverted via `invk`) | Basic & DH | No |
+| `chan` | Communication channels (`ch`) | Basic & DH | No |
 | `tag` | Constant tags / domain separators | Basic & DH | No |
-| `locn` | State memory locations for stateful load/stor | Basic & DH | No |
-| `rndx` | Random exponents chosen per session | **Diffie-Hellman only** | **FORBIDDEN** in `uniq-orig`; **MANDATORY** in `uniq-gen` |
-| `expt` | Compound exponent expressions or unconstrained received powers | **Diffie-Hellman only** | No |
-| `mesg` | Top sort (any valid message term) | Basic & DH | No |
+| `locn` | Stateful storage locations for `load`/`stor` | Basic & DH | No |
+| `rndx` | Fresh atomic Diffie-Hellman random exponents | **Diffie-Hellman only** | **Forbidden** in `uniq-orig`; **Mandatory** in `uniq-gen` |
+| `expt` | Compound or received Diffie-Hellman exponents | **Diffie-Hellman only** | No |
+| `base` | Diffie-Hellman group elements | **Diffie-Hellman only** | No |
+| `mesg` | Universal top sort (forbidden as `enc` key per Equation 10.1) | Basic & DH | No |
+
+*(First-order logic sorts `strd`, `indx`, and `fact` from Table 7.1 are restricted to `defrule`/`defgoal` quantifiers and forbidden in role/skeleton `(vars ...)` declarations.)*
 
 ### 3.3 Message Term Grammar & Operator Signatures (Tables 10.3 & 10.5)
 
 $$term \leftarrow id \mid integer \mid string \mid (op\ term^+)$$
 
-1. **Atoms Only**: A term node is strictly a string atom (e.g. `"client_random"`), an integer constant, or a prefix operator list. **Dictionaries are strictly forbidden**.
-2. **Encryption Arity & Key Position**:
-   `(enc term+ term)` $\rightarrow$ `["enc", payload1, ..., payloadN, key]`
-   The encryption key is strictly the **last** argument. Both symmetric and asymmetric encryption use `enc` (there is no `aenc` or `senc` in CPSA).
-3. **Hashing**:
-   `(hash term+)` $\rightarrow$ `["hash", term1, ...]`
-4. **Pairing / Concatenation**:
-   `(cat term+)` $\rightarrow$ `["cat", term1, term2, ...]`
-5. **Key Constructors**:
-   - `(pubk name)`: Public key of principal `name` (sort `name`).
-   - `(privk name)`: Private key of principal `name` (sort `name`).
-   - `(invk akey_var)`: Inverse of asymmetric key variable (sort `akey`).
-   - `(ltk name1 name2)`: Pre-shared symmetric key between principals.
-   - `(bltk name1 name2)`: Bi-directional long-term key (Diffie-Hellman algebra).
-6. **Diffie-Hellman Operations**:
-   - `(exp base expt)`: Modular exponentiation, e.g. `["exp", ["gen"], x]`.
-   - `(gen)`: 0-ary generator constant $g$.
-   - `(mul expt1 expt2)`: Exponent multiplication $x \cdot y$.
-   - `(rec expt)`: Multiplicative inverse of exponent $x^{-1}$.
+1. **Atoms Only**: Term nodes are strictly string atoms, integer constants, or prefix operator lists (`[op, ...args]`). Dictionaries inside terms are unpacked by `desugar_term_tree()` or rejected.
+2. **Encryption (`enc`) & Equation 10.1**: `(enc term+ key)` -> `["enc", payload1, ..., payloadN, key]`. The encryption key is always the **last** element and must never be a variable of sort `mesg`.
+3. **Hashing & Pairing**: `(hash term+)` and `(cat term+)`.
+4. **Key Constructors**: `(pubk name)` / `(pubk "tag" name)`, `(privk name)` / `(privk "tag" name)`, `(invk akey_var)`, `(ltk name1 name2)`, and `(bltk name1 name2)` (DH only).
+5. **Diffie-Hellman Operators**: `(exp base expt)`, `(gen)`, `(mul expt1 expt2 ...)`, `(rec expt)`, `(one)`.
 
-### 3.4 Role Declarations & Roletran Executability Invariant (Table 10.6)
-Every role declaration must satisfy:
-1. **Trace Scope Invariant**: Every variable appearing in `inputs`, `outputs`, `unique_originating` (`uniq-orig`), or `unique_generated` (`uniq-gen`) **must** appear in a `send` or `recv` trace event.
-2. **Constructibility**: Every transmitted term in a trace must be constructible from previous receptions, inputs, and freshly originating terms.
-3. **Destructibility**: Every received term must be destructible using known or previously received decryption keys.
-
-### 3.5 The 3-Skeleton Architecture (Chapters 3 & 6)
-To achieve complete shape realization and secrecy verification, the pipeline generates three distinct preskeletons:
-1. **Initiator POV (Handshake Realization)**:
-   - `defstrandmax` for Initiator.
-   - `non-orig` for uncompromised responder private keys.
-   - `uniq-orig` for fresh initiator nonces (or `uniq-gen` for DH exponents).
-   - `listeners: []` (**STRICTLY EMPTY**).
-2. **Responder POV (Mutual Authentication)**:
-   - `defstrandmax` for Responder.
-   - `non-orig` for uncompromised initiator private keys.
-   - `uniq-orig` for fresh responder nonces (or `uniq-gen` for DH exponents).
-   - `listeners: []` (**STRICTLY EMPTY**).
-3. **Secrecy Skeleton (Confidentiality Proof)**:
-   - `defstrandmax` for Initiator or Responder.
-   - `deflistener <secret>` on the negotiated session key or secret.
-   - Proves whether the penetrator can derive the secret.
+### 3.4 Roletran Executability & 3-POV Skeleton Separation
+1. **Roletran Scope Invariant**: Every variable in `inputs`, `outputs`, `uniq-orig`, or `uniq-gen` must appear in the role's `trace`. No `uniq-orig`/`uniq-gen` variable may appear in `inputs`, and no `inputs` variable may appear in `outputs`.
+2. **3-POV Preskeleton Separation**:
+   - **Skeleton 1 (Initiator POV)**: `defstrandmax` for Initiator, `listeners: []`.
+   - **Skeleton 2 (Responder POV)**: `defstrandmax` for Responder, `listeners: []`.
+   - **Skeleton 3 (Secrecy POV)**: `defstrandmax` + `(deflistener secret)` alongside `(non-orig ...)` key assumptions.
 
 ---
 
-## 4. Tiered Model Topology & Routing
+## 4. YAML Frontmatter Model Routing & Clean `.env`
 
-RFC-LLM decouples model invocation across specialized tiers to maximize accuracy, throughput, and token economy:
+Per-stage LLM routing, HTTP timeouts, and temperatures live directly in the YAML frontmatter of [`prompts/01_applicability_gate.md`](../prompts/01_applicability_gate.md) through [`prompts/07_think_token_synthesizer.md`](../prompts/07_think_token_synthesizer.md) and **hot-reload live mid-batch** via [`src/prompt_loader.py`](../src/prompt_loader.py):
 
-| Pipeline Task | Environment Variable | Default Model | Rationale & Characteristics |
-|---|---|---|---|
-| **RAG Query Formulation** | `LLM_QUERY_MODEL` | `gemini/gemini-3.5-flash-lite` | Ultra-fast (<400ms), zero-cost, excellent conceptual abstraction without concrete identifier leakage. |
-| **TOC Router & Gatekeeper** | `LLM_ROUTER_MODEL` | `nous/deepseek/deepseek-chat` | High context window, low cost, robust structured JSON extraction for document classification and section routing. |
-| **Protocol Semantic Extraction** | `LLM_EXTRACTION_MODEL` | `nous/anthropic/claude-haiku-5.5` | SOTA formal reasoning, strict schema adherence, zero operator hallucinations, 1M context window. |
-| **Compiler Diagnostic Repair** | `LLM_REPAIR_MODEL` | `nous/deepseek/deepseek-chat` | Exceptional code debugging capabilities, handles large AST surgery, highly economical across multi-pass repairs. |
+| Prompt File | Pipeline Stage | Default `timeout` | Default `temperature` | CLI Override |
+|---|---|---|---|---|
+| `prompts/01_applicability_gate.md` | Stage 1c: Applicability Gate | `180s` | `0.0` | `--router-model` |
+| `prompts/02_section_router.md` | Stage 1d: Section Router | `180s` | `0.0` | `--router-model` |
+| `prompts/03_protocol_extraction.md` | Stage 2: JSON CPSA Generation | `180s` | `0.0` | `--extraction-model` |
+| `prompts/04_schema_self_correction.md` | Stage 2: 1-Shot Schema Retry | `180s` | `0.0` | `--extraction-model` |
+| `prompts/05_rag_query_formulation.md` | Stage 5/6: RAG Query Formulation | `15s` | `0.0` | `--query-model` |
+| `prompts/06_compiler_repair.md` | Stage 5/6: Compiler Repair | `180s` | `0.0` | `--repair-model` |
+| `prompts/07_think_token_synthesizer.md` | Phase 3: `<think>` Synthesizer | `180s` | `0.2` | `./rfc-think --model` |
 
-### 4.1 Unified Nous Research Portal Integration
-All third-party models (Claude, DeepSeek, Qwen) route seamlessly through Nous Research Portal via LiteLLM's `openai/` proxy protocol:
-- Set `NOUS_API_KEY=sk-nous-...` and `NOUS_API_BASE=https://inference-api.nousresearch.com/v1`.
-- Any model slug starting with `nous/` or `nousresearch/` is automatically normalized and authenticated.
+- **Clean `.env` ([`.env.example`](../.env.example))**: Holds **only** API keys (`GEMINI_API_KEY`, `NOUS_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) and base endpoint URLs (`NOUS_API_BASE`, `OLLAMA_API_BASE`, `STRATA_API_BASE`).
+- **Supported Provider Slugs**: `nous/<model>`, `strata/<model>`, `ollama/<model>`, `gemini/<model>`, `openai/<model>`, and `anthropic/<model>`.
 
 ---
 
-## 5. Verification Engine & Closed-Loop Self-Healing
-
-The verification engine provides zero-latency failure containment before running expensive solver jobs.
+## 5. Verification Engine, Hard 60s Compilation Cap & Self-Healing
 
 ```mermaid
 sequenceDiagram
-    participant Orchestrator as Main Orchestrator
-    participant Gate as Executability Gate
-    participant Repair as Diagnostic Repair Engine
-    participant LLM_Q as Query Model (Gemini)
+    participant Orch as Main Orchestrator
+    participant Gate as Stage 4: Roletran Check (15s)
+    participant Build as Stage 6: CPSA Compilation (60s SIGKILL)
+    participant Repair as Stage 5: Self-Healing Loop
     participant RAG as CPSASemanticRetriever
-    participant LLM_R as Repair Model (DeepSeek)
 
-    Orchestrator->>Gate: verify_role_executability(edhoc.scm)
-    Gate-->>Orchestrator: REJECT: "Uniquely originating value x does not originate in trace"
-    
-    loop Self-Healing Loop (Max 50 attempts)
-        Orchestrator->>Repair: repair_protocol_specification(spec, diagnostic)
-        Repair->>Repair: Check MD5 AST Hash for Oscillation/Cycles
-        Repair->>LLM_Q: formulate_rag_diagnostic_query(diagnostic)
-        LLM_Q-->>Repair: "roletran uniq-orig variable trace origination"
-        Repair->>RAG: search(query, top_k=2)
-        RAG-->>Repair: [MITRE Manual Section 6.2, Table 10.6 Chunks]
-        Repair->>LLM_R: repair_prompt(spec, diagnostic, manual_guidance)
-        LLM_R-->>Repair: Corrected CPSAProtocolSpecification AST
-        Repair-->>Orchestrator: Repaired AST
-        Orchestrator->>Gate: verify_role_executability(repaired.scm)
-        alt Passed
-            Gate-->>Orchestrator: PASS
-        else Still Failing
-            Gate-->>Orchestrator: REJECT
+    Orch->>Gate: verify_role_executability(<protocol>.scm)
+    alt Pre-Flight Rejected
+        Gate-->>Orch: Diagnostic (e.g. "Received term cannot be fully destructured")
+        Orch->>Repair: repair_protocol_specification() [SHA-256 cycle check]
+        Repair->>RAG: formulate_rag_diagnostic_query (15s) + hybrid search (top_k=2)
+        RAG-->>Repair: MITRE Manual Chunks
+        Repair-->>Orch: Patched CPSAProtocolSpecification -> Stage 3 Re-emit
+    else Pre-Flight Passed
+        Orch->>Build: execute_mitre_make_build() [start_new_session=True, 60s cap]
+        alt Make / cpsa4 Error or >60s SIGKILL Timeout
+            Build-->>Orch: CPSABuildError
+            Orch->>Repair: repair_protocol_specification()
+        else Verified
+            Build-->>Orch: <stem>.txt + <stem>_shapes.txt + <stem>_shapes.xhtml
         end
     end
 ```
 
-### 5.1 Pre-Flight Gate Dual Strategy
-- **Basic Algebra**: Runs `cpsa4roletran`. Verifies that roles can be compiled to executable procedures (`defproc`).
-- **Diffie-Hellman Algebra**: `cpsa4roletran` does not support Diffie-Hellman exponentiation. The gate switches to `cpsa4 -l 1`, validating syntax, sorts, and variable scopes directly against the CPSA engine in under 50ms.
-
-### 5.2 Cycle & Oscillation Detection
-A circular repair loop occurs when an LLM alternates between two invalid repairs (e.g. adding a variable to `inputs`, then removing it). RFC-LLM detects this by hashing the serialized JSON of each candidate AST. If a cycle is detected:
-1. The cycle warning is injected into the prompt.
-2. The model temperature is boosted from `0.0` to `0.4` to escape greedy local minima.
+- **Execution Bounds**: `ROLETRAN_TIMEOUT_SECONDS = 15`, `CPSA_TIMEOUT_SECONDS = 60` (process-group `os.killpg(..., signal.SIGKILL)`), `MAX_REPAIR_ATTEMPTS = 50`.
+- **SHA-256 Cycle Detection**: Hashes `protocol_ast.model_dump_json()` on every repair turn; repeated hashes trigger an explicit cycle warning and raise temperature to `0.4`.
+- **Verification Quality Tiers**: `trajectory_metadata_exporter.py` grades every run deterministically into `GOLD`, `SILVER`, `BRONZE`, or `REJECTED`, writes `<protocol>_trajectory.json`, prepends MoE router headers to `<protocol>.scm`, and updates `output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`.
 
 ---
 
-## 6. Real-Time Observability & Event Bus
+## 6. Bounded Observability, Virtualized Tabs & Offline Replay
 
-The pipeline emits structured lifecycle events to `GLOBAL_EVENT_BUS` (`src/pipeline_events.py`):
-- `stage_started`, `stage_completed`, `stage_failed`
-- `slice_ready`: provides section IDs, line counts, and file paths.
-- `rag_retrieval`: records queries, retrieved chunk IDs, and snippet previews.
-- `repair_attempt`: logs attempt numbers, diagnostics, and cycle flags.
-- `build_completed`: links to verified `.xhtml` graphs and shape counts.
-
-The asynchronous server (`src/visualizer/server.py`) binds to the bus and streams events over Server-Sent Events (SSE) to `http://127.0.0.1:8080`, rendering interactive DAGs, SVG shape trees, and JSON AST inspectors.
+- **Bounded Event Bus ([`src/pipeline_events.py`](../src/pipeline_events.py))**: Retains only the active RFC's events in memory while streaming per-RFC telemetry to `<rfc_dir>/events.jsonl` and maintaining compact accepted-tab (`#1..#N`) and `filtered_rfcs` registries (`O(1)` server RAM across 5,000+ RFCs).
+- **Virtualized Multi-RFC Web Visualizer ([`src/visualizer/server.py`](../src/visualizer/server.py), [`src/visualizer/static/index.html`](../src/visualizer/static/index.html))**:
+  - Virtual-scrolled `#1..#N` tab bar (`O(1)` browser DOM nodes) showing tab `#`, RFC ID, quality tier, and protocol name.
+  - Collapsible, searchable `Filtered / Skipped` drawer for Tier 0 and Stage 1c disqualifications.
+  - Per-attempt time-travel stepper (`Attempt 0 | Initial` -> `Attempt 1..K` -> `Final`) with rejected/repaired `.scm` toggle, JSON AST, diagnostics, RAG chunks, and SVG shape graphs.
+  - Offline replay CLI: `./rfc-llm --view output/run_<timestamp>`.
 
 ---
 
 ## 7. Complete Rebuild Manifest
 
-To rebuild the system in a fresh environment:
-
-1. **System Dependencies**:
-   - Python 3.10+ with `pydantic>=2.0`, `litellm`, `aiohttp`, `rank_bm25`, `sentence_transformers`.
-   - Haskell GHC & Cabal.
-   - MITRE CPSA 4.4.9 binaries built to `~/.cabal/bin/`: `cpsa4`, `cpsa4json`, `cpsa4roletran`, `cpsa4init`, `cpsa4shapes`, `cpsa4graph`.
-   - Graphviz (`dot`) for SVG graph rendering.
-
-2. **Core Source Modules**:
-   - `src/system_config.py`: Environment variable loader and LiteLLM kwargs resolver.
-   - `src/pipeline_events.py`: Thread-safe singleton event bus with subscriber fan-out.
-   - `src/document_ingestion/`: Tier 0 header regex filter, TOC hierarchical parser, section router, and verbatim slicer.
-   - `src/intermediate_representation/`:
-     * `algebraic_sorts.py`: Enum of authorized sorts.
-     * `cpsa_grammar.py`: CPSA 4.4.9 keywords, arities, desugaring normalizers, static term syntax validator.
-     * `protocol_syntax_tree.py`: Strongly-typed Pydantic AST with `to_cpsa_json` serializers.
-   - `src/semantic_extraction/constrained_protocol_extractor.py`: Grounded extraction prompt, RAG retrieval, and 1-shot self-healing schema correction.
-   - `src/code_generation/`: Native JSON AST serializer and `cpsa4json` Scheme compiler.
-   - `src/verification_engine/`: Roletran executability gate, RAG diagnostic repair engine, and Make build orchestrator.
-   - `src/visualizer/`: Live SSE server and dashboard UI.
-   - `src/main_pipeline_orchestrator.py`: End-to-end multi-stage pipeline driver.
-   - `src/pipeline.py`: Unified CLI executable supporting single files and directory batching.
+1. **System & Runtime Dependencies**:
+   - Python 3.10+ (`pydantic>=2.14`, `pydantic-settings`, `litellm`, `dspy`, `aiohttp`, `pyyaml`, `json-repair`, `python-dotenv`, `numpy`, `pymupdf`).
+   - Haskell GHC & Cabal + MITRE CPSA 4.4.9 binaries in `~/.cabal/bin/` (`cpsa4`, `cpsa4json`, `cpsa4roletran`, `cpsa4init`, `cpsa4shapes`, `cpsa4graph`, `cpsa4prot`) + Graphviz (`dot`).
+2. **Core Repository Modules**:
+   - `prompts/01_*.md` .. `07_*.md` & `src/prompt_loader.py`: Live hot-reloaded YAML-frontmatter prompt & model loader.
+   - `src/system_config.py`: Credentials/endpoints `.env` loader, LiteLLM provider kwargs builder, and `15s` / `60s` / `50-attempt` compiler bounds.
+   - `src/pipeline_events.py` & `src/visualizer/`: Bounded `O(1)`-RAM SSE event bus, virtualized `#1..#N` tab server, and `--view` offline replay UI.
+   - `src/document_ingestion/`: Tier 0 regex filter, TOC parser, applicability gate, section router, and verbatim slicer.
+   - `src/intermediate_representation/`: `algebraic_sorts.py`, `cpsa_grammar.py`, and `protocol_syntax_tree.py`.
+   - `src/semantic_extraction/constrained_protocol_extractor.py` & `src/rag_retriever_client.py`: Hybrid RAG-grounded AST extractor with 1-shot self-correction and 3-POV skeleton enforcement.
+   - `src/code_generation/`: `cpsa_json_serializer.py` and `cpsa_scheme_emitter.py` (`cpsa4json`).
+   - `src/verification_engine/`: `roletran_executability_gate.py`, `compiler_diagnostic_repair.py`, `mitre_build_orchestrator.py`, and `trajectory_metadata_exporter.py`.
+   - `src/main_pipeline_orchestrator.py` & `src/pipeline.py` (`./rfc-llm`): End-to-end 6-stage orchestrator and batch/replay CLI.
+   - `src/generate_think/` (`./rfc-think`): `think_schema.py`, `dspy_think_synthesizer.py`, and `cli.py` for Phase 3 `<think>` synthesis and `sft_train.jsonl` / `dpo_pairs.jsonl` curation.

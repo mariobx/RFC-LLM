@@ -2,13 +2,21 @@
 
 import argparse
 import csv
+import datetime as dt
+import json
+import random
 import re
 import sys
+import time
+import webbrowser
 from pathlib import Path
 from typing import List, Set
 
+from src.document_ingestion.rfc_header_filter import filter_rfc_header
+from src.main_pipeline_orchestrator import PipelineExecutionSummary, run_rfc_translation_pipeline
+from src.pipeline_events import GLOBAL_EVENT_BUS
 from src.system_config import SYSTEM_CONFIG
-from src.main_pipeline_orchestrator import run_rfc_translation_pipeline, PipelineExecutionSummary
+from src.visualizer.server import run_visualizer_in_background
 
 
 def natural_rfc_sort_key(file_path: Path):
@@ -47,7 +55,14 @@ def main():
     parser.add_argument(
         "target_path",
         type=str,
-        help="Path to an RFC text file (such as refrences/all_RFCs/rfc5246.txt) OR a directory containing RFCs",
+        nargs="*",
+        help="One or more RFC text files (such as refrences/all_RFCs/rfc5246.txt) OR a directory containing RFCs",
+    )
+    parser.add_argument(
+        "--view",
+        type=str,
+        default=None,
+        help="Open an existing run directory (e.g. output/run_2026-10-28_16-03-11) or metadata_index.json in offline visualizer replay mode",
     )
     parser.add_argument(
         "--output-dir",
@@ -115,7 +130,14 @@ def main():
         "-n",
         type=int,
         default=None,
-        help="Maximum number of RFC files to process when pointing to a directory",
+        help="Maximum number of RFC files to scan when pointing to a directory",
+    )
+    parser.add_argument(
+        "--target-eligible",
+        "-e",
+        type=int,
+        default=None,
+        help="Stop batch processing once N eligible cryptographic protocols have been synthesized",
     )
     parser.add_argument(
         "--pattern",
@@ -128,22 +150,78 @@ def main():
         action="store_true",
         help="Skip RFCs that already have completed run entries in logs/pipeline_runs.csv",
     )
+    parser.add_argument(
+        "--random",
+        action="store_true",
+        help="Randomly sample RFC files when pointing to a directory (useful with --limit)",
+    )
+    parser.add_argument(
+        "--tier0-eligible-only",
+        action="store_true",
+        help="Pre-filter directory candidates using deterministic Tier 0 frontmatter check before applying --limit",
+    )
 
     args = parser.parse_args()
-    target = Path(args.target_path)
 
-    if not target.exists():
-        print(f"Error: Target path does not exist: {target}", file=sys.stderr)
-        sys.exit(1)
+    # Offline Replay Mode (--view <run_dir>)
+    if args.view:
+        view_path = Path(args.view)
+        if not view_path.exists():
+            print(f"Error: Run directory or index does not exist: {view_path}", file=sys.stderr)
+            sys.exit(1)
 
-    # 1. Resolve Target Files (Single File or Directory Batch)
-    if target.is_file():
-        rfc_files = [target]
-    elif target.is_dir():
-        rfc_files = sorted(list(target.glob(args.pattern)), key=natural_rfc_sort_key)
+        overview = GLOBAL_EVENT_BUS.load_run_from_disk(view_path)
+        server = run_visualizer_in_background(port=args.port)
+        monitor_url = f"http://127.0.0.1:{server.port}"
+
+        print(f"\n{'='*70}")
+        print(f" [OFFLINE REPLAY MONITOR] Active at: {monitor_url}")
+        print(f" - Run Directory   : {overview.get('run_directory')}")
+        print(f" - Accepted Tabs   : {len(overview.get('accepted_tabs', []))}")
+        print(f" - Filtered / Skips: {overview.get('filtered_total', 0)}")
+        print(f"{'='*70}\n")
+
+        if not args.no_visualize:
+            try:
+                webbrowser.open(monitor_url)
+            except Exception:
+                pass
+
+        if sys.stdin.isatty() and args.keep_alive <= 0:
+            try:
+                input("[OFFLINE REPLAY MONITOR] Press Enter to exit (server remains live until keypress)... ")
+            except (EOFError, KeyboardInterrupt):
+                pass
+        else:
+            wait_sec = args.keep_alive if args.keep_alive > 0 else 60
+            print(f"[OFFLINE REPLAY MONITOR] Keeping server active for {wait_sec}s...")
+            time.sleep(wait_sec)
+        sys.exit(0)
+
+    if not args.target_path:
+        parser.error("the following arguments are required: target_path (or pass --view <run_dir>)")
+
+    targets = [Path(p) for p in args.target_path]
+    for t in targets:
+        if not t.exists():
+            print(f"Error: Target path does not exist: {t}", file=sys.stderr)
+            sys.exit(1)
+
+    # 1. Resolve Target Files (Single File, Multiple Files, or Directory Batch)
+    if len(targets) > 1 or targets[0].is_file():
+        rfc_files = [t for t in targets if t.is_file()]
+    elif targets[0].is_dir():
+        target = targets[0]
+        raw_candidates = [f for f in target.glob(args.pattern) if f.is_file()]
+        if args.pattern == "rfc*.txt":
+            # Exclude non-numeric index/reference files such as rfc-index-latest.txt or rfc-ref-old.txt
+            numeric_candidates = [f for f in raw_candidates if re.fullmatch(r"rfc\d+\.txt", f.name.lower())]
+            rfc_files = sorted(numeric_candidates or raw_candidates, key=natural_rfc_sort_key)
+        else:
+            rfc_files = sorted(raw_candidates, key=natural_rfc_sort_key)
         if not rfc_files:
-            # Fallback to all txt files if pattern yielded zero
-            rfc_files = sorted(list(target.glob("*.txt")), key=natural_rfc_sort_key)
+            # Fallback to all existing txt files if pattern yielded zero
+            rfc_files = sorted([f for f in target.glob("*.txt") if f.is_file()], key=natural_rfc_sort_key)
         if not rfc_files:
             print(f"Error: No RFC text files found in directory {target}", file=sys.stderr)
             sys.exit(1)
@@ -157,20 +235,29 @@ def main():
             ]
             print(f"[BATCH] Filtered out {initial_count - len(rfc_files)} previously evaluated RFCs ({len(rfc_files)} remaining)")
 
+        if args.tier0_eligible_only:
+            before_t0 = len(rfc_files)
+            rfc_files = [
+                f for f in rfc_files
+                if filter_rfc_header(f.read_text(encoding="utf-8", errors="ignore")).is_eligible
+            ]
+            print(f"[BATCH] Tier 0 pre-filter retained {len(rfc_files)}/{before_t0} candidate RFCs")
+
+        if args.random:
+            random.shuffle(rfc_files)
+            print("[BATCH] Shuffled candidate RFC list randomly")
+
         if args.limit and args.limit > 0:
             rfc_files = rfc_files[:args.limit]
-            print(f"[BATCH] Processing limited to first {len(rfc_files)} RFCs")
+            print(f"[BATCH] Processing limited to {len(rfc_files)} RFCs: {[f.name for f in rfc_files]}")
     else:
-        print(f"Error: Invalid target path: {target}", file=sys.stderr)
+        print(f"Error: Invalid target path: {targets[0]}", file=sys.stderr)
         sys.exit(1)
 
     # 2. Launch Visualizer (Default Enabled)
     enable_visualizer = not args.no_visualize
     monitor_url = None
     if enable_visualizer:
-        import webbrowser
-        from src.visualizer.server import run_visualizer_in_background
-
         try:
             server = run_visualizer_in_background(port=args.port)
             monitor_url = f"http://127.0.0.1:{server.port}"
@@ -184,14 +271,48 @@ def main():
         except Exception as e:
             print(f"[WARN] Could not launch live monitor: {e}")
 
-    # 3. Execution Loop
-    output_base_dir = Path(args.output_dir) if args.output_dir else None
+    # 3. Create Unique Timestamped Run Directory (Seconds Resolution)
+    run_timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    base_dir = Path(args.output_dir) if args.output_dir else SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR
+    if base_dir.name.startswith("run_"):
+        run_root_dir = base_dir
+    else:
+        run_root_dir = base_dir / f"run_{run_timestamp}"
+    run_root_dir.mkdir(parents=True, exist_ok=True)
+
+    master_index_path = run_root_dir / "metadata_index.json"
+    if not master_index_path.exists():
+        now_utc = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        master_index_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "1.0.0",
+                    "run_directory": str(run_root_dir.resolve()),
+                    "created_at_utc": now_utc,
+                    "updated_at_utc": now_utc,
+                    "total_rfcs_processed": 0,
+                    "total_ineligible_filtered": 0,
+                    "total_eligible_protocols": 0,
+                    "metadata_json_files": [],
+                    "rfc_directories": [],
+                    "runs": [],
+                    "filtered_rfcs": [],
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+    print(f"[RUN] Created timestamped run directory: {run_root_dir}")
+    print(f"[RUN] Master Metadata Index           : {master_index_path}")
+
+    # 4. Execution Loop (Models resolve dynamically from prompts/*.md unless CLI overrides are passed)
     results: List[PipelineExecutionSummary] = []
     total_files = len(rfc_files)
-    active_router_model = args.router_model or args.model or SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL
-    active_extraction_model = args.extraction_model or args.model or SYSTEM_CONFIG.DEFAULT_EXTRACTION_MODEL
-    active_repair_model = args.repair_model or args.model or SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL
-    active_query_model = args.query_model or args.model or SYSTEM_CONFIG.DEFAULT_QUERY_MODEL
+    cli_router_model = args.router_model or args.model
+    cli_extraction_model = args.extraction_model or args.model
+    cli_repair_model = args.repair_model or args.model
+    cli_query_model = args.query_model or args.model
 
     for idx, rfc_file in enumerate(rfc_files, 1):
         if total_files > 1:
@@ -199,26 +320,57 @@ def main():
             print(f"[{idx}/{total_files}] Processing RFC: {rfc_file.name}")
             print(f"{'='*70}")
 
-        summary = run_rfc_translation_pipeline(
-            rfc_file_path=rfc_file,
-            output_dir=output_base_dir,
-            router_model=active_router_model,
-            extraction_model=active_extraction_model,
-            repair_model=active_repair_model,
-            query_model=active_query_model,
-        )
+        rfc_output_dir = run_root_dir / rfc_file.stem.lower()
+        try:
+            summary = run_rfc_translation_pipeline(
+                rfc_file_path=rfc_file,
+                output_dir=rfc_output_dir,
+                router_model=cli_router_model,
+                extraction_model=cli_extraction_model,
+                repair_model=cli_repair_model,
+                query_model=cli_query_model,
+                run_root_dir=run_root_dir,
+            )
+        except Exception as exc:
+            print(f"[ERROR] Unhandled exception on {rfc_file.name}: {exc}", file=sys.stderr)
+            summary = PipelineExecutionSummary(
+                rfc_id=rfc_file.stem.upper(),
+                is_eligible=False,
+                error_message=f"Unhandled pipeline exception: {exc}",
+            )
         results.append(summary)
+
+        if args.target_eligible and args.target_eligible > 0:
+            eligible_so_far = sum(1 for r in results if r.is_eligible)
+            if eligible_so_far >= args.target_eligible:
+                print(
+                    f"\n[BATCH] Reached target of {eligible_so_far}/{args.target_eligible} "
+                    f"eligible cryptographic protocols after scanning {idx} RFC(s)."
+                )
+                break
 
         if total_files == 1:
             # Single-file reporting and exit code
             if summary.build_successful:
                 print("\n[SUCCESS] Synthesis & Formal Verification Completed!")
-                print(f"Protocol: {summary.protocol_name}")
+                print(f"Protocol             : {summary.protocol_name}")
+                print(f"Quality Tier         : {summary.quality_tier}")
+                print(f"Run Directory        : {run_root_dir}")
+                print(f"Master Metadata Index: {master_index_path}")
+                print(f"RFC Directory        : {rfc_output_dir}")
+                print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
                 print(f"Verified Shapes XHTML: {summary.build_artifacts.shapes_graph_xhtml_path}")
             elif summary.roletran_passed:
                 print(f"\n[PARTIAL] Roletran passed, but MITRE build failed: {summary.error_message}")
+                print(f"Run Directory        : {run_root_dir}")
+                print(f"Master Metadata Index: {master_index_path}")
+                print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
             else:
                 print(f"\n[HALTED] Pipeline stopped: {summary.error_message}")
+                print(f"Run Directory        : {run_root_dir}")
+                print(f"Master Metadata Index: {master_index_path}")
+                if summary.trajectory_json_path:
+                    print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
 
             if enable_visualizer and monitor_url:
                 print(f"\n[LIVE MONITOR] View execution trace and shapes at: {monitor_url}")
@@ -228,13 +380,12 @@ def main():
                     except (EOFError, KeyboardInterrupt):
                         pass
                 elif args.keep_alive > 0:
-                    import time
                     print(f"[LIVE MONITOR] Keeping server active for {args.keep_alive}s...")
                     time.sleep(args.keep_alive)
 
             sys.exit(0 if summary.build_successful else (1 if summary.roletran_passed else 2))
 
-    # 4. Batch Summary Report
+    # 5. Batch Summary Report
     print(f"\n{'='*70}")
     print(f"RFC-LLM BATCH SYNTHESIS REPORT ({total_files} RFCs Processed)")
     print(f"{'='*70}")
@@ -244,15 +395,17 @@ def main():
     roletran_failed = sum(1 for r in results if r.is_eligible and not r.roletran_passed)
     solver_failed = sum(1 for r in results if r.roletran_passed and not r.build_successful)
 
-    print(f"• Total Processed      : {total_files}")
-    print(f"• Ineligible (Filtered): {ineligible_count}")
-    print(f"• Eligible Protocols   : {eligible_count}")
-    print(f"• Formally Verified    : {verified_count}")
+    print(f"- Total Processed      : {total_files}")
+    print(f"- Ineligible (Filtered): {ineligible_count}")
+    print(f"- Eligible Protocols   : {eligible_count}")
+    print(f"- Formally Verified    : {verified_count}")
     if roletran_failed:
-        print(f"• Roletran Failed      : {roletran_failed}")
+        print(f"- Roletran Failed      : {roletran_failed}")
     if solver_failed:
-        print(f"• Solver Failed        : {solver_failed}")
-    print(f"• Run Metrics Logged   : {SYSTEM_CONFIG.LOGS_DIR / 'pipeline_runs.csv'}")
+        print(f"- Solver Failed        : {solver_failed}")
+    print(f"- Run Directory        : {run_root_dir}")
+    print(f"- Master Metadata Index: {master_index_path}")
+    print(f"- Run Metrics Logged   : {SYSTEM_CONFIG.LOGS_DIR / 'pipeline_runs.csv'}")
     print(f"{'='*70}\n")
 
     if enable_visualizer and monitor_url:
@@ -263,7 +416,6 @@ def main():
             except (EOFError, KeyboardInterrupt):
                 pass
         elif args.keep_alive > 0:
-            import time
             print(f"[LIVE MONITOR] Keeping server active for {args.keep_alive}s...")
             time.sleep(args.keep_alive)
 

@@ -38,28 +38,43 @@
     header {
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border-color);
-      padding: 8px 16px;
+      padding: 7px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
+      gap: 12px;
     }
     .header-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      white-space: nowrap;
     }
     .header-title {
       font-weight: 700;
       font-size: 14px;
       letter-spacing: -0.01em;
     }
+    .run-dir-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--bg-base);
+      border: 1px solid var(--border-color);
+      padding: 2px 6px;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .header-right {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
+      flex-wrap: nowrap;
     }
     .status-badge {
       display: inline-block;
@@ -72,7 +87,275 @@
     .status-badge.idle { background: #21262d; color: var(--text-muted); }
     .status-badge.running { background: #0c2d6b; color: #58a6ff; border-color: #1f6feb; }
     .status-badge.success { background: #0e4429; color: #3fb950; border-color: #238636; }
+    .status-badge.partial { background: #3b2300; color: #d29922; border-color: #9e6a03; }
     .status-badge.failed { background: #490202; color: #f85149; border-color: #da3633; }
+
+    /* Virtualized Numbered RFC Tab Bar */
+    .rfc-tabbar {
+      display: flex;
+      align-items: stretch;
+      background: #10141b;
+      border-bottom: 1px solid var(--border-color);
+      height: 44px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .live-pin-btn {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4px 12px;
+      min-width: 145px;
+      max-width: 185px;
+      background: var(--bg-surface);
+      border: none;
+      border-right: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      cursor: pointer;
+      text-align: left;
+      flex-shrink: 0;
+    }
+    .live-pin-btn:hover {
+      background: #1c222d;
+      color: var(--text-main);
+    }
+    .live-pin-btn.active {
+      background: #0d2149;
+      color: var(--text-main);
+      border-bottom: 2px solid var(--color-blue);
+    }
+    .live-pin-btn.replay-mode {
+      cursor: default;
+      background: #161b22;
+    }
+    .live-pin-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .live-pin-sub {
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .dot.running { background: var(--color-blue); box-shadow: 0 0 6px var(--color-blue); }
+    .dot.verified { background: var(--color-green); }
+    .dot.partial { background: var(--color-yellow); }
+    .dot.failed { background: var(--color-red); }
+    .dot.idle { background: var(--text-muted); }
+
+    /* Virtual Scroll Viewport */
+    .vtab-scroll {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      position: relative;
+      scrollbar-width: thin;
+      scrollbar-color: #30363d #10141b;
+    }
+    .vtab-scroll::-webkit-scrollbar { height: 5px; }
+    .vtab-scroll::-webkit-scrollbar-track { background: #10141b; }
+    .vtab-scroll::-webkit-scrollbar-thumb { background: #30363d; }
+    .vtab-spacer {
+      position: relative;
+      height: 100%;
+    }
+    .vtab-empty {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .rfc-vtab {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 230px;
+      padding: 4px 10px;
+      background: #121720;
+      border: none;
+      border-right: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: left;
+    }
+    .rfc-vtab:hover {
+      background: #1b2230;
+      color: var(--text-main);
+    }
+    .rfc-vtab.active {
+      background: var(--bg-panel);
+      color: var(--text-main);
+      border-bottom: 2px solid var(--color-blue);
+    }
+    .rfc-vtab-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      width: 100%;
+    }
+    .rfc-vtab-id {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .rfc-vtab-num {
+      color: var(--color-blue);
+    }
+    .rfc-vtab-tier {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 0 4px;
+      border: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+    .rfc-vtab-tier.GOLD, .rfc-vtab-tier.VERIFIED { color: #3fb950; border-color: #238636; background: #0e442966; }
+    .rfc-vtab-tier.SILVER { color: #58a6ff; border-color: #1f6feb; background: #0c2d6b66; }
+    .rfc-vtab-tier.BRONZE, .rfc-vtab-tier.PARTIAL { color: #d29922; border-color: #9e6a03; background: #3b230066; }
+    .rfc-vtab-tier.REJECTED, .rfc-vtab-tier.FAILED, .rfc-vtab-tier.INTERRUPTED { color: #f85149; border-color: #da3633; background: #49020266; }
+    .rfc-vtab-tier.PENDING, .rfc-vtab-tier.RUNNING { color: #bc8cff; border-color: #8957e5; background: #bc8cff18; }
+    .rfc-vtab-proto {
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+      width: 100%;
+    }
+    .rfc-vtab.active .rfc-vtab-proto {
+      color: #c9d1d9;
+    }
+
+    /* Right Controls on Tab Bar */
+    .tabbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+    .ctrl-input, .ctrl-select {
+      background: var(--bg-base);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 4px 7px;
+      outline: none;
+    }
+    .ctrl-input:focus, .ctrl-select:focus {
+      border-color: var(--border-focus);
+    }
+    .ctrl-input { width: 165px; }
+    .ctrl-btn {
+      background: #21262d;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 9px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .ctrl-btn:hover {
+      background: #2d333b;
+      border-color: #484f58;
+    }
+    .ctrl-btn.active {
+      background: #0c2d6b;
+      border-color: var(--color-blue);
+      color: var(--color-blue);
+    }
+
+    /* Collapsible Filtered / Rejected Drawer */
+    .filtered-drawer {
+      display: none;
+      flex-direction: column;
+      background: #11161d;
+      border-bottom: 2px solid var(--color-blue);
+      max-height: 290px;
+      flex-shrink: 0;
+    }
+    .filtered-drawer.open {
+      display: flex;
+    }
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 14px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .drawer-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .drawer-table-wrap {
+      overflow-y: auto;
+      flex: 1;
+    }
+    .drawer-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .drawer-table th {
+      position: sticky;
+      top: 0;
+      background: #161b22;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 5px 10px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .drawer-table td {
+      padding: 5px 10px;
+      border-bottom: 1px solid #21262d;
+      color: #c9d1d9;
+      vertical-align: top;
+    }
+    .drawer-table tr:hover td {
+      background: #1b2129;
+    }
 
     /* Pipeline Stages Strip */
     .stepper {
@@ -83,16 +366,15 @@
     }
     .step-item {
       flex: 1;
-      padding: 8px 12px;
+      padding: 7px 12px;
       border-right: 1px solid var(--border-color);
       background: var(--bg-surface);
       display: flex;
       flex-direction: column;
       gap: 2px;
+      min-width: 0;
     }
-    .step-item:last-child {
-      border-right: none;
-    }
+    .step-item:last-child { border-right: none; }
     .step-item.active {
       background: #111a2c;
       border-bottom: 2px solid var(--color-blue);
@@ -123,6 +405,62 @@
       color: var(--text-muted);
       font-family: var(--mono);
     }
+    .step-model {
+      font-size: 10px;
+      color: var(--color-purple);
+      font-family: var(--mono);
+      background: #bc8cff14;
+      border: 1px solid #bc8cff33;
+      padding: 1px 5px;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .model-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-weight: 600;
+      font-size: 11px;
+      color: var(--color-purple);
+      background: #bc8cff18;
+      border: 1px solid #bc8cff44;
+      font-family: var(--mono);
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .timer-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-weight: 700;
+      font-size: 11px;
+      color: var(--color-blue);
+      background: #58a6ff18;
+      border: 1px solid #58a6ff44;
+      font-family: var(--mono);
+      min-width: 68px;
+      text-align: center;
+    }
+    .diag-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-weight: 600;
+      font-size: 11px;
+      font-family: var(--mono);
+      border: 1px solid var(--border-color);
+      background: #21262d;
+      color: var(--text-muted);
+    }
+    .diag-badge.normal { color: #58a6ff; background: #0c2d6b88; border-color: #1f6feb; }
+    .diag-badge.syntax { color: #d29922; background: #3b2300aa; border-color: #d29922; }
+    .diag-badge.snowball { color: #f85149; background: #490202cc; border-color: #f85149; animation: pulse-warn 1.2s infinite; }
+    @keyframes pulse-warn {
+      0%, 100% { opacity: 1.0; }
+      50% { opacity: 0.65; }
+    }
 
     /* Main Grid */
     .main-grid {
@@ -133,7 +471,7 @@
 
     /* Left: Live Terminal & Diagnostics */
     .log-panel {
-      width: 44%;
+      width: 42%;
       border-right: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
@@ -168,18 +506,10 @@
       padding: 6px 8px;
       line-height: 1.45;
     }
-    .log-entry.repair {
-      border-left: 3px solid var(--color-yellow);
-    }
-    .log-entry.cycle {
-      border-left: 3px solid var(--color-purple);
-    }
-    .log-entry.error {
-      border-left: 3px solid var(--color-red);
-    }
-    .log-entry.success {
-      border-left: 3px solid var(--color-green);
-    }
+    .log-entry.repair { border-left: 3px solid var(--color-yellow); }
+    .log-entry.cycle { border-left: 3px solid var(--color-purple); }
+    .log-entry.error { border-left: 3px solid var(--color-red); }
+    .log-entry.success { border-left: 3px solid var(--color-green); }
     .log-meta {
       display: flex;
       justify-content: space-between;
@@ -193,24 +523,26 @@
     }
     .log-data {
       white-space: pre-wrap;
-      word-break: break-all;
+      word-break: break-word;
       color: #c9d1d9;
     }
 
     /* Right: Code & Model Inspection */
     .viewer-panel {
-      width: 56%;
+      width: 58%;
       display: flex;
       flex-direction: column;
       background: var(--bg-code);
+      min-width: 0;
     }
     .tab-strip {
       display: flex;
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
     }
     .tab {
-      padding: 8px 14px;
+      padding: 8px 13px;
       background: transparent;
       border: none;
       border-right: 1px solid var(--border-color);
@@ -226,6 +558,93 @@
       border-top: 2px solid var(--color-blue);
       margin-top: -1px;
     }
+
+    /* Per-Attempt Time-Travel Stepper Bar */
+    .attempt-stepper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: #121720;
+      border-bottom: 1px solid var(--border-color);
+      overflow-x: auto;
+      flex-shrink: 0;
+      scrollbar-width: thin;
+    }
+    .attempt-stepper-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-right: 4px;
+      flex-shrink: 0;
+    }
+    .attempt-pill {
+      padding: 3px 9px;
+      background: #1b2129;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .attempt-pill:hover {
+      color: var(--text-main);
+      border-color: #484f58;
+    }
+    .attempt-pill.passed, .attempt-pill.verified {
+      border-left: 3px solid var(--color-green);
+    }
+    .attempt-pill.rejected, .attempt-pill.failed {
+      border-left: 3px solid var(--color-red);
+    }
+    .attempt-pill.cycle {
+      border-left: 3px solid var(--color-purple);
+    }
+    .attempt-pill.active {
+      background: #0c2d6b;
+      color: #ffffff;
+      border-color: var(--color-blue);
+    }
+
+    /* Per-Attempt Context & Diagnostic Banner */
+    .attempt-banner {
+      display: none;
+      padding: 7px 12px;
+      background: #151b24;
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+      flex-shrink: 0;
+    }
+    .attempt-banner.visible {
+      display: block;
+    }
+    .attempt-banner-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 3px;
+    }
+    .attempt-banner-diag {
+      color: #f0883e;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 85px;
+      overflow-y: auto;
+    }
+    .attempt-banner-rag {
+      color: var(--color-purple);
+      font-size: 10px;
+      margin-top: 3px;
+    }
+
     .tab-viewport {
       flex: 1;
       overflow: auto;
@@ -281,7 +700,7 @@
       font-size: 11px;
       color: var(--color-blue);
       line-height: 1.45;
-      word-break: break-all;
+      word-break: break-word;
     }
     .rag-chunks-container {
       display: flex;
@@ -310,9 +729,7 @@
       padding: 1px 5px;
       font-weight: 700;
     }
-    .rag-chunk-source {
-      color: var(--text-muted);
-    }
+    .rag-chunk-source { color: var(--text-muted); }
     .rag-chunk-title {
       font-weight: 600;
       color: var(--text-main);
@@ -337,66 +754,172 @@
   <header>
     <div class="header-left">
       <span class="header-title">RFC-LLM Pipeline Monitor</span>
+      <span class="run-dir-label" id="run-dir-badge" title="Active Run Directory">Initializing...</span>
     </div>
     <div class="header-right">
+      <div>Stage Diagnosis: <span id="stage-diagnosis" class="diag-badge">Idle</span></div>
+      <div>Attempt Timer: <span id="attempt-timer" class="timer-badge">0.0s</span></div>
+      <div>Active Model: <span id="active-model" class="model-badge">nous/z-ai/glm-5.3</span></div>
       <div>RFC: <span id="rfc-name" style="color:var(--text-main); font-weight:700;">Waiting...</span></div>
       <div id="pipeline-status" class="status-badge idle">IDLE</div>
     </div>
   </header>
+
+  <!-- Virtualized Numbered Accepted-RFC Tab Strip (#1..#N) -->
+  <div class="rfc-tabbar">
+    <button class="live-pin-btn active" id="btn-live-follow" onclick="selectLiveFollow()">
+      <div class="live-pin-top">
+        <span class="dot idle" id="live-pin-dot"></span>
+        <span id="live-pin-label">LIVE STREAM</span>
+      </div>
+      <div class="live-pin-sub" id="live-pin-rfc">Waiting for RFC...</div>
+    </button>
+
+    <div class="vtab-scroll" id="vtab-scroll">
+      <div class="vtab-spacer" id="vtab-spacer">
+        <div class="vtab-empty" id="vtab-empty">No accepted cryptographic protocol tabs yet.</div>
+      </div>
+    </div>
+
+    <div class="tabbar-controls">
+      <input
+        type="text"
+        id="tab-search-input"
+        class="ctrl-input"
+        placeholder="Jump # or filter RFC/proto..."
+        oninput="onTabFilterChange()"
+        onkeydown="onTabSearchKeydown(event)"
+      />
+      <select id="tab-status-filter" class="ctrl-select" onchange="onTabFilterChange()">
+        <option value="ALL">ALL TABS (0)</option>
+        <option value="VERIFIED">VERIFIED</option>
+        <option value="PARTIAL">PARTIAL</option>
+        <option value="FAILED">FAILED</option>
+      </select>
+      <button class="ctrl-btn" id="btn-filtered-toggle" onclick="toggleFilteredDrawer()">
+        Filtered / Skipped (0)
+      </button>
+    </div>
+  </div>
+
+  <!-- Collapsible Filtered / Disqualified RFC Drawer -->
+  <div class="filtered-drawer" id="filtered-drawer">
+    <div class="drawer-header">
+      <div>
+        <strong>FILTERED / DISQUALIFIED RFCS</strong>
+        <span id="filtered-range-label" style="color:var(--text-muted); margin-left:8px;">0 entries</span>
+      </div>
+      <div class="drawer-controls">
+        <input
+          type="text"
+          id="filtered-search-input"
+          class="ctrl-input"
+          placeholder="Search filtered RFCs..."
+          oninput="onFilteredSearchInput()"
+        />
+        <button class="ctrl-btn" onclick="pageFiltered(-100)">Prev 100</button>
+        <button class="ctrl-btn" onclick="pageFiltered(100)">Next 100</button>
+        <button class="ctrl-btn" onclick="toggleFilteredDrawer()">Close</button>
+      </div>
+    </div>
+    <div class="drawer-table-wrap">
+      <table class="drawer-table">
+        <thead>
+          <tr>
+            <th style="width:55px;">#</th>
+            <th style="width:110px;">RFC ID</th>
+            <th style="width:260px;">Title</th>
+            <th style="width:190px;">Rejection Gate</th>
+            <th>Disqualification Rationale</th>
+          </tr>
+        </thead>
+        <tbody id="filtered-tbody">
+          <tr><td colspan="5" style="color:var(--text-muted);">No filtered RFCs recorded yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <!-- Horizontal Pipeline Stepper -->
   <div class="stepper">
     <div class="step-item" id="step-1">
       <div class="step-header"><span>01</span><span id="step-1-time">--:--</span></div>
       <div class="step-name">Document Intake</div>
+      <div class="step-model" id="step-1-model" title="Router & Gatekeeper Model">nous/z-ai/glm-5.3</div>
       <div class="step-status" id="step-1-status">Pending</div>
     </div>
     <div class="step-item" id="step-2">
       <div class="step-header"><span>02</span><span id="step-2-time">--:--</span></div>
-      <div class="step-name">AST Extraction</div>
+      <div class="step-name">JSON CPSA Generation</div>
+      <div class="step-model" id="step-2-model" title="JSON CPSA Generation Model">nous/google/gemini-4-argon</div>
       <div class="step-status" id="step-2-status">Pending</div>
     </div>
     <div class="step-item" id="step-3">
       <div class="step-header"><span>03</span><span id="step-3-time">--:--</span></div>
-      <div class="step-name">Scheme Emission</div>
+      <div class="step-name">CPSA4json -> scm</div>
+      <div class="step-model" id="step-3-model" title="Deterministic Code Emitter">cpsa_scheme_emitter.py</div>
       <div class="step-status" id="step-3-status">Pending</div>
     </div>
     <div class="step-item" id="step-4">
       <div class="step-header"><span>04</span><span id="step-4-time">--:--</span></div>
-      <div class="step-name">Roletran Gate</div>
+      <div class="step-name">Roletran Check</div>
+      <div class="step-model" id="step-4-model" title="Pre-flight Executability Binary">cpsa4roletran + cpsa4 -l 1</div>
       <div class="step-status" id="step-4-status">Pending</div>
     </div>
     <div class="step-item" id="step-5">
       <div class="step-header"><span>05</span><span id="step-5-time">--:--</span></div>
       <div class="step-name">Self-Healing Loop</div>
+      <div class="step-model" id="step-5-model" title="Repair + RAG Query Models">gemini-3.8-flash + haiku-5.5</div>
       <div class="step-status" id="step-5-status">Pending</div>
     </div>
     <div class="step-item" id="step-6">
       <div class="step-header"><span>06</span><span id="step-6-time">--:--</span></div>
-      <div class="step-name">MITRE Solver</div>
+      <div class="step-name">CPSA Compilation</div>
+      <div class="step-model" id="step-6-model" title="CPSA4 Compiler + Graph Builder">cpsa4 + cpsa4graph</div>
       <div class="step-status" id="step-6-status">Pending</div>
     </div>
   </div>
 
-  <!-- Main View -->
+  <!-- Main Single Shared Viewport (O(1) DOM Nodes regardless of 5 or 5,000 RFC tabs) -->
   <div class="main-grid">
     <!-- Left: Event Stream -->
     <div class="log-panel">
       <div class="panel-heading">
-        <span>Execution Diagnostics</span>
+        <span id="log-panel-title">Execution Diagnostics</span>
         <span id="event-counter" style="color:var(--text-muted); font-size:10px;">0 Events</span>
       </div>
       <div class="log-feed" id="log-feed"></div>
     </div>
 
-    <!-- Right: Code and Proof Inspection -->
+    <!-- Right: Code, Per-Attempt Stepper, and Proof Inspection -->
     <div class="viewer-panel">
       <div class="tab-strip">
-        <button class="tab active" onclick="switchTab('scm')">CPSA Scheme (.scm)</button>
-        <button class="tab" onclick="switchTab('ast')">Pydantic AST (JSON)</button>
-        <button class="tab" onclick="switchTab('slice')">RFC Sliced Text</button>
-        <button class="tab" id="tab-btn-rag" onclick="switchTab('rag')">RAG Knowledge</button>
-        <button class="tab" onclick="switchTab('graph')">Verified Shapes (SVG)</button>
+        <button class="tab active" data-subtab="scm" onclick="switchTab('scm')">CPSA Scheme (.scm)</button>
+        <button class="tab" data-subtab="ast" onclick="switchTab('ast')">Pydantic AST (JSON)</button>
+        <button class="tab" data-subtab="slice" onclick="switchTab('slice')">RFC Sliced Text</button>
+        <button class="tab" data-subtab="rag" id="tab-btn-rag" onclick="switchTab('rag')">RAG Knowledge</button>
+        <button class="tab" data-subtab="graph" onclick="switchTab('graph')">Verified Shapes (SVG)</button>
+      </div>
+
+      <!-- Per-Attempt Time-Travel Stepper -->
+      <div class="attempt-stepper" id="attempt-stepper">
+        <span class="attempt-stepper-label">Attempts:</span>
+        <span style="color:var(--text-muted); font-family:var(--mono); font-size:10px;">Waiting for synthesis...</span>
+      </div>
+
+      <!-- Per-Attempt Diagnostic & RAG Context Banner -->
+      <div class="attempt-banner" id="attempt-banner">
+        <div class="attempt-banner-head">
+          <strong id="attempt-banner-stage">Attempt</strong>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button class="ctrl-btn" id="btn-toggle-rejected-scm" style="display:none; padding:1px 6px; font-size:10px;" onclick="toggleRejectedScmView()">
+              Show Rejected Input .scm
+            </button>
+            <span id="attempt-banner-status" class="status-badge idle">PENDING</span>
+          </div>
+        </div>
+        <div class="attempt-banner-diag" id="attempt-banner-diag"></div>
+        <div class="attempt-banner-rag" id="attempt-banner-rag"></div>
       </div>
 
       <div class="tab-viewport" id="tab-scm">
@@ -411,7 +934,7 @@
       <div class="tab-viewport" id="tab-rag" style="display:none; padding:12px; overflow-y:auto;">
         <div id="rag-feed" style="display:flex; flex-direction:column; gap:10px;">
           <div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
-            RAG queries and retrieved manual chunks will stream here in real time...
+            RAG queries and retrieved manual chunks will appear here...
           </div>
         </div>
       </div>
@@ -424,20 +947,589 @@
   </div>
 
   <script>
-    let activeTabId = 'scm';
+    // =========================================================================
+    // Global State (Bounded O(1) DOM & 20-entry LRU Tab Cache)
+    // =========================================================================
+    const VTAB_WIDTH = 230;
+    const LRU_MAX_TABS = 20;
+
+    let viewMode = 'live';           // 'live' | 'tab'
+    let isServerLive = true;
+    let selectedTabIndex = null;
+    let liveActiveTabIndex = null;
+    let liveActiveRfcId = null;
+
+    // Compact summary array of all accepted tabs (~150 bytes each -> 5,000 tabs = ~750 KB)
+    let acceptedTabs = [];
+    const acceptedTabsByIndex = new Map();
+    let visibleFilteredTabs = [];
+    let filteredTotalCount = 0;
+
+    // 20-entry LRU cache mapping tab_index -> hydrated /api/tab/:idx payload
+    const tabLruCache = new Map();
+
+    // Active viewport state
     const seenEventKeys = new Set();
     let eventCount = 0;
+    let pipelineRunning = false;
+    let currentStageNum = 1;
+    let activeAttemptEpoch = null;
+    let currentActivityMode = 'idle';
+    let currentRepairAttempt = 0;
+    const stageStartEpochs = {};
+    let ragFirstEvent = true;
+
+    // Attempt time-travel state for currently displayed tab
+    let currentAttemptsList = [];
+    let selectedAttemptIdx = -1;
+    let showingRejectedScm = false;
+
+    let defaultModelCfg = {
+      router_model: 'nous/z-ai/glm-5.3',
+      extraction_model: 'nous/google/gemini-4-argon',
+      repair_model: 'nous/google/gemini-3.8-flash',
+      query_model: 'nous/anthropic/claude-haiku-5.5'
+    };
+
+    function lruGet(tabIdx) {
+      if (!tabLruCache.has(tabIdx)) return null;
+      const val = tabLruCache.get(tabIdx);
+      tabLruCache.delete(tabIdx);
+      tabLruCache.set(tabIdx, val);
+      return val;
+    }
+
+    function lruSet(tabIdx, payload) {
+      if (tabLruCache.has(tabIdx)) tabLruCache.delete(tabIdx);
+      tabLruCache.set(tabIdx, payload);
+      if (tabLruCache.size > LRU_MAX_TABS) {
+        const oldestKey = tabLruCache.keys().next().value;
+        tabLruCache.delete(oldestKey);
+      }
+    }
+
+    // =========================================================================
+    // Virtualized Horizontal Tab Bar (Handles 5,000+ Tabs with ~25 DOM Nodes)
+    // =========================================================================
+    function recomputeVisibleTabs() {
+      const q = (document.getElementById('tab-search-input')?.value || '').trim().toLowerCase();
+      const statusFilter = document.getElementById('tab-status-filter')?.value || 'ALL';
+
+      const allOption = document.querySelector('#tab-status-filter option[value="ALL"]');
+      if (allOption) allOption.innerText = `ALL TABS (${acceptedTabs.length})`;
+
+      visibleFilteredTabs = acceptedTabs.filter(t => {
+        if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
+        if (!q) return true;
+        const numMatch = `#${t.tab_index}` === q || `${t.tab_index}` === q;
+        return (
+          numMatch ||
+          (t.rfc_id || '').toLowerCase().includes(q) ||
+          (t.protocol_name || '').toLowerCase().includes(q) ||
+          (t.rfc_title || '').toLowerCase().includes(q) ||
+          (t.quality_tier || '').toLowerCase().includes(q)
+        );
+      });
+
+      renderVirtualTabs();
+    }
+
+    function renderVirtualTabs() {
+      const scrollEl = document.getElementById('vtab-scroll');
+      const spacerEl = document.getElementById('vtab-spacer');
+      if (!scrollEl || !spacerEl) return;
+
+      const total = visibleFilteredTabs.length;
+      if (total === 0) {
+        spacerEl.style.width = '100%';
+        const msg = acceptedTabs.length === 0
+          ? 'No accepted cryptographic protocol tabs yet.'
+          : 'No tabs match current filter.';
+        spacerEl.innerHTML = `<div class="vtab-empty">${msg}</div>`;
+        return;
+      }
+
+      const totalWidth = total * VTAB_WIDTH;
+      spacerEl.style.width = `${totalWidth}px`;
+
+      const scrollLeft = scrollEl.scrollLeft;
+      const viewportW = scrollEl.clientWidth || 1200;
+      const firstIdx = Math.max(0, Math.floor(scrollLeft / VTAB_WIDTH) - 4);
+      const lastIdx = Math.min(total - 1, Math.ceil((scrollLeft + viewportW) / VTAB_WIDTH) + 4);
+
+      const frag = document.createDocumentFragment();
+      for (let i = firstIdx; i <= lastIdx; i++) {
+        const t = visibleFilteredTabs[i];
+        const btn = document.createElement('button');
+        const isSelected = (viewMode === 'tab' && selectedTabIndex === t.tab_index);
+        btn.className = `rfc-vtab${isSelected ? ' active' : ''}`;
+        btn.style.left = `${i * VTAB_WIDTH}px`;
+        btn.onclick = () => selectNumberedTab(t.tab_index);
+
+        const dotClass = t.status === 'VERIFIED' ? 'verified'
+          : (t.status === 'PARTIAL' ? 'partial'
+          : (t.status === 'RUNNING' ? 'running' : 'failed'));
+        const badgeText = (t.status === 'RUNNING') ? 'LIVE' : (t.quality_tier || t.status || '');
+        const badgeClass = (t.status === 'RUNNING') ? 'RUNNING' : (t.quality_tier || t.status || '');
+        const protoDisplay = t.protocol_name || t.rfc_title || t.rfc_id;
+
+        btn.title = [
+          `Tab #${t.tab_index} | ${t.rfc_id}`,
+          `Protocol: ${protoDisplay}`,
+          t.rfc_title && t.rfc_title !== protoDisplay ? `Title: ${t.rfc_title}` : null,
+          `Status: ${t.status} | Tier: ${t.quality_tier}`,
+          `Repairs: ${t.total_attempts || 0} | Shapes: ${t.shapes_count || 0} | Time: ${t.duration_seconds || 0}s`
+        ].filter(Boolean).join('\n');
+
+        const topDiv = document.createElement('div');
+        topDiv.className = 'rfc-vtab-top';
+
+        const idSpan = document.createElement('div');
+        idSpan.className = 'rfc-vtab-id';
+        idSpan.innerHTML = `<span class="dot ${dotClass}"></span><span class="rfc-vtab-num">#${t.tab_index}</span><span>${escapeHtml(t.rfc_id)}</span>`;
+
+        const tierSpan = document.createElement('span');
+        tierSpan.className = `rfc-vtab-tier ${badgeClass}`;
+        tierSpan.innerText = badgeText;
+
+        topDiv.appendChild(idSpan);
+        topDiv.appendChild(tierSpan);
+
+        const protoDiv = document.createElement('div');
+        protoDiv.className = 'rfc-vtab-proto';
+        protoDiv.innerText = protoDisplay;
+
+        btn.appendChild(topDiv);
+        btn.appendChild(protoDiv);
+        frag.appendChild(btn);
+      }
+
+      spacerEl.innerHTML = '';
+      spacerEl.appendChild(frag);
+    }
+
+    document.getElementById('vtab-scroll').addEventListener('scroll', () => {
+      window.requestAnimationFrame(renderVirtualTabs);
+    });
+    window.addEventListener('resize', () => {
+      window.requestAnimationFrame(renderVirtualTabs);
+    });
+
+    function onTabFilterChange() {
+      recomputeVisibleTabs();
+    }
+
+    function onTabSearchKeydown(e) {
+      if (e.key === 'Enter') {
+        const raw = e.target.value.trim().replace(/^#/, '');
+        const num = parseInt(raw, 10);
+        if (!isNaN(num) && acceptedTabsByIndex.has(num)) {
+          selectNumberedTab(num);
+          scrollTabIntoView(num);
+        } else if (visibleFilteredTabs.length > 0) {
+          selectNumberedTab(visibleFilteredTabs[0].tab_index);
+        }
+      }
+    }
+
+    function scrollTabIntoView(tabIndex) {
+      const pos = visibleFilteredTabs.findIndex(t => t.tab_index === tabIndex);
+      if (pos < 0) return;
+      const scrollEl = document.getElementById('vtab-scroll');
+      const targetLeft = pos * VTAB_WIDTH;
+      if (targetLeft < scrollEl.scrollLeft || targetLeft + VTAB_WIDTH > scrollEl.scrollLeft + scrollEl.clientWidth) {
+        scrollEl.scrollLeft = Math.max(0, targetLeft - VTAB_WIDTH);
+      }
+    }
+
+    function upsertTabSummary(tabObj) {
+      if (!tabObj || !tabObj.tab_index) return;
+      if (acceptedTabsByIndex.has(tabObj.tab_index)) {
+        const existing = acceptedTabsByIndex.get(tabObj.tab_index);
+        Object.assign(existing, tabObj);
+      } else {
+        acceptedTabs.push(tabObj);
+        acceptedTabs.sort((a, b) => a.tab_index - b.tab_index);
+        acceptedTabsByIndex.set(tabObj.tab_index, tabObj);
+      }
+      tabLruCache.delete(tabObj.tab_index);
+      recomputeVisibleTabs();
+    }
+
+    function updateFilteredButtonCount(count) {
+      filteredTotalCount = count;
+      const btn = document.getElementById('btn-filtered-toggle');
+      if (btn) btn.innerText = `Filtered / Skipped (${count})`;
+    }
+
+    function updateLivePinButton() {
+      const btn = document.getElementById('btn-live-follow');
+      const dot = document.getElementById('live-pin-dot');
+      const lbl = document.getElementById('live-pin-label');
+      const sub = document.getElementById('live-pin-rfc');
+      if (!btn) return;
+
+      btn.classList.toggle('active', viewMode === 'live');
+      if (!isServerLive) {
+        btn.classList.add('replay-mode');
+        dot.className = 'dot idle';
+        lbl.innerText = 'OFFLINE REPLAY';
+        sub.innerText = `${acceptedTabs.length} Accepted Tabs`;
+      } else {
+        btn.classList.remove('replay-mode');
+        dot.className = pipelineRunning ? 'dot running' : 'dot idle';
+        lbl.innerText = liveActiveTabIndex ? `LIVE | TAB #${liveActiveTabIndex}` : 'LIVE STREAM';
+        sub.innerText = liveActiveRfcId || 'Waiting...';
+      }
+    }
+
+    // =========================================================================
+    // Viewport Reset & Switching Between [LIVE] and Historical Tab #1..#N
+    // =========================================================================
+    function resetViewportDom(headerTitle) {
+      seenEventKeys.clear();
+      eventCount = 0;
+      ragFirstEvent = true;
+      currentAttemptsList = [];
+      selectedAttemptIdx = -1;
+      showingRejectedScm = false;
+
+      document.getElementById('event-counter').innerText = '0 Events';
+      document.getElementById('log-panel-title').innerText = headerTitle || 'Execution Diagnostics';
+      document.getElementById('log-feed').innerHTML = '';
+      document.getElementById('rag-feed').innerHTML = `
+        <div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
+          No RAG manual retrievals recorded for this protocol yet.
+        </div>`;
+      document.getElementById('code-scm').innerText = '; CPSA Scheme model output will appear here...';
+      document.getElementById('code-ast').innerText = '// Pydantic JSON AST will appear here...';
+      document.getElementById('code-slice').innerText = 'Verbatim RFC section slice will appear here...';
+      document.getElementById('graph-container').innerHTML =
+        'MITRE CPSA shapes graph will render here upon successful verification.';
+      document.getElementById('attempt-banner').classList.remove('visible');
+      document.getElementById('attempt-stepper').innerHTML =
+        '<span class="attempt-stepper-label">Attempts:</span><span style="color:var(--text-muted); font-family:var(--mono); font-size:10px;">Live synthesis...</span>';
+
+      for (let s = 1; s <= 6; s++) {
+        const el = document.getElementById(`step-${s}`);
+        if (el) el.classList.remove('active', 'passed', 'failed');
+        const st = document.getElementById(`step-${s}-status`);
+        if (st) st.innerText = 'Pending';
+        const tm = document.getElementById(`step-${s}-time`);
+        if (tm) tm.innerText = '--:--';
+      }
+    }
+
+    function selectLiveFollow() {
+      if (!isServerLive) {
+        if (acceptedTabs.length > 0) selectNumberedTab(acceptedTabs[0].tab_index);
+        return;
+      }
+      viewMode = 'live';
+      selectedTabIndex = null;
+      updateLivePinButton();
+      renderVirtualTabs();
+      resetViewportDom('Live Execution Diagnostics');
+
+      fetch('/api/active')
+        .then(r => r.json())
+        .then(state => {
+          if (state && Array.isArray(state.events)) {
+            state.events.forEach(evt => renderEventIntoViewport(evt, true));
+          }
+        })
+        .catch(() => {});
+    }
+
+    function selectNumberedTab(tabIndex) {
+      viewMode = 'tab';
+      selectedTabIndex = tabIndex;
+      pipelineRunning = false;
+      updateLivePinButton();
+      renderVirtualTabs();
+
+      const summary = acceptedTabsByIndex.get(tabIndex);
+      resetViewportDom(summary ? `Tab #${tabIndex} | ${summary.rfc_id} (${summary.protocol_name})` : `Tab #${tabIndex}`);
+
+      const cached = lruGet(tabIndex);
+      if (cached) {
+        applyHydratedTabPayload(cached);
+        return;
+      }
+
+      document.getElementById('stage-diagnosis').innerText = `Loading Tab #${tabIndex}...`;
+      fetch(`/api/tab/${tabIndex}`)
+        .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+        .then(payload => {
+          if (payload.tab && payload.tab.status !== 'RUNNING') {
+            lruSet(tabIndex, payload);
+          }
+          if (viewMode === 'tab' && selectedTabIndex === tabIndex) {
+            applyHydratedTabPayload(payload);
+          }
+        })
+        .catch(err => {
+          document.getElementById('code-scm').innerText = `; Failed to load Tab #${tabIndex}: ${err}`;
+        });
+    }
+
+    function applyHydratedTabPayload(payload) {
+      const tab = payload.tab || {};
+      document.getElementById('rfc-name').innerText = `#${tab.tab_index} ${tab.rfc_id} (${tab.protocol_name || ''})`;
+      document.getElementById('attempt-timer').innerText = `${(tab.duration_seconds || 0).toFixed(1)}s`;
+
+      const pill = document.getElementById('pipeline-status');
+      if (tab.status === 'VERIFIED') {
+        pill.className = 'status-badge success';
+        pill.innerText = `${tab.quality_tier || 'VERIFIED'}`;
+        setDiagnosisBadge(`Verified (${tab.shapes_count || 0} Realized Shapes)`, 'normal');
+      } else if (tab.status === 'PARTIAL') {
+        pill.className = 'status-badge partial';
+        pill.innerText = 'PARTIAL';
+        setDiagnosisBadge('Roletran Passed | CPSA Failed', 'syntax');
+      } else if (tab.status === 'RUNNING') {
+        pill.className = 'status-badge running';
+        pill.innerText = 'RUNNING';
+        setDiagnosisBadge('Active Synthesis...', 'normal');
+      } else {
+        pill.className = 'status-badge failed';
+        pill.innerText = tab.status || 'FAILED';
+        setDiagnosisBadge(tab.error_message ? 'Failed (See Attempt Banner)' : 'Halted', 'syntax');
+      }
+
+      if (payload.verbatim_slice) {
+        document.getElementById('code-slice').innerText = payload.verbatim_slice;
+      }
+
+      if (Array.isArray(payload.events)) {
+        payload.events.forEach(evt => renderEventIntoViewport(evt, false));
+      }
+
+      if (payload.shapes_xhtml) {
+        document.getElementById('graph-container').innerHTML =
+          `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(payload.shapes_xhtml)}"></iframe>`;
+      }
+
+      currentAttemptsList = Array.isArray(payload.attempts) ? payload.attempts : [];
+      renderAttemptStepper();
+      if (currentAttemptsList.length > 0) {
+        selectAttemptSnapshot(currentAttemptsList.length - 1);
+      }
+    }
+
+    // =========================================================================
+    // Per-Attempt Time-Travel Stepper (#0 Initial -> #1..#K Repairs -> Final)
+    // =========================================================================
+    function renderAttemptStepper() {
+      const bar = document.getElementById('attempt-stepper');
+      if (!bar) return;
+      if (!currentAttemptsList.length) {
+        bar.innerHTML = '<span class="attempt-stepper-label">Attempts:</span><span style="color:var(--text-muted); font-family:var(--mono); font-size:10px;">No attempt snapshots recorded.</span>';
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      const lbl = document.createElement('span');
+      lbl.className = 'attempt-stepper-label';
+      lbl.innerText = `Attempts (${currentAttemptsList.length}):`;
+      frag.appendChild(lbl);
+
+      currentAttemptsList.forEach((att, idx) => {
+        const btn = document.createElement('button');
+        const stLow = (att.status || '').toLowerCase();
+        const cyc = att.cycle_detected ? ' cycle' : '';
+        const act = (idx === selectedAttemptIdx) ? ' active' : '';
+        btn.className = `attempt-pill ${stLow}${cyc}${act}`;
+        btn.innerText = att.label || `Attempt ${idx}`;
+        btn.title = `${att.stage}\nStatus: ${att.status}${att.cycle_detected ? ' (Cycle Perturbation)' : ''}`;
+        btn.onclick = () => selectAttemptSnapshot(idx);
+        frag.appendChild(btn);
+      });
+
+      bar.innerHTML = '';
+      bar.appendChild(frag);
+    }
+
+    function selectAttemptSnapshot(idx) {
+      if (idx < 0 || idx >= currentAttemptsList.length) return;
+      selectedAttemptIdx = idx;
+      showingRejectedScm = false;
+      renderAttemptStepper();
+
+      const att = currentAttemptsList[idx];
+      document.getElementById('code-scm').innerText = att.scm || '; No .scm recorded for this attempt.';
+      document.getElementById('code-ast').innerText = att.ast
+        ? JSON.stringify(att.ast, null, 2)
+        : '// No JSON AST recorded for this attempt.';
+
+      const banner = document.getElementById('attempt-banner');
+      const stageEl = document.getElementById('attempt-banner-stage');
+      const statusEl = document.getElementById('attempt-banner-status');
+      const diagEl = document.getElementById('attempt-banner-diag');
+      const ragEl = document.getElementById('attempt-banner-rag');
+      const toggleBtn = document.getElementById('btn-toggle-rejected-scm');
+
+      banner.classList.add('visible');
+      stageEl.innerText = `${att.label} — ${att.stage}${att.cycle_detected ? ' [CYCLE PERTURBATION]' : ''}`;
+
+      if (att.status === 'VERIFIED' || att.status === 'PASSED') {
+        statusEl.className = 'status-badge success';
+      } else if (att.status === 'GENERATED') {
+        statusEl.className = 'status-badge running';
+      } else {
+        statusEl.className = 'status-badge failed';
+      }
+      statusEl.innerText = att.status || 'INFO';
+
+      if (att.rejected_scm && att.rejected_scm !== att.scm) {
+        toggleBtn.style.display = 'inline-block';
+        toggleBtn.innerText = 'Show Rejected Input .scm';
+      } else {
+        toggleBtn.style.display = 'none';
+      }
+
+      diagEl.innerText = att.diagnostic
+        ? `Diagnostic: ${att.diagnostic}`
+        : 'No compiler errors on this snapshot.';
+      diagEl.style.color = att.diagnostic ? '#f0883e' : '#3fb950';
+
+      if (att.rag_query || (att.retrieved_chunks && att.retrieved_chunks.length)) {
+        const cids = (att.retrieved_chunks || []).map(c => `#${c.chunk_id} (${c.title})`).join(', ');
+        ragEl.innerText = `RAG Query: "${att.rag_query || ''}" | Retrieved: ${cids || 'none'}`;
+      } else {
+        ragEl.innerText = '';
+      }
+    }
+
+    function toggleRejectedScmView() {
+      if (selectedAttemptIdx < 0 || selectedAttemptIdx >= currentAttemptsList.length) return;
+      const att = currentAttemptsList[selectedAttemptIdx];
+      if (!att.rejected_scm) return;
+      showingRejectedScm = !showingRejectedScm;
+      const toggleBtn = document.getElementById('btn-toggle-rejected-scm');
+      if (showingRejectedScm) {
+        document.getElementById('code-scm').innerText = att.rejected_scm;
+        toggleBtn.innerText = 'Show Repaired Output .scm';
+      } else {
+        document.getElementById('code-scm').innerText = att.scm;
+        toggleBtn.innerText = 'Show Rejected Input .scm';
+      }
+    }
+
+    // =========================================================================
+    // Collapsible Filtered / Disqualified RFC Drawer
+    // =========================================================================
+    let filteredOffset = 0;
+    let filteredDebounce = null;
+
+    function toggleFilteredDrawer() {
+      const drawer = document.getElementById('filtered-drawer');
+      const btn = document.getElementById('btn-filtered-toggle');
+      const isOpen = drawer.classList.toggle('open');
+      btn.classList.toggle('active', isOpen);
+      if (isOpen) {
+        filteredOffset = 0;
+        fetchFilteredPage();
+      }
+    }
+
+    function onFilteredSearchInput() {
+      clearTimeout(filteredDebounce);
+      filteredDebounce = setTimeout(() => {
+        filteredOffset = 0;
+        fetchFilteredPage();
+      }, 200);
+    }
+
+    function pageFiltered(delta) {
+      filteredOffset = Math.max(0, filteredOffset + delta);
+      fetchFilteredPage();
+    }
+
+    function fetchFilteredPage() {
+      const q = encodeURIComponent(document.getElementById('filtered-search-input')?.value || '');
+      fetch(`/api/filtered?offset=${filteredOffset}&limit=100&q=${q}`)
+        .then(r => r.json())
+        .then(data => {
+          updateFilteredButtonCount(data.total || 0);
+          const items = data.items || [];
+          const endIdx = Math.min(data.matching || 0, filteredOffset + items.length);
+          const startIdx = items.length ? filteredOffset + 1 : 0;
+          document.getElementById('filtered-range-label').innerText =
+            `Showing ${startIdx}-${endIdx} of ${data.matching || 0} matching (${data.total || 0} total)`;
+
+          const tbody = document.getElementById('filtered-tbody');
+          if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted);">No matching filtered RFCs.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = items.map(it => `
+            <tr>
+              <td>${it.index || ''}</td>
+              <td style="color:var(--color-blue); font-weight:700;">${escapeHtml(it.rfc_id || '')}</td>
+              <td>${escapeHtml(it.title || '')}</td>
+              <td style="color:var(--color-yellow);">${escapeHtml(it.gate || '')}</td>
+              <td style="color:var(--text-muted);">${escapeHtml(it.reason || '')}</td>
+            </tr>
+          `).join('');
+        })
+        .catch(() => {});
+    }
+
+    // =========================================================================
+    // Live Timer, Stepper, and Real-Time SSE Event Dispatcher
+    // =========================================================================
+    function setDiagnosisBadge(text, styleClass) {
+      const el = document.getElementById('stage-diagnosis');
+      if (!el) return;
+      el.innerText = text;
+      el.className = `diag-badge ${styleClass || ''}`;
+    }
+
+    function updateLiveTimers() {
+      if (viewMode !== 'live' || !pipelineRunning || !activeAttemptEpoch) return;
+      const nowSec = Date.now() / 1000;
+      const elapsed = Math.max(0, nowSec - activeAttemptEpoch);
+      const timerEl = document.getElementById('attempt-timer');
+
+      if (currentActivityMode === 'solver' || (currentActivityMode === 'repair_timeout' && elapsed > 20)) {
+        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s / 60s`;
+        if (elapsed > 30) {
+          setDiagnosisBadge(`STATE-SPACE SNOWBALLING (${elapsed.toFixed(0)}s / 60s cap)`, 'snowball');
+        } else if (elapsed > 10) {
+          setDiagnosisBadge(`Deep CPSA4 Strand Search (${elapsed.toFixed(0)}s / 60s)`, 'syntax');
+        } else {
+          setDiagnosisBadge('CPSA4 Compiling & Solving...', 'normal');
+        }
+      } else if (currentActivityMode === 'repair_syntax') {
+        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
+        setDiagnosisBadge(`Fast Syntax/Roletran Reject -> LLM Repair #${currentRepairAttempt}`, 'syntax');
+      } else if (currentActivityMode === 'repair_timeout') {
+        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
+        setDiagnosisBadge(`60s Timeout (Snowball) -> LLM Repair #${currentRepairAttempt}`, 'snowball');
+      } else if (currentActivityMode === 'extraction') {
+        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
+        setDiagnosisBadge('Generating CPSA JSON...', 'normal');
+      } else {
+        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
+      }
+
+      if (currentStageNum) {
+        const stepTimeEl = document.getElementById(`step-${currentStageNum}-time`);
+        const stageStart = stageStartEpochs[currentStageNum] || activeAttemptEpoch;
+        const stageElapsed = Math.max(0, nowSec - stageStart);
+        if (stepTimeEl) stepTimeEl.innerText = `${stageElapsed.toFixed(1)}s`;
+      }
+    }
+    setInterval(updateLiveTimers, 100);
 
     function switchTab(tabId) {
-      activeTabId = tabId;
-      document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-subtab') === tabId);
+      });
       document.querySelectorAll('.tab-viewport').forEach(v => v.style.display = 'none');
-
-      const targetBtn = Array.from(document.querySelectorAll('.tab')).find(b => b.getAttribute('onclick').includes(tabId));
-      if (targetBtn) targetBtn.classList.add('active');
-
       const targetView = document.getElementById(`tab-${tabId}`);
-      if (targetView) targetView.style.display = (tabId === 'graph') ? 'block' : 'block';
+      if (targetView) targetView.style.display = 'block';
     }
 
     function setStepState(stageNum, state, label) {
@@ -454,7 +1546,53 @@
       }
     }
 
-    function processEvent(evt) {
+    function handleIncomingBusEvent(evt) {
+      if (!evt || !evt.event_type) return;
+
+      // Global tab & filtered registry updates ALWAYS apply regardless of whether viewing [LIVE] or Tab #k
+      if (evt.event_type === 'tab_accepted' && evt.data && evt.data.tab) {
+        liveActiveTabIndex = evt.data.tab.tab_index;
+        liveActiveRfcId = evt.data.tab.rfc_id;
+        upsertTabSummary(evt.data.tab);
+        updateLivePinButton();
+        return;
+      }
+      if (evt.event_type === 'tab_updated' && evt.data && evt.data.tab) {
+        upsertTabSummary(evt.data.tab);
+        updateLivePinButton();
+        return;
+      }
+      if (evt.event_type === 'rfc_filtered' && evt.data) {
+        updateFilteredButtonCount(evt.data.filtered_total || (filteredTotalCount + 1));
+        if (document.getElementById('filtered-drawer').classList.contains('open')) {
+          fetchFilteredPage();
+        }
+        return;
+      }
+      if (evt.event_type === 'pipeline_started') {
+        liveActiveRfcId = (evt.data && (evt.data.rfc_id || evt.data.rfc_file)) || evt.rfc_id;
+        liveActiveTabIndex = null;
+        pipelineRunning = true;
+        updateLivePinButton();
+        if (viewMode === 'live') {
+          resetViewportDom('Live Execution Diagnostics');
+        }
+      }
+      if (evt.event_type === 'pipeline_completed' || evt.event_type === 'pipeline_failed') {
+        pipelineRunning = false;
+        updateLivePinButton();
+      }
+
+      // Only mutate the shared DOM viewport if following [LIVE]
+      if (viewMode === 'live') {
+        renderEventIntoViewport(evt, true);
+      }
+    }
+
+    function renderEventIntoViewport(evt, fetchLiveArtifacts) {
+      if (evt.event_type === 'tab_accepted' || evt.event_type === 'tab_updated' || evt.event_type === 'rfc_filtered') {
+        return;
+      }
       const key = `${evt.timestamp}_${evt.event_type}_${evt.stage || 0}`;
       if (seenEventKeys.has(key)) return;
       seenEventKeys.add(key);
@@ -470,25 +1608,81 @@
       let typeLabel = evt.event_type;
       let bodyText = JSON.stringify(evt.data, null, 2);
 
+      const stageDefaultModels = {
+        1: document.getElementById('step-1-model')?.innerText || defaultModelCfg.router_model,
+        2: document.getElementById('step-2-model')?.innerText || defaultModelCfg.extraction_model,
+        3: 'cpsa_scheme_emitter.py',
+        4: 'cpsa4roletran + cpsa4 -l 1',
+        5: document.getElementById('step-5-model')?.innerText || `${defaultModelCfg.repair_model}`,
+        6: document.getElementById('step-6-model')?.innerText || 'cpsa4 + cpsa4graph'
+      };
+
+      function updateActiveModel(modelStr, stageNum) {
+        if (!modelStr) return;
+        const badge = document.getElementById('active-model');
+        if (badge) badge.innerText = modelStr;
+        if (stageNum) {
+          const stepModelEl = document.getElementById(`step-${stageNum}-model`);
+          if (stepModelEl) stepModelEl.innerText = modelStr;
+        }
+      }
+
       if (evt.event_type === 'pipeline_started') {
         typeLabel = 'PIPELINE_INIT';
-        document.getElementById('rfc-name').innerText = evt.data.rfc_file || evt.data.rfc_id;
-        const pill = document.getElementById('pipeline-status');
-        pill.className = 'status-badge running';
-        pill.innerText = 'RUNNING';
+        if (fetchLiveArtifacts) pipelineRunning = true;
+        currentStageNum = 1;
+        currentRepairAttempt = 0;
+        activeAttemptEpoch = evt.timestamp;
+        stageStartEpochs[1] = evt.timestamp;
+        currentActivityMode = 'intake';
+        if (fetchLiveArtifacts) {
+          setDiagnosisBadge('Screening RFC & TOC...', 'normal');
+          document.getElementById('rfc-name').innerText = evt.data.rfc_file || evt.data.rfc_id;
+          const pill = document.getElementById('pipeline-status');
+          pill.className = 'status-badge running';
+          pill.innerText = 'RUNNING';
+        }
+        if (evt.data.router_model) document.getElementById('step-1-model').innerText = evt.data.router_model;
+        if (evt.data.extraction_model) document.getElementById('step-2-model').innerText = evt.data.extraction_model;
+        if (evt.data.repair_model) {
+          const qm = evt.data.query_model ? ` + ${evt.data.query_model.split('/').pop()}` : '';
+          document.getElementById('step-5-model').innerText = `${evt.data.repair_model}${qm}`;
+          document.getElementById('step-6-model').innerText = `cpsa4 + ${evt.data.repair_model}`;
+        }
+        updateActiveModel(evt.data.router_model || stageDefaultModels[1], 1);
         setStepState(1, 'active', 'Started');
       } else if (evt.event_type === 'stage_started') {
         typeLabel = `STAGE_${evt.stage}_START`;
+        currentStageNum = evt.stage;
+        activeAttemptEpoch = evt.timestamp;
+        stageStartEpochs[evt.stage] = evt.timestamp;
+        if (fetchLiveArtifacts) {
+          if (evt.stage === 1) { currentActivityMode = 'intake'; setDiagnosisBadge('Screening RFC & TOC...', 'normal'); }
+          else if (evt.stage === 2) { currentActivityMode = 'extraction'; setDiagnosisBadge('Generating CPSA JSON...', 'normal'); }
+          else if (evt.stage === 4 || evt.stage === 5) { currentActivityMode = 'roletran'; setDiagnosisBadge('Roletran Check...', 'normal'); }
+          else if (evt.stage === 6) { currentActivityMode = 'solver'; setDiagnosisBadge('CPSA4 Compiling & Solving...', 'normal'); }
+        }
         setStepState(evt.stage, 'active', 'Processing');
-        const timeEl = document.getElementById(`step-${evt.stage}-time`);
-        if (timeEl) timeEl.innerText = timeStr;
+        updateActiveModel((evt.data && evt.data.model) || stageDefaultModels[evt.stage], evt.stage);
+      } else if (evt.event_type === 'compiler_check_started') {
+        typeLabel = `COMPILER_RUN_${evt.data.attempt || 0}`;
+        currentStageNum = evt.stage || 6;
+        activeAttemptEpoch = evt.timestamp;
+        currentActivityMode = (evt.stage === 6) ? 'solver' : 'roletran';
+        updateActiveModel(evt.data.model || 'cpsa4 + cpsa4graph', evt.stage || 6);
+        setStepState(evt.stage || 6, 'active', `Testing #${evt.data.attempt || 0}`);
       } else if (evt.event_type === 'stage_completed') {
         typeLabel = `STAGE_${evt.stage}_OK`;
         setStepState(evt.stage, 'passed', 'Passed');
-        if (evt.data && evt.data.ast) {
+        if (stageStartEpochs[evt.stage]) {
+          const dur = Math.max(0, evt.timestamp - stageStartEpochs[evt.stage]);
+          const timeEl = document.getElementById(`step-${evt.stage}-time`);
+          if (timeEl) timeEl.innerText = `${dur.toFixed(1)}s`;
+        }
+        if (fetchLiveArtifacts && evt.data && evt.data.ast) {
           document.getElementById('code-ast').innerText = JSON.stringify(evt.data.ast, null, 2);
         }
-        if (evt.data && evt.data.scm_path) {
+        if (fetchLiveArtifacts && evt.data && evt.data.scm_path) {
           fetch(`/api/artifact?path=${encodeURIComponent(evt.data.scm_path)}`)
             .then(r => r.text())
             .then(txt => { document.getElementById('code-scm').innerText = txt; })
@@ -497,7 +1691,7 @@
       } else if (evt.event_type === 'slice_ready') {
         typeLabel = 'SLICE_EXTRACTED';
         bodyText = `Sections: ${JSON.stringify(evt.data.sections)}\nLine count: ${evt.data.line_count}`;
-        if (evt.data && evt.data.slice_path) {
+        if (fetchLiveArtifacts && evt.data && evt.data.slice_path) {
           fetch(`/api/artifact?path=${encodeURIComponent(evt.data.slice_path)}`)
             .then(r => r.text())
             .then(txt => { document.getElementById('code-slice').innerText = txt; })
@@ -505,51 +1699,71 @@
         }
       } else if (evt.event_type === 'rag_retrieval') {
         typeLabel = 'RAG_GROUNDING';
+        activeAttemptEpoch = evt.timestamp;
         const chkCount = (evt.data && evt.data.chunks) ? evt.data.chunks.length : 0;
-        bodyText = `Purpose: ${evt.data.purpose || 'RAG Retrieval'}\nQuery: ${evt.data.query || ''}\nRetrieved: ${chkCount} chunks`;
+        const ragMod = (evt.stage === 2) ? 'BM25 + Dense RRF' : `${defaultModelCfg.query_model} (RAG Query)`;
+        updateActiveModel(ragMod);
+        bodyText = `Model: ${ragMod}\nPurpose: ${evt.data.purpose || 'RAG Retrieval'}\nQuery: ${evt.data.query || ''}\nRetrieved: ${chkCount} chunks`;
         renderRagEvent(evt);
       } else if (evt.event_type === 'repair_attempt') {
         item.classList.add('repair');
         if (evt.data.cycle_detected) item.classList.add('cycle');
         typeLabel = `REPAIR_${evt.data.attempt}_OF_${evt.data.max_attempts}`;
-        bodyText = `Diagnostic: ${evt.data.diagnostic}\nCycle Detected: ${evt.data.cycle_detected ? 'YES (Perturbation active)' : 'NO'}`;
-        setStepState(5, 'active', `Attempt ${evt.data.attempt}/50`);
+        currentStageNum = evt.stage || 5;
+        currentRepairAttempt = evt.data.attempt || 1;
+        activeAttemptEpoch = evt.timestamp;
+        const diagStr = (evt.data.diagnostic || '').toLowerCase();
+        const isTimeout = diagStr.includes('timed out') || diagStr.includes('step limit');
+        currentActivityMode = isTimeout ? 'repair_timeout' : 'repair_syntax';
+        const failureTag = isTimeout ? '[60s TIMEOUT / STATE-SPACE SNOWBALL]' : '[FAST SYNTAX / ROLETRAN ERROR]';
+        const repMod = evt.data.model || defaultModelCfg.repair_model;
+        const qMod = evt.data.query_model || defaultModelCfg.query_model;
+        updateActiveModel(`${repMod} (RAG: ${qMod.split('/').pop()})`, evt.stage || 5);
+        bodyText = `${failureTag}\nRepair Model: ${repMod} | Query Model: ${qMod}\nDiagnostic: ${evt.data.diagnostic}\nCycle Detected: ${evt.data.cycle_detected ? 'YES (Perturbation active)' : 'NO'}`;
+        setStepState(evt.stage || 5, 'active', `Attempt ${evt.data.attempt}/${evt.data.max_attempts || 50}`);
       } else if (evt.event_type === 'stage_failed') {
         item.classList.add('error');
         typeLabel = `STAGE_${evt.stage}_FAIL`;
         setStepState(evt.stage, 'failed', 'Failed');
       } else if (evt.event_type === 'pipeline_completed') {
         item.classList.add('success');
-        typeLabel = 'SYNTHESIS_VERIFIED';
-        const pill = document.getElementById('pipeline-status');
-        pill.className = 'status-badge success';
-        pill.innerText = 'VERIFIED';
-        setStepState(6, 'passed', `Shapes: ${evt.data.shapes_count}`);
-        if (evt.data.shapes_xhtml) {
-          const container = document.getElementById('graph-container');
-          container.innerHTML = `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
+        if (fetchLiveArtifacts) {
+          pipelineRunning = false;
+          setDiagnosisBadge(`Verified (${evt.data.shapes_count} Realized Shapes)`, 'normal');
+          const pill = document.getElementById('pipeline-status');
+          pill.className = 'status-badge success';
+          pill.innerText = evt.data.quality_tier || 'VERIFIED';
+          if (evt.data.shapes_xhtml) {
+            document.getElementById('graph-container').innerHTML =
+              `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
+          }
         }
+        typeLabel = 'SYNTHESIS_VERIFIED';
+        setStepState(6, 'passed', `Shapes: ${evt.data.shapes_count}`);
       } else if (evt.event_type === 'pipeline_failed') {
         item.classList.add('error');
+        if (fetchLiveArtifacts) {
+          pipelineRunning = false;
+          setDiagnosisBadge('Halted / Max Attempts Reached', 'snowball');
+          const pill = document.getElementById('pipeline-status');
+          pill.className = 'status-badge failed';
+          pill.innerText = 'FAILED';
+        }
         typeLabel = 'PIPELINE_HALTED';
-        const pill = document.getElementById('pipeline-status');
-        pill.className = 'status-badge failed';
-        pill.innerText = 'FAILED';
       }
 
       item.innerHTML = `
         <div class="log-meta">
-          <span class="log-type">${typeLabel}</span>
-          <span>${timeStr}</span>
+          <span class="log-type">${escapeHtml(typeLabel)}</span>
+          <span>${escapeHtml(timeStr)}</span>
         </div>
-        <div class="log-data">${bodyText}</div>
+        <div class="log-data">${escapeHtml(bodyText)}</div>
       `;
 
       feed.appendChild(item);
       feed.scrollTop = feed.scrollHeight;
     }
 
-    let ragFirstEvent = true;
     function renderRagEvent(evt) {
       const feed = document.getElementById('rag-feed');
       if (!feed) return;
@@ -571,21 +1785,21 @@
         chunksHtml += `
           <div class="rag-chunk-card">
             <div class="rag-chunk-meta">
-              <span class="rag-chunk-id">Chunk #${chk.chunk_id}</span>
-              <span class="rag-chunk-source">${chk.source_file || 'Manual'}</span>
+              <span class="rag-chunk-id">Chunk #${escapeHtml(String(chk.chunk_id))}</span>
+              <span class="rag-chunk-source">${escapeHtml(chk.source_file || 'Manual')}</span>
             </div>
-            <div class="rag-chunk-title">${chk.title || ''}</div>
-            <div class="rag-chunk-snippet">${chk.snippet || ''}</div>
+            <div class="rag-chunk-title">${escapeHtml(chk.title || '')}</div>
+            ${chk.snippet ? `<div class="rag-chunk-snippet">${escapeHtml(chk.snippet)}</div>` : ''}
           </div>
         `;
       });
 
       card.innerHTML = `
         <div class="rag-card-header">
-          <span class="rag-purpose">${purpose}</span>
-          <span>${timeStr}</span>
+          <span class="rag-purpose">${escapeHtml(purpose)}</span>
+          <span>${escapeHtml(timeStr)}</span>
         </div>
-        <div class="rag-query-box"><strong>Query:</strong> ${query}</div>
+        <div class="rag-query-box"><strong>Query:</strong> ${escapeHtml(query)}</div>
         <div class="rag-chunks-container">
           <div style="font-size:10px; color:var(--text-muted); font-family:var(--mono);">Retrieved Grounding Chunks (${chunks.length}):</div>
           ${chunksHtml}
@@ -595,31 +1809,116 @@
       feed.prepend(card);
     }
 
-    // 1. Initial history fetch
-    function syncHistory() {
-      fetch('/api/history')
-        .then(r => r.json())
-        .then(events => {
-          if (Array.isArray(events)) {
-            events.forEach(processEvent);
-          }
-        })
-        .catch(err => console.error('History sync error:', err));
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     }
 
-    syncHistory();
+    // =========================================================================
+    // Initial Bootstrap & Named-Event SSE Subscription (Zero Polling Spam!)
+    // =========================================================================
+    fetch('/api/models')
+      .then(r => r.ok ? r.json() : null)
+      .then(cfg => {
+        if (!cfg) return;
+        defaultModelCfg = Object.assign(defaultModelCfg, cfg);
+        if (cfg.router_model) document.getElementById('step-1-model').innerText = cfg.router_model;
+        if (cfg.extraction_model) document.getElementById('step-2-model').innerText = cfg.extraction_model;
+        if (cfg.repair_model) {
+          const qm = cfg.query_model ? ` + ${cfg.query_model.split('/').pop()}` : '';
+          document.getElementById('step-5-model').innerText = `${cfg.repair_model}${qm}`;
+          document.getElementById('step-6-model').innerText = `cpsa4 + ${cfg.repair_model}`;
+        }
+      })
+      .catch(() => {});
 
-    // 2. Real-time SSE Connection
+    function syncInitialState() {
+      fetch('/api/tabs')
+        .then(r => {
+          if (!r.ok) throw new Error('legacy server');
+          return r.json();
+        })
+        .then(overview => {
+          isServerLive = Boolean(overview.is_live);
+          liveActiveRfcId = overview.active_rfc_id;
+          liveActiveTabIndex = overview.active_tab_index;
+
+          const runDirEl = document.getElementById('run-dir-badge');
+          if (runDirEl) {
+            const rd = overview.run_directory || (isServerLive ? 'Live Session' : 'Offline Replay');
+            runDirEl.innerText = rd.split('/').slice(-2).join('/');
+            runDirEl.title = rd;
+          }
+
+          acceptedTabs = [];
+          acceptedTabsByIndex.clear();
+          (overview.accepted_tabs || []).forEach(t => {
+            acceptedTabs.push(t);
+            acceptedTabsByIndex.set(t.tab_index, t);
+          });
+          acceptedTabs.sort((a, b) => a.tab_index - b.tab_index);
+          updateFilteredButtonCount(overview.filtered_total || 0);
+          recomputeVisibleTabs();
+          updateLivePinButton();
+
+          if (!isServerLive) {
+            if (acceptedTabs.length > 0) {
+              selectNumberedTab(acceptedTabs[0].tab_index);
+            } else {
+              setDiagnosisBadge('Replay Loaded (0 Accepted Tabs)', 'normal');
+            }
+          } else if (viewMode === 'live') {
+            return fetch('/api/active')
+              .then(r => r.json())
+              .then(state => {
+                if (state && Array.isArray(state.events)) {
+                  state.events.forEach(evt => renderEventIntoViewport(evt, true));
+                }
+              });
+          }
+        })
+        .catch(() => {
+          // Graceful fallback if connected to an older in-memory server without /api/tabs
+          fetch('/api/history')
+            .then(r => r.json())
+            .then(events => {
+              if (Array.isArray(events)) events.forEach(e => renderEventIntoViewport(e, true));
+            })
+            .catch(() => {});
+        });
+    }
+
+    syncInitialState();
+
+    // Real-time Server-Sent Events: listen on all named event types so frames fire in <1ms
     const sse = new EventSource('/api/events');
-    sse.onmessage = function(e) {
-      try {
-        const evt = JSON.parse(e.data);
-        processEvent(evt);
-      } catch (err) {}
-    };
-
-    // 3. Fallback sync polling every 1500ms
-    setInterval(syncHistory, 1500);
+    const SSE_EVENT_TYPES = [
+      'pipeline_started',
+      'stage_started',
+      'compiler_check_started',
+      'stage_completed',
+      'slice_ready',
+      'rag_retrieval',
+      'repair_attempt',
+      'stage_failed',
+      'pipeline_completed',
+      'pipeline_failed',
+      'tab_accepted',
+      'tab_updated',
+      'rfc_filtered',
+      'message'
+    ];
+    SSE_EVENT_TYPES.forEach(evtName => {
+      sse.addEventListener(evtName, function(e) {
+        try {
+          const evt = JSON.parse(e.data);
+          handleIncomingBusEvent(evt);
+        } catch (err) {}
+      });
+    });
   </script>
 </body>
 </html>

@@ -5,7 +5,7 @@
 set -e
 
 REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-export PYTHONPATH="${REPO_ROOT}:${PYTHONPATH}"
+export PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 
 if [ ! -f "${REPO_ROOT}/.venv/bin/python" ]; then
     echo "Error: Virtual environment not found at ${REPO_ROOT}/.venv" >&2

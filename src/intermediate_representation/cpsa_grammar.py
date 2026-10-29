@@ -9,7 +9,7 @@ and operator can only appear in the exact grammatical production where the
 MITRE CPSA 4.4.9 specification allows it.
 """
 
-from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union, get_args
+from typing import Any, Dict, Literal, Optional, Set, Tuple, Union, get_args
 
 
 # =============================================================================

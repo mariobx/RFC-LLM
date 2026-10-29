@@ -27,9 +27,6 @@ import litellm
 litellm.suppress_debug_info = True
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-if not GEMINI_API_KEY:
-    print("Error: GEMINI_API_KEY not found in environment or .env", file=sys.stderr)
-    sys.exit(1)
 
 MODEL_NAME = "gemini/gemini-3.1-flash-lite"
 CONCURRENCY_LIMIT = 12
@@ -118,6 +115,9 @@ async def generate_header_with_retry(chunk: dict, sem: asyncio.Semaphore, max_re
             await asyncio.sleep(wait_time)
 
 async def main():
+    if not GEMINI_API_KEY:
+        print("Error: GEMINI_API_KEY not found in environment or .env", file=sys.stderr)
+        sys.exit(1)
     print("=" * 80)
     print("CPSA DOCUMENTATION CHUNK CONTEXTUAL ENRICHMENT PIPELINE")
     print("Model: Gemini 3.1 Flash Lite | Concurrency: 12")

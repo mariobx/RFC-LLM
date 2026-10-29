@@ -1,3 +1,10 @@
+---
+# Stage 1c: Protocol Applicability Gatekeeper
+# Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
+model: nous/z-ai/glm-5.3
+timeout: 180
+temperature: 0.0
+---
 You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.
 Your task is to analyze an IETF RFC's metadata and Table of Contents to determine if it specifies an interactive cryptographic security protocol.
 

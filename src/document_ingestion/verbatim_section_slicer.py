@@ -1,7 +1,7 @@
 """Verbatim RFC Section Boundary Slicer."""
 
 import re
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from src.logging_config import get_pipeline_logger
 

@@ -68,11 +68,11 @@
     {
       "name": "01_CORE_SOURCE_AND_CLI.md",
       "title": "RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints",
-      "description": "Tier 2 — Complete core synthesis pipeline (`src/`), including RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, live web visualizer, root `rfc-llm` CLI entrypoint, and the benchmark EDHOC input RFC.",
+      "description": "Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.",
       "tier": "Tier 2 — Core Source Code & CLI Entrypoints",
       "is_master_index": false,
       "include_globs": [
-        ".prompts/**/*.md",
+        "prompts/**/*.md",
         "src/**/*.py",
         "src/**/*.html",
         "src/**/*.css",
@@ -80,6 +80,7 @@
       ],
       "explicit_files": [
         "rfc-llm",
+        "rfc-think",
         "refrences/all_RFCs/rfc9528.txt"
       ]
     },

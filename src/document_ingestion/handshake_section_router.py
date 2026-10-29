@@ -6,6 +6,7 @@ the cryptographic message exchange or handshake flow.
 
 import json
 from typing import List, Optional
+import json_repair
 import litellm
 from pydantic import BaseModel, Field
 
@@ -14,7 +15,7 @@ from src.logging_config import get_pipeline_logger
 from src.prompt_loader import (
     PROMPT_SECTION_ROUTER,
     build_schema_system_prompt,
-    load_prompt,
+    load_prompt_spec,
 )
 from src.system_config import SYSTEM_CONFIG
 
@@ -31,10 +32,6 @@ class SectionRoutingDecision(BaseModel):
     rationale: str = Field(..., description="Explanation of why these sections were selected")
 
 
-# Loaded from .prompts/02_section_router.md
-ROUTER_SYSTEM_PROMPT: str = load_prompt(PROMPT_SECTION_ROUTER)
-
-
 def route_handshake_sections(
     rfc_id: str,
     protocol_name: str,
@@ -42,7 +39,9 @@ def route_handshake_sections(
     model: Optional[str] = None,
 ) -> List[str]:
     """Uses a structured LLM call to select the exchange section IDs from the TOC."""
-    model_name = model or SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL
+    prompt_spec = load_prompt_spec(PROMPT_SECTION_ROUTER)
+    model_name = model or prompt_spec.model
+    sampling_temp = prompt_spec.temperature if prompt_spec.temperature is not None else 0.0
     logger.info("Routing exchange sections for %s ('%s') using %s", rfc_id, protocol_name, model_name)
 
     toc_formatted = "\n".join(f"{entry.section_id} {entry.title}" for entry in toc_entries)
@@ -60,7 +59,7 @@ def route_handshake_sections(
     )
 
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=0.0)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
         response = litellm.completion(
             **llm_kwargs,
             messages=[
@@ -68,14 +67,13 @@ def route_handshake_sections(
                 {"role": "user", "content": user_prompt},
             ],
             response_format={"type": "json_object"},
-            timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+            timeout=prompt_spec.timeout,
         )
 
         raw_content = response.choices[0].message.content
         try:
             decision_data = json.loads(raw_content)
         except Exception:
-            import json_repair
             decision_data = json_repair.loads(raw_content)
 
         decision = SectionRoutingDecision.model_validate(decision_data)

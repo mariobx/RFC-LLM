@@ -1,4 +1,4 @@
-"""Unit Tests for MITRE CPSA 4.4.9 Keyword/Sort Scoping and Externalized .prompts/ Loader."""
+"""Unit Tests for MITRE CPSA 4.4.9 Keyword/Sort Scoping and Externalized prompts/ Frontmatter Loader."""
 
 from pathlib import Path
 import pytest
@@ -20,13 +20,17 @@ from src.prompt_loader import (
     PROMPT_RAG_QUERY_FORMULATION,
     PROMPT_SCHEMA_SELF_CORRECTION,
     PROMPT_SECTION_ROUTER,
+    PROMPT_THINK_SYNTHESIZER,
     build_schema_system_prompt,
     load_prompt,
+    load_prompt_spec,
+    resolve_prompt_model,
 )
+from src.system_config import SYSTEM_CONFIG
 
 
-def test_externalized_prompts_load_from_disk_and_fallback(tmp_path: Path):
-    """Verify all 6 prompt templates in .prompts/ exist, load cleanly, and support fallback."""
+def test_externalized_prompts_load_frontmatter_strip_yaml_and_fallback(tmp_path: Path):
+    """Verify all 7 prompt templates in prompts/ load YAML frontmatter cleanly and strip it from prompt bodies."""
     for prompt_filename in (
         PROMPT_APPLICABILITY_GATE,
         PROMPT_SECTION_ROUTER,
@@ -34,18 +38,62 @@ def test_externalized_prompts_load_from_disk_and_fallback(tmp_path: Path):
         PROMPT_SCHEMA_SELF_CORRECTION,
         PROMPT_RAG_QUERY_FORMULATION,
         PROMPT_COMPILER_REPAIR,
+        PROMPT_THINK_SYNTHESIZER,
     ):
-        text = load_prompt(prompt_filename)
-        assert len(text) > 100
+        spec = load_prompt_spec(prompt_filename)
+        assert spec.model and "/" in spec.model
+        assert spec.timeout > 0
+        assert len(spec.body) > 100
+        assert not spec.body.startswith("---")
 
-    # Verify schema attachment helper
+        text = load_prompt(prompt_filename)
+        assert text == spec.body
+        assert "model:" not in text.splitlines()[0]
+
+    # Verify schema attachment helper omits YAML frontmatter
     schema_prompt = build_schema_system_prompt(PROMPT_PROTOCOL_EXTRACTION, CPSAProtocolSpecification)
+    assert not schema_prompt.startswith("---")
     assert "Respond strictly with a valid JSON object matching this schema:" in schema_prompt
     assert '"CPSAProtocolSpecification"' in schema_prompt
 
     # Verify fallback when directory has no files
-    fallback_text = load_prompt(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
-    assert "MITRE CPSA 4.4.9" in fallback_text
+    fallback_spec = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
+    assert "MITRE CPSA 4.4.9" in fallback_spec.body
+    assert fallback_spec.model
+
+
+def test_prompt_frontmatter_live_hot_reload_and_strata_routing(tmp_path: Path):
+    """Editing YAML frontmatter in prompts/*.md hot-reloads model/timeout immediately; strata/ routes to STRATA_API_BASE."""
+    gate_file = tmp_path / PROMPT_APPLICABILITY_GATE
+    gate_file.write_text(
+        "---\nmodel: strata/unsloth-iq4_xs\ntimeout: 45\ntemperature: 0.0\n---\nPrompt v1 body text.",
+        encoding="utf-8",
+    )
+    spec_v1 = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
+    assert spec_v1.model == "strata/unsloth-iq4_xs"
+    assert spec_v1.timeout == 45
+    assert spec_v1.temperature == 0.0
+    assert spec_v1.body == "Prompt v1 body text."
+
+    # Hot-swap model mid-run by editing the markdown file
+    gate_file.write_text(
+        "---\nmodel: ollama/qwen3.8:27b\ntimeout: 90\n---\nPrompt v2 body text.",
+        encoding="utf-8",
+    )
+    spec_v2 = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
+    assert spec_v2.model == "ollama/qwen3.8:27b"
+    assert spec_v2.timeout == 90
+    assert spec_v2.body == "Prompt v2 body text."
+
+    # CLI override takes precedence over frontmatter
+    assert resolve_prompt_model(PROMPT_APPLICABILITY_GATE, override_model="gemini/gemini-2.5-pro", prompts_dir=tmp_path) == "gemini/gemini-2.5-pro"
+    assert resolve_prompt_model(PROMPT_APPLICABILITY_GATE, override_model=None, prompts_dir=tmp_path) == "ollama/qwen3.8:27b"
+
+    # First-class strata/<model> LiteLLM routing
+    strata_kwargs = SYSTEM_CONFIG.get_llm_kwargs("strata/unsloth-iq4_xs", temperature=0.0)
+    assert strata_kwargs["model"] == "openai/strata/unsloth-iq4_xs"
+    assert strata_kwargs["api_base"] == SYSTEM_CONFIG.STRATA_API_BASE
+    assert strata_kwargs["api_key"] == SYSTEM_CONFIG.STRATA_API_KEY
 
 
 def test_logic_only_sorts_forbidden_in_role_and_skeleton_vars():

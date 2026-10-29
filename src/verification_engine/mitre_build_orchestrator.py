@@ -1,16 +1,54 @@
 """MITRE Build Orchestrator for CPSA Verification and Visualization."""
 
 import os
+import re
 import shutil
+import signal
 import subprocess
+import time
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 
 from src.system_config import SYSTEM_CONFIG
 from src.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("build_orchestrator")
+
+
+def _run_make_with_hard_timeout(
+    cmd: List[str],
+    cwd: Path,
+    env: Dict[str, str],
+    timeout_seconds: float,
+) -> Tuple[int, str, str]:
+    """Runs a command in its own process group and hard-kills all child processes (e.g. cpsa4) on timeout."""
+    proc = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        stdout_str, stderr_str = proc.communicate(timeout=timeout_seconds)
+        return proc.returncode, stdout_str or "", stderr_str or ""
+    except subprocess.TimeoutExpired as exc:
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        try:
+            proc.kill()
+            proc.communicate(timeout=2.0)
+        except Exception:
+            pass
+        raise CPSABuildError(
+            f"MITRE CPSA compilation timed out after {timeout_seconds:.0f} seconds "
+            f"(state-space explosion / infinite strand loop in {' '.join(cmd)})."
+        ) from exc
 
 
 class CPSABuildArtifacts(BaseModel):
@@ -63,8 +101,9 @@ def _count_shapes_in_file(shapes_txt_path: Path) -> int:
     try:
         with open(shapes_txt_path, "r", encoding="utf-8") as f:
             content = f.read()
-        import re
-        # Skeletons that are shapes are identified by "(shape" or "(defskeleton" in shapes.txt
+        shape_flags = re.findall(r"\(\s*shape\s*\)", content)
+        if shape_flags:
+            return len(shape_flags)
         matches = re.findall(r"\(defskeleton\s+", content)
         return len(matches)
     except Exception as e:
@@ -97,35 +136,42 @@ def execute_mitre_make_build(
     cabal_bin_str = str(SYSTEM_CONFIG.CABAL_BIN_DIR)
     env["PATH"] = f"{cabal_bin_str}:{env.get('PATH', '')}"
 
+    # Remove stale derived artifacts before running make so each attempt is fresh
+    for stale_name in (f"{stem}.txt", f"{stem}_shapes.txt", f"{stem}_shapes.xhtml", f"{stem}.xhtml"):
+        stale_file = build_dir / stale_name
+        if stale_file.exists():
+            stale_file.unlink()
+
+    max_budget_sec = min(60.0, float(getattr(SYSTEM_CONFIG, "CPSA_TIMEOUT_SECONDS", 60)))
+    start_ts = time.monotonic()
+
     # Target 1: Minimal shapes graph (triggers cpsa4, cpsa4shapes, and cpsa4graph)
     target_shapes_xhtml = f"{stem}_shapes.xhtml"
-    proc_shapes = subprocess.run(
-        ["make", target_shapes_xhtml],
+    rc_shapes, out_shapes, err_shapes = _run_make_with_hard_timeout(
+        ["make", "-B", target_shapes_xhtml],
         cwd=build_dir,
-        capture_output=True,
-        text=True,
         env=env,
-        timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
-        check=False,
+        timeout_seconds=max_budget_sec,
     )
 
-    if proc_shapes.returncode != 0:
-        err_msg = proc_shapes.stderr.strip() or proc_shapes.stdout.strip()
+    if rc_shapes != 0:
+        err_msg = err_shapes.strip() or out_shapes.strip()
         logger.error("Make build failed for %s: %s", target_shapes_xhtml, err_msg)
         raise CPSABuildError(f"MITRE build failed for {target_shapes_xhtml}: {err_msg}")
 
-    # Target 2 (Optional): Full derivation search graph
+    # Target 2 (Optional): Full derivation search graph (capped within remaining 60s budget)
     if build_full_graph:
+        remaining_sec = max(1.0, max_budget_sec - (time.monotonic() - start_ts))
         target_full_xhtml = f"{stem}.xhtml"
-        subprocess.run(
-            ["make", target_full_xhtml],
-            cwd=build_dir,
-            capture_output=True,
-            text=True,
-            env=env,
-            timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
-            check=False,
-        )
+        try:
+            _run_make_with_hard_timeout(
+                ["make", target_full_xhtml],
+                cwd=build_dir,
+                env=env,
+                timeout_seconds=remaining_sec,
+            )
+        except CPSABuildError:
+            logger.warning("Full derivation graph %s exceeded remaining budget; keeping shapes graph.", target_full_xhtml)
 
     # Verify generated artifact paths
     trace_txt = build_dir / f"{stem}.txt"

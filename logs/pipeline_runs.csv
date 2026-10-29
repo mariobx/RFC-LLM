@@ -1,104 +1,61 @@
 timestamp,rfc_id,is_eligible,protocol_name,selected_sections,sliced_lines_count,role_count,preskeleton_count,roletran_passed,solver_passed,shapes_count,duration_seconds,error_message
 2026-09-23 14:46:04,RFC 5246,True,TLS 1.2,7.3;7.4,196,2,1,True,True,1,3.42,
-2026-09-23 15:21:12,RFC2358,False,,,0,0,0,,,0,0.002,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:00:20,RFC2358,False,,,0,0,0,,,0,0.001,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:00:38,RFC2358,False,,,0,0,0,,,0,0.001,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:00:38,RFC9999,False,,,0,0,0,,,0,0.001,Document is too short to be a protocol (22 lines)
-2026-09-23 16:00:50,RFC2358,False,,,0,0,0,,,0,0.002,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:00:50,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.103,
-2026-09-23 16:01:23,RFC2358,False,,,0,0,0,,,0,0.001,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:28:32,RFC2358,False,,,0,0,0,,,0,0.002,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:28:32,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.12,
-2026-09-23 16:42:46,RFC2358,False,,,0,0,0,,,0,0.002,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:42:46,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.111,
 2026-09-23 16:47:29,RFC1,False,"Information is transmitted from HOST to HOST in bundles called messages.  A message is any stream of not more than 8080 bits, together with its header.  The header is 16 bits and contains the following information:",,0,0,0,,,0,16.143,"Ineligible: Heuristic determination: crypto_terms=False, protocol_terms=True"
 2026-09-23 16:48:15,RFC2,False,2b1 Primary links are established by a user or executive call to the monitor,,0,0,0,,,0,45.675,"Ineligible: Heuristic determination: crypto_terms=False, protocol_terms=False"
 2026-09-23 16:48:42,RFC3,False,1.  Network Timetable 2.  The Philosophy of NIL 3.  Specifications for NIL 4.  Deeper Documentation of HOST Software.,,0,0,0,,,0,27.383,"Ineligible: Heuristic determination: crypto_terms=False, protocol_terms=False"
-2026-09-23 16:50:56,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:50:56,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.124,
-2026-09-23 16:51:16,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:51:16,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.115,
-2026-09-23 16:51:28,RFC2358,False,,,0,0,0,,,0,0.004,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:54:27,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:54:28,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.119,
-2026-09-23 16:54:43,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:54:43,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.127,
-2026-09-23 16:56:24,RFC2358,False,,,0,0,0,,,0,0.004,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:56:25,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.131,
-2026-09-23 16:59:30,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:59:30,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.134,
-2026-09-23 16:59:49,RFC2358,False,,,0,0,0,,,0,0.002,Title keyword 'managed objects' indicates non-protocol document
-2026-09-23 16:59:50,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.123,
-2026-09-24 14:35:50,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 14:35:50,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.119,
 2026-09-24 14:37:05,RFC5246,True,TLS 1.2,7.3;7.4;A.4;F.1,3353,2,1,False,,0,56.278,Roletran executability check failed after 6 repair attempts: Expecting a name
-2026-09-24 14:39:22,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 14:39:22,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.127,
-2026-09-24 14:43:50,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 14:43:50,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.111,
-2026-09-24 15:15:58,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:15:58,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.118,
-2026-09-24 15:17:07,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:17:08,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.118,
-2026-09-24 15:18:01,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:18:02,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.114,
-2026-09-24 15:19:00,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:19:00,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.112,
-2026-09-24 15:19:37,RFC2358,False,,,0,0,0,,,0,0.004,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:19:37,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.114,
-2026-09-24 15:19:53,RFC2358,False,,,0,0,0,,,0,0.002,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:19:53,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.128,
 2026-09-24 15:21:57,RFC5246,True,TLS 1.2,7.3;7.4,1690,2,1,True,True,1,31.228,
-2026-09-24 15:24:27,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:24:27,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.112,
-2026-09-24 15:27:55,RFC2358,False,,,0,0,0,,,0,0.004,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:27:56,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.117,
-2026-09-24 15:31:56,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:31:57,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.116,
 2026-09-24 15:35:07,RFC5246,True,TLS 1.2,7.3;7.4;A.4;F.1,3353,2,1,True,True,1,156.745,
-2026-09-24 15:35:38,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:36:01,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:36:01,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.113,
-2026-09-24 15:49:09,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:49:09,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.133,
-2026-09-24 15:51:09,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:51:09,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.115,
-2026-09-24 15:51:33,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-24 15:51:33,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.115,
 2026-09-28 18:51:34,RFC5246,True,TLS 1.2,7.3;7.4;A.4;F.1,3353,2,1,True,True,1,30.247,
-2026-09-28 19:02:15,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-28 19:02:15,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.101,
-2026-09-28 19:03:07,RFC2358,False,,,0,0,0,,,0,0.001,Title keyword 'managed objects' indicates non-protocol document
-2026-09-28 19:03:07,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.099,
 2026-09-28 19:05:24,RFC5246,True,TLS 1.2,7.3;7.4;A.4;F.1,3353,2,3,True,True,3,130.158,
-2026-09-28 19:14:52,RFC2358,False,,,0,0,0,,,0,0.002,Title keyword 'managed objects' indicates non-protocol document
-2026-09-28 19:14:52,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.103,
-2026-09-28 19:15:23,RFC2358,False,,,0,0,0,,,0,0.001,Title keyword 'managed objects' indicates non-protocol document
-2026-09-28 19:15:23,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.085,
-2026-09-28 19:22:33,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-09-28 19:22:33,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.107,
-2026-10-08 17:55:08,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-10-08 17:55:08,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.112,
-2026-10-08 17:55:27,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-10-08 17:55:27,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.115,
-2026-10-08 17:58:34,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-10-08 17:58:34,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.115,
-2026-10-08 18:06:28,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-10-08 18:06:28,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.125,
-2026-10-08 18:07:16,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-10-08 18:07:16,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.113,
 2026-10-08 18:15:47,RFC9528,True,Ephemeral Diffie-Hellman Over COSE (EDHOC),5.2;5.3;5.4;5.5,435,0,0,,,0,220.43,Extraction failed: litellm.Timeout: APITimeoutError - Request timed out. Error_str: Request timed out.
-2026-10-08 18:16:49,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-10-08 18:16:49,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.115,
 2026-10-08 18:19:10,RFC9528,True,Ephemeral Diffie-Hellman Over COSE (EDHOC),5.2;5.3;5.4;5.5,435,0,0,,,0,127.043,"Extraction failed: 1 validation error for CPSAProtocolSpecification
 roles.0.trace.2.message_term
   Value error, Invalid term node at 'term[1][3]'. Expected string atom, integer, or nested operator list, got dict. [type=value_error, input_value=['enc', ['cat', 'initiato...y chosen per session.'}], input_type=list]
     For further information visit https://errors.pydantic.dev/2.13/v/value_error"
-2026-10-08 18:28:38,RFC2358,False,,,0,0,0,,,0,0.004,Title keyword 'managed objects' indicates non-protocol document
-2026-10-08 18:28:38,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.113,
-2026-10-08 19:05:06,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-10-08 19:05:06,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.113,
-2026-10-08 19:28:37,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-10-08 19:28:37,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.113,
-2026-10-08 20:09:48,RFC2358,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
-2026-10-08 20:09:48,RFC9999,True,orch_test_proto,2,43,2,1,True,True,2,0.113,
+2026-10-19 19:19:02,RFC9528,True,Ephemeral Diffie-Hellman Over COSE (EDHOC),5.2;5.3;5.4;5.5,435,2,3,True,True,4,89.314,
+2026-10-26 19:00:03,RFC7830,False,The EDNS(0) Padding Option,,0,0,0,,,0,7.561,Ineligible: The document specifies a DNS message padding mechanism without cryptographic operations or interactive authentication flows. It focuses on message size obfuscation rather than cryptographic security properties.
+2026-10-26 19:00:08,RFC5417,False,Control And Provisioning of Wireless Access Points (CAPWAP) Access Controller DHCP Option,,0,0,0,,,0,4.956,"Ineligible: The RFC describes DHCP options for CAPWAP protocol discovery, which is a network provisioning mechanism without cryptographic message exchanges or security primitives. The document focuses on DHCP option formats rather than interactive cryptographic protocols."
+2026-10-26 19:00:15,RFC9257,False,Guidance for External Pre-Shared Key (PSK) Usage in TLS,,0,0,0,,,0,6.851,"Ineligible: The document provides guidance on the usage of external Pre-Shared Keys (PSKs) in TLS 1.3 but does not specify an interactive protocol. It focuses on security properties, provisioning processes, and recommendations rather than defining message flows or cryptographic exchanges between principals."
+2026-10-26 19:00:19,RFC3631,False,Security Mechanisms for the Internet,,0,0,0,,,0,4.708,"Ineligible: RFC 3631 is a survey document reviewing various security mechanisms (HMAC, IPsec, Kerberos etc.) rather than specifying a single interactive protocol. The table of contents shows it covers multiple unrelated mechanisms without defining message flows or cryptographic exchanges between principals."
+2026-10-26 19:00:26,RFC9626,False,Video Frame Marking RTP Header Extension,,0,0,0,,,0,6.247,"Ineligible: The RFC describes a Video Frame Marking RTP header extension for error recovery and packet forwarding in RTP middleboxes, but it does not specify an interactive cryptographic protocol. While it mentions encrypted media, the document focuses on header extensions and signaling rather than cryptographic message exchanges between principals."
+2026-10-27 11:51:22,RFC8613,True,OSCORE (Object Security for Constrained RESTful Environments),8.1;8.2;8.3;8.4,280,0,0,,,0,59027.457,Extraction failed: litellm.InternalServerError: InternalServerError: OpenAIException - Connection error.
+2026-10-27 11:51:29,RFC9668,False,Using Ephemeral Diffie-Hellman Over COSE (EDHOC) with the Constrained Application Protocol (CoAP) and Object Security for Constrained RESTful Environments (OSCORE),,0,0,0,,,0,6.765,"Ineligible: Heuristic determination: crypto_terms=False, protocol_terms=True"
+2026-10-27 11:52:57,RFC5216,True,EAP-TLS,2.1;3.1;3.2,1063,0,0,,,0,88.262,Extraction failed: litellm.InternalServerError: InternalServerError: OpenAIException - Connection error.
+2026-10-27 11:54:05,RFC9190,False,EAP-TLS 1.3: Using the Extensible Authentication Protocol with TLS 1.3,,0,0,0,,,0,67.487,"Ineligible: Heuristic determination: crypto_terms=False, protocol_terms=True"
+2026-10-28 11:58:17,RFC6347,True,Datagram Transport Layer Security Version 1.2,4.2;4.3.2,718,0,0,,,0,86652.07,Extraction failed: litellm.APIError: APIError: OpenAIException - Insufficient available credits for this inference request. Add credits or lower the requested maximum output tokens.
+2026-10-28 16:03:15,RFC9143,False,SDP BUNDLE,,0,0,0,,,0,3.734,"Ineligible: This is an SDP media negotiation extension for multiplexing media over a single transport. While it references DTLS/SRTP/ICE, it defines no cryptographic message flows, keys, nonces, or authentication mechanisms itself; it is a signaling/media description format specification, not a cryptographic protocol."
+2026-10-28 16:03:15,RFC9472,False,,,0,0,0,,,0,0.001,Title keyword 'data model' indicates non-protocol document
+2026-10-28 16:03:15,RFC3783,False,,,0,0,0,,,0,0.005,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:03:26,RFC7512,False,The PKCS #11 URI Scheme,,0,0,0,,,0,11.941,"Ineligible: RFC 7512 defines a Uniform Resource Identifier (URI) scheme for naming and identifying PKCS #11 objects, tokens, slots, and libraries. This is a static data format / naming convention specification, not an interactive protocol. The Table of Contents confirms this: it covers URI syntax, query attribute semantics, matching guidelines, URI comparison, and generation — all characteristics of an identifier format. There are no message flows, no exchange of cryptographic material between principals, no authentication handshake, no key establishment, and no nonce exchanges. Although PKCS #11 concerns cryptographic tokens, this document merely specifies how to reference stored objects (which may include keys or certificates) via URI strings; it does not define any protocol behavior amenable to CPSA formal verification."
+2026-10-28 16:03:26,RFC5169,False,,,0,0,0,,,0,0.001,Title keyword 'problem statement' indicates non-protocol document
+2026-10-28 16:03:28,RFC3850,False,S/MIME 3.1 Certificate Handling,,0,0,0,,,0,1.943,"Ineligible: This RFC specifies certificate handling conventions and processing requirements for S/MIME agents (X.509 certificate validation, CRLs, path validation). It is a static profile/requirements document referencing RFC 3280, not an interactive protocol with message flows between principals. Ineligible for CPSA."
+2026-10-28 16:03:28,RFC6101,False,,,0,0,0,,,0,0.003,Category 'Historic' is not a protocol specification
+2026-10-28 16:03:28,RFC2844,False,,,0,0,0,,,0,0.005,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:03:31,RFC2375,False,IPv6 Multicast Address Assignments,,0,0,0,,,0,2.935,"Ineligible: RFC 2375 is a static registry of IPv6 multicast address assignments. It defines no interactive protocol, no message flows, and no cryptographic primitives such as keys, nonces, signatures, or authentication mechanisms. It is ineligible for CPSA analysis."
+2026-10-28 16:03:31,RFC5520,False,,,0,0,0,,,0,0.006,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:03:43,RFC4494,False,AES-CMAC-96,,0,0,0,,,0,11.585,"Ineligible: RFC 4494 specifies a message authentication code (MAC) algorithm, not an interactive protocol. It defines AES-CMAC-96 as a one-way data transformation: computing a fixed-length authentication tag from a symmetric AES key and a message, for use within IPsec ESP/AH. While it employs cryptographic primitives (symmetric AES keys, MAC computation), the document contains no message flows, no exchange of nonces or challenges, no key establishment, and no sequence of interactions between principals. The Table of Contents confirms this: it consists of algorithm definitions (AES-CMAC, AES-CMAC-96), test vectors, and a discussion of interaction with the ESP cipher mechanism. CPSA models protocols as strands of messages exchanged among roles to verify authentication and secrecy properties; a standalone MAC algorithm specification has no protocol structure to analyze and is therefore ineligible for CPSA formal verification."
+2026-10-28 16:03:43,RFC1683,False,,,0,0,0,,,0,0.005,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:03:43,RFC7385,False,,,0,0,0,,,0,0.001,Title keyword 'registry' indicates non-protocol document
+2026-10-28 16:03:43,RFC7115,False,,,0,0,0,,,0,0.001,Category 'Best Current Practice' is not a protocol specification
+2026-10-28 16:03:44,RFC9053,False,COSE Algorithms,,0,0,0,,,0,1.156,"Ineligible: RFC 9053 is a registry/algorithm-catalog document specifying cryptographic algorithms (ECDSA, EdDSA, HMAC, AES-GCM/CCM, ECDH, HKDF) for use with COSE message structures. It defines data encodings and algorithm parameters but no interactive message flows or protocol runs between principals, so it is ineligible for CPSA formal verification."
+2026-10-28 16:03:50,RFC8691,False,Basic Support for IPv6 Networks Operating Outside the Context of a Basic Service Set over IEEE Std 802.11,,0,0,0,,,0,5.898,"Ineligible: RFC 8691 specifies adaptation methods for running IPv6 over IEEE 802.11-OCB wireless links (e.g., vehicular networks), covering MTU settings, frame formats, link-local address configuration, stateless autoconfiguration, address mapping, and subnet structure. This is a link-layer/network adaptation specification with no interactive cryptographic protocol. The Security Considerations section addresses only privacy topics (MAC address/interface ID generation, pseudonymization), not authentication, key establishment, or secure channel setup. No cryptographic message exchanges, keys, nonces, or signatures are defined, making it ineligible for CPSA analysis."
+2026-10-28 16:03:50,RFC8081,False,,,0,0,0,,,0,0.011,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:03:50,RFC5732,False,,,0,0,0,,,0,0.007,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:03:50,RFC3521,False,,,0,0,0,,,0,0.001,Title keyword 'framework for' indicates non-protocol document
+2026-10-28 16:06:36,RFC4109,False,IKEv1,,0,0,0,,,0,165.556,"Ineligible: RFC 4109 is an algorithm requirements catalog, not a protocol specification. It updates RFC 2409 (the original IKEv1 specification) by revising the list of required and suggested encryption, hash, authentication, and Diffie-Hellman group algorithms for IKEv1 implementations. The Table of Contents contains only Introduction, Old Algorithm Requirements, New Algorithm Requirements, Summary, Security Considerations, and References — no sections on message exchanges, payloads, phases, state machines, or principal interactions, and no use of keys/nonces in any protocol flow. The underlying IKEv1 key establishment protocol defined in RFC 2409 (Initiator/Responder roles, DH exponents, nonces, signatures) is a strong CPSA candidate, but this document itself specifies no message flows to model; RFC 2409 should be analyzed instead."
+2026-10-28 16:06:36,RFC1634,False,,,0,0,0,,,0,0.005,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:06:39,RFC2447,False,iCalendar Message-Based Interoperability Protocol (iMIP),,0,0,0,,,0,3.835,"Ineligible: iMIP is a MIME/email message format binding for calendar scheduling data, not an interactive cryptographic protocol. It defines static data formats and content types; security is only discussed as considerations (relying on external mechanisms like S/MIME), with no key establishment, nonces, or authentication message flows of its own."
+2026-10-28 16:07:47,RFC2952,True,Telnet Encryption: DES 64 bit Cipher Feedback (DES_CFB64),2;4,86,2,3,True,True,2,67.13,
+2026-10-28 16:07:47,RFC6574,False,,,0,0,0,,,0,0.009,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:07:47,RFC5817,False,,,0,0,0,,,0,0.008,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:07:47,RFC3266,False,,,0,0,0,,,0,0.005,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:07:47,RFC2309,False,,,0,0,0,,,0,0.008,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:07:47,RFC55,False,,,0,0,0,,,0,0.006,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:07:47,RFC9083,False,,,0,0,0,,,0,0.008,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:17:37,RFC9444,True,Automated Certificate Management Environment (ACME) for Subdomains,4.3;5,359,0,0,,,0,590.81,Extraction failed: litellm.Timeout: APITimeoutError - Request timed out. Error_str: Request timed out.
+2026-10-28 16:17:37,RFC1665,False,,,0,0,0,,,0,0.003,Title keyword 'managed objects' indicates non-protocol document
+2026-10-28 16:17:37,RFC280,False,,,0,0,0,,,0,0.002,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:17:50,RFC6812,False,Cisco Service-Level Assurance Protocol,,0,0,0,,,0,12.45,"Ineligible: RFC 6812 specifies a network performance measurement protocol for collecting service-level metrics such as latency, delay variation, and packet/frame loss. Although it is interactive (Control-Request/Control-Response followed by a Measurement Phase between sender and responder) and its Security Considerations discuss message authentication, replay protection, and optional IPsec protection, these cryptographic mechanisms are auxiliary protective measures for measurement traffic rather than the protocol's core function. The protocol does not perform key establishment, entity authentication, or secure channel setup as its primary purpose; it is a telemetry/performance-monitoring protocol. Therefore it falls under the ineligible category of network measurement/transport protocols without substantive cryptographic protocol goals, and is not a suitable target for CPSA formal verification."
+2026-10-28 16:17:50,RFC7799,False,,,0,0,0,,,0,0.005,"Frontmatter, abstract, and TOC lack cryptographic security protocol terminology"
+2026-10-28 16:17:51,RFC7805,False,Moving Outdated TCP Extensions and TCP-Related Documents to Historic or Informational Status,,0,0,0,,,0,1.056,"Ineligible: This is an administrative document reclassifying outdated TCP extensions and TCP-related RFCs to Historic or Informational status. It defines no protocol, no message flows, no principals, and no cryptographic mechanisms, making it ineligible for CPSA analysis."

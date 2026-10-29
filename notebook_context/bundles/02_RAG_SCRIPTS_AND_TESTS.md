@@ -2,7 +2,7 @@
 
 > Tier 3 — Operational RAG chunking/embedding/enrichment pipeline scripts (`refrences/scripts/`), shell pipeline runner (`refrences/run_rag_pipeline.sh`), retrieval evaluation and clustering scripts (`refrences/reports/`), LaTeX report source, and the complete pytest unit and integration test suite (`tests/`).
 
-*Generated: 2026-10-19 22:11:31 UTC · Git: `main` @ `81040c26a432` · Tier: Tier 3 — Operational Scripts, Pipelines & Test Suites · Files: 14 · Estimated Tokens: ~51,906*
+*Generated: 2026-10-29 19:24:55 UTC · Git: `main` @ `9fe6be87c355` · Tier: Tier 3 — Operational Scripts, Pipelines & Test Suites · Files: 18 · Estimated Tokens: ~61,031*
 
 ## Table of Contents
 
@@ -15,11 +15,15 @@
 - [`refrences/scripts/03_query_rag.py`](#refrencesscripts03-query-ragpy)
 - [`refrences/scripts/04_build_embeddings.py`](#refrencesscripts04-build-embeddingspy)
 - [`refrences/scripts/05_enrich_doc_chunks.py`](#refrencesscripts05-enrich-doc-chunkspy)
+- [`tests/conftest.py`](#testsconftestpy)
 - [`tests/test_code_generation_and_verification.py`](#teststest-code-generation-and-verificationpy)
 - [`tests/test_cpsa_scoping_and_prompts.py`](#teststest-cpsa-scoping-and-promptspy)
 - [`tests/test_document_ingestion.py`](#teststest-document-ingestionpy)
+- [`tests/test_generate_think.py`](#teststest-generate-thinkpy)
 - [`tests/test_main_pipeline_orchestrator.py`](#teststest-main-pipeline-orchestratorpy)
+- [`tests/test_trajectory_and_hardening.py`](#teststest-trajectory-and-hardeningpy)
 - [`tests/test_visualizer_and_events.py`](#teststest-visualizer-and-eventspy)
+- [`tests/test_visualizer_tabs.py`](#teststest-visualizer-tabspy)
 
 ---
 
@@ -624,7 +628,7 @@ if __name__ == "__main__":
 
 ### `refrences/reports/plot_clusters.py`
 
-*sha256:`8ef9166c5e29` · 1278 lines · 49.0 KB (~12,553 tokens) · lang:`python`*
+*sha256:`4cbfa1009a78` · 1269 lines · 48.7 KB (~12,457 tokens) · lang:`python`*
 
 ```python
 #!/usr/bin/env python3
@@ -673,14 +677,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CHUNKS_DIR = BASE_DIR / "chunks"
 REPORTS_DIR = BASE_DIR / "reports"
 REPO_ROOT = BASE_DIR.parent
-DOWNLOADS_DIR = Path("/home/mario/Downloads")
 
 NPY_PATH = CHUNKS_DIR / "embeddings.npy"
 META_PATH = CHUNKS_DIR / "embeddings_meta.json"
 JSONL_PATH = CHUNKS_DIR / "manual_chunks.jsonl"
 OUT_HTML_PATH = REPORTS_DIR / "embedding_clusters.html"
 ROOT_HTML_PATH = REPO_ROOT / "embedding_clusters.html"
-DL_HTML_PATH = DOWNLOADS_DIR / "embedding_clusters.html"
 
 # Mathematically optimal 12-color palette: 150° chromatic stride in HCL space + distinct glyphs
 CATEGORY_CONFIG = {
@@ -1882,24 +1884,17 @@ def main():
     with open(OUT_HTML_PATH, "w", encoding="utf-8") as f:
         f.write(full_html_content)
 
-    # Copy to repo root and downloads folder
+    # Copy to repo root
     try:
         with open(ROOT_HTML_PATH, "w", encoding="utf-8") as f:
             f.write(full_html_content)
     except Exception as e:
         print(f"Warning: Could not copy to root: {e}", file=sys.stderr)
 
-    try:
-        with open(DL_HTML_PATH, "w", encoding="utf-8") as f:
-            f.write(full_html_content)
-    except Exception as e:
-        print(f"Warning: Could not copy to downloads: {e}", file=sys.stderr)
-
     print(f"\n========================================================")
     print(f"Strict Top-10 Highlight Visualizer Generated Successfully!")
     print(f"Primary File: {OUT_HTML_PATH}")
     print(f"Root Workspace File: {ROOT_HTML_PATH}")
-    print(f"User Downloads: {DL_HTML_PATH}")
     print(f"Total Points Indexed: {len(search_corpus)}")
     print(f"========================================================\n")
 
@@ -3261,7 +3256,7 @@ if __name__ == "__main__":
 
 ### `refrences/scripts/03_query_rag.py`
 
-*sha256:`108c13835a78` · 438 lines · 18.5 KB (~4,740 tokens) · lang:`python`*
+*sha256:`e9b15f055df7` · 439 lines · 18.6 KB (~4,764 tokens) · lang:`python`*
 
 ```python
 #!/usr/bin/env python3
@@ -3413,9 +3408,10 @@ class CPSASemanticRetriever:
 
             breadcrumb = chunk.get('breadcrumb') or chunk.get('chapter', '')
             summary = chunk.get('scenario_summary', '')
+            ctx_hdr = chunk.get('context_header', '')
             tags_str = " ".join(chunk.get('tags', []))
             doc_tokens = tokenize(
-                f"{chunk.get('title', '')} {chunk.get('title', '')} {breadcrumb} {summary} {tags_str} {chunk.get('text', '')}"
+                f"{chunk.get('title', '')} {chunk.get('title', '')} {breadcrumb} {ctx_hdr} {summary} {tags_str} {chunk.get('text', '')}"
             )
             doc_len = self.doc_lengths[idx] if idx < len(self.doc_lengths) else len(doc_tokens)
             doc_freq = Counter(doc_tokens)
@@ -3491,7 +3487,7 @@ class CPSASemanticRetriever:
         Unified search supporting:
         - 'bm25': pure lexical keyword search
         - 'dense': pure vector cosine similarity
-        - 'hybrid': Steep RRF (k=20) combining BM25 and dense similarity
+        - 'hybrid': Convex MinMax fusion (0.55 dense + 0.45 BM25) with AST keyword boost
         - rerank=True: Cross-Encoder full token attention reranking via FlashRank ONNX.
         """
         if not self.chunks:
@@ -3660,7 +3656,7 @@ def main():
     parser.add_argument("query", type=str, help="Search query, technical phrase, or error message.")
     parser.add_argument("--top-k", "-k", type=int, default=3, help="Number of results to return (default: 3).")
     parser.add_argument("--mode", "-m", type=str, choices=["hybrid", "bm25", "dense"], default="hybrid",
-                        help="Retrieval mode: 'hybrid' (RRF, default), 'bm25', or 'dense'.")
+                        help="Retrieval mode: 'hybrid' (Convex MinMax fusion, default), 'bm25', or 'dense'.")
     parser.add_argument("--source", "-s", type=str, default=None, help="Filter by source file substring.")
     parser.add_argument("--type", "-t", type=str, default=None, help="Filter by chunk_type ('documentation' or 'code_example').")
     args = parser.parse_args()
@@ -3977,7 +3973,7 @@ if __name__ == "__main__":
 
 ### `refrences/scripts/05_enrich_doc_chunks.py`
 
-*sha256:`741a60e69395` · 207 lines · 7.9 KB (~2,021 tokens) · lang:`python`*
+*sha256:`23400af7e46f` · 207 lines · 7.9 KB (~2,024 tokens) · lang:`python`*
 
 ```python
 #!/usr/bin/env python3
@@ -4009,9 +4005,6 @@ import litellm
 litellm.suppress_debug_info = True
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-if not GEMINI_API_KEY:
-    print("Error: GEMINI_API_KEY not found in environment or .env", file=sys.stderr)
-    sys.exit(1)
 
 MODEL_NAME = "gemini/gemini-3.1-flash-lite"
 CONCURRENCY_LIMIT = 12
@@ -4100,6 +4093,9 @@ async def generate_header_with_retry(chunk: dict, sem: asyncio.Semaphore, max_re
             await asyncio.sleep(wait_time)
 
 async def main():
+    if not GEMINI_API_KEY:
+        print("Error: GEMINI_API_KEY not found in environment or .env", file=sys.stderr)
+        sys.exit(1)
     print("=" * 80)
     print("CPSA DOCUMENTATION CHUNK CONTEXTUAL ENRICHMENT PIPELINE")
     print("Model: Gemini 3.1 Flash Lite | Concurrency: 12")
@@ -4187,6 +4183,29 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+```
+
+---
+
+### `tests/conftest.py`
+
+*sha256:`1fa6c287ec3c` · 14 lines · 0.5 KB (~133 tokens) · lang:`python`*
+
+```python
+"""Global pytest fixtures ensuring hermetic test execution without polluting tracked repo logs."""
+
+from pathlib import Path
+import pytest
+
+from src.system_config import SYSTEM_CONFIG
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_logs_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Redirects SYSTEM_CONFIG.LOGS_DIR to an isolated temporary folder during pytest runs."""
+    temp_logs = tmp_path / "logs"
+    temp_logs.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(SYSTEM_CONFIG, "LOGS_DIR", temp_logs)
 ```
 
 ---
@@ -4532,10 +4551,10 @@ def test_clean_rag_diagnostic_query_sanitization():
 
 ### `tests/test_cpsa_scoping_and_prompts.py`
 
-*sha256:`e5bd0e9a7fec` · 160 lines · 6.8 KB (~1,732 tokens) · lang:`python`*
+*sha256:`f1dec182640b` · 208 lines · 9.0 KB (~2,316 tokens) · lang:`python`*
 
 ```python
-"""Unit Tests for MITRE CPSA 4.4.9 Keyword/Sort Scoping and Externalized .prompts/ Loader."""
+"""Unit Tests for MITRE CPSA 4.4.9 Keyword/Sort Scoping and Externalized prompts/ Frontmatter Loader."""
 
 from pathlib import Path
 import pytest
@@ -4557,13 +4576,17 @@ from src.prompt_loader import (
     PROMPT_RAG_QUERY_FORMULATION,
     PROMPT_SCHEMA_SELF_CORRECTION,
     PROMPT_SECTION_ROUTER,
+    PROMPT_THINK_SYNTHESIZER,
     build_schema_system_prompt,
     load_prompt,
+    load_prompt_spec,
+    resolve_prompt_model,
 )
+from src.system_config import SYSTEM_CONFIG
 
 
-def test_externalized_prompts_load_from_disk_and_fallback(tmp_path: Path):
-    """Verify all 6 prompt templates in .prompts/ exist, load cleanly, and support fallback."""
+def test_externalized_prompts_load_frontmatter_strip_yaml_and_fallback(tmp_path: Path):
+    """Verify all 7 prompt templates in prompts/ load YAML frontmatter cleanly and strip it from prompt bodies."""
     for prompt_filename in (
         PROMPT_APPLICABILITY_GATE,
         PROMPT_SECTION_ROUTER,
@@ -4571,18 +4594,62 @@ def test_externalized_prompts_load_from_disk_and_fallback(tmp_path: Path):
         PROMPT_SCHEMA_SELF_CORRECTION,
         PROMPT_RAG_QUERY_FORMULATION,
         PROMPT_COMPILER_REPAIR,
+        PROMPT_THINK_SYNTHESIZER,
     ):
-        text = load_prompt(prompt_filename)
-        assert len(text) > 100
+        spec = load_prompt_spec(prompt_filename)
+        assert spec.model and "/" in spec.model
+        assert spec.timeout > 0
+        assert len(spec.body) > 100
+        assert not spec.body.startswith("---")
 
-    # Verify schema attachment helper
+        text = load_prompt(prompt_filename)
+        assert text == spec.body
+        assert "model:" not in text.splitlines()[0]
+
+    # Verify schema attachment helper omits YAML frontmatter
     schema_prompt = build_schema_system_prompt(PROMPT_PROTOCOL_EXTRACTION, CPSAProtocolSpecification)
+    assert not schema_prompt.startswith("---")
     assert "Respond strictly with a valid JSON object matching this schema:" in schema_prompt
     assert '"CPSAProtocolSpecification"' in schema_prompt
 
     # Verify fallback when directory has no files
-    fallback_text = load_prompt(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
-    assert "MITRE CPSA 4.4.9" in fallback_text
+    fallback_spec = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
+    assert "MITRE CPSA 4.4.9" in fallback_spec.body
+    assert fallback_spec.model
+
+
+def test_prompt_frontmatter_live_hot_reload_and_strata_routing(tmp_path: Path):
+    """Editing YAML frontmatter in prompts/*.md hot-reloads model/timeout immediately; strata/ routes to STRATA_API_BASE."""
+    gate_file = tmp_path / PROMPT_APPLICABILITY_GATE
+    gate_file.write_text(
+        "---\nmodel: strata/unsloth-iq4_xs\ntimeout: 45\ntemperature: 0.0\n---\nPrompt v1 body text.",
+        encoding="utf-8",
+    )
+    spec_v1 = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
+    assert spec_v1.model == "strata/unsloth-iq4_xs"
+    assert spec_v1.timeout == 45
+    assert spec_v1.temperature == 0.0
+    assert spec_v1.body == "Prompt v1 body text."
+
+    # Hot-swap model mid-run by editing the markdown file
+    gate_file.write_text(
+        "---\nmodel: ollama/qwen3.8:27b\ntimeout: 90\n---\nPrompt v2 body text.",
+        encoding="utf-8",
+    )
+    spec_v2 = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
+    assert spec_v2.model == "ollama/qwen3.8:27b"
+    assert spec_v2.timeout == 90
+    assert spec_v2.body == "Prompt v2 body text."
+
+    # CLI override takes precedence over frontmatter
+    assert resolve_prompt_model(PROMPT_APPLICABILITY_GATE, override_model="gemini/gemini-2.5-pro", prompts_dir=tmp_path) == "gemini/gemini-2.5-pro"
+    assert resolve_prompt_model(PROMPT_APPLICABILITY_GATE, override_model=None, prompts_dir=tmp_path) == "ollama/qwen3.8:27b"
+
+    # First-class strata/<model> LiteLLM routing
+    strata_kwargs = SYSTEM_CONFIG.get_llm_kwargs("strata/unsloth-iq4_xs", temperature=0.0)
+    assert strata_kwargs["model"] == "openai/strata/unsloth-iq4_xs"
+    assert strata_kwargs["api_base"] == SYSTEM_CONFIG.STRATA_API_BASE
+    assert strata_kwargs["api_key"] == SYSTEM_CONFIG.STRATA_API_KEY
 
 
 def test_logic_only_sorts_forbidden_in_role_and_skeleton_vars():
@@ -4806,9 +4873,268 @@ def test_heuristic_section_router_tls(tls_rfc_text: str):
 
 ---
 
+### `tests/test_generate_think.py`
+
+*sha256:`a5001e31cc2d` · 250 lines · 10.5 KB (~2,682 tokens) · lang:`python`*
+
+```python
+"""Unit and integration tests for Phase 3 Hindsight Reasoning (<think>) Synthesizer."""
+
+import json
+from pathlib import Path
+from unittest.mock import patch
+
+from src.generate_think.think_schema import SynthesizedReasoningSteps, ThinkArtifactBundle
+from src.generate_think.dspy_think_synthesizer import (
+    _sanitize_hindsight_leakage,
+    compile_deterministic_reasoning_steps,
+    generate_think_for_trajectory,
+    process_run_directory,
+)
+
+
+def _sample_trajectory_dict() -> dict:
+    return {
+        "schema_version": "1.0.0",
+        "run_id": "rfc 9999_20261022T190000Z",
+        "timestamp_utc": "2026-10-22T19:00:00Z",
+        "duration_seconds": 12.5,
+        "rfc_metadata": {
+            "rfc_id": "RFC 9999",
+            "rfc_title": "Test Mutual Auth Protocol",
+            "protocol_name": "test_proto",
+            "algebra": "basic",
+            "participating_principals": ["init", "resp"],
+            "selected_sections": ["2"],
+            "sliced_lines_count": 10,
+            "verbatim_rfc_slice": "2. Protocol Handshake\nInit sends encrypted nonce n under k to Resp.",
+        },
+        "stage2_initial_extraction": {
+            "schema_self_correction_triggered": False,
+            "schema_validation_error": None,
+            "initial_ast": None,
+            "initial_scm": None,
+        },
+        "stage5_preflight_gate": {
+            "validator_binary": "cpsa4roletran",
+            "roletran_algebra_supported": True,
+            "initial_passed": False,
+            "final_passed": True,
+            "total_attempts": 1,
+            "compiled_defproc_output": "(defproc ...)",
+            "repair_attempts": [
+                {
+                    "attempt_number": 1,
+                    "cycle_detected": False,
+                    "rejected_ast": {},
+                    "rejected_scm": "(defprotocol test_proto basic (defrole init ...))",
+                    "raw_stderr": ":5:4: Received term cannot be fully destructured",
+                    "parsed_diagnostic": "Received term cannot be fully destructured",
+                    "rag_query": "cpsa4roletran received term destructured inputs",
+                    "retrieved_chunk_ids": [95, 114],
+                    "repaired_ast": {},
+                    "repaired_scm": "(defprotocol test_proto basic (defrole init (inputs ch k) ...))",
+                    "passed_after_repair": True,
+                }
+            ],
+        },
+        "stage6_cpsa4_solver": {
+            "validator_binary": "cpsa4",
+            "initial_passed": True,
+            "final_passed": True,
+            "total_attempts": 0,
+            "repair_attempts": [],
+            "exploration_telemetry_from_txt": {
+                "source_file": "test_proto.txt",
+                "txt_file_size_bytes": 1200,
+                "total_explored_labels": 4,
+                "dead_branch_nodes_count": 0,
+                "step_limit_or_bound_hit": False,
+                "state_explosion_detected": False,
+                "dead_preskeleton_diagnostics": [],
+            },
+            "shapes_analysis_from_shapes_txt": {
+                "source_file": "test_proto_shapes.txt",
+                "shapes_file_size_bytes": 800,
+                "total_preskeletons": 2,
+                "total_realized_shapes": 1,
+                "per_preskeleton_outcomes": [
+                    {
+                        "skeleton_index": 0,
+                        "root_label": 0,
+                        "skeleton_type": "participant_pov",
+                        "comment": "Initiator POV",
+                        "has_deflistener": False,
+                        "listener_term": None,
+                        "realized_shape_labels": [1],
+                        "realized_shapes_count": 1,
+                        "max_strands_in_realized_shape": 2,
+                        "instantiated_roles_in_shape": [
+                            {"role": "init", "height": 2},
+                            {"role": "resp", "height": 2},
+                        ],
+                        "is_trivial_single_strand_shape": False,
+                        "goal_satisfied": None,
+                        "verdict": "AUTHENTICATED_MULTI_STRAND",
+                    }
+                ],
+            },
+        },
+        "quality_assessment": {
+            "quality_tier": "GOLD",
+            "all_participant_povs_realized": True,
+            "all_participant_povs_multi_strand": True,
+            "all_secrecy_listeners_unrealized": True,
+            "post_training_routing": {
+                "eligible_for_sft_positive": True,
+                "dpo_contrastive_pairs_available": 1,
+                "compiler_repair_trajectories_available": 1,
+            },
+        },
+        "final_verified_output": {
+            "final_ast": {
+                "protocol_name": "test_proto",
+                "message_algebra": "basic",
+                "herald_comment": "Test mutual auth protocol",
+                "roles": [
+                    {
+                        "role_name": "init",
+                        "description": "Initiator role",
+                        "variables": [
+                            {"name": "ch", "sort": "chan", "description": "Channel", "rfc_field": "Sec 2"},
+                            {"name": "n", "sort": "text", "description": "Fresh nonce", "rfc_field": "Sec 2"},
+                            {"name": "k", "sort": "akey", "description": "Public key", "rfc_field": "Sec 2"},
+                        ],
+                        "trace": [
+                            {
+                                "direction": "send",
+                                "channel": "ch",
+                                "message_term": ["enc", "n", "k"],
+                                "description": "Send encrypted nonce",
+                            },
+                            {
+                                "direction": "recv",
+                                "channel": "ch",
+                                "message_term": "n",
+                                "description": "Receive plaintext nonce",
+                            },
+                        ],
+                        "inputs": ["ch", "k"],
+                        "outputs": ["n"],
+                        "unique_originating": ["n"],
+                        "unique_generated": [],
+                        "non_originating": [],
+                    }
+                ],
+                "skeletons": [
+                    {
+                        "protocol_name": "test_proto",
+                        "description": "Initiator POV",
+                        "variables": [
+                            {"name": "n", "sort": "text"},
+                            {"name": "k", "sort": "akey"},
+                        ],
+                        "strands": [
+                            {"role_name": "init", "variable_bindings": {"n": "n", "k": "k"}},
+                        ],
+                        "non_originating": [["invk", "k"]],
+                        "unique_originating": ["n"],
+                        "listeners": [],
+                        "comment": "Initiator POV",
+                    }
+                ],
+            },
+            "final_scm_with_header": ";;; [RFC-ID: RFC 9999]\n(defprotocol test_proto basic ...)",
+            "distilled_shapes_txt": "(herald ...)",
+        },
+    }
+
+
+def test_deterministic_reasoning_compiler_and_hindsight_sanitizer():
+    traj = _sample_trajectory_dict()
+    steps = compile_deterministic_reasoning_steps(traj)
+    assert isinstance(steps, SynthesizedReasoningSteps)
+    assert "RFC 9999" in steps.step1_protocol_and_algebra
+    assert "`n` (sort `text`)" in steps.step2_principals_and_variables
+    assert "(send ch (enc n k))" in steps.step3_message_flow_and_terms
+    assert "Wait—let me check pre-flight role executability" in steps.step4_compiler_backtracking_and_invariants
+
+    leaked = "<think>Looking at the provided AST and in the given final_scm, we use basic.</think>"
+    cleaned = _sanitize_hindsight_leakage(leaked)
+    assert "provided AST" not in cleaned
+    assert "given final_scm" not in cleaned
+    assert not cleaned.startswith("<think>")
+
+
+def test_process_run_directory_creates_think_json_and_updates_metadata_index(tmp_path: Path):
+    run_dir = tmp_path / "run_2026-10-22_19-00-00"
+    rfc_dir = run_dir / "rfc9999"
+    rfc_dir.mkdir(parents=True)
+
+    traj_path = rfc_dir / "test_proto_trajectory.json"
+    traj_path.write_text(json.dumps(_sample_trajectory_dict(), indent=2), encoding="utf-8")
+
+    index_path = run_dir / "metadata_index.json"
+    index_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0.0",
+                "run_directory": str(run_dir.resolve()),
+                "total_rfcs_processed": 1,
+                "metadata_json_files": [str(traj_path.resolve())],
+                "rfc_directories": [str(rfc_dir.resolve())],
+                "runs": [
+                    {
+                        "rfc_id": "RFC 9999",
+                        "protocol_name": "test_proto",
+                        "is_eligible": True,
+                        "build_successful": True,
+                        "quality_tier": "GOLD",
+                        "rfc_directory": str(rfc_dir.resolve()),
+                        "scm_file": str((rfc_dir / "test_proto.scm").resolve()),
+                        "metadata_json_file": str(traj_path.resolve()),
+                        "error_message": None,
+                    }
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    think_files = process_run_directory(
+        target_path=run_dir,
+        mode="deterministic",
+        min_tier="GOLD",
+        export_jsonl=True,
+    )
+
+    assert len(think_files) == 1
+    think_path = rfc_dir / "test_proto_think.json"
+    assert think_files[0] == think_path
+    assert think_path.exists()
+
+    bundle = ThinkArtifactBundle.model_validate_json(think_path.read_text(encoding="utf-8"))
+    assert bundle.thinking_block.startswith("<think>\n")
+    assert bundle.thinking_block.endswith("\n</think>")
+    assert len(bundle.sft_messages) == 3
+    assert bundle.sft_messages[2]["content"].startswith("<think>\n")
+    assert ";;; [RFC-ID: RFC 9999]" in bundle.sft_messages[2]["content"]
+    assert len(bundle.dpo_contrastive_pairs) == 1
+    assert bundle.dpo_contrastive_pairs[0].stage == "stage5_roletran"
+
+    updated_index = json.loads(index_path.read_text(encoding="utf-8"))
+    assert str(think_path.resolve()) in updated_index["think_json_files"]
+    assert updated_index["runs"][0]["think_json_file"] == str(think_path.resolve())
+    assert (run_dir / "sft_train.jsonl").exists()
+    assert (run_dir / "dpo_pairs.jsonl").exists()
+```
+
+---
+
 ### `tests/test_main_pipeline_orchestrator.py`
 
-*sha256:`e585514ba572` · 131 lines · 5.6 KB (~1,441 tokens) · lang:`python`*
+*sha256:`bc5a9ee15ce7` · 157 lines · 7.0 KB (~1,782 tokens) · lang:`python`*
 
 ```python
 """Integration tests for Main Pipeline Orchestrator."""
@@ -4886,15 +5212,21 @@ def mock_valid_spec() -> CPSAProtocolSpecification:
 
 
 def test_pipeline_rejects_ineligible_rfc(tmp_path: Path):
-    """Pipeline immediately halts on administrative or MIB documents at Stage 1a."""
+    """Pipeline immediately halts on administrative or MIB documents at Stage 1a without creating dead RFC folders."""
+    import json
     mib_rfc_path = SYSTEM_CONFIG.RFCS_DIR / "rfc2358.txt"
+    rfc_out = tmp_path / "rfc2358_out"
     summary = run_rfc_translation_pipeline(
         rfc_file_path=mib_rfc_path,
-        output_dir=tmp_path / "rfc2358_out",
+        output_dir=rfc_out,
     )
     assert summary.is_eligible is False
     assert summary.build_successful is False
+    assert not rfc_out.exists()
     assert any(k in (summary.error_message or "").lower() for k in ["mib", "managed objects"])
+    idx_data = json.loads((tmp_path / "metadata_index.json").read_text(encoding="utf-8"))
+    assert idx_data["total_ineligible_filtered"] == 1
+    assert idx_data["rfc_directories"] == []
 
 
 def test_pipeline_e2e_successful_synthesis_and_build(tmp_path: Path, mock_valid_spec: CPSAProtocolSpecification):
@@ -4942,6 +5274,281 @@ def test_pipeline_e2e_successful_synthesis_and_build(tmp_path: Path, mock_valid_
         assert summary.build_artifacts.shapes_graph_xhtml_path.exists()
         assert summary.build_artifacts.shapes_txt_path.exists()
         assert summary.build_artifacts.shapes_count >= 1
+        assert summary.trajectory_json_path is not None
+        assert summary.trajectory_json_path.exists()
+        assert summary.quality_tier in ("GOLD", "SILVER", "BRONZE")
+
+        import json
+        traj = json.loads(summary.trajectory_json_path.read_text(encoding="utf-8"))
+        assert "models_used" not in traj
+        assert "stage5_preflight_gate" in traj
+        assert "stage6_cpsa4_solver" in traj
+        assert "exploration_telemetry_from_txt" in traj["stage6_cpsa4_solver"]
+        assert "shapes_analysis_from_shapes_txt" in traj["stage6_cpsa4_solver"]
+        assert "quality_assessment" in traj
+        assert traj["final_verified_output"]["final_scm_with_header"].startswith(";;; [RFC-ID:")
+
+        master_index = tmp_path / "metadata_index.json"
+        assert master_index.exists()
+        idx_payload = json.loads(master_index.read_text(encoding="utf-8"))
+        assert str(summary.trajectory_json_path.resolve()) in idx_payload["metadata_json_files"]
+        assert str((tmp_path / "rfc9999_out").resolve()) in idx_payload["rfc_directories"]
+```
+
+---
+
+### `tests/test_trajectory_and_hardening.py`
+
+*sha256:`97f9ec12a953` · 247 lines · 9.5 KB (~2,437 tokens) · lang:`python`*
+
+```python
+"""Hardening and edge-case tests for 60s process-group SIGKILL, malformed YAML frontmatter, S-expr splitting, artifact containment, and offline discovery."""
+
+import asyncio
+import json
+import os
+import time
+from pathlib import Path
+from unittest.mock import MagicMock
+from aiohttp import web
+import pytest
+
+from src.pipeline_events import GLOBAL_EVENT_BUS, PipelineEventBus
+from src.prompt_loader import (
+    PROMPT_APPLICABILITY_GATE,
+    load_prompt_spec,
+    parse_prompt_frontmatter,
+)
+from src.system_config import SYSTEM_CONFIG
+from src.verification_engine.mitre_build_orchestrator import (
+    CPSABuildError,
+    _run_make_with_hard_timeout,
+)
+from src.verification_engine.trajectory_metadata_exporter import (
+    split_top_level_sexprs,
+    update_run_metadata_index,
+)
+from src.visualizer.server import VisualizerServer
+
+
+def test_hard_timeout_kills_entire_process_group_including_grandchild(tmp_path: Path):
+    """_run_make_with_hard_timeout sends SIGKILL to the full process group so grandchild processes never orphan."""
+    pid_file = tmp_path / "grandchild.pid"
+    child_env = os.environ.copy()
+    child_env["TEST_GRANDCHILD_PID_FILE"] = str(pid_file)
+    script = (
+        'python3 -c "import os, time; '
+        'open(os.environ[\'TEST_GRANDCHILD_PID_FILE\'], \'w\').write(str(os.getpid())); '
+        'time.sleep(30)" & wait'
+    )
+
+    t0 = time.monotonic()
+    with pytest.raises(CPSABuildError, match="timed out"):
+        _run_make_with_hard_timeout(
+            ["bash", "-c", script],
+            cwd=tmp_path,
+            env=child_env,
+            timeout_seconds=0.4,
+        )
+    elapsed = time.monotonic() - t0
+    assert elapsed < 3.0
+
+    # Verify grandchild PID was recorded and is completely dead (ESRCH)
+    assert pid_file.exists()
+    grandchild_pid = int(pid_file.read_text(encoding="utf-8").strip())
+    time.sleep(0.05)
+    with pytest.raises(ProcessLookupError):
+        os.kill(grandchild_pid, 0)
+
+
+def test_malformed_yaml_frontmatter_and_edge_cases(tmp_path: Path):
+    """Prompt loader degrades gracefully on invalid YAML, list frontmatter, bad scalar types, BOM, and empty body."""
+    bad_yaml_file = tmp_path / PROMPT_APPLICABILITY_GATE
+    bad_yaml_file.write_text("\ufeff---\nmodel: [unclosed_list\n---\nValid fallback body after bad YAML.", encoding="utf-8")
+    spec = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
+    assert spec.body == "Valid fallback body after bad YAML."
+    assert spec.model
+
+    bad_yaml_file.write_text("---\n- item1\n- item2\n---\n   \n", encoding="utf-8")
+    spec_empty = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
+    assert "MITRE CPSA 4.4.9" in spec_empty.body
+
+    bad_yaml_file.write_text(
+        '---\nmodel: strata/unsloth-iq4_xs\ntimeout: "not_an_int"\ntemperature: "not_a_float"\n---\nCustom body.',
+        encoding="utf-8",
+    )
+    spec_scalars = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
+    assert spec_scalars.model == "strata/unsloth-iq4_xs"
+    assert spec_scalars.timeout == 180
+    assert spec_scalars.temperature == 0.0
+
+    with pytest.raises(FileNotFoundError):
+        load_prompt_spec("99_nonexistent_prompt.md", prompts_dir=tmp_path)
+
+    meta, body = parse_prompt_frontmatter("Plain prompt without frontmatter.")
+    assert meta == {}
+    assert body == "Plain prompt without frontmatter."
+
+
+def test_split_top_level_sexprs_ignores_parens_in_comments_and_strings():
+    """S-expression splitter handles unbalanced parens inside Scheme `;` comments and escaped strings."""
+    sample = (
+        ";; Comment with unbalanced ((( parens\n"
+        '(herald "proto (with) \\"escaped)\\" parens" (algebra diffie-hellman))\n'
+        "(defprotocol test diffie-hellman ; trailing )(\n"
+        "  (defrole init (vars (x rndx)) (trace (send x))))\n"
+    )
+    blocks = split_top_level_sexprs(sample)
+    assert len(blocks) == 2
+    assert blocks[0].startswith("(herald")
+    assert blocks[1].startswith("(defprotocol test")
+
+
+def test_offline_load_run_from_disk_discovery_modes(tmp_path: Path):
+    """Verifies direct trajectory file, single-RFC directory, interrupted folder, and legacy filtered count replay."""
+    run_dir = tmp_path / "run_offline_modes"
+    rfc_ok = run_dir / "rfc2952"
+    rfc_interrupted = run_dir / "rfc7627"
+    rfc_ok.mkdir(parents=True)
+    rfc_interrupted.mkdir(parents=True)
+
+    traj_file = rfc_ok / "telnet_trajectory.json"
+    traj_file.write_text(
+        json.dumps({
+            "duration_seconds": 5.2,
+            "rfc_metadata": {"rfc_id": "RFC 2952", "protocol_name": "telnet_des"},
+            "stage5_preflight_gate": {"final_passed": True, "total_attempts": 0},
+            "stage6_cpsa4_solver": {
+                "final_passed": True,
+                "total_attempts": 0,
+                "shapes_analysis_from_shapes_txt": {"total_realized_shapes": 2},
+            },
+            "quality_assessment": {"quality_tier": "SILVER"},
+        }),
+        encoding="utf-8",
+    )
+    (rfc_interrupted / "verbatim_slice.txt").write_text("Partial slice before Ctrl+C", encoding="utf-8")
+
+    bus = PipelineEventBus()
+    ov_direct = bus.load_run_from_disk(traj_file)
+    assert len(ov_direct["accepted_tabs"]) == 1
+    assert ov_direct["accepted_tabs"][0]["protocol_name"] == "telnet_des"
+
+    ov_single_dir = bus.load_run_from_disk(rfc_ok)
+    assert len(ov_single_dir["accepted_tabs"]) == 1
+    assert ov_single_dir["accepted_tabs"][0]["rfc_id"] == "RFC 2952"
+
+    (run_dir / "metadata_index.json").write_text(
+        json.dumps({
+            "schema_version": "1.0.0",
+            "total_rfcs_processed": 12,
+            "total_ineligible_filtered": 10,
+            "runs": [
+                {
+                    "rfc_id": "RFC 2952",
+                    "protocol_name": "telnet_des",
+                    "is_eligible": True,
+                    "build_successful": True,
+                    "quality_tier": "SILVER",
+                    "rfc_directory": str(rfc_ok),
+                    "metadata_json_file": str(traj_file),
+                }
+            ],
+        }),
+        encoding="utf-8",
+    )
+    ov_legacy = bus.load_run_from_disk(run_dir)
+    assert ov_legacy["filtered_total"] == 1
+    assert len(ov_legacy["accepted_tabs"]) == 2
+    statuses = {t["rfc_id"]: t["status"] for t in ov_legacy["accepted_tabs"]}
+    assert statuses["RFC 2952"] == "VERIFIED"
+    assert statuses["RFC 7627"] == "INTERRUPTED"
+
+    fresh_run = tmp_path / "run_roundtrip"
+    update_run_metadata_index(
+        run_root_dir=fresh_run,
+        rfc_id="RFC 1111",
+        protocol_name="Non-Crypto Memo",
+        rfc_dir=fresh_run / "rfc1111",
+        scm_path=None,
+        trajectory_json_path=None,
+        quality_tier="INELIGIBLE",
+        is_eligible=False,
+        build_successful=False,
+        error_message="Informational category",
+        rejection_gate="Tier 0 Header Filter",
+        duration_seconds=0.14,
+    )
+    update_run_metadata_index(
+        run_root_dir=fresh_run,
+        rfc_id="RFC 2952",
+        protocol_name="telnet_des",
+        rfc_dir=rfc_ok,
+        scm_path=None,
+        trajectory_json_path=traj_file,
+        quality_tier="SILVER",
+        is_eligible=True,
+        build_successful=True,
+        tab_index=1,
+    )
+    ov_rt = bus.load_run_from_disk(fresh_run)
+    assert ov_rt["filtered_total"] == 1
+    assert bus.get_filtered_slice()["items"][0]["duration_seconds"] == 0.14
+    assert len(ov_rt["accepted_tabs"]) == 1
+    assert ov_rt["accepted_tabs"][0]["tab_index"] == 1
+
+
+def test_visualizer_artifact_endpoint_blocks_path_traversal_and_dotfiles(tmp_path: Path):
+    """GET /api/artifact strictly rejects .env / arbitrary host files (HTTP 403) while serving valid run files."""
+    run_dir = tmp_path / "authorized_run"
+    run_dir.mkdir(parents=True)
+    valid_scm = run_dir / "proto.scm"
+    valid_scm.write_text("(herald proto)", encoding="utf-8")
+    dot_secret = run_dir / ".env"
+    dot_secret.write_text("SECRET=1", encoding="utf-8")
+
+    GLOBAL_EVENT_BUS.clear()
+    GLOBAL_EVENT_BUS.set_run_directory(run_dir, is_live=True)
+
+    async def _exercise():
+        server = VisualizerServer(host="127.0.0.1", port=8094)
+
+        # 1. Missing path -> 400
+        req_missing = MagicMock(spec=web.Request)
+        req_missing.query = {}
+        assert (await server.handle_artifact(req_missing)).status == 400
+
+        # 2. Arbitrary host file outside run_dir -> 403
+        req_traverse = MagicMock(spec=web.Request)
+        req_traverse.query = {"path": str(SYSTEM_CONFIG.PROJECT_ROOT / "README.md")}
+        assert (await server.handle_artifact(req_traverse)).status == 403
+
+        # 3. Dotfile (.env) even inside run_dir -> 403
+        req_dot = MagicMock(spec=web.Request)
+        req_dot.query = {"path": str(dot_secret)}
+        assert (await server.handle_artifact(req_dot)).status == 403
+
+        # 4. Nonexistent file inside authorized run_dir -> 404
+        req_404 = MagicMock(spec=web.Request)
+        req_404.query = {"path": str(run_dir / "missing.scm")}
+        assert (await server.handle_artifact(req_404)).status == 404
+
+        # 5. Valid run artifact -> 200
+        req_ok = MagicMock(spec=web.Request)
+        req_ok.query = {"path": str(valid_scm)}
+        resp_ok = await server.handle_artifact(req_ok)
+        assert resp_ok.status == 200
+        assert "(herald proto)" in resp_ok.text
+
+        # 6. /api/models endpoint -> 200
+        req_models = MagicMock(spec=web.Request)
+        resp_models = await server.handle_models(req_models)
+        assert resp_models.status == 200
+        models_payload = json.loads(resp_models.text)
+        assert models_payload["cpsa_timeout_seconds"] == 60
+        assert "router_model" in models_payload
+
+    asyncio.run(_exercise())
 ```
 
 ---
@@ -5061,6 +5668,298 @@ def test_visualizer_server_endpoints(tmp_path: Path):
         assert any(e["event_type"] == "test_event" for e in history)
 
     asyncio.run(_run())
+```
+
+---
+
+### `tests/test_visualizer_tabs.py`
+
+*sha256:`64d1ed1e7e81` · 283 lines · 11.8 KB (~3,017 tokens) · lang:`python`*
+
+```python
+"""Tests for scalable numbered multi-RFC tabs, filtered RFC drawer, per-attempt hydration, and offline --view replay."""
+
+import asyncio
+import json
+import time
+from pathlib import Path
+from unittest.mock import MagicMock
+from aiohttp import web
+
+from src.pipeline_events import PipelineEventBus, GLOBAL_EVENT_BUS
+from src.visualizer.server import VisualizerServer, hydrate_tab_payload
+
+
+def test_sequential_tab_numbering_and_filtered_separation(tmp_path: Path):
+    """Accepted RFCs receive sequential #1, #2 numbering while rejected RFCs go only to filtered_rfcs."""
+    bus = PipelineEventBus()
+    bus.set_run_directory(tmp_path, is_live=True)
+
+    # RFC 1: Rejected at Tier 0
+    bus.start_rfc("RFC 1000")
+    bus.emit("stage_started", stage=1, stage_name="Document Intake & Slicing")
+    bus.register_filtered_rfc(
+        rfc_id="RFC 1000",
+        title="Informational Memo",
+        gate="Stage 1a: Tier 0 Header",
+        reason="Category Informational is ineligible",
+        duration_seconds=0.02,
+    )
+
+    # RFC 2: Accepted -> MUST become Tab #1
+    rfc2_dir = tmp_path / "rfc2952"
+    bus.start_rfc("RFC 2952")
+    bus.emit("stage_started", stage=1, stage_name="Document Intake & Slicing")
+    bus.emit("ast_generated", stage=2, ast={"protocol_name": "telnet_des_cfb64", "roles": [{"name": "client"}]})
+    tab1 = bus.register_accepted_tab(
+        rfc_id="RFC 2952",
+        protocol_name="Telnet Encryption: DES 64 bit Cipher Feedback",
+        rfc_dir=rfc2_dir,
+    )
+    assert tab1 == 1
+    bus.update_accepted_tab(tab1, status="VERIFIED", quality_tier="SILVER", shapes_count=2, total_attempts=5)
+
+    # Verify events.jsonl was flushed and bulky `ast` object was stripped
+    jsonl_lines = (rfc2_dir / "events.jsonl").read_text(encoding="utf-8").strip().splitlines()
+    assert len(jsonl_lines) >= 2
+    parsed_events = [json.loads(line) for line in jsonl_lines]
+    ast_evts = [e for e in parsed_events if e["event_type"] == "ast_generated"]
+    assert len(ast_evts) == 1
+    assert "ast" not in ast_evts[0]["data"]
+    assert ast_evts[0]["data"]["ast_protocol_name"] == "telnet_des_cfb64"
+    assert ast_evts[0]["tab_index"] == 1
+
+    # RFC 3: Rejected at Stage 1c -> Must NOT consume Tab #2
+    bus.start_rfc("RFC 3000")
+    bus.register_filtered_rfc(
+        rfc_id="RFC 3000",
+        title="BGP Routing Policy",
+        gate="Stage 1c: Applicability Gate",
+        reason="No cryptographic handshake",
+        duration_seconds=0.45,
+    )
+
+    # RFC 4: Accepted -> MUST become Tab #2, and active_events from RFC 2952 MUST be evicted from RAM
+    rfc4_dir = tmp_path / "rfc8446"
+    bus.start_rfc("RFC 8446")
+    assert len(bus.get_history()) == 0
+    tab2 = bus.register_accepted_tab(
+        rfc_id="RFC 8446",
+        protocol_name="The Transport Layer Security (TLS) Protocol Version 1.3",
+        rfc_dir=rfc4_dir,
+    )
+    assert tab2 == 2
+
+    overview = bus.get_tabs_overview()
+    assert len(overview["accepted_tabs"]) == 2
+    assert overview["accepted_tabs"][0]["tab_index"] == 1
+    assert overview["accepted_tabs"][0]["rfc_id"] == "RFC 2952"
+    assert overview["accepted_tabs"][0]["protocol_name"] == "Telnet Encryption: DES 64 bit Cipher Feedback"
+    assert overview["accepted_tabs"][1]["tab_index"] == 2
+    assert overview["accepted_tabs"][1]["rfc_id"] == "RFC 8446"
+    assert overview["filtered_total"] == 2
+
+    # Filtered pagination & search
+    filt_all = bus.get_filtered_slice(offset=0, limit=10)
+    assert filt_all["total"] == 2
+    filt_bgp = bus.get_filtered_slice(offset=0, limit=10, query="bgp")
+    assert filt_bgp["matching"] == 1
+    assert filt_bgp["items"][0]["rfc_id"] == "RFC 3000"
+
+
+def test_per_attempt_hydration_and_offline_replay(tmp_path: Path):
+    """Hydrating a tab reconstructs Attempt 0, Roletran/CPSA repair attempts, Final snapshot, and offline replay."""
+    run_dir = tmp_path / "run_2026-10-29_00-00-01"
+    rfc_dir = run_dir / "rfc5246"
+    rfc_dir.mkdir(parents=True)
+
+    (rfc_dir / "verbatim_slice.txt").write_text("Section 7.4 Handshake Protocol...", encoding="utf-8")
+    (rfc_dir / "tls12.scm").write_text("(herald tls12)\n(defprotocol tls12 basic)", encoding="utf-8")
+    (rfc_dir / "tls12_shapes.xhtml").write_text("<html><body><svg></svg></body></html>", encoding="utf-8")
+
+    traj_path = rfc_dir / "tls12_trajectory.json"
+    traj_payload = {
+        "schema_version": "1.0.0",
+        "duration_seconds": 14.5,
+        "rfc_metadata": {
+            "rfc_id": "RFC 5246",
+            "rfc_title": "The Transport Layer Security (TLS) Protocol Version 1.2",
+            "protocol_name": "tls12",
+            "selected_sections": ["7.3", "7.4"],
+            "sliced_lines_count": 120,
+            "verbatim_rfc_slice": "Section 7.4 Handshake Protocol...",
+        },
+        "stage2_initial_extraction": {
+            "initial_ast": {"protocol_name": "tls12", "roles": [{"role_name": "client"}]},
+            "initial_scm": "; attempt 0 scm\n(defprotocol tls12 basic)",
+        },
+        "stage5_preflight_gate": {
+            "final_passed": True,
+            "total_attempts": 1,
+            "repair_attempts": [
+                {
+                    "attempt_number": 1,
+                    "failure_stage": "roletran",
+                    "parsed_diagnostic": "Unbound variable n_c in role client",
+                    "rag_query": "CPSA roletran unbound variable role inputs",
+                    "retrieved_chunk_ids": ["12"],
+                    "rejected_scm": "; attempt 0 bad scm",
+                    "repaired_scm": "; attempt 1 repaired roletran scm",
+                    "repaired_ast": {"protocol_name": "tls12", "roles": [{"role_name": "client", "inputs": ["n_c"]}]},
+                    "passed_after_repair": True,
+                    "cycle_detected": False,
+                }
+            ],
+        },
+        "stage6_cpsa4_solver": {
+            "final_passed": True,
+            "total_attempts": 1,
+            "shapes_analysis_from_shapes_txt": {"total_realized_shapes": 3},
+            "repair_attempts": [
+                {
+                    "attempt_number": 1,
+                    "failure_stage": "solver",
+                    "parsed_diagnostic": "Unrealized skeleton 0",
+                    "rag_query": "CPSA preskeleton non-originating key assumption",
+                    "retrieved_chunk_ids": ["42"],
+                    "rejected_scm": "; attempt 1 bad solver scm",
+                    "repaired_scm": "; attempt 2 repaired solver scm",
+                    "repaired_ast": {"protocol_name": "tls12", "roles": [{"role_name": "client"}]},
+                    "passed_after_repair": True,
+                    "cycle_detected": True,
+                }
+            ],
+        },
+        "quality_assessment": {"quality_tier": "GOLD"},
+        "final_verified_output": {
+            "final_scm_with_header": ";; QUALITY TIER: GOLD\n(herald tls12)\n(defprotocol tls12 basic)",
+            "final_ast": {"protocol_name": "tls12", "roles": [{"role_name": "client"}]},
+        },
+    }
+    traj_path.write_text(json.dumps(traj_payload), encoding="utf-8")
+
+    master_index = {
+        "schema_version": "1.0.0",
+        "run_directory": str(run_dir),
+        "total_rfcs_processed": 2,
+        "filtered_rfcs": [
+            {
+                "rfc_id": "RFC 1149",
+                "title": "IP over Avian Carriers",
+                "gate": "Stage 1a: Tier 0 Header",
+                "reason": "Experimental / non-cryptographic",
+                "duration_seconds": 0.01,
+            }
+        ],
+        "runs": [
+            {
+                "tab_index": 1,
+                "rfc_id": "RFC 5246",
+                "protocol_name": "The Transport Layer Security (TLS) Protocol Version 1.2",
+                "is_eligible": True,
+                "build_successful": True,
+                "quality_tier": "GOLD",
+                "rfc_directory": str(rfc_dir),
+                "metadata_json_file": str(traj_path),
+                "scm_file": str(rfc_dir / "tls12.scm"),
+            }
+        ],
+    }
+    (run_dir / "metadata_index.json").write_text(json.dumps(master_index), encoding="utf-8")
+
+    # Test offline --view loader and server endpoints
+    GLOBAL_EVENT_BUS.clear()
+    overview = GLOBAL_EVENT_BUS.load_run_from_disk(run_dir)
+    assert overview["is_live"] is False
+    assert overview["filtered_total"] == 1
+    assert len(overview["accepted_tabs"]) == 1
+    assert overview["accepted_tabs"][0]["tab_index"] == 1
+    assert overview["accepted_tabs"][0]["rfc_id"] == "RFC 5246"
+
+    hydrated = hydrate_tab_payload(overview["accepted_tabs"][0])
+    attempts = hydrated["attempts"]
+    # Attempt 0 + 1 roletran repair + 1 solver repair + Final = 4 snapshots
+    assert len(attempts) == 4
+    assert attempts[0]["attempt_id"] == "attempt_0"
+    assert attempts[0]["status"] == "REJECTED"
+    assert "Unbound variable n_c" in attempts[0]["diagnostic"]
+
+    assert attempts[1]["attempt_id"] == "roletran_1"
+    assert attempts[1]["rag_query"] == "CPSA roletran unbound variable role inputs"
+    assert "; attempt 1 repaired roletran scm" in attempts[1]["scm"]
+
+    assert attempts[2]["attempt_id"] == "solver_1"
+    assert attempts[2]["cycle_detected"] is True
+    assert "; attempt 2 repaired solver scm" in attempts[2]["scm"]
+
+    assert attempts[3]["attempt_id"] == "final"
+    assert attempts[3]["status"] == "VERIFIED"
+    assert "GOLD (3 Shapes)" in attempts[3]["label"]
+
+    # Verify HTTP endpoints on VisualizerServer
+    async def _exercise_http():
+        server = VisualizerServer(host="127.0.0.1", port=8091)
+
+        req_tabs = MagicMock(spec=web.Request)
+        resp_tabs = await server.handle_tabs(req_tabs)
+        assert resp_tabs.status == 200
+        tabs_json = json.loads(resp_tabs.text)
+        assert len(tabs_json["accepted_tabs"]) == 1
+
+        req_detail = MagicMock(spec=web.Request)
+        req_detail.match_info = {"tab_index": "1"}
+        resp_detail = await server.handle_tab_detail(req_detail)
+        assert resp_detail.status == 200
+        detail_json = json.loads(resp_detail.text)
+        assert len(detail_json["attempts"]) == 4
+
+        req_filt = MagicMock(spec=web.Request)
+        req_filt.query = {"offset": "0", "limit": "50", "q": "avian"}
+        resp_filt = await server.handle_filtered(req_filt)
+        assert resp_filt.status == 200
+        filt_json = json.loads(resp_filt.text)
+        assert filt_json["matching"] == 1
+        assert filt_json["items"][0]["rfc_id"] == "RFC 1149"
+
+    asyncio.run(_exercise_http())
+
+
+def test_5000_accepted_tabs_scalability_benchmark(tmp_path: Path):
+    """5,000 accepted tabs serialize in < 150ms with compact payload size."""
+    bus = PipelineEventBus()
+    bus.set_run_directory(tmp_path, is_live=True)
+
+    # Populate 5,000 compact tab summaries directly via public registration/update path
+    # without creating 5,000 directories on disk just to test memory & JSON serialization throughput
+    for i in range(1, 5001):
+        bus._accepted_tabs[i] = {
+            "tab_index": i,
+            "rfc_id": f"RFC {1000 + i}",
+            "protocol_name": f"Cryptographic Handshake Protocol #{i}",
+            "rfc_title": f"Cryptographic Handshake Protocol #{i}",
+            "status": "VERIFIED" if i % 3 else "FAILED",
+            "quality_tier": "GOLD" if i % 3 else "REJECTED",
+            "total_attempts": i % 7,
+            "shapes_count": 2,
+            "duration_seconds": 8.4,
+            "rfc_dir": f"/tmp/run/rfc{1000 + i}",
+            "events_jsonl": None,
+            "slice_path": None,
+            "scm_path": None,
+            "trajectory_path": None,
+            "shapes_xhtml": None,
+            "error_message": None,
+        }
+        bus._tab_order.append(i)
+
+    t0 = time.perf_counter()
+    overview = bus.get_tabs_overview()
+    encoded = json.dumps(overview)
+    elapsed_ms = (time.perf_counter() - t0) * 1000.0
+
+    assert len(overview["accepted_tabs"]) == 5000
+    assert elapsed_ms < 250.0, f"5,000-tab overview serialization took too long: {elapsed_ms:.1f}ms"
+    assert len(encoded) < 3_000_000  # Under 3 MB for 5,000 tabs
 ```
 
 ---

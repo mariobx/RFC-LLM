@@ -283,10 +283,6 @@ class CPSAProtocolRole(BaseModel):
         default_factory=list,
         description="Penetrator non-originating terms (pen-non-orig)",
     )
-    role_originating: List[str] = Field(
-        default_factory=list,
-        description="Deprecated legacy field; ignored on emission because role_orig is not a valid defrole input keyword in Table 10.6",
-    )
     confidential_channels: List[str] = Field(
         default_factory=list,
         description="Channels declared confidential (conf)",

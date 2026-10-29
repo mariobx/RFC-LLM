@@ -31,6 +31,17 @@ DISQUALIFIED_TITLE_KEYWORDS = [
     "iana considerations",
     "registry",
     "guidelines for",
+    "guidance for",
+    "use cases",
+    "threat model",
+    "framework for",
+    "dhcp option",
+    "dhcpv6 option",
+    "header extension",
+    "padding option",
+    "security mechanisms",
+    "data model",
+    "yang",
     "meeting",
     "minutes",
     "equipment purchase",
@@ -41,6 +52,23 @@ DISQUALIFIED_CATEGORIES = [
     "historic",
     "best current practice",
 ]
+
+FRONTMATTER_CRYPTO_REGEX = re.compile(
+    r"\b(cryptograph|cipher|encrypt|decrypt|diffie-hellman|ecdh|dh\b|hmac|mac\b|signature|"
+    r"shared\s+secret|key\s+exchange|key\s+agreement|key\s+establishment|key\s+derivation|"
+    r"handshake|nonce|public\s+key|private\s+key|symmetric\s+key|session\s+key|"
+    r"authentication|authenticated|authenticator|certificate|x\.509|pkix|"
+    r"tls|dtls|ipsec|ike|ikev2|isakmp|oakley|kerberos|edhoc|oscore|wireguard|ssh|secsh|"
+    r"sasl|gss-api|gssapi|eap|pana|hip\b|mls\b|acme|ntpsec|nts\b|dnscurve|dnssec|rpki|"
+    r"s/mime|openpgp|cms\b|cose|jose|jwt|jws|jwe|oauth|openid|spake|pake|srp\b|ake\b)\b",
+    re.IGNORECASE,
+)
+
+FRONTMATTER_PROTOCOL_REGEX = re.compile(
+    r"\b(protocol|handshake|exchange|authentication|key\s+agreement|key\s+establishment|"
+    r"session|message|client|server|initiator|responder|peer)\b",
+    re.IGNORECASE,
+)
 
 
 def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
@@ -116,6 +144,22 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
                     category=category,
                     disqualification_reason=f"Title keyword '{kw}' indicates non-protocol document",
                 )
+
+    # 6. Fast Frontmatter / Abstract / TOC Cryptographic & Protocol Vocabulary Gate
+    frontmatter_slice = "\n".join(raw_rfc_text.splitlines()[:350])
+    if not FRONTMATTER_CRYPTO_REGEX.search(frontmatter_slice) or not FRONTMATTER_PROTOCOL_REGEX.search(frontmatter_slice):
+        logger.info(
+            "Tier 0 REJECT: %s ('%s') lacks cryptographic/authentication protocol vocabulary in frontmatter/TOC",
+            rfc_id or "Unknown RFC",
+            title or "Unknown Title",
+        )
+        return HeaderFilterResult(
+            is_eligible=False,
+            rfc_id=rfc_id,
+            title=title,
+            category=category,
+            disqualification_reason="Frontmatter, abstract, and TOC lack cryptographic security protocol terminology",
+        )
 
     logger.info("Tier 0 PASS: %s - '%s' (%s)", rfc_id or "Unknown RFC", title or "Unknown Title", category)
     return HeaderFilterResult(

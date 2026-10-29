@@ -41,7 +41,7 @@ def emit_cpsa_scheme(
             input=json_input_str,
             capture_output=True,
             text=True,
-            timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+            timeout=SYSTEM_CONFIG.CPSA_TIMEOUT_SECONDS,
             check=False,
         )
 
@@ -59,5 +59,5 @@ def emit_cpsa_scheme(
         return target_scm_path
 
     except subprocess.TimeoutExpired as e:
-        logger.error("cpsa4json subprocess timed out after %d seconds", SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS)
+        logger.error("cpsa4json subprocess timed out after %d seconds", SYSTEM_CONFIG.CPSA_TIMEOUT_SECONDS)
         raise CPSAJsonCompilationError(f"cpsa4json compilation timed out: {e}") from e

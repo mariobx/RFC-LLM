@@ -18,6 +18,8 @@ class RoletranVerificationResult(BaseModel):
     error_diagnostic: Optional[str] = Field(None, description="Concise error diagnostic if executability failed")
     procedural_defproc_code: Optional[str] = Field(None, description="Compiled defproc procedural code if successful")
     raw_stderr: str = Field(default="", description="Complete stderr from roletran execution")
+    validator_binary: str = Field(default="cpsa4roletran", description="Exact binary executed ('cpsa4roletran' or 'cpsa4 -l 1')")
+    roletran_algebra_supported: bool = Field(default=True, description="True if protocol uses basic algebra supported by cpsa4roletran")
 
 
 def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
@@ -47,24 +49,47 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
             stderr_output = proc.stderr.strip()
             stdout_output = proc.stdout.strip()
             combined = (stderr_output + "\n" + stdout_output).strip()
-            if "Role not well formed" in combined or "error" in combined.lower() or proc.returncode != 0:
+            # Note: When invoked with '-l 1', cpsa4 validates all defprotocol, defrole,
+            # and defskeleton blocks before taking 1 search step and exiting with
+            # 'Step limit exceeded' on stderr. Reaching 'Step limit exceeded' proves
+            # the specification passed all pre-flight syntax, sort, and role checks.
+            is_step_limit_only = (
+                "Step limit exceeded" in stderr_output
+                and "Role not well formed" not in combined
+                and "Expecting" not in combined
+            )
+            has_real_error = (
+                "Role not well formed" in combined
+                or ("error" in stderr_output.lower() and not is_step_limit_only)
+                or (proc.returncode != 0 and not is_step_limit_only)
+            )
+            if has_real_error:
                 error_msg = ""
-                for line in combined.splitlines():
-                    if "Role not well formed" in line or "error" in line.lower() or "Expecting" in line:
+                for line in stderr_output.splitlines():
+                    if line.strip() and "Step limit exceeded" not in line:
                         error_msg = line.strip()
                         break
-                error_msg = error_msg or combined[:300]
+                if not error_msg:
+                    for line in combined.splitlines():
+                        if "Role not well formed" in line or "error" in line.lower() or "Expecting" in line:
+                            error_msg = line.strip()
+                            break
+                error_msg = error_msg or stderr_output[:300] or combined[:300]
                 logger.warning("Diffie-Hellman pre-flight validation REJECT: %s", error_msg)
                 return RoletranVerificationResult(
                     is_executable=False,
                     error_diagnostic=error_msg,
-                    raw_stderr=combined,
+                    raw_stderr=stderr_output or combined,
+                    validator_binary="cpsa4 -l 1",
+                    roletran_algebra_supported=False,
                 )
             logger.info("Diffie-Hellman pre-flight validation PASS: All roles are algebraically well-formed")
             return RoletranVerificationResult(
                 is_executable=True,
-                procedural_defproc_code="(diffie-hellman-validated)",
+                procedural_defproc_code=None,
                 raw_stderr="",
+                validator_binary="cpsa4 -l 1",
+                roletran_algebra_supported=False,
             )
 
         proc = subprocess.run(

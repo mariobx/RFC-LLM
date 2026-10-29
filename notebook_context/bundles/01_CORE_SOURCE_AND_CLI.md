@@ -1,20 +1,22 @@
 # RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints
 
-> Tier 2 — Complete core synthesis pipeline (`src/`), including RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, live web visualizer, root `rfc-llm` CLI entrypoint, and the benchmark EDHOC input RFC.
+> Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-10-19 22:11:31 UTC · Git: `main` @ `81040c26a432` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 39 · Estimated Tokens: ~107,909*
+*Generated: 2026-10-29 19:24:55 UTC · Git: `main` @ `9fe6be87c355` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 46 · Estimated Tokens: ~159,282*
 
 ## Table of Contents
 
-- [`.prompts/01_applicability_gate.md`](#prompts01-applicability-gatemd)
-- [`.prompts/02_section_router.md`](#prompts02-section-routermd)
-- [`.prompts/03_protocol_extraction.md`](#prompts03-protocol-extractionmd)
-- [`.prompts/04_schema_self_correction.md`](#prompts04-schema-self-correctionmd)
-- [`.prompts/05_rag_query_formulation.md`](#prompts05-rag-query-formulationmd)
-- [`.prompts/06_compiler_repair.md`](#prompts06-compiler-repairmd)
-- [`.prompts/README.md`](#promptsreadmemd)
+- [`prompts/01_applicability_gate.md`](#prompts01-applicability-gatemd)
+- [`prompts/02_section_router.md`](#prompts02-section-routermd)
+- [`prompts/03_protocol_extraction.md`](#prompts03-protocol-extractionmd)
+- [`prompts/04_schema_self_correction.md`](#prompts04-schema-self-correctionmd)
+- [`prompts/05_rag_query_formulation.md`](#prompts05-rag-query-formulationmd)
+- [`prompts/06_compiler_repair.md`](#prompts06-compiler-repairmd)
+- [`prompts/07_think_token_synthesizer.md`](#prompts07-think-token-synthesizermd)
+- [`prompts/README.md`](#promptsreadmemd)
 - [`refrences/all_RFCs/rfc9528.txt`](#refrencesall-rfcsrfc9528txt)
 - [`rfc-llm`](#rfc-llm)
+- [`rfc-think`](#rfc-think)
 - [`src/__init__.py`](#src-init-py)
 - [`src/code_generation/__init__.py`](#srccode-generation-init-py)
 - [`src/code_generation/cpsa_json_serializer.py`](#srccode-generationcpsa-json-serializerpy)
@@ -25,6 +27,10 @@
 - [`src/document_ingestion/rfc_header_filter.py`](#srcdocument-ingestionrfc-header-filterpy)
 - [`src/document_ingestion/rfc_toc_parser.py`](#srcdocument-ingestionrfc-toc-parserpy)
 - [`src/document_ingestion/verbatim_section_slicer.py`](#srcdocument-ingestionverbatim-section-slicerpy)
+- [`src/generate_think/__init__.py`](#srcgenerate-think-init-py)
+- [`src/generate_think/cli.py`](#srcgenerate-thinkclipy)
+- [`src/generate_think/dspy_think_synthesizer.py`](#srcgenerate-thinkdspy-think-synthesizerpy)
+- [`src/generate_think/think_schema.py`](#srcgenerate-thinkthink-schemapy)
 - [`src/intermediate_representation/__init__.py`](#srcintermediate-representation-init-py)
 - [`src/intermediate_representation/algebraic_sorts.py`](#srcintermediate-representationalgebraic-sortspy)
 - [`src/intermediate_representation/cpsa_grammar.py`](#srcintermediate-representationcpsa-grammarpy)
@@ -42,17 +48,25 @@
 - [`src/verification_engine/compiler_diagnostic_repair.py`](#srcverification-enginecompiler-diagnostic-repairpy)
 - [`src/verification_engine/mitre_build_orchestrator.py`](#srcverification-enginemitre-build-orchestratorpy)
 - [`src/verification_engine/roletran_executability_gate.py`](#srcverification-engineroletran-executability-gatepy)
+- [`src/verification_engine/trajectory_metadata_exporter.py`](#srcverification-enginetrajectory-metadata-exporterpy)
 - [`src/visualizer/__init__.py`](#srcvisualizer-init-py)
 - [`src/visualizer/server.py`](#srcvisualizerserverpy)
 - [`src/visualizer/static/index.html`](#srcvisualizerstaticindexhtml)
 
 ---
 
-### `.prompts/01_applicability_gate.md`
+### `prompts/01_applicability_gate.md`
 
-*sha256:`ef0686e67d28` · 22 lines · 1.1 KB (~282 tokens) · lang:`markdown`*
+*sha256:`6548f0c8f691` · 29 lines · 1.3 KB (~335 tokens) · lang:`markdown`*
 
 ```markdown
+---
+# Stage 1c: Protocol Applicability Gatekeeper
+# Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
+model: nous/z-ai/glm-5.3
+timeout: 180
+temperature: 0.0
+---
 You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.
 Your task is to analyze an IETF RFC's metadata and Table of Contents to determine if it specifies an interactive cryptographic security protocol.
 
@@ -79,11 +93,18 @@ Example output format:
 
 ---
 
-### `.prompts/02_section_router.md`
+### `prompts/02_section_router.md`
 
-*sha256:`9b321417e071` · 8 lines · 0.6 KB (~154 tokens) · lang:`markdown`*
+*sha256:`bd9a7ea25dc3` · 15 lines · 0.8 KB (~209 tokens) · lang:`markdown`*
 
 ```markdown
+---
+# Stage 1d: Handshake & Exchange TOC Section Router
+# Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
+model: nous/z-ai/glm-5.3
+timeout: 180
+temperature: 0.0
+---
 You are a protocol analyst reading an RFC's Table of Contents.
 Your task is to identify the EXACT section numbers that define the cryptographic message exchange or handshake between principals.
 
@@ -96,11 +117,18 @@ Guidelines:
 
 ---
 
-### `.prompts/03_protocol_extraction.md`
+### `prompts/03_protocol_extraction.md`
 
-*sha256:`336251a68d44` · 75 lines · 6.2 KB (~1,593 tokens) · lang:`markdown`*
+*sha256:`f664e9e90d9d` · 86 lines · 7.1 KB (~1,809 tokens) · lang:`markdown`*
 
 ```markdown
+---
+# Stage 2: JSON CPSA Generation (Constrained Protocol Semantic Extraction)
+# Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
+model: nous/google/gemini-4-argon
+timeout: 180
+temperature: 0.0
+---
 You are a formal methods expert in cryptographic protocol specification for MITRE CPSA 4.4.9.
 Your task is to analyze the provided verbatim RFC specification text and extract a complete, mathematically rigorous CPSAProtocolSpecification.
 
@@ -175,16 +203,27 @@ Every extracted construct must strictly obey the MITRE CPSA formal syntax:
      * non_originating: uncompromised keys
      * unique_originating: fresh nonces
 
+6. State-Space Termination & Directional Separation (60s CPSA4 Limit):
+   - NEVER give a Request `(enc ...)` and a Response `(enc ...)` the exact same tuple arity and key structure! If a Responder's `send` ciphertext has the same structure as its `recv` ciphertext under `(ltk A B)`, CPSA4 will unify `A = B` and chain Responder strands infinitely until hitting the 60s timeout.
+   - Ensure Request and Response ciphertexts have structurally distinct inner tuples (e.g. different number of concatenated elements or explicit role/direction binding) and avoid redundant nested `(hash (cat ...))` inside `(enc ...)`.
+
 Return ONLY a valid JSON object matching the requested CPSAProtocolSpecification schema.
 ```
 
 ---
 
-### `.prompts/04_schema_self_correction.md`
+### `prompts/04_schema_self_correction.md`
 
-*sha256:`dbec1f24f57e` · 13 lines · 1.4 KB (~349 tokens) · lang:`markdown`*
+*sha256:`d938ef1ebc8a` · 20 lines · 1.6 KB (~408 tokens) · lang:`markdown`*
 
 ```markdown
+---
+# Stage 2 (Retry): 1-Shot Schema & Grammar Self-Correction
+# Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
+model: nous/google/gemini-4-argon
+timeout: 180
+temperature: 0.0
+---
 Your previous JSON output failed MITRE CPSA 4.4.9 schema and scoping validation with the following errors:
 {validation_error}
 
@@ -202,11 +241,18 @@ Return ONLY the corrected, fully valid JSON object.
 
 ---
 
-### `.prompts/05_rag_query_formulation.md`
+### `prompts/05_rag_query_formulation.md`
 
-*sha256:`aa54bfa015b3` · 9 lines · 1.0 KB (~249 tokens) · lang:`markdown`*
+*sha256:`b039b9905f3c` · 16 lines · 1.2 KB (~309 tokens) · lang:`markdown`*
 
 ```markdown
+---
+# Stage 5 & 6: RAG Compiler Diagnostic Query Formulation
+# Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
+model: nous/anthropic/claude-haiku-5.5
+timeout: 15
+temperature: 0.0
+---
 You are a formal verification compiler diagnostic analyst for MITRE CPSA 4.4.9 (Cryptographic Protocol Shapes Analyzer).
 Your task is to analyze a compiler/solver diagnostic error and formulate a concise, targeted search query (3 to 6 words) to retrieve the relevant formal rules from the MITRE CPSA reference manual.
 
@@ -220,11 +266,18 @@ CRITICAL INSTRUCTIONS FOR RETRIEVAL PRECISION:
 
 ---
 
-### `.prompts/06_compiler_repair.md`
+### `prompts/06_compiler_repair.md`
 
-*sha256:`bb4733eb6924` · 38 lines · 3.9 KB (~987 tokens) · lang:`markdown`*
+*sha256:`96816fc4751e` · 53 lines · 5.3 KB (~1,349 tokens) · lang:`markdown`*
 
 ```markdown
+---
+# Stage 5 & 6: RAG-Guided Compiler Self-Healing Repair
+# Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
+model: nous/google/gemini-3.8-flash
+timeout: 180
+temperature: 0.0
+---
 You are a formal methods expert in debugging and repairing MITRE CPSA 4.4.9 protocol specifications.
 You are given a failing CPSAProtocolSpecification, the verbatim RFC exchange text, the compiler error diagnostic, and retrieved guidance from the MITRE CPSA reference manual.
 
@@ -261,43 +314,109 @@ Common Diagnostics & Fixes:
    - CPSA message algebra has NO "aenc" or "senc" operator!
    - In CPSA, ALL encryption (both symmetric and asymmetric) strictly uses "enc": ["enc", payload, key].
    - If encrypting with a public key, use ["enc", payload, ["pubk", name]] or ["enc", payload, key]. NEVER write "aenc".
+9. "timed out after 60 seconds" or "Step limit exceeded" (CPSA4 State-Space Explosion / Snowballing):
+   - Cause: CPSA's unification engine is stuck in an infinite strand-generation loop because a Responder/Server `send` term has the exact same algebraic structure/arity as a `recv` term (allowing a Responder's output to feed another Responder's input ad infinitum), or `(ltk A B)` unifies with `(ltk B A)` when `A = B`, or ciphertexts/hashes are overly nested.
+   - Fix:
+     * Make Request and Response `(enc ...)` terms structurally distinct (different number of concatenated fields inside `enc` or distinct directional key/tag structure) so a Response ciphertext CANNOT unify with a Request `recv` pattern.
+     * Simplify redundant nested `(hash (cat ...))` wrappers inside `(enc ...)`—keep only the core nonces, identities, and payload inside `(enc ...)`.
+     * Keep each role trace to at most 2–4 essential handshake events.
+10. "Missing channel" or Channel Omission:
+   - Every trace event in `CPSAProtocolRole.trace` MUST include `"channel": "<chan_var>"` where `<chan_var>` is declared with `"sort": "chan"` in `variables` and listed in `inputs`. NEVER drop the channel variable when repairing a trace.
 
 Return ONLY the repaired, valid CPSAProtocolSpecification matching the requested JSON schema.
 ```
 
 ---
 
-### `.prompts/README.md`
+### `prompts/07_think_token_synthesizer.md`
 
-*sha256:`ab4cbfe7ded6` · 25 lines · 3.0 KB (~776 tokens) · lang:`markdown`*
+*sha256:`8ce250c758a9` · 35 lines · 3.7 KB (~954 tokens) · lang:`markdown`*
 
 ```markdown
-# RFC-LLM Customizable Prompt Templates (`.prompts/`)
+---
+# Phase 3: Hindsight Reasoning (<think>) Synthesizer
+# Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
+model: gemini/gemini-3.5-flash-lite
+timeout: 180
+temperature: 0.2
+---
+You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.
+Your task is to perform **Hindsight Rationalization with Compiler-Feedback Backtracking** (following the STaR, OpenThoughts, and Stanford *s1* reasoning-trace curation paradigms).
 
-This directory contains the externalized system and self-correction prompts driving the 4 LLM stages of the RFC-to-CPSA synthesis pipeline. You can edit any `.md` file in this directory to tune domain instructions, few-shot examples, or formal modeling heuristics without modifying Python code.
+You are given:
+1. The **Verbatim IETF RFC Exchange Slice** (the exact input a student model will see).
+2. The **Verified CPSA Ground-Truth Scaffold** (the verified `final_ast` containing variable/role descriptions and RFC field mappings, any Stage 5 `cpsa4roletran` or Stage 6 `cpsa4` compiler repair trajectories, the formal shape analysis verdicts, and the final `.scm` code).
+
+Your goal is to synthesize the structured internal reasoning steps and a cohesive, first-person `<think>...</think>` monologue that derives the exact verified `.scm` specification from the RFC text.
+
+### CRITICAL RULES FOR SYNTHETIC REASONING TRACES (DO NOT VIOLATE)
+
+1. **STRICT NO-HINDSIGHT-LEAKAGE INVARIANT**:
+   - Write strictly from a **forward-looking, first-person problem-solving perspective** starting from the RFC text.
+   - **NEVER** mention or imply that you were given `final_ast`, `final_scm`, a reference solution, or compiler logs in advance (e.g., NEVER write *"Looking at the provided AST..."*, *"In the given target .scm..."*, or *"According to the trajectory metadata..."*).
+   - Instead, use the ground-truth variable names, sorts, message terms, and skeleton structures as the conclusions you arrive at through your own step-by-step deduction from the RFC prose.
+
+2. **INCORPORATE STRUGGLE, BACKTRACKING, AND COMPILER SELF-CORRECTION**:
+   - High-quality reasoning traces do not just state final answers; they check formal CPSA 4.4.9 invariants and catch subtle traps before emitting code.
+   - If the Ground-Truth Scaffold includes failed **Stage 5 (`cpsa4roletran`) or Stage 6 (`cpsa4`) repair attempts**, weave those exact pitfalls into `step4_compiler_backtracking_and_invariants` and `full_thinking_monologue` as natural internal self-corrections using explicit cognitive transition markers (`"Wait—let me verify..."`, `"Hold on, if I model X as..."`, `"Let me double-check CPSA's executability rules..."`).
+   - Even if the run passed on Attempt 0 with zero repairs, explicitly verify:
+     - **Algebra & Sort Rules**: Why `basic` vs `diffie-hellman` algebra is required; why fresh DH exponents sent in `(exp (gen) x)` must be `rndx` with `(uniq-gen x)` while received exponents must be `expt`; why encryption keys in `(enc ...)` cannot have sort `mesg` (Equation 10.1); and why logic sorts (`strd`, `indx`, `fact`) are forbidden in `(vars ...)`.
+     - **Role Executability (`cpsa4roletran`)**: Why every received variable must be destructible from keys/terms already known or in `(inputs ...)`, and why `(uniq-orig ...)` / `(uniq-gen ...)` variables must never appear in `(inputs ...)`.
+     - **3-POV Skeleton Separation**: Why Participant Point-of-View skeletons (`defstrandmax`) must omit `(deflistener ...)` to test multi-strand authentication cleanly, while confidentiality is tested in a separate secrecy skeleton using `(deflistener ...)` alongside the required `(non-orig ...)` long-term key assumptions.
+
+3. **EXACT IDENTIFIER FIDELITY**:
+   - Every role name, variable name, sort, channel name, and S-expression term mentioned in your reasoning MUST match the exact identifiers in the verified `.scm` output so the `<think>...</think>` block transitions seamlessly into the emitted `.scm` code.
+
+Return ONLY a valid JSON object matching the requested `SynthesizedReasoningSteps` schema.
+```
+
+---
+
+### `prompts/README.md`
+
+*sha256:`ea819aeb4293` · 39 lines · 4.6 KB (~1,188 tokens) · lang:`markdown`*
+
+````markdown
+# RFC-LLM Customizable Prompt Templates & Model Routing (`prompts/`)
+
+This directory contains the externalized system prompts **and per-stage LLM routing configuration** driving every LLM step of the RFC-to-CPSA synthesis and Phase 3 `<think>` generation pipelines.
+
+Each `.md` file starts with a YAML frontmatter block defining its `model`, HTTP `timeout` (seconds), and `temperature`. Environment configuration in `.env` (template: [`.env.example`](../.env.example)) holds **only** API credentials (`GEMINI_API_KEY`, `NOUS_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) and base endpoint URLs (`NOUS_API_BASE`, `OLLAMA_API_BASE`, `STRATA_API_BASE`).
+
+```markdown
+---
+model: strata/unsloth-iq4_xs
+timeout: 180
+temperature: 0.0
+---
+You are a formal methods expert...
+```
 
 ---
 
 ## Prompt Catalog & Pipeline Mapping
 
-| Prompt File | Pipeline Stage | Calling Module | Configured Model Variable (`.env`) | Uses RAG? |
-|---|---|---|---|---|
-| [`01_applicability_gate.md`](./01_applicability_gate.md) | **Stage 1c**: Tier 1 Protocol Applicability Gatekeeper | [`src/document_ingestion/protocol_applicability_gate.py`](../src/document_ingestion/protocol_applicability_gate.py) | `LLM_ROUTER_MODEL` | No |
-| [`02_section_router.md`](./02_section_router.md) | **Stage 1d**: Handshake & Exchange Section Router | [`src/document_ingestion/handshake_section_router.py`](../src/document_ingestion/handshake_section_router.py) | `LLM_ROUTER_MODEL` | No |
-| [`03_protocol_extraction.md`](./03_protocol_extraction.md) | **Stage 2**: Constrained CPSA Protocol Semantic Extraction | [`src/semantic_extraction/constrained_protocol_extractor.py`](../src/semantic_extraction/constrained_protocol_extractor.py) | `LLM_EXTRACTION_MODEL` | **Yes** (Hybrid RRF) |
-| [`04_schema_self_correction.md`](./04_schema_self_correction.md) | **Stage 2 (Retry)**: 1-Shot Schema & Grammar Self-Correction | [`src/semantic_extraction/constrained_protocol_extractor.py`](../src/semantic_extraction/constrained_protocol_extractor.py) | `LLM_EXTRACTION_MODEL` | Via Stage 2 context |
-| [`05_rag_query_formulation.md`](./05_rag_query_formulation.md) | **Stage 5 & 6**: RAG Compiler Diagnostic Query Formulation | [`src/verification_engine/compiler_diagnostic_repair.py`](../src/verification_engine/compiler_diagnostic_repair.py) | `LLM_QUERY_MODEL` | **Yes** (Formulates query) |
-| [`06_compiler_repair.md`](./06_compiler_repair.md) | **Stage 5 & 6**: RAG-Guided Compiler Self-Healing Repair | [`src/verification_engine/compiler_diagnostic_repair.py`](../src/verification_engine/compiler_diagnostic_repair.py) | `LLM_REPAIR_MODEL` | **Yes** (Consumes chunks) |
+| Prompt File | Pipeline Stage | Calling Module | Default Timeout / Temp | Supported Provider Prefixes | Uses RAG? |
+|---|---|---|---|---|---|
+| [`01_applicability_gate.md`](01_applicability_gate.md) | **Stage 1c**: Document Intake (Applicability Gate) | [`src/document_ingestion/protocol_applicability_gate.py`](../src/document_ingestion/protocol_applicability_gate.py) | `180s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | No |
+| [`02_section_router.md`](02_section_router.md) | **Stage 1d**: Document Intake (Handshake Section Router) | [`src/document_ingestion/handshake_section_router.py`](../src/document_ingestion/handshake_section_router.py) | `180s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | No |
+| [`03_protocol_extraction.md`](03_protocol_extraction.md) | **Stage 2**: JSON CPSA Generation | [`src/semantic_extraction/constrained_protocol_extractor.py`](../src/semantic_extraction/constrained_protocol_extractor.py) | `180s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | **Yes** (Hybrid RRF) |
+| [`04_schema_self_correction.md`](04_schema_self_correction.md) | **Stage 2 (Retry)**: 1-Shot Schema & Grammar Self-Correction | [`src/semantic_extraction/constrained_protocol_extractor.py`](../src/semantic_extraction/constrained_protocol_extractor.py) | `180s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | Via Stage 2 context |
+| [`05_rag_query_formulation.md`](05_rag_query_formulation.md) | **Stage 5 & 6**: Self-Healing Loop (RAG Query Formulation) | [`src/verification_engine/compiler_diagnostic_repair.py`](../src/verification_engine/compiler_diagnostic_repair.py) | `15s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | **Yes** (Formulates query) |
+| [`06_compiler_repair.md`](06_compiler_repair.md) | **Stage 5 & 6**: Self-Healing Loop (Compiler Diagnostic Repair) | [`src/verification_engine/compiler_diagnostic_repair.py`](../src/verification_engine/compiler_diagnostic_repair.py) | `180s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | **Yes** (Consumes chunks) |
+| [`07_think_token_synthesizer.md`](07_think_token_synthesizer.md) | **Phase 3**: Hindsight Reasoning (`<think>`) Synthesizer | [`src/generate_think/dspy_think_synthesizer.py`](../src/generate_think/dspy_think_synthesizer.py) | `180s` / `0.2` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | Trajectory-backed |
 
 ---
 
-## Architecture & Safety Guarantees
+## Architecture & Live Hot-Reload Guarantees
 
-Prompts are loaded dynamically at runtime via [`src/prompt_loader.py`](../src/prompt_loader.py):
-1. **Schema Safety**: Mandatory Pydantic JSON schemas (`ProtocolApplicabilityReport`, `SectionRoutingDecision`, `CPSAProtocolSpecification`) are appended automatically in Python *after* loading the Markdown prompt. Editing `.prompts/*.md` will never corrupt the structural JSON contract.
-2. **Template Placeholders**: [`04_schema_self_correction.md`](./04_schema_self_correction.md) supports the `{validation_error}` placeholder, which is populated with the exact Pydantic / CPSA 4.4.9 scoping diagnostic when a 1-shot retry is triggered.
-3. **Resilient Fallback**: If a file in `.prompts/` is accidentally deleted or empty, [`src/prompt_loader.py`](../src/prompt_loader.py) automatically falls back to its built-in default prompt so pipeline execution never crashes.
-```
+Prompts and frontmatter metadata are loaded dynamically on every invocation via [`src/prompt_loader.py`](../src/prompt_loader.py):
+1. **Zero-Restart Live Hot-Reload**: Editing `model:`, `timeout:`, `temperature:`, or prompt instructions in any `prompts/*.md` file takes effect on the **next LLM call**—even mid-batch—without restarting `./rfc-llm`.
+2. **One-Off CLI Overrides**: Passing `--model`, `--router-model`, `--extraction-model`, `--repair-model`, or `--query-model` to `./rfc-llm` (or `--model` to `./rfc-think`) overrides the frontmatter `model:` for that CLI session without modifying `prompts/*.md` on disk.
+3. **Frontmatter Stripping & Schema Safety**: [`load_prompt`](../src/prompt_loader.py) strips the `--- ... ---` YAML block before sending the system prompt to LiteLLM, and mandatory Pydantic JSON schemas (`ProtocolApplicabilityReport`, `SectionRoutingDecision`, `CPSAProtocolSpecification`, `SynthesizedReasoningSteps`) are appended automatically in Python.
+4. **Template Placeholders**: [`04_schema_self_correction.md`](04_schema_self_correction.md) supports the `{validation_error}` placeholder for 1-shot retry diagnostics.
+5. **Resilient Fallback**: If frontmatter fields or `.md` files are missing, [`src/prompt_loader.py`](../src/prompt_loader.py) falls back cleanly to built-in defaults (`GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"`).
+````
 
 ---
 
@@ -4983,7 +5102,7 @@ Authors' Addresses
 
 ### `rfc-llm`
 
-*sha256:`a642cacf2f98` · 15 lines · 0.5 KB (~120 tokens) · lang:`bash`*
+*sha256:`54ff40ef4c3c` · 15 lines · 0.5 KB (~123 tokens) · lang:`bash`*
 
 ```bash
 #!/usr/bin/env bash
@@ -4993,7 +5112,7 @@ Authors' Addresses
 set -e
 
 REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-export PYTHONPATH="${REPO_ROOT}:${PYTHONPATH}"
+export PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 
 if [ ! -f "${REPO_ROOT}/.venv/bin/python" ]; then
     echo "Error: Virtual environment not found at ${REPO_ROOT}/.venv" >&2
@@ -5001,6 +5120,30 @@ if [ ! -f "${REPO_ROOT}/.venv/bin/python" ]; then
 fi
 
 exec "${REPO_ROOT}/.venv/bin/python" "${REPO_ROOT}/src/pipeline.py" "$@"
+```
+
+---
+
+### `rfc-think`
+
+*sha256:`8396df53b458` · 15 lines · 0.5 KB (~130 tokens) · lang:`bash`*
+
+```bash
+#!/usr/bin/env bash
+# RFC-LLM Phase 3 (<think> Token Synthesizer) Runner
+# Automatically configures PYTHONPATH and invokes src/generate_think/cli.py.
+
+set -e
+
+REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+export PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+
+if [ ! -f "${REPO_ROOT}/.venv/bin/python" ]; then
+    echo "Error: Virtual environment not found at ${REPO_ROOT}/.venv" >&2
+    exit 1
+fi
+
+exec "${REPO_ROOT}/.venv/bin/python" "${REPO_ROOT}/src/generate_think/cli.py" "$@"
 ```
 
 ---
@@ -5019,15 +5162,14 @@ __version__ = "0.1.0"
 
 ### `src/code_generation/__init__.py`
 
-*sha256:`2290b0e6aa1d` · 19 lines · 0.5 KB (~131 tokens) · lang:`python`*
+*sha256:`466c2e70bf95` · 17 lines · 0.5 KB (~116 tokens) · lang:`python`*
 
 ```python
-"""Code Generation package for Stages 3 & 4 CPSA JSON serialization and Scheme S-expression emission."""
+"""Code Generation package for Stage 3 CPSA JSON serialization and Scheme S-expression emission."""
 
 from src.code_generation.cpsa_json_serializer import (
     serialize_to_cpsa_json,
     serialize_to_cpsa_json_string,
-    write_cpsa_json_file,
 )
 from src.code_generation.cpsa_scheme_emitter import (
     CPSAJsonCompilationError,
@@ -5037,7 +5179,6 @@ from src.code_generation.cpsa_scheme_emitter import (
 __all__ = [
     "serialize_to_cpsa_json",
     "serialize_to_cpsa_json_string",
-    "write_cpsa_json_file",
     "CPSAJsonCompilationError",
     "emit_cpsa_scheme",
 ]
@@ -5047,14 +5188,13 @@ __all__ = [
 
 ### `src/code_generation/cpsa_json_serializer.py`
 
-*sha256:`160a2e59151d` · 35 lines · 1.5 KB (~380 tokens) · lang:`python`*
+*sha256:`6a87f1a09db8` · 24 lines · 1.0 KB (~263 tokens) · lang:`python`*
 
 ```python
 """CPSA JSON AST Serializer."""
 
 import json
-from pathlib import Path
-from typing import Any, List, Union
+from typing import Any, List
 
 from src.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
 from src.logging_config import get_pipeline_logger
@@ -5075,23 +5215,13 @@ def serialize_to_cpsa_json_string(spec: CPSAProtocolSpecification) -> str:
     forms = serialize_to_cpsa_json(spec)
     # Each top-level form is written on its own line / separated by double newlines
     return "\n\n".join(json.dumps(form) for form in forms) + "\n"
-
-
-def write_cpsa_json_file(spec: CPSAProtocolSpecification, target_path: Path) -> Path:
-    """Writes the serialized JSON specification to disk."""
-    target_path.parent.mkdir(parents=True, exist_ok=True)
-    json_content = serialize_to_cpsa_json_string(spec)
-    with open(target_path, "w", encoding="utf-8") as f:
-        f.write(json_content)
-    logger.info("Wrote CPSA JSON specification to %s", target_path)
-    return target_path
 ```
 
 ---
 
 ### `src/code_generation/cpsa_scheme_emitter.py`
 
-*sha256:`83c8ec48f762` · 63 lines · 2.5 KB (~645 tokens) · lang:`python`*
+*sha256:`8bfaa6ad2157` · 63 lines · 2.5 KB (~642 tokens) · lang:`python`*
 
 ```python
 """CPSA Scheme S-Expression Emitter using cpsa4json."""
@@ -5137,7 +5267,7 @@ def emit_cpsa_scheme(
             input=json_input_str,
             capture_output=True,
             text=True,
-            timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+            timeout=SYSTEM_CONFIG.CPSA_TIMEOUT_SECONDS,
             check=False,
         )
 
@@ -5155,7 +5285,7 @@ def emit_cpsa_scheme(
         return target_scm_path
 
     except subprocess.TimeoutExpired as e:
-        logger.error("cpsa4json subprocess timed out after %d seconds", SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS)
+        logger.error("cpsa4json subprocess timed out after %d seconds", SYSTEM_CONFIG.CPSA_TIMEOUT_SECONDS)
         raise CPSAJsonCompilationError(f"cpsa4json compilation timed out: {e}") from e
 ```
 
@@ -5163,18 +5293,16 @@ def emit_cpsa_scheme(
 
 ### `src/document_ingestion/__init__.py`
 
-*sha256:`aa0d2979b04a` · 35 lines · 1.0 KB (~264 tokens) · lang:`python`*
+*sha256:`9332eee6bcf3` · 31 lines · 0.9 KB (~235 tokens) · lang:`python`*
 
 ```python
 """Document Ingestion package for Stage 1 RFC filtering, TOC parsing, section routing, and slicing."""
 
 from src.document_ingestion.handshake_section_router import (
-    ROUTER_SYSTEM_PROMPT,
     SectionRoutingDecision,
     route_handshake_sections,
 )
 from src.document_ingestion.protocol_applicability_gate import (
-    GATEKEEPER_SYSTEM_PROMPT,
     ProtocolApplicabilityReport,
     evaluate_protocol_applicability,
 )
@@ -5194,10 +5322,8 @@ __all__ = [
     "TOCSectionEntry",
     "parse_table_of_contents",
     "ProtocolApplicabilityReport",
-    "GATEKEEPER_SYSTEM_PROMPT",
     "evaluate_protocol_applicability",
     "SectionRoutingDecision",
-    "ROUTER_SYSTEM_PROMPT",
     "route_handshake_sections",
     "slice_verbatim_sections",
 ]
@@ -5207,7 +5333,7 @@ __all__ = [
 
 ### `src/document_ingestion/handshake_section_router.py`
 
-*sha256:`f3094c9e6ceb` · 134 lines · 4.8 KB (~1,239 tokens) · lang:`python`*
+*sha256:`c2cbfca72aee` · 132 lines · 4.8 KB (~1,240 tokens) · lang:`python`*
 
 ```python
 """Handshake Section Router for Navigating RFC Table of Contents.
@@ -5218,6 +5344,7 @@ the cryptographic message exchange or handshake flow.
 
 import json
 from typing import List, Optional
+import json_repair
 import litellm
 from pydantic import BaseModel, Field
 
@@ -5226,7 +5353,7 @@ from src.logging_config import get_pipeline_logger
 from src.prompt_loader import (
     PROMPT_SECTION_ROUTER,
     build_schema_system_prompt,
-    load_prompt,
+    load_prompt_spec,
 )
 from src.system_config import SYSTEM_CONFIG
 
@@ -5243,10 +5370,6 @@ class SectionRoutingDecision(BaseModel):
     rationale: str = Field(..., description="Explanation of why these sections were selected")
 
 
-# Loaded from .prompts/02_section_router.md
-ROUTER_SYSTEM_PROMPT: str = load_prompt(PROMPT_SECTION_ROUTER)
-
-
 def route_handshake_sections(
     rfc_id: str,
     protocol_name: str,
@@ -5254,7 +5377,9 @@ def route_handshake_sections(
     model: Optional[str] = None,
 ) -> List[str]:
     """Uses a structured LLM call to select the exchange section IDs from the TOC."""
-    model_name = model or SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL
+    prompt_spec = load_prompt_spec(PROMPT_SECTION_ROUTER)
+    model_name = model or prompt_spec.model
+    sampling_temp = prompt_spec.temperature if prompt_spec.temperature is not None else 0.0
     logger.info("Routing exchange sections for %s ('%s') using %s", rfc_id, protocol_name, model_name)
 
     toc_formatted = "\n".join(f"{entry.section_id} {entry.title}" for entry in toc_entries)
@@ -5272,7 +5397,7 @@ def route_handshake_sections(
     )
 
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=0.0)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
         response = litellm.completion(
             **llm_kwargs,
             messages=[
@@ -5280,14 +5405,13 @@ def route_handshake_sections(
                 {"role": "user", "content": user_prompt},
             ],
             response_format={"type": "json_object"},
-            timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+            timeout=prompt_spec.timeout,
         )
 
         raw_content = response.choices[0].message.content
         try:
             decision_data = json.loads(raw_content)
         except Exception:
-            import json_repair
             decision_data = json_repair.loads(raw_content)
 
         decision = SectionRoutingDecision.model_validate(decision_data)
@@ -5350,7 +5474,7 @@ def _heuristic_section_router(toc_entries: List[TOCSectionEntry]) -> List[str]:
 
 ### `src/document_ingestion/protocol_applicability_gate.py`
 
-*sha256:`1f644a64ef5e` · 127 lines · 4.7 KB (~1,195 tokens) · lang:`python`*
+*sha256:`c8ec77917afc` · 125 lines · 4.7 KB (~1,194 tokens) · lang:`python`*
 
 ```python
 """Protocol Applicability Gate (Tier 1 Gatekeeper).
@@ -5362,6 +5486,7 @@ eligible for MITRE CPSA 4.4.9 formal verification.
 
 import json
 from typing import List, Optional
+import json_repair
 import litellm
 from pydantic import BaseModel, Field
 
@@ -5370,7 +5495,7 @@ from src.logging_config import get_pipeline_logger
 from src.prompt_loader import (
     PROMPT_APPLICABILITY_GATE,
     build_schema_system_prompt,
-    load_prompt,
+    load_prompt_spec,
 )
 from src.system_config import SYSTEM_CONFIG
 
@@ -5396,10 +5521,6 @@ class ProtocolApplicabilityReport(BaseModel):
     rationale: str = Field(..., description="Justification for acceptance or rejection")
 
 
-# Loaded from .prompts/01_applicability_gate.md
-GATEKEEPER_SYSTEM_PROMPT: str = load_prompt(PROMPT_APPLICABILITY_GATE)
-
-
 def evaluate_protocol_applicability(
     rfc_id: str,
     title: str,
@@ -5409,7 +5530,9 @@ def evaluate_protocol_applicability(
     model: Optional[str] = None,
 ) -> ProtocolApplicabilityReport:
     """Evaluates an RFC using its frontmatter and entire TOC to determine CPSA eligibility."""
-    model_name = model or SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL
+    prompt_spec = load_prompt_spec(PROMPT_APPLICABILITY_GATE)
+    model_name = model or prompt_spec.model
+    sampling_temp = prompt_spec.temperature if prompt_spec.temperature is not None else 0.0
     logger.info("Evaluating protocol applicability for %s: '%s' using model %s", rfc_id, title, model_name)
 
     toc_summary = "\n".join(f"{entry.section_id} {entry.title}" for entry in toc_entries)
@@ -5429,7 +5552,7 @@ def evaluate_protocol_applicability(
     )
 
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=0.0)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
         response = litellm.completion(
             **llm_kwargs,
             messages=[
@@ -5437,14 +5560,13 @@ def evaluate_protocol_applicability(
                 {"role": "user", "content": user_prompt},
             ],
             response_format={"type": "json_object"},
-            timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+            timeout=prompt_spec.timeout,
         )
 
         raw_content = response.choices[0].message.content
         try:
             report_data = json.loads(raw_content)
         except Exception:
-            import json_repair
             report_data = json_repair.loads(raw_content)
 
         report = ProtocolApplicabilityReport.model_validate(report_data)
@@ -5486,7 +5608,7 @@ def evaluate_protocol_applicability(
 
 ### `src/document_ingestion/rfc_header_filter.py`
 
-*sha256:`5d03adfe9e43` · 126 lines · 4.6 KB (~1,189 tokens) · lang:`python`*
+*sha256:`9b874aada184` · 170 lines · 6.5 KB (~1,659 tokens) · lang:`python`*
 
 ```python
 """RFC Header and Frontmatter Metadata Filter (Tier 0 Filter)."""
@@ -5522,6 +5644,17 @@ DISQUALIFIED_TITLE_KEYWORDS = [
     "iana considerations",
     "registry",
     "guidelines for",
+    "guidance for",
+    "use cases",
+    "threat model",
+    "framework for",
+    "dhcp option",
+    "dhcpv6 option",
+    "header extension",
+    "padding option",
+    "security mechanisms",
+    "data model",
+    "yang",
     "meeting",
     "minutes",
     "equipment purchase",
@@ -5532,6 +5665,23 @@ DISQUALIFIED_CATEGORIES = [
     "historic",
     "best current practice",
 ]
+
+FRONTMATTER_CRYPTO_REGEX = re.compile(
+    r"\b(cryptograph|cipher|encrypt|decrypt|diffie-hellman|ecdh|dh\b|hmac|mac\b|signature|"
+    r"shared\s+secret|key\s+exchange|key\s+agreement|key\s+establishment|key\s+derivation|"
+    r"handshake|nonce|public\s+key|private\s+key|symmetric\s+key|session\s+key|"
+    r"authentication|authenticated|authenticator|certificate|x\.509|pkix|"
+    r"tls|dtls|ipsec|ike|ikev2|isakmp|oakley|kerberos|edhoc|oscore|wireguard|ssh|secsh|"
+    r"sasl|gss-api|gssapi|eap|pana|hip\b|mls\b|acme|ntpsec|nts\b|dnscurve|dnssec|rpki|"
+    r"s/mime|openpgp|cms\b|cose|jose|jwt|jws|jwe|oauth|openid|spake|pake|srp\b|ake\b)\b",
+    re.IGNORECASE,
+)
+
+FRONTMATTER_PROTOCOL_REGEX = re.compile(
+    r"\b(protocol|handshake|exchange|authentication|key\s+agreement|key\s+establishment|"
+    r"session|message|client|server|initiator|responder|peer)\b",
+    re.IGNORECASE,
+)
 
 
 def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
@@ -5608,6 +5758,22 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
                     disqualification_reason=f"Title keyword '{kw}' indicates non-protocol document",
                 )
 
+    # 6. Fast Frontmatter / Abstract / TOC Cryptographic & Protocol Vocabulary Gate
+    frontmatter_slice = "\n".join(raw_rfc_text.splitlines()[:350])
+    if not FRONTMATTER_CRYPTO_REGEX.search(frontmatter_slice) or not FRONTMATTER_PROTOCOL_REGEX.search(frontmatter_slice):
+        logger.info(
+            "Tier 0 REJECT: %s ('%s') lacks cryptographic/authentication protocol vocabulary in frontmatter/TOC",
+            rfc_id or "Unknown RFC",
+            title or "Unknown Title",
+        )
+        return HeaderFilterResult(
+            is_eligible=False,
+            rfc_id=rfc_id,
+            title=title,
+            category=category,
+            disqualification_reason="Frontmatter, abstract, and TOC lack cryptographic security protocol terminology",
+        )
+
     logger.info("Tier 0 PASS: %s - '%s' (%s)", rfc_id or "Unknown RFC", title or "Unknown Title", category)
     return HeaderFilterResult(
         is_eligible=True,
@@ -5621,7 +5787,7 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
 
 ### `src/document_ingestion/rfc_toc_parser.py`
 
-*sha256:`dead8f2df65f` · 116 lines · 5.2 KB (~1,327 tokens) · lang:`python`*
+*sha256:`8171251e7f46` · 116 lines · 5.2 KB (~1,323 tokens) · lang:`python`*
 
 ```python
 """RFC Table of Contents (TOC) Parser."""
@@ -5731,7 +5897,7 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
         body_heading_pattern = re.compile(
             r"^(?P<sec_id>(?:[0-9]+(?:\.[0-9]+)*)|(?:[A-Z]\.[0-9]+))\.?\s+(?P<title>[A-Z][A-Za-z0-9\s\-_,:()'\"]{3,60})$"
         )
-        for idx, line in enumerate(lines):
+        for line in lines:
             match = body_heading_pattern.match(line)
             if match:
                 sec_id = match.group("sec_id").strip()
@@ -5746,13 +5912,13 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
 
 ### `src/document_ingestion/verbatim_section_slicer.py`
 
-*sha256:`4fda265d4a4d` · 117 lines · 4.0 KB (~1,024 tokens) · lang:`python`*
+*sha256:`b01c7b80601f` · 117 lines · 4.0 KB (~1,023 tokens) · lang:`python`*
 
 ```python
 """Verbatim RFC Section Boundary Slicer."""
 
 import re
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from src.logging_config import get_pipeline_logger
 
@@ -5866,6 +6032,1028 @@ def slice_verbatim_sections(
         sliced_lines = cleaned
 
     return "\n".join(sliced_lines)
+```
+
+---
+
+### `src/generate_think/__init__.py`
+
+*sha256:`0b7690b5089c` · 27 lines · 0.8 KB (~201 tokens) · lang:`python`*
+
+```python
+"""Phase 3 Hindsight Reasoning (<think>) Synthesizer Package."""
+
+from src.generate_think.think_schema import (
+    DPOContrastivePair,
+    SynthesizedReasoningSteps,
+    ThinkArtifactBundle,
+)
+from src.generate_think.dspy_think_synthesizer import (
+    CPSAHindsightReasoningSignature,
+    CPSAHindsightThinkModule,
+    compile_deterministic_reasoning_steps,
+    generate_think_for_trajectory,
+    process_run_directory,
+    synthesize_reasoning_steps_via_dspy_or_llm,
+)
+
+__all__ = [
+    "DPOContrastivePair",
+    "SynthesizedReasoningSteps",
+    "ThinkArtifactBundle",
+    "CPSAHindsightReasoningSignature",
+    "CPSAHindsightThinkModule",
+    "compile_deterministic_reasoning_steps",
+    "generate_think_for_trajectory",
+    "process_run_directory",
+    "synthesize_reasoning_steps_via_dspy_or_llm",
+]
+```
+
+---
+
+### `src/generate_think/cli.py`
+
+*sha256:`1c3edd0a8eb8` · 96 lines · 3.2 KB (~819 tokens) · lang:`python`*
+
+```python
+"""Command-line interface for Phase 3 Hindsight Reasoning (<think>) Synthesis."""
+
+import argparse
+import sys
+from pathlib import Path
+
+from src.logging_config import configure_pipeline_logging
+from src.system_config import SYSTEM_CONFIG
+from src.generate_think.dspy_think_synthesizer import process_run_directory
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description=(
+            "RFC-LLM Phase 3 (<think> Synthesizer): Generates <protocol>_think.json alongside "
+            "<protocol>_trajectory.json using DSPy Hindsight Rationalization + Compiler Backtracking."
+        ),
+    )
+    parser.add_argument(
+        "target_path",
+        type=str,
+        help=(
+            "Path to a timestamped run directory (e.g. output/run_2026-10-19_19-17-33), "
+            "a metadata_index.json file, an RFC directory, or a specific <protocol>_trajectory.json file."
+        ),
+    )
+    parser.add_argument(
+        "--model",
+        "-m",
+        type=str,
+        default=None,
+        help=(
+            "Provider-agnostic model identifier (e.g. 'strata/unsloth-iq4_xs', 'ollama/qwq:32b', 'nous/deepseek/deepseek-chat', "
+            "'gemini/gemini-2.5-flash'). Defaults to `model:` in prompts/07_think_token_synthesizer.md."
+        ),
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["auto", "llm", "deterministic"],
+        default="auto",
+        help=(
+            "Synthesis mode: 'auto' (DSPy/LLM hindsight rationalization with deterministic fallback), "
+            "'llm' (DSPy/LLM hindsight rationalization), or 'deterministic' (100%% programmatic AST + "
+            "compiler trajectory rendering with zero LLM calls)."
+        ),
+    )
+    parser.add_argument(
+        "--min-tier",
+        choices=["GOLD", "SILVER", "BRONZE", "REJECTED"],
+        default="BRONZE",
+        help="Minimum verification quality tier to synthesize <think> tokens for (default: BRONZE).",
+    )
+    parser.add_argument(
+        "--no-jsonl",
+        action="store_true",
+        help="Do not export consolidated sft_train.jsonl and dpo_pairs.jsonl in the run directory.",
+    )
+
+    args = parser.parse_args()
+    target = Path(args.target_path)
+
+    if not target.exists():
+        print(f"Error: Target path does not exist: {target}", file=sys.stderr)
+        sys.exit(1)
+
+    configure_pipeline_logging()
+    active_model = args.model or SYSTEM_CONFIG.DEFAULT_THINK_MODEL
+
+    print(f"\n{'=' * 70}")
+    print(" RFC-LLM PHASE 3: HINDSIGHT REASONING (<think>) SYNTHESIZER")
+    print(f"{'=' * 70}")
+    print(f"- Target Path : {target.resolve()}")
+    print(f"- Mode        : {args.mode}")
+    if args.mode != "deterministic":
+        print(f"- Model       : {active_model}")
+    print(f"- Min Tier    : {args.min_tier}")
+    print(f"{'=' * 70}\n")
+
+    generated_files = process_run_directory(
+        target_path=target,
+        model=active_model,
+        mode=args.mode,
+        min_tier=args.min_tier,
+        export_jsonl=not args.no_jsonl,
+    )
+
+    print(f"\n{'=' * 70}")
+    print(f" PHASE 3 COMPLETE: Generated {len(generated_files)} <protocol>_think.json artifact(s)")
+    print(f"{'=' * 70}")
+    for path in generated_files:
+        print(f"  -> {path}")
+    print(f"{'=' * 70}\n")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+---
+
+### `src/generate_think/dspy_think_synthesizer.py`
+
+*sha256:`f991042e37e0` · 751 lines · 35.2 KB (~9,003 tokens) · lang:`python`*
+
+```python
+"""Phase 3 Agentic DSPy Hindsight Reasoning (<think>) Synthesizer.
+
+Implements state-of-the-art Hindsight Rationalization (STaR) + Compiler-Feedback
+Backtracking (Stanford s1 / OpenThoughts) to generate `<protocol>_think.json`
+inside each RFC directory alongside `<protocol>_trajectory.json` and `<protocol>.scm`.
+"""
+
+import datetime as dt
+import json
+import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import dspy
+import json_repair
+import litellm
+
+from src.generate_think.think_schema import (
+    DPOContrastivePair,
+    SynthesizedReasoningSteps,
+    ThinkArtifactBundle,
+)
+from src.logging_config import get_pipeline_logger
+from src.prompt_loader import (
+    PROMPT_THINK_SYNTHESIZER,
+    build_schema_system_prompt,
+    load_prompt,
+    load_prompt_spec,
+)
+from src.system_config import SYSTEM_CONFIG
+
+logger = get_pipeline_logger("think_synthesizer")
+
+# Quality tier ranking for filtering
+TIER_RANK: Dict[str, int] = {
+    "GOLD": 4,
+    "SILVER": 3,
+    "BRONZE": 2,
+    "REJECTED": 1,
+    "INELIGIBLE": 0,
+}
+
+SFT_SYSTEM_PROMPT: str = (
+    "You are a formal methods expert specializing in MITRE CPSA 4.4.9. "
+    "Given an IETF RFC protocol specification, reason step-by-step inside <think>...</think> tags "
+    "about the participating principals, message algebra sorts, role traces, origination and "
+    "executability invariants, and 3-Point-of-View security preskeletons, then emit a formally "
+    "verifiable CPSA Scheme (.scm) specification."
+)
+
+
+class CPSAHindsightReasoningSignature(dspy.Signature):
+    """Synthesize a forward-looking, first-person MITRE CPSA 4.4.9 <think> deduction trace from an RFC slice.
+    Write strictly as if you are designing the CPSA model from scratch while reading the RFC.
+    NEVER mention 'compiler backtracking history', 'preskeleton verdicts', 'provided AST', or any post-hoc verification results;
+    instead, use exact CPSA variable names, sorts (name, text, data, skey, akey, rndx, expt, chan), S-expression terms,
+    and natural self-checks ('Wait—let me verify CPSA's executability rules...').
+    """
+
+    rfc_context_and_slice: str = dspy.InputField(
+        desc="RFC ID, Title, Participating Principals, Selected Sections, and Verbatim RFC Specification Slice"
+    )
+    target_cpsa_identifiers_and_terms: str = dspy.InputField(
+        desc="Exact CPSA variable names, sorts, role traces, and skeleton structures that your forward-looking reasoning must derive"
+    )
+    cpsa_invariants_and_self_checks: str = dspy.InputField(
+        desc="CPSA 4.4.9 sort, roletran executability, and origination pitfalls to weave in as 'Wait—let me verify...' self-correction thoughts"
+    )
+    step1_protocol_and_algebra: str = dspy.OutputField(
+        desc="Step 1: First-person deduction of protocol scope, principals, and why basic or diffie-hellman algebra is required"
+    )
+    step2_principals_and_variables: str = dspy.OutputField(
+        desc="Step 2: First-person mapping of RFC fields to every exact CPSA variable identifier and sort (rndx vs expt, text, data, skey, akey, name, chan)"
+    )
+    step3_message_flow_and_terms: str = dspy.OutputField(
+        desc="Step 3: First-person derivation of each role's ordered send/recv events with exact S-expression terms ((cat ...), (enc ...), (exp (gen) ...))"
+    )
+    step4_compiler_backtracking_and_invariants: str = dspy.OutputField(
+        desc="Step 4: First-person self-check ('Wait—let me check CPSA's rules...') verifying uniq-orig, uniq-gen, non-orig, and roletran (inputs ...) destructibility"
+    )
+    step5_preskeleton_verdicts_and_goals: str = dspy.OutputField(
+        desc="Step 5: First-person construction of the 3 defskeleton blocks (Initiator POV without deflistener, Responder POV without deflistener, and Secrecy POV with deflistener)"
+    )
+    full_thinking_monologue: str = dspy.OutputField(
+        desc="Complete, detailed first-person reasoning monologue integrating all exact variable names, sorts, S-expressions, and 'Wait—let me check...' self-corrections from Steps 1-5"
+    )
+
+
+class CPSAHindsightThinkModule(dspy.Module):
+    """DSPy Module wrapping CPSAHindsightReasoningSignature for provider-agnostic <think> generation."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        # Dynamically bind the externalized prompts/07_think_token_synthesizer.md instructions
+        CPSAHindsightReasoningSignature.__doc__ = load_prompt(PROMPT_THINK_SYNTHESIZER)
+        self.synthesize = dspy.Predict(CPSAHindsightReasoningSignature)
+
+    def forward(
+        self,
+        rfc_context_and_slice: str,
+        target_cpsa_identifiers_and_terms: str,
+        cpsa_invariants_and_self_checks: str,
+    ) -> dspy.Prediction:
+        return self.synthesize(
+            rfc_context_and_slice=rfc_context_and_slice,
+            target_cpsa_identifiers_and_terms=target_cpsa_identifiers_and_terms,
+            cpsa_invariants_and_self_checks=cpsa_invariants_and_self_checks,
+        )
+
+
+def _format_sexpr(term: Any) -> str:
+    """Renders a Python list/str term into a compact CPSA S-expression string."""
+    if isinstance(term, list):
+        return "(" + " ".join(_format_sexpr(t) for t in term) + ")"
+    return str(term)
+
+
+def _extract_compiler_backtracking_summary(trajectory_data: Dict[str, Any]) -> str:
+    """Extracts Stage 2, Stage 5, and Stage 6 pitfalls as forward-looking CPSA design self-checks."""
+    lines: List[str] = []
+    algebra = trajectory_data.get("rfc_metadata", {}).get("algebra", "basic")
+
+    stage2 = trajectory_data.get("stage2_initial_extraction", {})
+    if stage2.get("schema_self_correction_triggered") and stage2.get("schema_validation_error"):
+        lines.append(
+            f"- Self-check on CPSA AST scoping: avoid `{stage2['schema_validation_error']}`."
+        )
+
+    stage5 = trajectory_data.get("stage5_preflight_gate", {})
+    for att in stage5.get("repair_attempts", []):
+        diag = att.get("parsed_diagnostic") or att.get("raw_stderr") or "roletran executability failure"
+        lines.append(
+            f"- Backtracking self-check ('Wait—let me check role executability...'): if we are not careful, "
+            f"`{stage5.get('validator_binary', 'cpsa4roletran')}` would reject with `{diag.splitlines()[0]}`. "
+            f"Explain how the role's `(inputs ...)` and key declarations avoid this error."
+        )
+
+    stage6 = trajectory_data.get("stage6_cpsa4_solver", {})
+    for att in stage6.get("repair_attempts", []):
+        diag = att.get("parsed_diagnostic") or att.get("raw_stderr") or "cpsa4 solver failure"
+        lines.append(
+            f"- Backtracking self-check ('Hold on—let me check CPSA sort and origination rules...'): "
+            f"avoid `{diag.splitlines()[0]}` by ensuring sort and origination consistency across roles and skeletons."
+        )
+
+    if algebra == "diffie-hellman":
+        lines.append(
+            "- Proactive DH self-check ('Wait—let me verify CPSA's Diffie-Hellman exponent rules...'): "
+            "any fresh private exponent sent in `(exp (gen) x)` must have sort `rndx` with `(uniq-gen x)`, "
+            "while the peer receiving that public share must type the received exponent variable as `expt` "
+            "(because CPSA requires `rndx` to be sent first and `expt` to be received first)."
+        )
+    else:
+        lines.append(
+            "- Proactive basic-algebra self-check ('Wait—let me verify CPSA Equation 10.1 and roletran rules...'): "
+            "encryption keys in `(enc ...)` must have sort `skey` or `akey` (never `mesg`), and `(inputs ...)` "
+            "must include trace channels and pre-known keys without overlapping `(uniq-orig ...)`."
+        )
+
+    lines.append(
+        "- Proactive 3-POV Skeleton self-check: construct separate participant POV skeletons (`defstrandmax` with "
+        "NO `deflistener`) to test multi-strand authentication, and a dedicated secrecy skeleton with "
+        "`(deflistener ...)` and `(non-orig ...)` to test confidentiality."
+    )
+    return "\n".join(lines)
+
+
+def compile_deterministic_reasoning_steps(trajectory_data: Dict[str, Any]) -> SynthesizedReasoningSteps:
+    """Deterministically compiles a rich 5-step <think> trace directly from the AST and compiler trajectory.
+
+    Requires zero LLM calls while preserving 100% identifier fidelity and compiler backtracking checks.
+    """
+    rfc_meta = trajectory_data.get("rfc_metadata", {})
+    rfc_id = rfc_meta.get("rfc_id", "Unknown RFC")
+    rfc_title = rfc_meta.get("rfc_title", "Unknown Protocol")
+    algebra = rfc_meta.get("algebra", "basic")
+    principals = rfc_meta.get("participating_principals", [])
+    sections = rfc_meta.get("selected_sections", [])
+
+    final_out = trajectory_data.get("final_verified_output", {})
+    final_ast = final_out.get("final_ast") or trajectory_data.get("stage2_initial_extraction", {}).get("initial_ast") or {}
+    herald_comment = final_ast.get("herald_comment", "")
+    roles = final_ast.get("roles", [])
+    skeletons = final_ast.get("skeletons", [])
+
+    # Step 1: Protocol & Algebra
+    algebra_rationale = (
+        "Because the handshake employs ephemeral Diffie-Hellman exponentiation `(exp (gen) ...)` to establish "
+        "shared session keys, we must select the MITRE CPSA `diffie-hellman` message algebra rather than `basic`."
+        if algebra == "diffie-hellman"
+        else "Because the protocol relies on symmetric/asymmetric encryption, nonces, hashes, and signatures without "
+        "Diffie-Hellman group exponentiation, we select the MITRE CPSA `basic` message algebra."
+    )
+    step1 = (
+        f"Let's analyze {rfc_id} ({rfc_title}), focusing on sections {', '.join(sections) or 'describing the core exchange'}. "
+        f"The interactive cryptographic exchange involves {len(roles)} primary roles ({', '.join(r.get('role_name', '') for r in roles) or ', '.join(principals)}). "
+        f"{algebra_rationale} "
+        f"Scope note: {herald_comment}"
+    ).strip()
+
+    # Step 2: Principals & Variables
+    role_var_paragraphs: List[str] = []
+    for role in roles:
+        r_name = role.get("role_name", "role")
+        r_desc = role.get("description") or f"Participant role `{r_name}`"
+        var_items: List[str] = []
+        for var in role.get("variables", []):
+            v_name = var.get("name")
+            v_sort = var.get("sort")
+            v_rfc = var.get("rfc_field")
+            v_desc = var.get("description")
+            mapping_str = f"`{v_name}` (sort `{v_sort}`)"
+            if v_rfc:
+                mapping_str += f" [RFC: {v_rfc}]"
+            if v_desc:
+                mapping_str += f": {v_desc}"
+            var_items.append(mapping_str)
+        role_var_paragraphs.append(
+            f"For role `{r_name}` ({r_desc}), we declare the following typed variables in `(vars ...)`: "
+            + "; ".join(var_items)
+            + "."
+        )
+    step2 = "\n".join(role_var_paragraphs) if role_var_paragraphs else "We map each principal's variables to strict CPSA 4.4.9 sorts."
+
+    # Step 3: Message Flow & Terms
+    trace_paragraphs: List[str] = []
+    for role in roles:
+        r_name = role.get("role_name", "role")
+        ev_lines: List[str] = []
+        for idx, ev in enumerate(role.get("trace", [])):
+            direction = ev.get("direction", "send")
+            chan = ev.get("channel") or ev.get("location") or ""
+            term_str = _format_sexpr(ev.get("message_term", ""))
+            ev_desc = ev.get("description") or f"Event {idx}"
+            if chan:
+                sexpr_ev = f"({direction} {chan} {term_str})"
+            else:
+                sexpr_ev = f"({direction} {term_str})"
+            ev_lines.append(f"Event {idx} ({ev_desc}) -> `{sexpr_ev}`")
+        trace_paragraphs.append(
+            f"In role `{r_name}`, the ordered `(trace ...)` sequence is: " + "; ".join(ev_lines) + "."
+        )
+    step3 = "\n".join(trace_paragraphs) if trace_paragraphs else "We construct the ordered send/recv trace events for each role."
+
+    # Step 4: Compiler Backtracking & Invariants
+    backtrack_notes: List[str] = []
+    stage5 = trajectory_data.get("stage5_preflight_gate", {})
+    stage6 = trajectory_data.get("stage6_cpsa4_solver", {})
+    for att in stage5.get("repair_attempts", []):
+        diag = att.get("parsed_diagnostic") or att.get("raw_stderr") or ""
+        backtrack_notes.append(
+            f"Wait—let me check pre-flight role executability (`{stage5.get('validator_binary', 'cpsa4roletran')}`): "
+            f"an initial formulation would trigger `{diag.splitlines()[0] if diag else 'an executability error'}`. "
+            f"We must ensure every received term can be destructured using keys already in scope or declared in `(inputs ...)`."
+        )
+    for att in stage6.get("repair_attempts", []):
+        diag = att.get("parsed_diagnostic") or att.get("raw_stderr") or ""
+        backtrack_notes.append(
+            f"Hold on—when `cpsa4` evaluates the search space, we must avoid `{diag.splitlines()[0] if diag else 'solver rejection'}` "
+            f"by aligning sort declarations and origination assumptions across roles and skeletons."
+        )
+
+    for role in roles:
+        r_name = role.get("role_name", "role")
+        uo = [_format_sexpr(x) for x in role.get("unique_originating", [])]
+        ug = [_format_sexpr(x) for x in role.get("unique_generated", [])]
+        no = [_format_sexpr(x) for x in role.get("non_originating", [])]
+        ins = [_format_sexpr(x) for x in role.get("inputs", [])]
+        outs = [_format_sexpr(x) for x in role.get("outputs", [])]
+        inv_parts: List[str] = []
+        if uo:
+            inv_parts.append(f"`(uniq-orig {' '.join(uo)})` for freshly originated nonces/identifiers")
+        if ug:
+            inv_parts.append(f"`(uniq-gen {' '.join(ug)})` for fresh DH exponents of sort `rndx`")
+        if no:
+            inv_parts.append(f"`(non-orig {' '.join(no)})` for uncompromised long-term keys")
+        if ins:
+            inv_parts.append(f"`(inputs {' '.join(ins)})` (excluding any `uniq-orig`/`uniq-gen` terms per cpsa4roletran rules)")
+        if outs:
+            inv_parts.append(f"`(outputs {' '.join(outs)})`")
+        if inv_parts:
+            backtrack_notes.append(f"For role `{r_name}`, we enforce: " + ", ".join(inv_parts) + ".")
+
+    if algebra == "diffie-hellman":
+        backtrack_notes.append(
+            "Wait—let me verify CPSA's Diffie-Hellman exponent discipline: any exponent chosen freshly by a role "
+            "and sent first in `(exp (gen) x)` must have sort `rndx` and `(uniq-gen x)`, whereas the peer role "
+            "receiving that public share must declare its corresponding exponent variable with sort `expt` "
+            "(since CPSA requires `expt` variables to be received first and `rndx` variables to be sent first)."
+        )
+    else:
+        backtrack_notes.append(
+            "Wait—let me verify MITRE CPSA Equation 10.1 and `cpsa4roletran` invariants: no variable of sort `mesg` "
+            "is used as an encryption key in `(enc ...)`, and every role's `(inputs ...)` contains its trace channels "
+            "and initial keys without overlapping `(uniq-orig ...)`."
+        )
+    step4 = " ".join(backtrack_notes)
+
+    # Step 5: Preskeletons
+    skel_notes: List[str] = []
+    for idx, skel in enumerate(skeletons):
+        s_desc = skel.get("description") or skel.get("comment") or f"Preskeleton {idx + 1}"
+        strands_str = ", ".join(f"`(defstrandmax {s.get('role_name')})`" for s in skel.get("strands", []))
+        listeners = [_format_sexpr(l) for l in skel.get("listeners", [])]
+        non_orig = [_format_sexpr(n) for n in skel.get("non_originating", [])]
+        if listeners:
+            skel_notes.append(
+                f"Skeleton {idx + 1} ({s_desc}): instantiates {strands_str} with `(deflistener {' '.join(listeners)})` "
+                f"and `(non-orig {' '.join(non_orig)})` to test whether the penetrator can learn the secret."
+            )
+        else:
+            skel_notes.append(
+                f"Skeleton {idx + 1} ({s_desc}): pure participant POV instantiating {strands_str} with NO `deflistener` "
+                f"and `(non-orig {' '.join(non_orig)})` so `cpsa4` can realize multi-strand authenticated shapes."
+            )
+    step5 = " ".join(skel_notes) if skel_notes else "We construct participant POV and secrecy preskeletons."
+
+    full_monologue = (
+        f"1. Protocol Scope & Message Algebra:\n{step1}\n\n"
+        f"2. Principal Roles & Variable Sort Mapping:\n{step2}\n\n"
+        f"3. Message Exchange Trace & Term Construction:\n{step3}\n\n"
+        f"4. Compiler Invariants & Self-Correction Checks:\n{step4}\n\n"
+        f"5. Point-of-View & Secrecy Preskeleton Formulation:\n{step5}"
+    )
+
+    return SynthesizedReasoningSteps(
+        step1_protocol_and_algebra=step1,
+        step2_principals_and_variables=step2,
+        step3_message_flow_and_terms=step3,
+        step4_compiler_backtracking_and_invariants=step4,
+        step5_preskeleton_verdicts_and_goals=step5,
+        full_thinking_monologue=full_monologue,
+    )
+
+
+def _sanitize_hindsight_leakage(text: str) -> str:
+    """Removes any accidental references to pre-supplied AST/trajectory artifacts."""
+    banned_patterns = [
+        (
+            r"(?i)\bin the (?:provided|given|supplied) (?:final_ast|initial_ast|final_scm|initial_scm|ast|scm|trajectory|scaffold)\b",
+            "in our CPSA model",
+        ),
+        (
+            r"(?i)\blooking at the (?:provided|given|supplied) (?:final_ast|initial_ast|final_scm|initial_scm|ast|scm|code|solution)\b",
+            "analyzing the protocol structure",
+        ),
+        (r"(?i)\baccording to the trajectory metadata\b", "by CPSA's strand-space semantics"),
+        (r"(?i)\bthe compiler backtracking history (?:indicates|shows) that\b", "Wait—let me verify CPSA's compiler invariants:"),
+        (r"(?i)\bthe preskeleton verdicts confirm that\b", "To verify our security goals in CPSA,"),
+    ]
+    cleaned = text.strip()
+    for pat, repl in banned_patterns:
+        cleaned = re.sub(pat, repl, cleaned)
+    # Strip any outer <think> or </think> tags if the model included them inside full_thinking_monologue
+    cleaned = re.sub(r"^\s*<think>\s*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s*</think>\s*$", "", cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
+
+
+def _compose_comprehensive_monologue(steps: SynthesizedReasoningSteps) -> str:
+    """Ensures full_thinking_monologue preserves all concrete variable mappings, sorts, and S-expression terms."""
+    if "(cat" in steps.full_thinking_monologue or "(enc" in steps.full_thinking_monologue or "(exp" in steps.full_thinking_monologue:
+        return steps.full_thinking_monologue
+    return (
+        f"1. Protocol Scope & Message Algebra:\n{steps.step1_protocol_and_algebra}\n\n"
+        f"2. Principal Roles & Variable Sort Mapping:\n{steps.step2_principals_and_variables}\n\n"
+        f"3. Message Exchange Trace & Term Construction:\n{steps.step3_message_flow_and_terms}\n\n"
+        f"4. Compiler Invariants & Self-Correction Checks:\n{steps.step4_compiler_backtracking_and_invariants}\n\n"
+        f"5. Point-of-View & Secrecy Preskeleton Formulation:\n{steps.step5_preskeleton_verdicts_and_goals}"
+    )
+
+
+def synthesize_reasoning_steps_via_dspy_or_llm(
+    trajectory_data: Dict[str, Any],
+    model: Optional[str] = None,
+) -> Tuple[SynthesizedReasoningSteps, str]:
+    """Synthesizes `<think>` steps using DSPy / LiteLLM provider-agnostic routing, with deterministic fallback."""
+    think_spec = load_prompt_spec(PROMPT_THINK_SYNTHESIZER)
+    model_name = model or think_spec.model
+    sampling_temp = think_spec.temperature if think_spec.temperature is not None else 0.2
+    rfc_meta = trajectory_data.get("rfc_metadata", {})
+    rfc_id = rfc_meta.get("rfc_id", "Unknown RFC")
+    rfc_title = rfc_meta.get("rfc_title", "Unknown Protocol")
+    principals = rfc_meta.get("participating_principals", [])
+    sections = rfc_meta.get("selected_sections", [])
+    verbatim_slice = rfc_meta.get("verbatim_rfc_slice", "")
+
+    final_out = trajectory_data.get("final_verified_output", {})
+    final_ast = final_out.get("final_ast") or trajectory_data.get("stage2_initial_extraction", {}).get("initial_ast")
+    final_scm = final_out.get("final_scm_with_header") or trajectory_data.get("stage2_initial_extraction", {}).get("initial_scm") or ""
+
+    rfc_context_and_slice = (
+        f"RFC ID: {rfc_id}\n"
+        f"Title: {rfc_title}\n"
+        f"Participating Principals: {', '.join(principals)}\n"
+        f"Selected Sections: {', '.join(sections)}\n\n"
+        f"Verbatim RFC Specification Slice:\n{verbatim_slice}"
+    )
+    verified_scaffold = (
+        f"Verified CPSA AST (JSON):\n{json.dumps(final_ast, indent=2)}\n\n"
+        f"Verified CPSA Scheme (.scm):\n{final_scm}"
+    )
+    backtracking_history = _extract_compiler_backtracking_summary(trajectory_data)
+
+    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
+
+    # First attempt: DSPy CPSAHindsightThinkModule configured with provider-agnostic LM
+    try:
+        logger.info("Synthesizing <think> reasoning trace for %s using DSPy module (%s)", rfc_id, model_name)
+        lm_params = {k: v for k, v in llm_kwargs.items() if k != "model"}
+        dspy_lm = dspy.LM(model=llm_kwargs["model"], **lm_params)
+        module = CPSAHindsightThinkModule()
+        with dspy.context(lm=dspy_lm):
+            pred = module(
+                rfc_context_and_slice=rfc_context_and_slice,
+                target_cpsa_identifiers_and_terms=verified_scaffold,
+                cpsa_invariants_and_self_checks=backtracking_history,
+            )
+        steps = SynthesizedReasoningSteps(
+            step1_protocol_and_algebra=_sanitize_hindsight_leakage(str(pred.step1_protocol_and_algebra)),
+            step2_principals_and_variables=_sanitize_hindsight_leakage(str(pred.step2_principals_and_variables)),
+            step3_message_flow_and_terms=_sanitize_hindsight_leakage(str(pred.step3_message_flow_and_terms)),
+            step4_compiler_backtracking_and_invariants=_sanitize_hindsight_leakage(
+                str(pred.step4_compiler_backtracking_and_invariants)
+            ),
+            step5_preskeleton_verdicts_and_goals=_sanitize_hindsight_leakage(
+                str(pred.step5_preskeleton_verdicts_and_goals)
+            ),
+            full_thinking_monologue=_sanitize_hindsight_leakage(str(pred.full_thinking_monologue)),
+        )
+        steps.full_thinking_monologue = _compose_comprehensive_monologue(steps)
+        if len(steps.full_thinking_monologue) >= 120:
+            return steps, "dspy_hindsight_llm"
+    except Exception as dspy_exc:
+        logger.warning(
+            "DSPy adapter call for %s encountered (%s); attempting direct JSON-schema completion via LiteLLM...",
+            rfc_id,
+            dspy_exc,
+        )
+
+    # Second attempt: Direct LiteLLM JSON-schema completion using prompts/07_think_token_synthesizer.md
+    try:
+        system_prompt = build_schema_system_prompt(
+            PROMPT_THINK_SYNTHESIZER,
+            SynthesizedReasoningSteps,
+        )
+        user_prompt = (
+            f"{rfc_context_and_slice}\n\n"
+            f"Compiler & Solver Backtracking Points to Include as Internal Self-Checks:\n{backtracking_history}\n\n"
+            f"Target Ground-Truth Scaffold (Arrive at these exact identifiers/terms via first-principles deduction "
+            f"without ever mentioning they were provided):\n{verified_scaffold}"
+        )
+        response = litellm.completion(
+            **llm_kwargs,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
+            timeout=think_spec.timeout,
+        )
+        raw_content = response.choices[0].message.content
+        try:
+            parsed = json.loads(raw_content)
+        except Exception:
+            parsed = json_repair.loads(raw_content)
+
+        steps = SynthesizedReasoningSteps.model_validate(parsed)
+        steps.step1_protocol_and_algebra = _sanitize_hindsight_leakage(steps.step1_protocol_and_algebra)
+        steps.step2_principals_and_variables = _sanitize_hindsight_leakage(steps.step2_principals_and_variables)
+        steps.step3_message_flow_and_terms = _sanitize_hindsight_leakage(steps.step3_message_flow_and_terms)
+        steps.step4_compiler_backtracking_and_invariants = _sanitize_hindsight_leakage(
+            steps.step4_compiler_backtracking_and_invariants
+        )
+        steps.step5_preskeleton_verdicts_and_goals = _sanitize_hindsight_leakage(
+            steps.step5_preskeleton_verdicts_and_goals
+        )
+        steps.full_thinking_monologue = _sanitize_hindsight_leakage(steps.full_thinking_monologue)
+        steps.full_thinking_monologue = _compose_comprehensive_monologue(steps)
+        return steps, "dspy_hindsight_llm"
+    except Exception as llm_exc:
+        logger.warning(
+            "LLM synthesis failed for %s (%s); falling back to deterministic AST + compiler trajectory compiler.",
+            rfc_id,
+            llm_exc,
+        )
+        return compile_deterministic_reasoning_steps(trajectory_data), "deterministic_ast_compiler"
+
+
+def _build_sft_and_dpo_records(
+    trajectory_data: Dict[str, Any],
+    thinking_block: str,
+) -> Tuple[List[Dict[str, str]], List[DPOContrastivePair]]:
+    """Constructs the 3-turn SFT chat payload and extracts any compiler-rejected DPO contrastive pairs."""
+    rfc_meta = trajectory_data.get("rfc_metadata", {})
+    rfc_id = rfc_meta.get("rfc_id", "Unknown RFC")
+    rfc_title = rfc_meta.get("rfc_title", "Unknown Protocol")
+    verbatim_slice = rfc_meta.get("verbatim_rfc_slice", "")
+
+    final_out = trajectory_data.get("final_verified_output", {})
+    final_scm = (
+        final_out.get("final_scm_with_header")
+        or trajectory_data.get("stage2_initial_extraction", {}).get("initial_scm")
+        or ""
+    ).strip()
+
+    user_message = (
+        f"Synthesize a formally verified MITRE CPSA 4.4.9 specification for {rfc_id} ({rfc_title}) "
+        f"from the following verbatim RFC specification sections:\n\n{verbatim_slice}"
+    )
+    chosen_completion = f"{thinking_block}\n\n{final_scm}"
+
+    prompt_messages = [
+        {"role": "system", "content": SFT_SYSTEM_PROMPT},
+        {"role": "user", "content": user_message},
+    ]
+    sft_messages = prompt_messages + [
+        {"role": "assistant", "content": chosen_completion},
+    ]
+
+    dpo_pairs: List[DPOContrastivePair] = []
+    for stage_key, stage_label in (
+        ("stage5_preflight_gate", "stage5_roletran"),
+        ("stage6_cpsa4_solver", "stage6_cpsa4"),
+    ):
+        stage_obj = trajectory_data.get(stage_key, {})
+        for att in stage_obj.get("repair_attempts", []):
+            rejected_scm = (att.get("rejected_scm") or "").strip()
+            if not rejected_scm or rejected_scm == final_scm:
+                continue
+            diag = att.get("parsed_diagnostic") or att.get("raw_stderr") or "Compiler verification failure"
+            dpo_pairs.append(
+                DPOContrastivePair(
+                    stage=stage_label,
+                    attempt_number=int(att.get("attempt_number", 1)),
+                    compiler_diagnostic=diag,
+                    rag_query=att.get("rag_query"),
+                    retrieved_chunk_ids=list(att.get("retrieved_chunk_ids", [])),
+                    prompt_messages=prompt_messages,
+                    chosen_response=chosen_completion,
+                    rejected_response=rejected_scm,
+                )
+            )
+
+    return sft_messages, dpo_pairs
+
+
+def update_metadata_index_with_think_file(
+    run_root_dir: Path,
+    trajectory_json_path: Path,
+    think_json_path: Path,
+) -> Optional[Path]:
+    """Updates `metadata_index.json` in `run_root_dir` to register the generated `<protocol>_think.json`."""
+    index_path = run_root_dir / "metadata_index.json"
+    if not index_path.exists():
+        return None
+
+    try:
+        index_data = json.loads(index_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+    now_utc = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    index_data["updated_at_utc"] = now_utc
+
+    if "think_json_files" not in index_data:
+        index_data["think_json_files"] = []
+
+    think_abs = str(think_json_path.resolve())
+    traj_abs = str(trajectory_json_path.resolve())
+
+    if think_abs not in index_data["think_json_files"]:
+        index_data["think_json_files"].append(think_abs)
+
+    for run_entry in index_data.get("runs", []):
+        if run_entry.get("metadata_json_file") == traj_abs:
+            run_entry["think_json_file"] = think_abs
+
+    index_path.write_text(json.dumps(index_data, indent=2), encoding="utf-8")
+    return index_path
+
+
+def generate_think_for_trajectory(
+    trajectory_json_path: Path,
+    model: Optional[str] = None,
+    mode: str = "auto",
+    run_root_dir: Optional[Path] = None,
+) -> Path:
+    """Reads `<protocol>_trajectory.json`, synthesizes `<think>` tokens, writes `<protocol>_think.json`
+    in the same RFC directory, and updates `metadata_index.json` if present.
+    """
+    trajectory_json_path = trajectory_json_path.resolve()
+    if not trajectory_json_path.exists():
+        raise FileNotFoundError(f"Trajectory JSON not found: {trajectory_json_path}")
+
+    trajectory_data = json.loads(trajectory_json_path.read_text(encoding="utf-8"))
+    rfc_dir = trajectory_json_path.parent
+    stem = re.sub(r"_trajectory$", "", trajectory_json_path.stem)
+    think_json_path = rfc_dir / f"{stem}_think.json"
+    scm_filename = f"{stem}.scm"
+
+    if mode == "deterministic":
+        reasoning_steps = compile_deterministic_reasoning_steps(trajectory_data)
+        synthesis_mode = "deterministic_ast_compiler"
+    else:
+        reasoning_steps, synthesis_mode = synthesize_reasoning_steps_via_dspy_or_llm(
+            trajectory_data=trajectory_data,
+            model=model,
+        )
+
+    thinking_block = f"<think>\n{reasoning_steps.full_thinking_monologue.strip()}\n</think>"
+    sft_messages, dpo_pairs = _build_sft_and_dpo_records(trajectory_data, thinking_block)
+
+    rfc_meta = trajectory_data.get("rfc_metadata", {})
+    quality_tier = trajectory_data.get("quality_assessment", {}).get("quality_tier", "REJECTED")
+    now_utc = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    bundle = ThinkArtifactBundle(
+        schema_version="1.0.0",
+        run_id=trajectory_data.get("run_id", f"{stem}_{now_utc}"),
+        timestamp_utc=now_utc,
+        rfc_id=rfc_meta.get("rfc_id", "Unknown RFC"),
+        rfc_title=rfc_meta.get("rfc_title", "Unknown Protocol"),
+        protocol_name=rfc_meta.get("protocol_name", stem),
+        algebra=rfc_meta.get("algebra", "basic"),
+        quality_tier=quality_tier,
+        synthesis_mode=synthesis_mode,
+        source_trajectory_file=trajectory_json_path.name,
+        target_scm_file=scm_filename,
+        reasoning_steps=reasoning_steps,
+        thinking_block=thinking_block,
+        sft_messages=sft_messages,
+        dpo_contrastive_pairs=dpo_pairs,
+    )
+
+    think_json_path.write_text(
+        json.dumps(bundle.model_dump(), indent=2),
+        encoding="utf-8",
+    )
+    logger.info(
+        "Wrote <think> artifact (%s, mode=%s, dpo_pairs=%d) to %s",
+        quality_tier,
+        synthesis_mode,
+        len(dpo_pairs),
+        think_json_path,
+    )
+
+    effective_run_root = run_root_dir or rfc_dir.parent
+    update_metadata_index_with_think_file(
+        run_root_dir=effective_run_root,
+        trajectory_json_path=trajectory_json_path,
+        think_json_path=think_json_path,
+    )
+    return think_json_path
+
+
+def process_run_directory(
+    target_path: Path,
+    model: Optional[str] = None,
+    mode: str = "auto",
+    min_tier: str = "BRONZE",
+    export_jsonl: bool = True,
+) -> List[Path]:
+    """Processes a timestamped run directory (via `metadata_index.json`), an RFC directory,
+    or a single `<protocol>_trajectory.json` file, generating `<protocol>_think.json` files
+    and optional consolidated `sft_train.jsonl` / `dpo_pairs.jsonl` datasets.
+    """
+    target_path = target_path.resolve()
+    min_rank = TIER_RANK.get(min_tier.upper(), 2)
+    trajectory_files: List[Path] = []
+    run_root_dir: Optional[Path] = None
+
+    if target_path.is_file():
+        if target_path.name == "metadata_index.json":
+            run_root_dir = target_path.parent
+            idx_data = json.loads(target_path.read_text(encoding="utf-8"))
+            trajectory_files = [Path(p) for p in idx_data.get("metadata_json_files", []) if Path(p).exists()]
+        elif target_path.name.endswith("_trajectory.json"):
+            trajectory_files = [target_path]
+            run_root_dir = target_path.parent.parent
+        else:
+            raise ValueError(f"Unsupported file target: {target_path}. Provide a *_trajectory.json or metadata_index.json.")
+    elif target_path.is_dir():
+        index_candidate = target_path / "metadata_index.json"
+        if index_candidate.exists():
+            run_root_dir = target_path
+            idx_data = json.loads(index_candidate.read_text(encoding="utf-8"))
+            trajectory_files = [Path(p) for p in idx_data.get("metadata_json_files", []) if Path(p).exists()]
+        else:
+            trajectory_files = sorted(target_path.rglob("*_trajectory.json"))
+            run_root_dir = target_path
+    else:
+        raise FileNotFoundError(f"Target path does not exist: {target_path}")
+
+    generated_think_files: List[Path] = []
+    sft_records: List[Dict[str, Any]] = []
+    dpo_records: List[Dict[str, Any]] = []
+
+    for traj_path in trajectory_files:
+        try:
+            traj_data = json.loads(traj_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            logger.warning("Skipping unreadable trajectory file %s: %s", traj_path, exc)
+            continue
+
+        tier = traj_data.get("quality_assessment", {}).get("quality_tier", "REJECTED")
+        if TIER_RANK.get(tier.upper(), 0) < min_rank:
+            logger.info("Skipping %s (quality_tier=%s < min_tier=%s)", traj_path.name, tier, min_tier)
+            continue
+
+        think_path = generate_think_for_trajectory(
+            trajectory_json_path=traj_path,
+            model=model,
+            mode=mode,
+            run_root_dir=run_root_dir,
+        )
+        generated_think_files.append(think_path)
+
+        think_data = json.loads(think_path.read_text(encoding="utf-8"))
+        sft_records.append({
+            "run_id": think_data["run_id"],
+            "rfc_id": think_data["rfc_id"],
+            "protocol_name": think_data["protocol_name"],
+            "algebra": think_data["algebra"],
+            "quality_tier": think_data["quality_tier"],
+            "messages": think_data["sft_messages"],
+        })
+        for pair in think_data.get("dpo_contrastive_pairs", []):
+            dpo_records.append({
+                "run_id": think_data["run_id"],
+                "rfc_id": think_data["rfc_id"],
+                "protocol_name": think_data["protocol_name"],
+                "quality_tier": think_data["quality_tier"],
+                **pair,
+            })
+
+    if export_jsonl and run_root_dir and generated_think_files:
+        sft_jsonl_path = run_root_dir / "sft_train.jsonl"
+        with open(sft_jsonl_path, "w", encoding="utf-8") as sft_f:
+            for rec in sft_records:
+                sft_f.write(json.dumps(rec) + "\n")
+        logger.info("Exported %d SFT records to %s", len(sft_records), sft_jsonl_path)
+
+        if dpo_records:
+            dpo_jsonl_path = run_root_dir / "dpo_pairs.jsonl"
+            with open(dpo_jsonl_path, "w", encoding="utf-8") as dpo_f:
+                for rec in dpo_records:
+                    dpo_f.write(json.dumps(rec) + "\n")
+            logger.info("Exported %d DPO contrastive pairs to %s", len(dpo_records), dpo_jsonl_path)
+
+    return generated_think_files
+```
+
+---
+
+### `src/generate_think/think_schema.py`
+
+*sha256:`bd1ebe2938b4` · 112 lines · 5.5 KB (~1,403 tokens) · lang:`python`*
+
+```python
+"""Pydantic Schemas for Phase 3 Hindsight Reasoning (<think>) Synthesis and SFT/DPO Curation."""
+
+from typing import Dict, List, Optional
+from pydantic import BaseModel, Field
+
+
+class SynthesizedReasoningSteps(BaseModel):
+    """Structured 5-phase hindsight reasoning steps with compiler-feedback backtracking."""
+
+    step1_protocol_and_algebra: str = Field(
+        ...,
+        description=(
+            "First-person deduction of the protocol scope, participating principals, "
+            "and why 'basic' or 'diffie-hellman' message algebra is required by the RFC text."
+        ),
+    )
+    step2_principals_and_variables: str = Field(
+        ...,
+        description=(
+            "First-person mapping of RFC message fields to CPSA variable identifiers and sorts "
+            "(name, text, data, skey, akey, rndx, expt, chan, locn, mesg), justifying sort rules."
+        ),
+    )
+    step3_message_flow_and_terms: str = Field(
+        ...,
+        description=(
+            "Step-by-step derivation of each role's ordered trace events (send/recv/load/stor) "
+            "and nested S-expression cryptographic terms (cat, enc, hash, pubk, privk, invk, ltk, exp, gen)."
+        ),
+    )
+    step4_compiler_backtracking_and_invariants: str = Field(
+        ...,
+        description=(
+            "Explicit self-correction, backtracking ('Wait—let me check...'), and formal verification "
+            "of CPSA 4.4.9 compiler invariants: cpsa4roletran term destructibility, inputs/outputs "
+            "disjointness from uniq-orig/uniq-gen, Equation 10.1 encryption key sort rules, and "
+            "avoidance/resolution of any Stage 5 or Stage 6 compiler diagnostics."
+        ),
+    )
+    step5_preskeleton_verdicts_and_goals: str = Field(
+        ...,
+        description=(
+            "Derivation of the 3-Point-of-View defskeleton blocks: why participant POV skeletons "
+            "omit deflistener to realize multi-strand authentication shapes, and how the secrecy "
+            "skeleton uses deflistener alongside non-orig/uniq-orig/uniq-gen assumptions."
+        ),
+    )
+    full_thinking_monologue: str = Field(
+        ...,
+        description=(
+            "Cohesive, natural first-person reasoning monologue integrating Steps 1-5 (including "
+            "backtracking and compiler invariant checks) without <think> wrapper tags. Never mention "
+            "that a ground-truth AST or .scm was provided in advance."
+        ),
+    )
+
+
+class DPOContrastivePair(BaseModel):
+    """Compiler-verified Direct Preference Optimization (DPO) contrastive pair."""
+
+    stage: str = Field(..., description="Verification stage where rejection occurred ('stage5_roletran' or 'stage6_cpsa4')")
+    attempt_number: int = Field(..., description="1-based repair attempt index")
+    compiler_diagnostic: str = Field(..., description="Exact compiler or solver error diagnostic that rejected the candidate")
+    rag_query: Optional[str] = Field(default=None, description="RAG query used to retrieve MITRE CPSA manual guidance")
+    retrieved_chunk_ids: List[int] = Field(default_factory=list, description="MITRE CPSA manual chunk IDs retrieved")
+    prompt_messages: List[Dict[str, str]] = Field(
+        ...,
+        description="Input conversation messages ([system, user]) shared by chosen and rejected completions",
+    )
+    chosen_response: str = Field(
+        ...,
+        description="Verified completion containing <think>...</think> followed by the final verified .scm code",
+    )
+    rejected_response: str = Field(
+        ...,
+        description="Compiler-rejected .scm specification from this failed attempt",
+    )
+
+
+class ThinkArtifactBundle(BaseModel):
+    """Complete `<protocol>_think.json` artifact saved alongside `<protocol>_trajectory.json`."""
+
+    schema_version: str = Field(default="1.0.0", description="Schema version for <protocol>_think.json")
+    run_id: str = Field(..., description="Run identifier matching <protocol>_trajectory.json")
+    timestamp_utc: str = Field(..., description="UTC ISO-8601 timestamp when thinking tokens were synthesized")
+    rfc_id: str = Field(..., description="RFC identifier (e.g. 'RFC 9528')")
+    rfc_title: str = Field(..., description="RFC document title")
+    protocol_name: str = Field(..., description="Synthesized CPSA protocol name")
+    algebra: str = Field(..., description="CPSA message algebra ('basic' or 'diffie-hellman')")
+    quality_tier: str = Field(..., description="Programmatic verification quality tier (GOLD, SILVER, BRONZE, REJECTED)")
+    synthesis_mode: str = Field(
+        ...,
+        description="Method used to synthesize thinking tokens ('dspy_hindsight_llm' or 'deterministic_ast_compiler')",
+    )
+    source_trajectory_file: str = Field(..., description="Filename of the source <protocol>_trajectory.json")
+    target_scm_file: str = Field(..., description="Filename of the target <protocol>.scm")
+    reasoning_steps: SynthesizedReasoningSteps = Field(
+        ...,
+        description="Structured 5-step reasoning breakdown and full monologue",
+    )
+    thinking_block: str = Field(
+        ...,
+        description="Complete <think>\\n...\\n</think> block ready for SFT injection",
+    )
+    sft_messages: List[Dict[str, str]] = Field(
+        ...,
+        description="Ready-to-train 3-turn chat messages ([system, user, assistant]) where assistant combines <think> + .scm",
+    )
+    dpo_contrastive_pairs: List[DPOContrastivePair] = Field(
+        default_factory=list,
+        description="Contrastive (chosen vs. compiler-rejected) pairs extracted from Stage 5 and Stage 6 repair attempts",
+    )
 ```
 
 ---
@@ -6041,7 +7229,7 @@ CPSA_BASIC_VALUE_SORTS: Set[str] = {
 
 ### `src/intermediate_representation/cpsa_grammar.py`
 
-*sha256:`e9f8912d7b93` · 397 lines · 13.9 KB (~3,553 tokens) · lang:`python`*
+*sha256:`34ecf7421abb` · 397 lines · 13.9 KB (~3,552 tokens) · lang:`python`*
 
 ```python
 """MITRE CPSA 4.4.9 Formal Grammar, Scoped Keywords, and Arity Specifications.
@@ -6055,7 +7243,7 @@ and operator can only appear in the exact grammatical production where the
 MITRE CPSA 4.4.9 specification allows it.
 """
 
-from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union, get_args
+from typing import Any, Dict, Literal, Optional, Set, Tuple, Union, get_args
 
 
 # =============================================================================
@@ -6447,7 +7635,7 @@ def validate_cpsa_term_syntax(
 
 ### `src/intermediate_representation/protocol_syntax_tree.py`
 
-*sha256:`b2c286b7259f` · 767 lines · 32.5 KB (~8,320 tokens) · lang:`python`*
+*sha256:`81b3a9386854` · 763 lines · 32.3 KB (~8,266 tokens) · lang:`python`*
 
 ```python
 """Strongly-Typed Intermediate Representation (AST) for MITRE CPSA 4.4.9 Protocols.
@@ -6734,10 +7922,6 @@ class CPSAProtocolRole(BaseModel):
     pen_non_originating: List[CPSATerm] = Field(
         default_factory=list,
         description="Penetrator non-originating terms (pen-non-orig)",
-    )
-    role_originating: List[str] = Field(
-        default_factory=list,
-        description="Deprecated legacy field; ignored on emission because role_orig is not a valid defrole input keyword in Table 10.6",
     )
     confidential_channels: List[str] = Field(
         default_factory=list,
@@ -7223,11 +8407,13 @@ class CPSAProtocolSpecification(BaseModel):
 
 ### `src/logging_config.py`
 
-*sha256:`0d8260df7e0e` · 159 lines · 5.6 KB (~1,428 tokens) · lang:`python`*
+*sha256:`b5a79abf1c5f` · 164 lines · 6.0 KB (~1,526 tokens) · lang:`python`*
 
 ```python
 """Comprehensive Structured Logging Subsystem for RFC-LLM Pipeline."""
 
+import csv
+import datetime
 import logging
 import sys
 from pathlib import Path
@@ -7273,15 +8459,21 @@ def configure_pipeline_logging(
 
     root_logger = logging.getLogger("rfc_llm")
     root_logger.setLevel(log_level)
+    root_logger.propagate = False
 
-    # Avoid duplicate handlers on re-entry
+    # Avoid duplicate handlers and prevent file descriptor leaks on re-entry across batch runs
     if root_logger.hasHandlers():
-        root_logger.handlers.clear()
+        for existing_handler in list(root_logger.handlers):
+            root_logger.removeHandler(existing_handler)
+            try:
+                existing_handler.close()
+            except Exception:
+                pass
 
-    # Silence third-party litellm loggers completely
-    for _noisy_logger in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router"):
+    # Silence third-party litellm, HTTP client, and visualizer access loggers
+    for _noisy_logger in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router", "aiohttp.access", "openai", "openai._base_client", "httpx", "httpcore"):
         _nl = logging.getLogger(_noisy_logger)
-        _nl.setLevel(logging.ERROR)
+        _nl.setLevel(logging.WARNING if _noisy_logger == "aiohttp.access" else logging.ERROR)
         _nl.propagate = False
 
     # 1. Console Handler
@@ -7343,7 +8535,6 @@ class PipelineMetricsCSVLogger:
     def _ensure_header(self) -> None:
         self.csv_path.parent.mkdir(parents=True, exist_ok=True)
         if not self.csv_path.exists() or self.csv_path.stat().st_size == 0:
-            import csv
             with open(self.csv_path, mode="w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerow(self.CSV_HEADER)
@@ -7363,8 +8554,6 @@ class PipelineMetricsCSVLogger:
         duration_seconds: float = 0.0,
         error_message: Optional[str] = None,
     ) -> None:
-        import csv
-        import datetime
         now_iso = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sec_str = ";".join(selected_sections) if selected_sections else ""
         row = [
@@ -7391,21 +8580,24 @@ class PipelineMetricsCSVLogger:
 
 ### `src/main_pipeline_orchestrator.py`
 
-*sha256:`5cdf87e79704` · 494 lines · 21.2 KB (~5,437 tokens) · lang:`python`*
+*sha256:`e88e8f54b486` · 923 lines · 39.8 KB (~10,185 tokens) · lang:`python`*
 
 ```python
 """Main Pipeline Orchestrator for RFC-to-CPSA Synthesis.
 
 Coordinates the 6-stage synthesis pipeline for a single RFC document:
-- Stage 1: Tier 0 Header Filter, TOC Parsing, Tier 1 Applicability Gate,
-           Exchange Section Routing, and Verbatim Section Slicing.
-- Stage 2: Constrained Protocol Extraction (with RAG grounding & 1-shot schema correction).
-- Stage 3 & 4: CPSA JSON Serialization and Scheme S-Expression Emission (`cpsa4json`).
-- Stage 5: Pre-Flight Roletran Executability Gate (`cpsa4roletran` / `cpsa4 -l 1`) with RAG Self-Healing.
-- Stage 6: MITRE CPSA Solver & Shapes Realization (`make` / `cpsa4` / `cpsa4shapes` / `cpsa4graph`) with RAG Self-Healing.
+- Stage 1 (Document Intake): Tier 0 Header Filter, TOC Parsing, Tier 1 Applicability Gate,
+  Exchange Section Routing, and Verbatim Section Slicing.
+- Stage 2 (JSON CPSA Generation): Constrained Protocol Extraction with RAG grounding and 1-shot schema correction.
+- Stage 3 (CPSA4json -> scm): CPSA JSON Serialization and Scheme S-Expression Emission (`cpsa4json`).
+- Stage 4 (Roletran Check): Pre-Flight Executability Check (`cpsa4roletran` / `cpsa4 -l 1`).
+- Stage 5 (Self-Healing Loop): Cycle-aware RAG diagnostic repair loop for pre-flight defects.
+- Stage 6 (CPSA Compilation): MITRE CPSA compilation and shape realization (`make` / `cpsa4` / `cpsa4shapes` / `cpsa4graph`, 60s hard cap) with RAG self-healing.
 """
 
+import datetime as dt
 import hashlib
+import json
 import time
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -7424,8 +8616,17 @@ from src.logging_config import (
     get_pipeline_logger,
 )
 from src.pipeline_events import GLOBAL_EVENT_BUS
+from src.prompt_loader import (
+    PROMPT_APPLICABILITY_GATE,
+    PROMPT_COMPILER_REPAIR,
+    PROMPT_PROTOCOL_EXTRACTION,
+    PROMPT_RAG_QUERY_FORMULATION,
+    resolve_prompt_model,
+)
+from src.semantic_extraction import constrained_protocol_extractor
 from src.semantic_extraction.constrained_protocol_extractor import extract_protocol_specification
 from src.system_config import SYSTEM_CONFIG
+from src.verification_engine import compiler_diagnostic_repair
 from src.verification_engine.compiler_diagnostic_repair import repair_protocol_specification
 from src.verification_engine.mitre_build_orchestrator import (
     CPSABuildArtifacts,
@@ -7434,6 +8635,10 @@ from src.verification_engine.mitre_build_orchestrator import (
 from src.verification_engine.roletran_executability_gate import (
     RoletranVerificationResult,
     verify_role_executability,
+)
+from src.verification_engine.trajectory_metadata_exporter import (
+    update_run_metadata_index,
+    write_trajectory_metadata_bundle,
 )
 
 logger = get_pipeline_logger("orchestrator")
@@ -7450,6 +8655,8 @@ class PipelineExecutionSummary(BaseModel):
     roletran_passed: bool = Field(default=False, description="Whether static role executability passed")
     build_successful: bool = Field(default=False, description="Whether MITRE make build succeeded")
     build_artifacts: Optional[CPSABuildArtifacts] = Field(None, description="Generated verification artifacts")
+    trajectory_json_path: Optional[Path] = Field(None, description="Path to the generated trajectory metadata JSON")
+    quality_tier: Optional[str] = Field(None, description="Programmatic verification quality tier (GOLD/SILVER/BRONZE/REJECTED)")
     duration_seconds: float = Field(default=0.0, description="Total pipeline execution time")
     error_message: Optional[str] = Field(None, description="Diagnostic error if pipeline halted")
 
@@ -7463,20 +8670,44 @@ def _extract_rfc_abstract(raw_rfc_text: str) -> str:
     return ""
 
 
+def _read_scm_safe(scm_path: Optional[Path]) -> Optional[str]:
+    if scm_path and scm_path.exists():
+        return scm_path.read_text(encoding="utf-8", errors="replace")
+    return None
+
+
 def _run_roletran_self_healing_loop(
     protocol_ast: CPSAProtocolSpecification,
     scm_path: Path,
     target_output_dir: Path,
     verbatim_slice: str,
-    active_repair_model: str,
-    active_query_model: str,
-) -> Tuple[CPSAProtocolSpecification, Path, RoletranVerificationResult]:
-    """Executes Stage 5 Roletran pre-flight executability verification with cycle-aware RAG self-healing."""
-    GLOBAL_EVENT_BUS.emit("stage_started", stage=5, stage_name="Roletran Executability Verification")
+    repair_model_override: Optional[str] = None,
+    query_model_override: Optional[str] = None,
+) -> Tuple[CPSAProtocolSpecification, Path, RoletranVerificationResult, dict]:
+    """Executes Stage 4 Roletran Check and Stage 5 Self-Healing Loop with cycle-aware RAG repair."""
+    GLOBAL_EVENT_BUS.emit(
+        "stage_started",
+        stage=4,
+        stage_name="Roletran Check",
+        model="cpsa4roletran + cpsa4 -l 1",
+    )
     roletran_result = verify_role_executability(scm_path)
+    initial_passed = roletran_result.is_executable
+    if initial_passed:
+        GLOBAL_EVENT_BUS.emit("stage_completed", stage=4, status="passed", model="cpsa4roletran + cpsa4 -l 1")
+    else:
+        live_repair = resolve_prompt_model(PROMPT_COMPILER_REPAIR, repair_model_override)
+        live_query = resolve_prompt_model(PROMPT_RAG_QUERY_FORMULATION, query_model_override)
+        GLOBAL_EVENT_BUS.emit(
+            "stage_started",
+            stage=5,
+            stage_name="Self-Healing Loop",
+            model=f"{live_repair} (RAG: {live_query})",
+        )
     attempt = 0
     seen_roletran_hashes = set()
     max_attempts = SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS
+    repair_attempts_log: List[dict] = []
 
     while not roletran_result.is_executable and attempt < max_attempts:
         attempt += 1
@@ -7484,6 +8715,13 @@ def _run_roletran_self_healing_loop(
         cycle_detected = ast_hash in seen_roletran_hashes
         seen_roletran_hashes.add(ast_hash)
 
+        rejected_ast_snapshot = protocol_ast.model_dump()
+        rejected_scm_snapshot = _read_scm_safe(scm_path)
+        failed_stderr = roletran_result.raw_stderr
+        failed_diag = roletran_result.error_diagnostic
+
+        live_repair = resolve_prompt_model(PROMPT_COMPILER_REPAIR, repair_model_override)
+        live_query = resolve_prompt_model(PROMPT_RAG_QUERY_FORMULATION, query_model_override)
         GLOBAL_EVENT_BUS.emit(
             "repair_attempt",
             stage=5,
@@ -7491,6 +8729,8 @@ def _run_roletran_self_healing_loop(
             max_attempts=max_attempts,
             diagnostic=roletran_result.error_diagnostic,
             cycle_detected=cycle_detected,
+            model=live_repair,
+            query_model=live_query,
         )
 
         logger.warning(
@@ -7506,14 +8746,56 @@ def _run_roletran_self_healing_loop(
                 error_diagnostic=roletran_result.error_diagnostic or "Executability verification failure",
                 verbatim_slice=verbatim_slice,
                 failure_stage="roletran",
-                model=active_repair_model,
-                query_model=active_query_model,
+                model=repair_model_override,
+                query_model=query_model_override,
                 cycle_detected=cycle_detected,
             )
             scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
+            GLOBAL_EVENT_BUS.emit(
+                "stage_completed",
+                stage=3,
+                scm_path=str(scm_path),
+                ast=protocol_ast.model_dump(),
+            )
+            GLOBAL_EVENT_BUS.emit(
+                "compiler_check_started",
+                stage=4,
+                attempt=attempt,
+                binary="cpsa4roletran + cpsa4 -l 1",
+                timeout_seconds=SYSTEM_CONFIG.ROLETRAN_TIMEOUT_SECONDS,
+                model="cpsa4roletran + cpsa4 -l 1",
+            )
             roletran_result = verify_role_executability(scm_path)
+            repair_meta = compiler_diagnostic_repair.LAST_REPAIR_METADATA
+            repair_attempts_log.append({
+                "attempt_number": attempt,
+                "cycle_detected": cycle_detected,
+                "rejected_ast": rejected_ast_snapshot,
+                "rejected_scm": rejected_scm_snapshot,
+                "raw_stderr": failed_stderr,
+                "parsed_diagnostic": failed_diag,
+                "rag_query": repair_meta.get("rag_query"),
+                "retrieved_chunk_ids": list(repair_meta.get("retrieved_chunk_ids", [])),
+                "repaired_ast": protocol_ast.model_dump(),
+                "repaired_scm": _read_scm_safe(scm_path),
+                "passed_after_repair": roletran_result.is_executable,
+            })
         except Exception as repair_error:
             logger.error("Self-healing repair exception on attempt %d: %s", attempt, repair_error)
+            repair_attempts_log.append({
+                "attempt_number": attempt,
+                "cycle_detected": cycle_detected,
+                "rejected_ast": rejected_ast_snapshot,
+                "rejected_scm": rejected_scm_snapshot,
+                "raw_stderr": failed_stderr,
+                "parsed_diagnostic": failed_diag,
+                "rag_query": compiler_diagnostic_repair.LAST_REPAIR_METADATA.get("rag_query"),
+                "retrieved_chunk_ids": list(compiler_diagnostic_repair.LAST_REPAIR_METADATA.get("retrieved_chunk_ids", [])),
+                "repaired_ast": None,
+                "repaired_scm": None,
+                "repair_exception": str(repair_error),
+                "passed_after_repair": False,
+            })
             time.sleep(2)
             continue
 
@@ -7533,7 +8815,16 @@ def _run_roletran_self_healing_loop(
             attempts=attempt,
         )
 
-    return protocol_ast, scm_path, roletran_result
+    stage5_record = {
+        "validator_binary": roletran_result.validator_binary,
+        "roletran_algebra_supported": roletran_result.roletran_algebra_supported,
+        "initial_passed": initial_passed,
+        "final_passed": roletran_result.is_executable,
+        "total_attempts": attempt,
+        "compiled_defproc_output": roletran_result.procedural_defproc_code,
+        "repair_attempts": repair_attempts_log,
+    }
+    return protocol_ast, scm_path, roletran_result, stage5_record
 
 
 def _run_mitre_solver_self_healing_loop(
@@ -7542,20 +8833,41 @@ def _run_mitre_solver_self_healing_loop(
     target_output_dir: Path,
     verbatim_slice: str,
     roletran_result: RoletranVerificationResult,
-    active_repair_model: str,
-    active_query_model: str,
-) -> Tuple[CPSAProtocolSpecification, Path, Optional[CPSABuildArtifacts], int, Optional[str]]:
-    """Executes Stage 6 MITRE CPSA make build and shape realization with cycle-aware RAG self-healing."""
-    GLOBAL_EVENT_BUS.emit("stage_started", stage=6, stage_name="MITRE Build & Shapes Exploration")
+    repair_model_override: Optional[str] = None,
+    query_model_override: Optional[str] = None,
+) -> Tuple[CPSAProtocolSpecification, Path, Optional[CPSABuildArtifacts], int, Optional[str], dict]:
+    """Executes Stage 6 CPSA Compilation and shape realization with cycle-aware RAG self-healing."""
+    GLOBAL_EVENT_BUS.emit(
+        "stage_started",
+        stage=6,
+        stage_name="CPSA Compilation",
+        model="cpsa4 + cpsa4graph",
+    )
     artifacts: Optional[CPSABuildArtifacts] = None
     build_attempt = 0
     last_build_error: Optional[str] = None
     seen_solver_hashes = set()
     max_attempts = SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS
+    solver_attempts_log: List[dict] = []
 
     while build_attempt <= max_attempts:
         try:
+            if build_attempt > 0 and not roletran_result.is_executable and roletran_result.roletran_algebra_supported:
+                raise RuntimeError(
+                    f"Pre-flight roletran check rejected repaired model (<15ms syntax/executability gate): "
+                    f"{roletran_result.error_diagnostic}"
+                )
+            GLOBAL_EVENT_BUS.emit(
+                "compiler_check_started",
+                stage=6,
+                attempt=build_attempt,
+                binary="cpsa4 + cpsa4graph",
+                timeout_seconds=SYSTEM_CONFIG.CPSA_TIMEOUT_SECONDS,
+                model="cpsa4 + cpsa4graph",
+            )
             artifacts = execute_mitre_make_build(scm_path, target_output_dir)
+            if solver_attempts_log:
+                solver_attempts_log[-1]["passed_after_repair"] = True
             break
         except Exception as build_exc:
             last_build_error = str(build_exc)
@@ -7565,6 +8877,11 @@ def _run_mitre_solver_self_healing_loop(
                 cycle_detected = ast_hash in seen_solver_hashes
                 seen_solver_hashes.add(ast_hash)
 
+                rejected_ast_snapshot = protocol_ast.model_dump()
+                rejected_scm_snapshot = _read_scm_safe(scm_path)
+
+                live_repair = resolve_prompt_model(PROMPT_COMPILER_REPAIR, repair_model_override)
+                live_query = resolve_prompt_model(PROMPT_RAG_QUERY_FORMULATION, query_model_override)
                 GLOBAL_EVENT_BUS.emit(
                     "repair_attempt",
                     stage=6,
@@ -7572,6 +8889,8 @@ def _run_mitre_solver_self_healing_loop(
                     max_attempts=max_attempts,
                     diagnostic=last_build_error,
                     cycle_detected=cycle_detected,
+                    model=live_repair,
+                    query_model=live_query,
                 )
 
                 logger.warning(
@@ -7594,25 +8913,66 @@ def _run_mitre_solver_self_healing_loop(
                         error_diagnostic=combined_diagnostic,
                         verbatim_slice=verbatim_slice,
                         failure_stage="solver",
-                        model=active_repair_model,
-                        query_model=active_query_model,
+                        model=repair_model_override,
+                        query_model=query_model_override,
                         cycle_detected=cycle_detected,
                     )
                     scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
+                    GLOBAL_EVENT_BUS.emit(
+                        "stage_completed",
+                        stage=3,
+                        scm_path=str(scm_path),
+                        ast=protocol_ast.model_dump(),
+                    )
                     roletran_result = verify_role_executability(scm_path)
                     if not roletran_result.is_executable:
                         logger.warning(
                             "Repaired spec failed roletran executability: %s",
                             roletran_result.error_diagnostic,
                         )
+                    repair_meta = compiler_diagnostic_repair.LAST_REPAIR_METADATA
+                    solver_attempts_log.append({
+                        "attempt_number": build_attempt,
+                        "cycle_detected": cycle_detected,
+                        "rejected_ast": rejected_ast_snapshot,
+                        "rejected_scm": rejected_scm_snapshot,
+                        "raw_stderr": last_build_error,
+                        "parsed_diagnostic": combined_diagnostic,
+                        "rag_query": repair_meta.get("rag_query"),
+                        "retrieved_chunk_ids": list(repair_meta.get("retrieved_chunk_ids", [])),
+                        "repaired_ast": protocol_ast.model_dump(),
+                        "repaired_scm": _read_scm_safe(scm_path),
+                        "passed_after_repair": False,
+                    })
                 except Exception as repair_error:
                     logger.error("Build self-healing exception on attempt %d: %s", build_attempt, repair_error)
+                    solver_attempts_log.append({
+                        "attempt_number": build_attempt,
+                        "cycle_detected": cycle_detected,
+                        "rejected_ast": rejected_ast_snapshot,
+                        "rejected_scm": rejected_scm_snapshot,
+                        "raw_stderr": last_build_error,
+                        "parsed_diagnostic": last_build_error,
+                        "rag_query": compiler_diagnostic_repair.LAST_REPAIR_METADATA.get("rag_query"),
+                        "retrieved_chunk_ids": list(compiler_diagnostic_repair.LAST_REPAIR_METADATA.get("retrieved_chunk_ids", [])),
+                        "repaired_ast": None,
+                        "repaired_scm": None,
+                        "repair_exception": str(repair_error),
+                        "passed_after_repair": False,
+                    })
                     time.sleep(2)
                     continue
             else:
                 break
 
-    return protocol_ast, scm_path, artifacts, build_attempt, last_build_error
+    stage6_record = {
+        "validator_binary": "cpsa4",
+        "initial_passed": build_attempt == 0 and artifacts is not None,
+        "final_passed": artifacts is not None,
+        "total_attempts": build_attempt,
+        "repair_attempts": solver_attempts_log,
+    }
+    return protocol_ast, scm_path, artifacts, build_attempt, last_build_error, stage6_record
 
 
 def run_rfc_translation_pipeline(
@@ -7622,27 +8982,45 @@ def run_rfc_translation_pipeline(
     extraction_model: Optional[str] = None,
     repair_model: Optional[str] = None,
     query_model: Optional[str] = None,
+    run_root_dir: Optional[Path] = None,
 ) -> PipelineExecutionSummary:
     """Executes the end-to-end RFC to formally verified MITRE CPSA synthesis pipeline."""
     start_time = time.time()
     rfc_id = rfc_file_path.stem.upper()
 
-    target_output_dir = output_dir or (SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR / rfc_file_path.stem.lower())
-    target_output_dir.mkdir(parents=True, exist_ok=True)
+    if output_dir is not None:
+        target_output_dir = output_dir
+        effective_run_root = run_root_dir or output_dir.parent
+    else:
+        run_ts = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        effective_run_root = run_root_dir or (SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR / f"run_{run_ts}")
+        target_output_dir = effective_run_root / rfc_file_path.stem.lower()
 
-    # Initialize per-run logger and CSV metrics recorder
-    run_log_path = target_output_dir / "run.log"
-    configure_pipeline_logging(run_log_file=run_log_path)
+    # Configure console/global logger first; defer creating per-RFC output directory and run.log
+    # until the RFC passes Stage 1a/1c eligibility so batch runs don't create 9,400+ empty folders.
+    configure_pipeline_logging(run_log_file=None)
     csv_recorder = PipelineMetricsCSVLogger()
-    active_repair_model = repair_model or extraction_model or SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL
-    active_query_model = query_model or SYSTEM_CONFIG.DEFAULT_QUERY_MODEL
+    repair_override = repair_model or extraction_model
+    active_router_model = resolve_prompt_model(PROMPT_APPLICABILITY_GATE, router_model)
+    active_extraction_model = resolve_prompt_model(PROMPT_PROTOCOL_EXTRACTION, extraction_model)
+    active_repair_model = resolve_prompt_model(PROMPT_COMPILER_REPAIR, repair_override)
+    active_query_model = resolve_prompt_model(PROMPT_RAG_QUERY_FORMULATION, query_model)
 
     logger.info("================================================================")
     logger.info("Starting RFC-LLM Synthesis Pipeline for: %s", rfc_file_path.name)
-    logger.info("Output Directory: %s", target_output_dir)
     logger.info("================================================================")
 
-    GLOBAL_EVENT_BUS.emit("pipeline_started", rfc_id=rfc_id, rfc_file=rfc_file_path.name)
+    GLOBAL_EVENT_BUS.set_run_directory(effective_run_root, is_live=True)
+    GLOBAL_EVENT_BUS.start_rfc(rfc_id=rfc_id, rfc_file=rfc_file_path.name)
+    GLOBAL_EVENT_BUS.emit(
+        "pipeline_started",
+        rfc_id=rfc_id,
+        rfc_file=rfc_file_path.name,
+        router_model=active_router_model,
+        extraction_model=active_extraction_model,
+        repair_model=active_repair_model,
+        query_model=active_query_model,
+    )
 
     if not rfc_file_path.exists():
         error_msg = f"RFC source file not found: {rfc_file_path}"
@@ -7654,9 +9032,14 @@ def run_rfc_translation_pipeline(
         raw_rfc_text = rfc_file.read()
 
     # -------------------------------------------------------------------------
-    # STAGE 1a: Tier 0 Header Filter
+    # STAGE 1a: Tier 0 Header Filter (Document Intake)
     # -------------------------------------------------------------------------
-    GLOBAL_EVENT_BUS.emit("stage_started", stage=1, stage_name="Document Intake & Applicability Gate")
+    GLOBAL_EVENT_BUS.emit(
+        "stage_started",
+        stage=1,
+        stage_name="Document Intake",
+        model=active_router_model,
+    )
     header_filter_result = filter_rfc_header(raw_rfc_text)
     if not header_filter_result.is_eligible:
         elapsed = time.time() - start_time
@@ -7664,6 +9047,27 @@ def run_rfc_translation_pipeline(
             rfc_id=rfc_id,
             is_eligible=False,
             error_message=header_filter_result.disqualification_reason,
+            duration_seconds=elapsed,
+        )
+        update_run_metadata_index(
+            run_root_dir=effective_run_root,
+            rfc_id=header_filter_result.rfc_id or rfc_id,
+            protocol_name=header_filter_result.title,
+            rfc_dir=target_output_dir,
+            scm_path=None,
+            trajectory_json_path=None,
+            quality_tier="INELIGIBLE",
+            is_eligible=False,
+            build_successful=False,
+            error_message=header_filter_result.disqualification_reason,
+            rejection_gate="Tier 0 Header Filter",
+            duration_seconds=elapsed,
+        )
+        GLOBAL_EVENT_BUS.register_filtered_rfc(
+            rfc_id=header_filter_result.rfc_id or rfc_id,
+            title=header_filter_result.title or rfc_file_path.name,
+            gate="Tier 0 Header Filter",
+            reason=header_filter_result.disqualification_reason or "Disqualified by Tier 0 header filter",
             duration_seconds=elapsed,
         )
         GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=header_filter_result.disqualification_reason)
@@ -7704,6 +9108,27 @@ def run_rfc_translation_pipeline(
             error_message=f"Ineligible: {applicability_report.rationale}",
             duration_seconds=elapsed,
         )
+        update_run_metadata_index(
+            run_root_dir=effective_run_root,
+            rfc_id=rfc_number_str,
+            protocol_name=applicability_report.protocol_name or protocol_title,
+            rfc_dir=target_output_dir,
+            scm_path=None,
+            trajectory_json_path=None,
+            quality_tier="INELIGIBLE",
+            is_eligible=False,
+            build_successful=False,
+            error_message=applicability_report.rationale,
+            rejection_gate="Stage 1c Applicability Gate",
+            duration_seconds=elapsed,
+        )
+        GLOBAL_EVENT_BUS.register_filtered_rfc(
+            rfc_id=rfc_number_str,
+            title=applicability_report.protocol_name or protocol_title,
+            gate="Stage 1c Applicability Gate",
+            reason=applicability_report.rationale or "Disqualified by Stage 1c applicability gate",
+            duration_seconds=elapsed,
+        )
         GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=applicability_report.rationale)
         return PipelineExecutionSummary(
             rfc_id=rfc_id,
@@ -7713,8 +9138,21 @@ def run_rfc_translation_pipeline(
             error_message=applicability_report.rationale,
         )
 
+    # Eligible cryptographic protocol confirmed: create per-RFC output directory, run.log, and numbered tab
+    target_output_dir.mkdir(parents=True, exist_ok=True)
+    run_log_path = target_output_dir / "run.log"
+    configure_pipeline_logging(run_log_file=run_log_path)
     final_protocol_name = applicability_report.protocol_name or protocol_title
-    GLOBAL_EVENT_BUS.emit("stage_completed", stage=1, protocol_name=final_protocol_name)
+    tab_index = GLOBAL_EVENT_BUS.register_accepted_tab(
+        rfc_id=rfc_number_str,
+        protocol_name=final_protocol_name,
+        rfc_dir=target_output_dir,
+        rfc_title=protocol_title,
+    )
+    logger.info("Eligible Cryptographic Protocol Confirmed [Tab #%d]: %s (%s)", tab_index, rfc_number_str, final_protocol_name)
+    logger.info("Output Directory: %s", target_output_dir)
+
+    GLOBAL_EVENT_BUS.emit("stage_completed", stage=1, protocol_name=final_protocol_name, rfc_id=rfc_number_str, tab_index=tab_index)
 
     # -------------------------------------------------------------------------
     # STAGE 1d & 1e: Exchange Section Routing & Verbatim Slicing
@@ -7733,6 +9171,7 @@ def run_rfc_translation_pipeline(
     with open(slice_file, "w", encoding="utf-8") as slice_handle:
         slice_handle.write(verbatim_slice)
 
+    GLOBAL_EVENT_BUS.update_accepted_tab(tab_index, slice_path=str(slice_file))
     GLOBAL_EVENT_BUS.emit(
         "slice_ready",
         sections=target_sections,
@@ -7741,9 +9180,14 @@ def run_rfc_translation_pipeline(
     )
 
     # -------------------------------------------------------------------------
-    # STAGE 2: Constrained Protocol Extraction
+    # STAGE 2: JSON CPSA Generation
     # -------------------------------------------------------------------------
-    GLOBAL_EVENT_BUS.emit("stage_started", stage=2, stage_name="Constrained Protocol Extraction")
+    GLOBAL_EVENT_BUS.emit(
+        "stage_started",
+        stage=2,
+        stage_name="JSON CPSA Generation",
+        model=resolve_prompt_model(PROMPT_PROTOCOL_EXTRACTION, extraction_model),
+    )
     try:
         protocol_ast = extract_protocol_specification(
             verbatim_slice=verbatim_slice,
@@ -7762,6 +9206,60 @@ def run_rfc_translation_pipeline(
         elapsed = time.time() - start_time
         error_msg = f"Extraction failed: {extraction_exc}"
         logger.error(error_msg)
+        extraction_meta = constrained_protocol_extractor.LAST_EXTRACTION_METADATA
+        failed_stage2_record = {
+            "schema_self_correction_triggered": bool(extraction_meta.get("schema_self_correction_triggered", False)),
+            "schema_validation_error": extraction_meta.get("schema_validation_error") or str(extraction_exc),
+            "initial_ast": None,
+            "initial_scm": None,
+        }
+        empty_stage5 = {
+            "validator_binary": "cpsa4roletran",
+            "roletran_algebra_supported": True,
+            "initial_passed": False,
+            "final_passed": False,
+            "total_attempts": 0,
+            "compiled_defproc_output": None,
+            "repair_attempts": [],
+        }
+        empty_stage6 = {
+            "validator_binary": "cpsa4",
+            "initial_passed": False,
+            "final_passed": False,
+            "total_attempts": 0,
+            "repair_attempts": [],
+        }
+        trajectory_path = write_trajectory_metadata_bundle(
+            output_dir=target_output_dir,
+            rfc_id=rfc_number_str,
+            rfc_title=protocol_title,
+            protocol_name=final_protocol_name,
+            participating_principals=applicability_report.participating_principals,
+            selected_sections=target_sections,
+            verbatim_slice=verbatim_slice,
+            duration_seconds=elapsed,
+            stage2_record=failed_stage2_record,
+            stage5_record=empty_stage5,
+            stage6_record=empty_stage6,
+            final_spec=None,
+            final_scm_path=None,
+            trace_txt_path=None,
+            shapes_txt_path=None,
+            solver_passed=False,
+        )
+        update_run_metadata_index(
+            run_root_dir=effective_run_root,
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            rfc_dir=target_output_dir,
+            scm_path=None,
+            trajectory_json_path=trajectory_path,
+            quality_tier="REJECTED",
+            is_eligible=True,
+            build_successful=False,
+            error_message=error_msg,
+            tab_index=tab_index,
+        )
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=True,
@@ -7771,53 +9269,127 @@ def run_rfc_translation_pipeline(
             duration_seconds=elapsed,
             error_message=error_msg,
         )
+        GLOBAL_EVENT_BUS.update_accepted_tab(
+            tab_index,
+            status="FAILED",
+            quality_tier="REJECTED",
+            duration_seconds=round(elapsed, 2),
+            trajectory_path=str(trajectory_path),
+            error_message=error_msg,
+        )
         GLOBAL_EVENT_BUS.emit("stage_failed", stage=2, error_message=error_msg)
+        GLOBAL_EVENT_BUS.emit("pipeline_failed", error_message=error_msg)
         return PipelineExecutionSummary(
             rfc_id=rfc_id,
             protocol_name=final_protocol_name,
             is_eligible=True,
             selected_sections=target_sections,
             sliced_lines_count=slice_lines_count,
+            trajectory_json_path=trajectory_path,
+            quality_tier="REJECTED",
             duration_seconds=elapsed,
             error_message=error_msg,
         )
 
     # -------------------------------------------------------------------------
-    # STAGE 3 & 4: Scheme SCM Emission
+    # STAGE 3: CPSA4json -> scm
     # -------------------------------------------------------------------------
-    GLOBAL_EVENT_BUS.emit("stage_started", stage=3, stage_name="CPSA Scheme Code Generation")
+    GLOBAL_EVENT_BUS.emit(
+        "stage_started",
+        stage=3,
+        stage_name="CPSA4json -> scm",
+        model="cpsa_scheme_emitter.py",
+    )
     scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
+    GLOBAL_EVENT_BUS.update_accepted_tab(
+        tab_index,
+        protocol_name=protocol_ast.protocol_name or final_protocol_name,
+        scm_path=str(scm_path),
+    )
     GLOBAL_EVENT_BUS.emit("stage_completed", stage=3, scm_path=str(scm_path))
 
+    extraction_meta = constrained_protocol_extractor.LAST_EXTRACTION_METADATA
+    stage2_record = {
+        "schema_self_correction_triggered": bool(extraction_meta.get("schema_self_correction_triggered", False)),
+        "schema_validation_error": extraction_meta.get("schema_validation_error"),
+        "initial_ast": protocol_ast.model_dump(),
+        "initial_scm": _read_scm_safe(scm_path),
+    }
+
     # -------------------------------------------------------------------------
-    # STAGE 5: Roletran Executability Gate (<15 ms) with RAG Self-Healing Loop
+    # STAGE 4 & 5: Roletran Check (<15 ms) & Self-Healing Loop
     # -------------------------------------------------------------------------
-    protocol_ast, scm_path, roletran_result = _run_roletran_self_healing_loop(
+    protocol_ast, scm_path, roletran_result, stage5_record = _run_roletran_self_healing_loop(
         protocol_ast=protocol_ast,
         scm_path=scm_path,
         target_output_dir=target_output_dir,
         verbatim_slice=verbatim_slice,
-        active_repair_model=active_repair_model,
-        active_query_model=active_query_model,
+        repair_model_override=repair_override,
+        query_model_override=query_model,
     )
 
     # -------------------------------------------------------------------------
-    # STAGE 6: MITRE Build Orchestration with RAG Self-Healing Loop
+    # STAGE 6: CPSA Compilation (60s cap) with RAG Self-Healing Loop
     # -------------------------------------------------------------------------
-    protocol_ast, scm_path, artifacts, build_attempt, last_build_error = _run_mitre_solver_self_healing_loop(
+    protocol_ast, scm_path, artifacts, build_attempt, last_build_error, stage6_record = _run_mitre_solver_self_healing_loop(
         protocol_ast=protocol_ast,
         scm_path=scm_path,
         target_output_dir=target_output_dir,
         verbatim_slice=verbatim_slice,
         roletran_result=roletran_result,
-        active_repair_model=active_repair_model,
-        active_query_model=active_query_model,
+        repair_model_override=repair_override,
+        query_model_override=query_model,
     )
 
+    elapsed = time.time() - start_time
+    stem = scm_path.stem
+    trace_txt_candidate = artifacts.trace_txt_path if artifacts else (target_output_dir / f"{stem}.txt")
+    shapes_txt_candidate = artifacts.shapes_txt_path if artifacts else (target_output_dir / f"{stem}_shapes.txt")
+
+    trajectory_path = write_trajectory_metadata_bundle(
+        output_dir=target_output_dir,
+        rfc_id=rfc_number_str,
+        rfc_title=protocol_title,
+        protocol_name=final_protocol_name,
+        participating_principals=applicability_report.participating_principals,
+        selected_sections=target_sections,
+        verbatim_slice=verbatim_slice,
+        duration_seconds=elapsed,
+        stage2_record=stage2_record,
+        stage5_record=stage5_record,
+        stage6_record=stage6_record,
+        final_spec=protocol_ast,
+        final_scm_path=scm_path,
+        trace_txt_path=trace_txt_candidate if trace_txt_candidate.exists() else None,
+        shapes_txt_path=shapes_txt_candidate if shapes_txt_candidate.exists() else None,
+        solver_passed=artifacts is not None,
+    )
+
+    quality_tier = "REJECTED"
+    try:
+        traj_data = json.loads(trajectory_path.read_text(encoding="utf-8"))
+        quality_tier = traj_data.get("quality_assessment", {}).get("quality_tier", "REJECTED")
+    except Exception:
+        pass
+
+    total_repairs = int(stage5_record.get("total_attempts", 0)) + int(stage6_record.get("total_attempts", 0))
+
     if artifacts is None:
-        elapsed = time.time() - start_time
         error_msg = f"MITRE make build failed after {build_attempt} repair attempts: {last_build_error}"
         logger.error(error_msg)
+        update_run_metadata_index(
+            run_root_dir=effective_run_root,
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            rfc_dir=target_output_dir,
+            scm_path=scm_path,
+            trajectory_json_path=trajectory_path,
+            quality_tier=quality_tier,
+            is_eligible=True,
+            build_successful=False,
+            error_message=error_msg,
+            tab_index=tab_index,
+        )
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=True,
@@ -7826,9 +9398,20 @@ def run_rfc_translation_pipeline(
             sliced_lines_count=slice_lines_count,
             role_count=len(protocol_ast.roles),
             preskeleton_count=len(protocol_ast.skeletons),
-            roletran_passed=True,
+            roletran_passed=roletran_result.is_executable,
             solver_passed=False,
             duration_seconds=elapsed,
+            error_message=error_msg,
+        )
+        GLOBAL_EVENT_BUS.update_accepted_tab(
+            tab_index,
+            protocol_name=protocol_ast.protocol_name or final_protocol_name,
+            status="PARTIAL" if roletran_result.is_executable else "FAILED",
+            quality_tier=quality_tier,
+            total_attempts=total_repairs,
+            duration_seconds=round(elapsed, 2),
+            scm_path=str(scm_path),
+            trajectory_path=str(trajectory_path),
             error_message=error_msg,
         )
         GLOBAL_EVENT_BUS.emit("stage_failed", stage=6, error_message=error_msg)
@@ -7839,13 +9422,42 @@ def run_rfc_translation_pipeline(
             is_eligible=True,
             selected_sections=target_sections,
             sliced_lines_count=slice_lines_count,
-            roletran_passed=True,
+            roletran_passed=roletran_result.is_executable,
             build_successful=False,
+            trajectory_json_path=trajectory_path,
+            quality_tier=quality_tier,
             duration_seconds=elapsed,
             error_message=error_msg,
         )
 
-    elapsed = time.time() - start_time
+    update_run_metadata_index(
+        run_root_dir=effective_run_root,
+        rfc_id=rfc_number_str,
+        protocol_name=final_protocol_name,
+        rfc_dir=target_output_dir,
+        scm_path=scm_path,
+        trajectory_json_path=trajectory_path,
+        quality_tier=quality_tier,
+        is_eligible=True,
+        build_successful=True,
+        error_message=None,
+        tab_index=tab_index,
+    )
+
+    GLOBAL_EVENT_BUS.update_accepted_tab(
+        tab_index,
+        protocol_name=protocol_ast.protocol_name or final_protocol_name,
+        status="VERIFIED",
+        quality_tier=quality_tier,
+        total_attempts=total_repairs,
+        shapes_count=artifacts.shapes_count,
+        duration_seconds=round(elapsed, 2),
+        scm_path=str(scm_path),
+        trajectory_path=str(trajectory_path),
+        shapes_xhtml=str(artifacts.shapes_graph_xhtml_path),
+        error_message=None,
+    )
+
     csv_recorder.log_run(
         rfc_id=rfc_id,
         is_eligible=True,
@@ -7854,7 +9466,7 @@ def run_rfc_translation_pipeline(
         sliced_lines_count=slice_lines_count,
         role_count=len(protocol_ast.roles),
         preskeleton_count=len(protocol_ast.skeletons),
-        roletran_passed=True,
+        roletran_passed=roletran_result.is_executable,
         solver_passed=True,
         shapes_count=artifacts.shapes_count,
         duration_seconds=elapsed,
@@ -7862,8 +9474,10 @@ def run_rfc_translation_pipeline(
     )
 
     logger.info("================================================================")
-    logger.info("Pipeline Complete for %s in %.2fs!", rfc_id, elapsed)
+    logger.info("Pipeline Complete for %s in %.2fs! (Quality Tier: %s)", rfc_id, elapsed, quality_tier)
     logger.info("Generated: %s", artifacts.shapes_graph_xhtml_path)
+    logger.info("Trajectory Metadata: %s", trajectory_path)
+    logger.info("Master Run Index: %s", effective_run_root / "metadata_index.json")
     logger.info("================================================================")
 
     GLOBAL_EVENT_BUS.emit(
@@ -7872,6 +9486,8 @@ def run_rfc_translation_pipeline(
         protocol_name=final_protocol_name,
         duration_seconds=elapsed,
         shapes_count=artifacts.shapes_count,
+        quality_tier=quality_tier,
+        trajectory_json=str(trajectory_path),
         shapes_xhtml=str(artifacts.shapes_graph_xhtml_path),
         shapes_txt=str(artifacts.shapes_txt_path),
         scm_path=str(scm_path),
@@ -7883,9 +9499,11 @@ def run_rfc_translation_pipeline(
         is_eligible=True,
         selected_sections=target_sections,
         sliced_lines_count=slice_lines_count,
-        roletran_passed=True,
+        roletran_passed=roletran_result.is_executable,
         build_successful=True,
         build_artifacts=artifacts,
+        trajectory_json_path=trajectory_path,
+        quality_tier=quality_tier,
         duration_seconds=elapsed,
     )
 ```
@@ -7894,20 +9512,28 @@ def run_rfc_translation_pipeline(
 
 ### `src/pipeline.py`
 
-*sha256:`c1cf9ce2374b` · 272 lines · 10.1 KB (~2,577 tokens) · lang:`python`*
+*sha256:`68cc29521b38` · 424 lines · 16.7 KB (~4,269 tokens) · lang:`python`*
 
 ```python
 """Command-line interface for RFC-LLM synthesis pipeline supporting single RFCs and directory batching."""
 
 import argparse
 import csv
+import datetime as dt
+import json
+import random
 import re
 import sys
+import time
+import webbrowser
 from pathlib import Path
 from typing import List, Set
 
+from src.document_ingestion.rfc_header_filter import filter_rfc_header
+from src.main_pipeline_orchestrator import PipelineExecutionSummary, run_rfc_translation_pipeline
+from src.pipeline_events import GLOBAL_EVENT_BUS
 from src.system_config import SYSTEM_CONFIG
-from src.main_pipeline_orchestrator import run_rfc_translation_pipeline, PipelineExecutionSummary
+from src.visualizer.server import run_visualizer_in_background
 
 
 def natural_rfc_sort_key(file_path: Path):
@@ -7946,7 +9572,14 @@ def main():
     parser.add_argument(
         "target_path",
         type=str,
-        help="Path to an RFC text file (such as refrences/all_RFCs/rfc5246.txt) OR a directory containing RFCs",
+        nargs="*",
+        help="One or more RFC text files (such as refrences/all_RFCs/rfc5246.txt) OR a directory containing RFCs",
+    )
+    parser.add_argument(
+        "--view",
+        type=str,
+        default=None,
+        help="Open an existing run directory (e.g. output/run_2026-10-28_16-03-11) or metadata_index.json in offline visualizer replay mode",
     )
     parser.add_argument(
         "--output-dir",
@@ -8014,7 +9647,14 @@ def main():
         "-n",
         type=int,
         default=None,
-        help="Maximum number of RFC files to process when pointing to a directory",
+        help="Maximum number of RFC files to scan when pointing to a directory",
+    )
+    parser.add_argument(
+        "--target-eligible",
+        "-e",
+        type=int,
+        default=None,
+        help="Stop batch processing once N eligible cryptographic protocols have been synthesized",
     )
     parser.add_argument(
         "--pattern",
@@ -8027,22 +9667,78 @@ def main():
         action="store_true",
         help="Skip RFCs that already have completed run entries in logs/pipeline_runs.csv",
     )
+    parser.add_argument(
+        "--random",
+        action="store_true",
+        help="Randomly sample RFC files when pointing to a directory (useful with --limit)",
+    )
+    parser.add_argument(
+        "--tier0-eligible-only",
+        action="store_true",
+        help="Pre-filter directory candidates using deterministic Tier 0 frontmatter check before applying --limit",
+    )
 
     args = parser.parse_args()
-    target = Path(args.target_path)
 
-    if not target.exists():
-        print(f"Error: Target path does not exist: {target}", file=sys.stderr)
-        sys.exit(1)
+    # Offline Replay Mode (--view <run_dir>)
+    if args.view:
+        view_path = Path(args.view)
+        if not view_path.exists():
+            print(f"Error: Run directory or index does not exist: {view_path}", file=sys.stderr)
+            sys.exit(1)
 
-    # 1. Resolve Target Files (Single File or Directory Batch)
-    if target.is_file():
-        rfc_files = [target]
-    elif target.is_dir():
-        rfc_files = sorted(list(target.glob(args.pattern)), key=natural_rfc_sort_key)
+        overview = GLOBAL_EVENT_BUS.load_run_from_disk(view_path)
+        server = run_visualizer_in_background(port=args.port)
+        monitor_url = f"http://127.0.0.1:{server.port}"
+
+        print(f"\n{'='*70}")
+        print(f" [OFFLINE REPLAY MONITOR] Active at: {monitor_url}")
+        print(f" - Run Directory   : {overview.get('run_directory')}")
+        print(f" - Accepted Tabs   : {len(overview.get('accepted_tabs', []))}")
+        print(f" - Filtered / Skips: {overview.get('filtered_total', 0)}")
+        print(f"{'='*70}\n")
+
+        if not args.no_visualize:
+            try:
+                webbrowser.open(monitor_url)
+            except Exception:
+                pass
+
+        if sys.stdin.isatty() and args.keep_alive <= 0:
+            try:
+                input("[OFFLINE REPLAY MONITOR] Press Enter to exit (server remains live until keypress)... ")
+            except (EOFError, KeyboardInterrupt):
+                pass
+        else:
+            wait_sec = args.keep_alive if args.keep_alive > 0 else 60
+            print(f"[OFFLINE REPLAY MONITOR] Keeping server active for {wait_sec}s...")
+            time.sleep(wait_sec)
+        sys.exit(0)
+
+    if not args.target_path:
+        parser.error("the following arguments are required: target_path (or pass --view <run_dir>)")
+
+    targets = [Path(p) for p in args.target_path]
+    for t in targets:
+        if not t.exists():
+            print(f"Error: Target path does not exist: {t}", file=sys.stderr)
+            sys.exit(1)
+
+    # 1. Resolve Target Files (Single File, Multiple Files, or Directory Batch)
+    if len(targets) > 1 or targets[0].is_file():
+        rfc_files = [t for t in targets if t.is_file()]
+    elif targets[0].is_dir():
+        target = targets[0]
+        raw_candidates = [f for f in target.glob(args.pattern) if f.is_file()]
+        if args.pattern == "rfc*.txt":
+            # Exclude non-numeric index/reference files such as rfc-index-latest.txt or rfc-ref-old.txt
+            numeric_candidates = [f for f in raw_candidates if re.fullmatch(r"rfc\d+\.txt", f.name.lower())]
+            rfc_files = sorted(numeric_candidates or raw_candidates, key=natural_rfc_sort_key)
+        else:
+            rfc_files = sorted(raw_candidates, key=natural_rfc_sort_key)
         if not rfc_files:
-            # Fallback to all txt files if pattern yielded zero
-            rfc_files = sorted(list(target.glob("*.txt")), key=natural_rfc_sort_key)
+            # Fallback to all existing txt files if pattern yielded zero
+            rfc_files = sorted([f for f in target.glob("*.txt") if f.is_file()], key=natural_rfc_sort_key)
         if not rfc_files:
             print(f"Error: No RFC text files found in directory {target}", file=sys.stderr)
             sys.exit(1)
@@ -8056,20 +9752,29 @@ def main():
             ]
             print(f"[BATCH] Filtered out {initial_count - len(rfc_files)} previously evaluated RFCs ({len(rfc_files)} remaining)")
 
+        if args.tier0_eligible_only:
+            before_t0 = len(rfc_files)
+            rfc_files = [
+                f for f in rfc_files
+                if filter_rfc_header(f.read_text(encoding="utf-8", errors="ignore")).is_eligible
+            ]
+            print(f"[BATCH] Tier 0 pre-filter retained {len(rfc_files)}/{before_t0} candidate RFCs")
+
+        if args.random:
+            random.shuffle(rfc_files)
+            print("[BATCH] Shuffled candidate RFC list randomly")
+
         if args.limit and args.limit > 0:
             rfc_files = rfc_files[:args.limit]
-            print(f"[BATCH] Processing limited to first {len(rfc_files)} RFCs")
+            print(f"[BATCH] Processing limited to {len(rfc_files)} RFCs: {[f.name for f in rfc_files]}")
     else:
-        print(f"Error: Invalid target path: {target}", file=sys.stderr)
+        print(f"Error: Invalid target path: {targets[0]}", file=sys.stderr)
         sys.exit(1)
 
     # 2. Launch Visualizer (Default Enabled)
     enable_visualizer = not args.no_visualize
     monitor_url = None
     if enable_visualizer:
-        import webbrowser
-        from src.visualizer.server import run_visualizer_in_background
-
         try:
             server = run_visualizer_in_background(port=args.port)
             monitor_url = f"http://127.0.0.1:{server.port}"
@@ -8083,14 +9788,48 @@ def main():
         except Exception as e:
             print(f"[WARN] Could not launch live monitor: {e}")
 
-    # 3. Execution Loop
-    output_base_dir = Path(args.output_dir) if args.output_dir else None
+    # 3. Create Unique Timestamped Run Directory (Seconds Resolution)
+    run_timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    base_dir = Path(args.output_dir) if args.output_dir else SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR
+    if base_dir.name.startswith("run_"):
+        run_root_dir = base_dir
+    else:
+        run_root_dir = base_dir / f"run_{run_timestamp}"
+    run_root_dir.mkdir(parents=True, exist_ok=True)
+
+    master_index_path = run_root_dir / "metadata_index.json"
+    if not master_index_path.exists():
+        now_utc = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        master_index_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "1.0.0",
+                    "run_directory": str(run_root_dir.resolve()),
+                    "created_at_utc": now_utc,
+                    "updated_at_utc": now_utc,
+                    "total_rfcs_processed": 0,
+                    "total_ineligible_filtered": 0,
+                    "total_eligible_protocols": 0,
+                    "metadata_json_files": [],
+                    "rfc_directories": [],
+                    "runs": [],
+                    "filtered_rfcs": [],
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+    print(f"[RUN] Created timestamped run directory: {run_root_dir}")
+    print(f"[RUN] Master Metadata Index           : {master_index_path}")
+
+    # 4. Execution Loop (Models resolve dynamically from prompts/*.md unless CLI overrides are passed)
     results: List[PipelineExecutionSummary] = []
     total_files = len(rfc_files)
-    active_router_model = args.router_model or args.model or SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL
-    active_extraction_model = args.extraction_model or args.model or SYSTEM_CONFIG.DEFAULT_EXTRACTION_MODEL
-    active_repair_model = args.repair_model or args.model or SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL
-    active_query_model = args.query_model or args.model or SYSTEM_CONFIG.DEFAULT_QUERY_MODEL
+    cli_router_model = args.router_model or args.model
+    cli_extraction_model = args.extraction_model or args.model
+    cli_repair_model = args.repair_model or args.model
+    cli_query_model = args.query_model or args.model
 
     for idx, rfc_file in enumerate(rfc_files, 1):
         if total_files > 1:
@@ -8098,26 +9837,57 @@ def main():
             print(f"[{idx}/{total_files}] Processing RFC: {rfc_file.name}")
             print(f"{'='*70}")
 
-        summary = run_rfc_translation_pipeline(
-            rfc_file_path=rfc_file,
-            output_dir=output_base_dir,
-            router_model=active_router_model,
-            extraction_model=active_extraction_model,
-            repair_model=active_repair_model,
-            query_model=active_query_model,
-        )
+        rfc_output_dir = run_root_dir / rfc_file.stem.lower()
+        try:
+            summary = run_rfc_translation_pipeline(
+                rfc_file_path=rfc_file,
+                output_dir=rfc_output_dir,
+                router_model=cli_router_model,
+                extraction_model=cli_extraction_model,
+                repair_model=cli_repair_model,
+                query_model=cli_query_model,
+                run_root_dir=run_root_dir,
+            )
+        except Exception as exc:
+            print(f"[ERROR] Unhandled exception on {rfc_file.name}: {exc}", file=sys.stderr)
+            summary = PipelineExecutionSummary(
+                rfc_id=rfc_file.stem.upper(),
+                is_eligible=False,
+                error_message=f"Unhandled pipeline exception: {exc}",
+            )
         results.append(summary)
+
+        if args.target_eligible and args.target_eligible > 0:
+            eligible_so_far = sum(1 for r in results if r.is_eligible)
+            if eligible_so_far >= args.target_eligible:
+                print(
+                    f"\n[BATCH] Reached target of {eligible_so_far}/{args.target_eligible} "
+                    f"eligible cryptographic protocols after scanning {idx} RFC(s)."
+                )
+                break
 
         if total_files == 1:
             # Single-file reporting and exit code
             if summary.build_successful:
                 print("\n[SUCCESS] Synthesis & Formal Verification Completed!")
-                print(f"Protocol: {summary.protocol_name}")
+                print(f"Protocol             : {summary.protocol_name}")
+                print(f"Quality Tier         : {summary.quality_tier}")
+                print(f"Run Directory        : {run_root_dir}")
+                print(f"Master Metadata Index: {master_index_path}")
+                print(f"RFC Directory        : {rfc_output_dir}")
+                print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
                 print(f"Verified Shapes XHTML: {summary.build_artifacts.shapes_graph_xhtml_path}")
             elif summary.roletran_passed:
                 print(f"\n[PARTIAL] Roletran passed, but MITRE build failed: {summary.error_message}")
+                print(f"Run Directory        : {run_root_dir}")
+                print(f"Master Metadata Index: {master_index_path}")
+                print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
             else:
                 print(f"\n[HALTED] Pipeline stopped: {summary.error_message}")
+                print(f"Run Directory        : {run_root_dir}")
+                print(f"Master Metadata Index: {master_index_path}")
+                if summary.trajectory_json_path:
+                    print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
 
             if enable_visualizer and monitor_url:
                 print(f"\n[LIVE MONITOR] View execution trace and shapes at: {monitor_url}")
@@ -8127,13 +9897,12 @@ def main():
                     except (EOFError, KeyboardInterrupt):
                         pass
                 elif args.keep_alive > 0:
-                    import time
                     print(f"[LIVE MONITOR] Keeping server active for {args.keep_alive}s...")
                     time.sleep(args.keep_alive)
 
             sys.exit(0 if summary.build_successful else (1 if summary.roletran_passed else 2))
 
-    # 4. Batch Summary Report
+    # 5. Batch Summary Report
     print(f"\n{'='*70}")
     print(f"RFC-LLM BATCH SYNTHESIS REPORT ({total_files} RFCs Processed)")
     print(f"{'='*70}")
@@ -8143,15 +9912,17 @@ def main():
     roletran_failed = sum(1 for r in results if r.is_eligible and not r.roletran_passed)
     solver_failed = sum(1 for r in results if r.roletran_passed and not r.build_successful)
 
-    print(f"• Total Processed      : {total_files}")
-    print(f"• Ineligible (Filtered): {ineligible_count}")
-    print(f"• Eligible Protocols   : {eligible_count}")
-    print(f"• Formally Verified    : {verified_count}")
+    print(f"- Total Processed      : {total_files}")
+    print(f"- Ineligible (Filtered): {ineligible_count}")
+    print(f"- Eligible Protocols   : {eligible_count}")
+    print(f"- Formally Verified    : {verified_count}")
     if roletran_failed:
-        print(f"• Roletran Failed      : {roletran_failed}")
+        print(f"- Roletran Failed      : {roletran_failed}")
     if solver_failed:
-        print(f"• Solver Failed        : {solver_failed}")
-    print(f"• Run Metrics Logged   : {SYSTEM_CONFIG.LOGS_DIR / 'pipeline_runs.csv'}")
+        print(f"- Solver Failed        : {solver_failed}")
+    print(f"- Run Directory        : {run_root_dir}")
+    print(f"- Master Metadata Index: {master_index_path}")
+    print(f"- Run Metrics Logged   : {SYSTEM_CONFIG.LOGS_DIR / 'pipeline_runs.csv'}")
     print(f"{'='*70}\n")
 
     if enable_visualizer and monitor_url:
@@ -8162,7 +9933,6 @@ def main():
             except (EOFError, KeyboardInterrupt):
                 pass
         elif args.keep_alive > 0:
-            import time
             print(f"[LIVE MONITOR] Keeping server active for {args.keep_alive}s...")
             time.sleep(args.keep_alive)
 
@@ -8175,13 +9945,16 @@ if __name__ == "__main__":
 
 ### `src/pipeline_events.py`
 
-*sha256:`2d908a3ad54e` · 72 lines · 2.4 KB (~625 tokens) · lang:`python`*
+*sha256:`caa37db5fcd1` · 540 lines · 23.3 KB (~5,967 tokens) · lang:`python`*
 
 ```python
-"""Event bus and streaming state dispatcher for live pipeline visualization."""
+"""Bounded event bus, sequential tab registry, and disk telemetry sink for pipeline visualization."""
 
 import json
+import re
+import threading
 import time
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from pydantic import BaseModel, Field
 
@@ -8189,9 +9962,11 @@ from pydantic import BaseModel, Field
 class PipelineEvent(BaseModel):
     """Structured event emitted across pipeline execution stages."""
     timestamp: float = Field(default_factory=time.time)
-    event_type: str = Field(..., description="Type of event (e.g. stage_started, log, repair, artifact)")
+    event_type: str = Field(..., description="Type of event (e.g. stage_started, repair_attempt, tab_accepted)")
     stage: Optional[int] = Field(None, description="Stage index (1 to 6)")
     stage_name: Optional[str] = Field(None, description="Human readable stage name")
+    rfc_id: Optional[str] = Field(None, description="RFC identifier associated with this event")
+    tab_index: Optional[int] = Field(None, description="Sequential 1-based tab number if RFC was accepted")
     data: Dict[str, Any] = Field(default_factory=dict, description="Payload data")
 
     def to_sse_message(self) -> str:
@@ -8200,22 +9975,164 @@ class PipelineEvent(BaseModel):
         return f"event: {self.event_type}\ndata: {payload}\n\n"
 
 
+def _strip_bulky_event_fields(event_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """Strips large AST blobs before writing compact event lines to events.jsonl
+    (full per-attempt ASTs and .scm snapshots are already stored in <stem>_trajectory.json).
+    """
+    data = event_dict.get("data")
+    if not isinstance(data, dict) or "ast" not in data:
+        return event_dict
+    slim_copy = dict(event_dict)
+    slim_data = dict(data)
+    ast_obj = slim_data.pop("ast", None)
+    if isinstance(ast_obj, dict):
+        slim_data["ast_protocol_name"] = ast_obj.get("protocol_name")
+    slim_copy["data"] = slim_data
+    return slim_copy
+
+
 class PipelineEventBus:
-    """Thread-safe event dispatcher supporting synchronous and async subscribers."""
+    """Thread-safe, O(1)-RAM event dispatcher with sequential accepted-RFC tab indexing."""
 
     def __init__(self):
+        self._lock = threading.RLock()
         self._listeners: List[Callable[[PipelineEvent], None]] = []
-        self._history: List[PipelineEvent] = []
+        # Bounded buffer: holds ONLY the currently executing RFC's events in RAM
+        self._active_events: List[PipelineEvent] = []
+        self._current_rfc_id: Optional[str] = None
+        self._current_tab_index: Optional[int] = None
+        self._current_events_jsonl: Optional[Path] = None
+
+        # Run-level compact registries (~150 bytes per entry -> <1 MB for 5,000 RFCs)
+        self._run_root_dir: Optional[Path] = None
+        self._is_live: bool = True
+        self._next_tab_index: int = 0
+        self._accepted_tabs: Dict[int, Dict[str, Any]] = {}
+        self._tab_order: List[int] = []
+        self._filtered_rfcs: List[Dict[str, Any]] = []
 
     def subscribe(self, callback: Callable[[PipelineEvent], None]):
         """Registers a listener callback."""
-        if callback not in self._listeners:
-            self._listeners.append(callback)
+        with self._lock:
+            if callback not in self._listeners:
+                self._listeners.append(callback)
 
     def unsubscribe(self, callback: Callable[[PipelineEvent], None]):
         """Removes a listener callback."""
-        if callback in self._listeners:
-            self._listeners.remove(callback)
+        with self._lock:
+            if callback in self._listeners:
+                self._listeners.remove(callback)
+
+    def set_run_directory(self, run_root_dir: Path, is_live: bool = True) -> None:
+        """Binds the current run root directory."""
+        with self._lock:
+            self._run_root_dir = run_root_dir.resolve()
+            self._is_live = is_live
+
+    def start_rfc(self, rfc_id: str, rfc_file: Optional[str] = None) -> None:
+        """Evicts the completed RFC's in-memory event buffer and prepares for the next RFC."""
+        with self._lock:
+            self._active_events.clear()
+            self._current_rfc_id = rfc_id
+            self._current_tab_index = None
+            self._current_events_jsonl = None
+            self._is_live = True
+
+    def register_accepted_tab(
+        self,
+        rfc_id: str,
+        protocol_name: str,
+        rfc_dir: Path,
+        rfc_title: Optional[str] = None,
+    ) -> int:
+        """Allocates the next sequential 1-based tab number (#1, #2, ...) for an accepted RFC,
+        binds its per-RFC events.jsonl sink, and flushes buffered Stage 1 events to disk.
+        """
+        with self._lock:
+            self._next_tab_index += 1
+            tab_idx = self._next_tab_index
+            self._current_tab_index = tab_idx
+            self._current_rfc_id = rfc_id
+
+            resolved_dir = rfc_dir.resolve()
+            resolved_dir.mkdir(parents=True, exist_ok=True)
+            jsonl_path = resolved_dir / "events.jsonl"
+            self._current_events_jsonl = jsonl_path
+
+            tab_summary: Dict[str, Any] = {
+                "tab_index": tab_idx,
+                "rfc_id": rfc_id,
+                "protocol_name": protocol_name,
+                "rfc_title": rfc_title or protocol_name,
+                "status": "RUNNING",
+                "quality_tier": "PENDING",
+                "total_attempts": 0,
+                "shapes_count": 0,
+                "duration_seconds": 0.0,
+                "rfc_dir": str(resolved_dir),
+                "events_jsonl": str(jsonl_path),
+                "slice_path": None,
+                "scm_path": None,
+                "trajectory_path": None,
+                "shapes_xhtml": None,
+                "error_message": None,
+            }
+            self._accepted_tabs[tab_idx] = tab_summary
+            self._tab_order.append(tab_idx)
+
+            # Backfill tab_index onto buffered intake events and flush them to events.jsonl
+            try:
+                with open(jsonl_path, "w", encoding="utf-8") as handle:
+                    for buffered_evt in self._active_events:
+                        buffered_evt.tab_index = tab_idx
+                        if not buffered_evt.rfc_id:
+                            buffered_evt.rfc_id = rfc_id
+                        slim = _strip_bulky_event_fields(buffered_evt.model_dump())
+                        handle.write(json.dumps(slim) + "\n")
+            except Exception:
+                pass
+
+        self.emit("tab_accepted", stage=1, tab=tab_summary)
+        return tab_idx
+
+    def update_accepted_tab(self, tab_index: int, **updates: Any) -> Optional[Dict[str, Any]]:
+        """Updates metadata on an existing numbered tab and notifies connected clients."""
+        with self._lock:
+            tab = self._accepted_tabs.get(tab_index)
+            if not tab:
+                return None
+            for k, v in updates.items():
+                if v is not None or k in ("error_message",):
+                    tab[k] = v
+            snapshot = dict(tab)
+
+        self.emit("tab_updated", tab=snapshot)
+        return snapshot
+
+    def register_filtered_rfc(
+        self,
+        rfc_id: str,
+        title: str,
+        gate: str,
+        reason: str,
+        duration_seconds: float = 0.0,
+    ) -> Dict[str, Any]:
+        """Records a disqualified/non-cryptographic RFC without allocating a numbered tab."""
+        with self._lock:
+            entry = {
+                "index": len(self._filtered_rfcs) + 1,
+                "rfc_id": rfc_id,
+                "title": title or rfc_id,
+                "gate": gate,
+                "reason": reason,
+                "duration_seconds": round(duration_seconds, 2),
+                "timestamp": time.time(),
+            }
+            self._filtered_rfcs.append(entry)
+            total = len(self._filtered_rfcs)
+
+        self.emit("rfc_filtered", stage=1, filtered_total=total, entry=entry)
+        return entry
 
     def emit(
         self,
@@ -8224,15 +10141,35 @@ class PipelineEventBus:
         stage_name: Optional[str] = None,
         **kwargs,
     ) -> PipelineEvent:
-        """Emits an event to all subscribers and records it in history."""
-        event = PipelineEvent(
-            event_type=event_type,
-            stage=stage,
-            stage_name=stage_name,
-            data=kwargs,
-        )
-        self._history.append(event)
-        for listener in list(self._listeners):
+        """Emits an event to all subscribers, stores it in the bounded active buffer, and appends to events.jsonl."""
+        with self._lock:
+            rfc_id = kwargs.get("rfc_id") or self._current_rfc_id
+            tab_index = kwargs.get("tab_index") or self._current_tab_index
+            event = PipelineEvent(
+                event_type=event_type,
+                stage=stage,
+                stage_name=stage_name,
+                rfc_id=rfc_id,
+                tab_index=tab_index,
+                data=kwargs,
+            )
+            # Meta-events for filtered RFCs don't need to bloat an accepted tab's buffer,
+            # while active RFC progress events stay in the bounded buffer.
+            if event_type != "rfc_filtered":
+                self._active_events.append(event)
+
+            jsonl_target = self._current_events_jsonl
+            if jsonl_target and event_type not in ("rfc_filtered",):
+                try:
+                    slim = _strip_bulky_event_fields(event.model_dump())
+                    with open(jsonl_target, "a", encoding="utf-8") as handle:
+                        handle.write(json.dumps(slim) + "\n")
+                except Exception:
+                    pass
+
+            listeners_snapshot = list(self._listeners)
+
+        for listener in listeners_snapshot:
             try:
                 listener(event)
             except Exception:
@@ -8240,12 +10177,313 @@ class PipelineEventBus:
         return event
 
     def get_history(self) -> List[PipelineEvent]:
-        """Returns the full event log for replay."""
-        return list(self._history)
+        """Returns the bounded event log for the currently active RFC."""
+        with self._lock:
+            return list(self._active_events)
+
+    def get_active_state(self) -> Dict[str, Any]:
+        """Returns active RFC identification and its bounded in-memory event stream."""
+        with self._lock:
+            return {
+                "is_live": self._is_live,
+                "rfc_id": self._current_rfc_id,
+                "tab_index": self._current_tab_index,
+                "events": [e.model_dump() for e in self._active_events],
+            }
+
+    def get_tabs_overview(self) -> Dict[str, Any]:
+        """Returns the compact O(N) summary array (~150B/tab) for the virtualized tab strip."""
+        with self._lock:
+            tabs = [dict(self._accepted_tabs[idx]) for idx in self._tab_order if idx in self._accepted_tabs]
+            return {
+                "is_live": self._is_live,
+                "run_directory": str(self._run_root_dir) if self._run_root_dir else None,
+                "active_rfc_id": self._current_rfc_id,
+                "active_tab_index": self._current_tab_index,
+                "accepted_tabs": tabs,
+                "filtered_total": len(self._filtered_rfcs),
+            }
+
+    def get_tab_summary(self, tab_index: int) -> Optional[Dict[str, Any]]:
+        """Returns a single tab summary by 1-based index."""
+        with self._lock:
+            tab = self._accepted_tabs.get(tab_index)
+            return dict(tab) if tab else None
+
+    def get_filtered_slice(self, offset: int = 0, limit: int = 100, query: str = "") -> Dict[str, Any]:
+        """Returns a paginated, optionally filtered slice of disqualified RFCs."""
+        with self._lock:
+            items = self._filtered_rfcs
+            if query:
+                q_low = query.lower().strip()
+                items = [
+                    it for it in items
+                    if q_low in it.get("rfc_id", "").lower()
+                    or q_low in it.get("title", "").lower()
+                    or q_low in it.get("reason", "").lower()
+                    or q_low in it.get("gate", "").lower()
+                ]
+            total_matching = len(items)
+            sliced = items[max(0, offset) : max(0, offset) + max(1, min(limit, 500))]
+            return {
+                "total": len(self._filtered_rfcs),
+                "matching": total_matching,
+                "offset": offset,
+                "limit": limit,
+                "items": sliced,
+            }
 
     def clear(self):
-        """Clears listener history."""
-        self._history.clear()
+        """Resets all active and run-scoped event bus state."""
+        with self._lock:
+            self._active_events.clear()
+            self._current_rfc_id = None
+            self._current_tab_index = None
+            self._current_events_jsonl = None
+            self._run_root_dir = None
+            self._is_live = True
+            self._next_tab_index = 0
+            self._accepted_tabs.clear()
+            self._tab_order.clear()
+            self._filtered_rfcs.clear()
+
+    def load_run_from_disk(self, target_path: Path) -> Dict[str, Any]:
+        """Reconstructs numbered accepted tabs and filtered RFCs from an existing run directory,
+        metadata_index.json, or single <protocol>_trajectory.json for offline `--view` replay.
+        """
+        resolved = target_path.resolve()
+        with self._lock:
+            self.clear()
+            self._is_live = False
+
+            index_file: Optional[Path] = None
+            run_dir: Path = resolved
+
+            if resolved.is_file():
+                if resolved.name == "metadata_index.json":
+                    index_file = resolved
+                    run_dir = resolved.parent
+                elif resolved.name.endswith("_trajectory.json"):
+                    run_dir = resolved.parent.parent
+                    self._run_root_dir = run_dir
+                    self._ingest_trajectory_as_tab(resolved, explicit_index=1)
+                    return self.get_tabs_overview()
+            elif resolved.is_dir():
+                if (resolved / "metadata_index.json").exists():
+                    index_file = resolved / "metadata_index.json"
+                    run_dir = resolved
+                else:
+                    # Check if pointed directly at a single RFC output folder
+                    trajs = sorted(resolved.glob("*_trajectory.json"))
+                    if trajs:
+                        self._run_root_dir = resolved.parent
+                        for t_path in trajs:
+                            self._ingest_trajectory_as_tab(t_path)
+                        return self.get_tabs_overview()
+
+            self._run_root_dir = run_dir
+
+            if index_file and index_file.exists():
+                try:
+                    idx_data = json.loads(index_file.read_text(encoding="utf-8"))
+                except Exception:
+                    idx_data = {}
+
+                # 1. Restore filtered/rejected RFC list if persisted
+                for filt in idx_data.get("filtered_rfcs", []):
+                    self._filtered_rfcs.append({
+                        "index": len(self._filtered_rfcs) + 1,
+                        "rfc_id": filt.get("rfc_id", "UNKNOWN"),
+                        "title": filt.get("title") or filt.get("protocol_name") or filt.get("rfc_id", "Unknown"),
+                        "gate": filt.get("gate", "Intake Gate"),
+                        "reason": filt.get("reason") or filt.get("error_message") or "Filtered",
+                        "duration_seconds": float(filt.get("duration_seconds", 0.0)),
+                        "timestamp": 0.0,
+                    })
+
+                # Backward-compat: if older metadata_index.json only stored total_ineligible_filtered count
+                persisted_ineligible_count = int(idx_data.get("total_ineligible_filtered", 0))
+                if not self._filtered_rfcs and persisted_ineligible_count > 0:
+                    self._filtered_rfcs.append({
+                        "index": 1,
+                        "rfc_id": f"{persisted_ineligible_count} RFCs",
+                        "title": "Legacy Run Filtered Summary",
+                        "gate": "Stage 1a / Stage 1c",
+                        "reason": (
+                            f"{persisted_ineligible_count} non-cryptographic RFC(s) were filtered prior to "
+                            "detailed per-RFC filtered logging."
+                        ),
+                        "duration_seconds": 0.0,
+                        "timestamp": 0.0,
+                    })
+
+                # 2. Restore accepted protocol tabs in exact run order
+                runs_list = idx_data.get("runs", [])
+                seen_dirs = set()
+                for run_entry in runs_list:
+                    if not run_entry.get("is_eligible", True):
+                        self._filtered_rfcs.append({
+                            "index": len(self._filtered_rfcs) + 1,
+                            "rfc_id": run_entry.get("rfc_id", "UNKNOWN"),
+                            "title": run_entry.get("protocol_name") or run_entry.get("rfc_id", "Unknown"),
+                            "gate": "Intake Gate",
+                            "reason": run_entry.get("error_message") or "Ineligible",
+                            "duration_seconds": 0.0,
+                            "timestamp": 0.0,
+                        })
+                        continue
+
+                    rfc_dir_str = run_entry.get("rfc_directory")
+                    traj_str = run_entry.get("metadata_json_file")
+                    rfc_dir_path = Path(rfc_dir_str) if rfc_dir_str else None
+                    if rfc_dir_path:
+                        seen_dirs.add(str(rfc_dir_path.resolve()))
+                    traj_path = Path(traj_str) if traj_str else None
+                    if (not traj_path or not traj_path.exists()) and rfc_dir_path and rfc_dir_path.exists():
+                        candidates = sorted(rfc_dir_path.glob("*_trajectory.json"))
+                        if candidates:
+                            traj_path = candidates[0]
+
+                    if traj_path and traj_path.exists():
+                        self._ingest_trajectory_as_tab(traj_path, fallback_entry=run_entry)
+                    elif rfc_dir_path and rfc_dir_path.exists():
+                        self._ingest_folder_without_trajectory(rfc_dir_path, fallback_entry=run_entry)
+
+                # Also pick up any accepted RFC directories in run_dir that weren't flushed to metadata_index.json
+                # (for example, if a batch run was interrupted with Ctrl+C mid-RFC)
+                if run_dir.is_dir():
+                    for child in sorted(run_dir.iterdir()):
+                        if child.is_dir() and str(child.resolve()) not in seen_dirs:
+                            trajs = sorted(child.glob("*_trajectory.json"))
+                            if trajs:
+                                self._ingest_trajectory_as_tab(trajs[0])
+                            elif any(child.iterdir()):
+                                self._ingest_folder_without_trajectory(child)
+            elif run_dir.is_dir():
+                for child in sorted(run_dir.iterdir()):
+                    if child.is_dir():
+                        trajs = sorted(child.glob("*_trajectory.json"))
+                        if trajs:
+                            self._ingest_trajectory_as_tab(trajs[0])
+
+            return self.get_tabs_overview()
+
+    def _ingest_trajectory_as_tab(
+        self,
+        traj_path: Path,
+        fallback_entry: Optional[Dict[str, Any]] = None,
+        explicit_index: Optional[int] = None,
+    ) -> int:
+        """Populates a numbered tab entry from a saved <stem>_trajectory.json file."""
+        fallback_entry = fallback_entry or {}
+        try:
+            traj = json.loads(traj_path.read_text(encoding="utf-8"))
+        except Exception:
+            traj = {}
+
+        rfc_dir = traj_path.parent.resolve()
+        meta = traj.get("rfc_metadata", {})
+        s5 = traj.get("stage5_preflight_gate", {})
+        s6 = traj.get("stage6_cpsa4_solver", {})
+        qa = traj.get("quality_assessment", {})
+
+        self._next_tab_index = explicit_index if explicit_index else (self._next_tab_index + 1)
+        tab_idx = self._next_tab_index
+
+        rfc_id = meta.get("rfc_id") or fallback_entry.get("rfc_id") or rfc_dir.name.upper()
+        proto_name = (
+            meta.get("protocol_name")
+            or fallback_entry.get("protocol_name")
+            or traj_path.stem.replace("_trajectory", "")
+        )
+        rfc_title = meta.get("rfc_title") or fallback_entry.get("protocol_name") or proto_name
+        quality_tier = qa.get("quality_tier") or fallback_entry.get("quality_tier") or "REJECTED"
+        solver_passed = bool(s6.get("final_passed") or fallback_entry.get("build_successful"))
+        roletran_passed = bool(s5.get("final_passed"))
+        total_attempts = int(s5.get("total_attempts", 0)) + int(s6.get("total_attempts", 0))
+        shapes_count = int(
+            s6.get("shapes_analysis_from_shapes_txt", {}).get("total_realized_shapes", 0)
+        )
+        duration_sec = float(traj.get("duration_seconds", 0.0))
+
+        scm_candidates = sorted(rfc_dir.glob("*.scm"))
+        scm_path = str(scm_candidates[0]) if scm_candidates else fallback_entry.get("scm_file")
+        shapes_candidates = sorted(rfc_dir.glob("*_shapes.xhtml"))
+        shapes_xhtml = str(shapes_candidates[0]) if shapes_candidates else None
+        slice_file = rfc_dir / "verbatim_slice.txt"
+        events_jsonl = rfc_dir / "events.jsonl"
+
+        if solver_passed:
+            status = "VERIFIED"
+        elif roletran_passed:
+            status = "PARTIAL"
+        else:
+            status = "FAILED"
+
+        tab_summary = {
+            "tab_index": tab_idx,
+            "rfc_id": rfc_id,
+            "protocol_name": proto_name,
+            "rfc_title": rfc_title,
+            "status": status,
+            "quality_tier": quality_tier,
+            "total_attempts": total_attempts,
+            "shapes_count": shapes_count,
+            "duration_seconds": round(duration_sec, 2),
+            "rfc_dir": str(rfc_dir),
+            "events_jsonl": str(events_jsonl) if events_jsonl.exists() else None,
+            "slice_path": str(slice_file) if slice_file.exists() else None,
+            "scm_path": scm_path,
+            "trajectory_path": str(traj_path.resolve()),
+            "shapes_xhtml": shapes_xhtml,
+            "error_message": fallback_entry.get("error_message"),
+        }
+        self._accepted_tabs[tab_idx] = tab_summary
+        self._tab_order.append(tab_idx)
+        return tab_idx
+
+    def _ingest_folder_without_trajectory(
+        self,
+        rfc_dir: Path,
+        fallback_entry: Optional[Dict[str, Any]] = None,
+    ) -> int:
+        """Handles an interrupted accepted RFC directory (e.g. Ctrl+C mid-extraction)."""
+        fallback_entry = fallback_entry or {}
+        resolved_dir = rfc_dir.resolve()
+        self._next_tab_index += 1
+        tab_idx = self._next_tab_index
+
+        m = re.match(r"rfc(\d+)", resolved_dir.name.lower())
+        inferred_rfc = f"RFC {m.group(1)}" if m else resolved_dir.name.upper()
+        rfc_id = fallback_entry.get("rfc_id") or inferred_rfc
+        proto_name = fallback_entry.get("protocol_name") or resolved_dir.name
+
+        scm_candidates = sorted(resolved_dir.glob("*.scm"))
+        shapes_candidates = sorted(resolved_dir.glob("*_shapes.xhtml"))
+        slice_file = resolved_dir / "verbatim_slice.txt"
+        events_jsonl = resolved_dir / "events.jsonl"
+
+        tab_summary = {
+            "tab_index": tab_idx,
+            "rfc_id": rfc_id,
+            "protocol_name": proto_name,
+            "rfc_title": proto_name,
+            "status": "VERIFIED" if shapes_candidates else "INTERRUPTED",
+            "quality_tier": fallback_entry.get("quality_tier") or "INCOMPLETE",
+            "total_attempts": 0,
+            "shapes_count": 0,
+            "duration_seconds": 0.0,
+            "rfc_dir": str(resolved_dir),
+            "events_jsonl": str(events_jsonl) if events_jsonl.exists() else None,
+            "slice_path": str(slice_file) if slice_file.exists() else None,
+            "scm_path": str(scm_candidates[0]) if scm_candidates else None,
+            "trajectory_path": None,
+            "shapes_xhtml": str(shapes_candidates[0]) if shapes_candidates else None,
+            "error_message": fallback_entry.get("error_message") or "Interrupted before trajectory export",
+        }
+        self._accepted_tabs[tab_idx] = tab_summary
+        self._tab_order.append(tab_idx)
+        return tab_idx
 
 
 # Global event bus singleton
@@ -8256,19 +10494,31 @@ GLOBAL_EVENT_BUS = PipelineEventBus()
 
 ### `src/prompt_loader.py`
 
-*sha256:`ffea24233ea2` · 97 lines · 4.6 KB (~1,170 tokens) · lang:`python`*
+*sha256:`4870b063cb1e` · 204 lines · 9.0 KB (~2,311 tokens) · lang:`python`*
 
 ```python
-"""Dynamic Markdown Prompt Loader for RFC-LLM (.prompts/ directory).
+"""Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LLM (prompts/ directory).
 
-Allows users to inspect, customize, and hot-reload the system prompts driving
-all 4 LLM pipeline loops without editing Python source code, while keeping
-mandatory Pydantic JSON schema enforcement in Python.
+Each `prompts/*.md` file begins with an optional YAML frontmatter block configuring
+its target LLM (`model`), request `timeout`, and optional `temperature`, followed by
+the system prompt body:
+
+    ---
+    model: strata/unsloth-iq4_xs
+    timeout: 180
+    temperature: 0.0
+    ---
+    You are a formal methods expert...
+
+Files are read dynamically on every invocation so prompt and model edits hot-reload
+live mid-batch without restarting the pipeline.
 """
 
 import json
+import re
 from pathlib import Path
-from typing import Dict, Optional, Type
+from typing import Any, Dict, Optional, Tuple, Type
+import yaml
 from pydantic import BaseModel
 
 from src.system_config import SYSTEM_CONFIG
@@ -8276,15 +10526,29 @@ from src.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("prompt_loader")
 
-# Canonical prompt filenames in .prompts/
+# Canonical prompt filenames in prompts/
 PROMPT_APPLICABILITY_GATE = "01_applicability_gate.md"
 PROMPT_SECTION_ROUTER = "02_section_router.md"
 PROMPT_PROTOCOL_EXTRACTION = "03_protocol_extraction.md"
 PROMPT_SCHEMA_SELF_CORRECTION = "04_schema_self_correction.md"
 PROMPT_RAG_QUERY_FORMULATION = "05_rag_query_formulation.md"
 PROMPT_COMPILER_REPAIR = "06_compiler_repair.md"
+PROMPT_THINK_SYNTHESIZER = "07_think_token_synthesizer.md"
 
-# Built-in fallback prompts if a file in .prompts/ is missing or empty
+GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"
+
+# Built-in fallback models & timeouts when a `prompts/*.md` file omits frontmatter or is missing
+_FALLBACK_METADATA: Dict[str, Dict[str, Any]] = {
+    PROMPT_APPLICABILITY_GATE: {"model": "nous/z-ai/glm-5.3", "timeout": 180, "temperature": 0.0},
+    PROMPT_SECTION_ROUTER: {"model": "nous/z-ai/glm-5.3", "timeout": 180, "temperature": 0.0},
+    PROMPT_PROTOCOL_EXTRACTION: {"model": "nous/google/gemini-4-argon", "timeout": 180, "temperature": 0.0},
+    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "nous/google/gemini-4-argon", "timeout": 180, "temperature": 0.0},
+    PROMPT_RAG_QUERY_FORMULATION: {"model": "nous/anthropic/claude-haiku-5.5", "timeout": 15, "temperature": 0.0},
+    PROMPT_COMPILER_REPAIR: {"model": "nous/google/gemini-3.8-flash", "timeout": 180, "temperature": 0.0},
+    PROMPT_THINK_SYNTHESIZER: {"model": "gemini/gemini-3.5-flash-lite", "timeout": 180, "temperature": 0.2},
+}
+
+# Built-in fallback prompt bodies if a file in prompts/ is missing or empty
 _FALLBACK_PROMPTS: Dict[str, str] = {
     PROMPT_APPLICABILITY_GATE: (
         "You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.\n"
@@ -8319,32 +10583,113 @@ _FALLBACK_PROMPTS: Dict[str, str] = {
         "Identify the precise defect causing the compiler or solver failure and return a corrected "
         "CPSAProtocolSpecification matching the requested JSON schema."
     ),
+    PROMPT_THINK_SYNTHESIZER: (
+        "You are a formal methods expert in MITRE CPSA 4.4.9 synthesizing a first-person reasoning monologue "
+        "(<think>...</think>) that derives a formally verified CPSA specification from verbatim IETF RFC prose.\n"
+        "Never mention that you were provided the final AST or .scm output in advance; write strictly from a "
+        "forward-looking, first-principles deduction perspective, incorporating compiler self-correction and "
+        "backtracking steps where applicable."
+    ),
 }
 
+_FRONTMATTER_RE = re.compile(r"\A---\s*\r?\n(.*?)\r?\n---\s*(?:\r?\n|$)", re.DOTALL)
 
-def load_prompt(prompt_filename: str, prompts_dir: Optional[Path] = None) -> str:
-    """Loads a prompt template from `.prompts/<prompt_filename>` on disk.
 
-    Reads dynamically on each invocation so user edits to `.prompts/*.md` take
-    effect immediately. Falls back to the built-in default if the file is missing.
-    """
+class PromptSpec(BaseModel):
+    """Parsed prompt template and LLM execution parameters loaded from `prompts/<filename>`."""
+
+    filename: str
+    body: str
+    model: str
+    timeout: int = 180
+    temperature: Optional[float] = None
+
+
+def parse_prompt_frontmatter(raw_text: str) -> Tuple[Dict[str, Any], str]:
+    """Splits optional leading `--- ... ---` YAML frontmatter from the Markdown prompt body."""
+    stripped = raw_text.lstrip("\ufeff")
+    match = _FRONTMATTER_RE.match(stripped)
+    if not match:
+        return {}, stripped.strip()
+
+    yaml_block = match.group(1)
+    body = stripped[match.end():].strip()
+    try:
+        parsed = yaml.safe_load(yaml_block)
+        meta = parsed if isinstance(parsed, dict) else {}
+    except Exception as exc:
+        logger.warning("Invalid YAML frontmatter in prompt (%s); ignoring frontmatter block.", exc)
+        meta = {}
+    return meta, body
+
+
+def load_prompt_spec(prompt_filename: str, prompts_dir: Optional[Path] = None) -> PromptSpec:
+    """Loads a `PromptSpec` (model, timeout, temperature, stripped prompt body) dynamically from `prompts/`."""
     base_dir = prompts_dir or SYSTEM_CONFIG.PROMPTS_DIR
     prompt_path = base_dir / prompt_filename
+    defaults = _FALLBACK_METADATA.get(prompt_filename, {})
+    default_model = str(defaults.get("model") or GLOBAL_FALLBACK_MODEL)
+    default_timeout = int(defaults.get("timeout") or SYSTEM_CONFIG.LLM_TIMEOUT_SECONDS)
+    default_temp = defaults.get("temperature")
+
+    meta: Dict[str, Any] = {}
+    body: str = ""
 
     if prompt_path.exists() and prompt_path.is_file():
         try:
-            content = prompt_path.read_text(encoding="utf-8").strip()
-            if content:
-                return content
-            logger.warning("Prompt file %s is empty; using built-in fallback.", prompt_path)
+            raw_content = prompt_path.read_text(encoding="utf-8")
+            meta, body = parse_prompt_frontmatter(raw_content)
+            if not body:
+                logger.warning("Prompt body in %s is empty; using built-in fallback body.", prompt_path)
         except Exception as exc:
             logger.warning("Failed to read prompt file %s (%s); using built-in fallback.", prompt_path, exc)
     else:
         logger.debug("Prompt file %s not found; using built-in fallback.", prompt_path)
 
-    if prompt_filename in _FALLBACK_PROMPTS:
-        return _FALLBACK_PROMPTS[prompt_filename]
-    raise FileNotFoundError(f"Prompt template '{prompt_filename}' not found in {base_dir}")
+    if not body:
+        if prompt_filename in _FALLBACK_PROMPTS:
+            body = _FALLBACK_PROMPTS[prompt_filename]
+        else:
+            raise FileNotFoundError(f"Prompt template '{prompt_filename}' not found in {base_dir}")
+
+    raw_model = meta.get("model")
+    resolved_model = str(raw_model).strip() if raw_model and str(raw_model).strip() else default_model
+
+    raw_timeout = meta.get("timeout")
+    try:
+        resolved_timeout = int(raw_timeout) if raw_timeout is not None else default_timeout
+    except (TypeError, ValueError):
+        resolved_timeout = default_timeout
+
+    raw_temp = meta.get("temperature", default_temp)
+    try:
+        resolved_temp = float(raw_temp) if raw_temp is not None else None
+    except (TypeError, ValueError):
+        resolved_temp = default_temp
+
+    return PromptSpec(
+        filename=prompt_filename,
+        body=body,
+        model=resolved_model,
+        timeout=resolved_timeout,
+        temperature=resolved_temp,
+    )
+
+
+def resolve_prompt_model(
+    prompt_filename: str,
+    override_model: Optional[str] = None,
+    prompts_dir: Optional[Path] = None,
+) -> str:
+    """Returns `override_model` if explicitly provided (e.g., via CLI flag), else the frontmatter `model`."""
+    if override_model and override_model.strip():
+        return override_model.strip()
+    return load_prompt_spec(prompt_filename, prompts_dir=prompts_dir).model
+
+
+def load_prompt(prompt_filename: str, prompts_dir: Optional[Path] = None) -> str:
+    """Loads the Markdown prompt body (with YAML frontmatter stripped) from `prompts/<prompt_filename>`."""
+    return load_prompt_spec(prompt_filename, prompts_dir=prompts_dir).body
 
 
 def build_schema_system_prompt(
@@ -8352,7 +10697,7 @@ def build_schema_system_prompt(
     schema_model: Type[BaseModel],
     prompts_dir: Optional[Path] = None,
 ) -> str:
-    """Loads a base system prompt from `.prompts/` and appends the mandatory Pydantic JSON schema."""
+    """Loads a stripped base system prompt from `prompts/` and appends the mandatory Pydantic JSON schema."""
     base_prompt = load_prompt(prompt_filename, prompts_dir=prompts_dir)
     schema_json = json.dumps(schema_model.model_json_schema(), indent=2)
     return f"{base_prompt}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_json}"
@@ -8362,7 +10707,7 @@ def build_schema_system_prompt(
 
 ### `src/rag_retriever_client.py`
 
-*sha256:`d3cdd3fb6d03` · 82 lines · 3.1 KB (~792 tokens) · lang:`python`*
+*sha256:`96a122c6e7e6` · 86 lines · 3.3 KB (~834 tokens) · lang:`python`*
 
 ```python
 """Shared RAG Retriever Client for MITRE CPSA 4.4.9 Reference Grounding.
@@ -8381,6 +10726,7 @@ from src.pipeline_events import GLOBAL_EVENT_BUS
 logger = get_pipeline_logger("rag_retriever")
 
 _GLOBAL_RETRIEVER: Optional[Any] = None
+LAST_RETRIEVED_CHUNK_IDS: List[str] = []
 
 
 def get_cpsa_manual_retriever() -> Optional[Any]:
@@ -8409,6 +10755,8 @@ def retrieve_cpsa_manual_guidance(
     """Executes a hybrid BM25 + Dense RRF search over the MITRE CPSA 4.4.9 corpus,
     emits a `rag_retrieval` telemetry event, and returns formatted reference blocks.
     """
+    global LAST_RETRIEVED_CHUNK_IDS
+    LAST_RETRIEVED_CHUNK_IDS = []
     retriever = get_cpsa_manual_retriever()
     if not retriever:
         return fallback_message
@@ -8424,6 +10772,7 @@ def retrieve_cpsa_manual_guidance(
             chunk_source = chunk.get("source_file") or chunk.get("source") or "MITRE Manual"
             chunk_text = chunk.get("text") or chunk.get("content") or ""
 
+            LAST_RETRIEVED_CHUNK_IDS.append(str(chunk_id))
             formatted_blocks.append(
                 f"--- {header_prefix} {idx}: {chunk_title} ({chunk_source}) ---\n{chunk_text[:800]}"
             )
@@ -8453,19 +10802,17 @@ def retrieve_cpsa_manual_guidance(
 
 ### `src/semantic_extraction/__init__.py`
 
-*sha256:`50ca5098adb9` · 13 lines · 0.4 KB (~98 tokens) · lang:`python`*
+*sha256:`d74f89ac1ac5` · 11 lines · 0.3 KB (~82 tokens) · lang:`python`*
 
 ```python
 """Semantic Extraction package for Stage 2 constrained CPSA protocol synthesis."""
 
 from src.semantic_extraction.constrained_protocol_extractor import (
-    EXTRACTION_SYSTEM_PROMPT,
     ensure_three_point_of_view_skeletons,
     extract_protocol_specification,
 )
 
 __all__ = [
-    "EXTRACTION_SYSTEM_PROMPT",
     "extract_protocol_specification",
     "ensure_three_point_of_view_skeletons",
 ]
@@ -8475,7 +10822,7 @@ __all__ = [
 
 ### `src/semantic_extraction/constrained_protocol_extractor.py`
 
-*sha256:`3981e38ea2cb` · 273 lines · 10.8 KB (~2,777 tokens) · lang:`python`*
+*sha256:`58271ab5adec` · 284 lines · 11.4 KB (~2,926 tokens) · lang:`python`*
 
 ```python
 """Constrained Protocol Semantic Extractor with RAG Grounding.
@@ -8489,6 +10836,7 @@ grounding, 1-shot self-healing schema correction, and the mandatory
 import json
 import time
 from typing import List, Optional
+import json_repair
 import litellm
 from pydantic import ValidationError
 
@@ -8503,21 +10851,17 @@ from src.prompt_loader import (
     PROMPT_PROTOCOL_EXTRACTION,
     PROMPT_SCHEMA_SELF_CORRECTION,
     build_schema_system_prompt,
-    load_prompt,
+    load_prompt_spec,
 )
-from src.rag_retriever_client import (
-    get_cpsa_manual_retriever,
-    retrieve_cpsa_manual_guidance,
-)
+from src.rag_retriever_client import retrieve_cpsa_manual_guidance
 from src.system_config import SYSTEM_CONFIG
 
 logger = get_pipeline_logger("protocol_extractor")
 
-# Legacy helper alias preserved for compatibility
-_get_retriever = get_cpsa_manual_retriever
-
-# Loaded from .prompts/03_protocol_extraction.md
-EXTRACTION_SYSTEM_PROMPT: str = load_prompt(PROMPT_PROTOCOL_EXTRACTION)
+LAST_EXTRACTION_METADATA: dict = {
+    "schema_self_correction_triggered": False,
+    "schema_validation_error": None,
+}
 
 
 def extract_protocol_specification(
@@ -8527,7 +10871,14 @@ def extract_protocol_specification(
     model: Optional[str] = None,
 ) -> CPSAProtocolSpecification:
     """Extracts a validated CPSAProtocolSpecification from verbatim RFC text."""
-    model_name = model or SYSTEM_CONFIG.DEFAULT_EXTRACTION_MODEL
+    global LAST_EXTRACTION_METADATA
+    LAST_EXTRACTION_METADATA = {
+        "schema_self_correction_triggered": False,
+        "schema_validation_error": None,
+    }
+    extraction_spec = load_prompt_spec(PROMPT_PROTOCOL_EXTRACTION)
+    model_name = model or extraction_spec.model
+    sampling_temp = extraction_spec.temperature if extraction_spec.temperature is not None else 0.0
     logger.info("Extracting CPSAProtocolSpecification for '%s' using %s", protocol_name, model_name)
 
     # 1. Retrieve RAG Grounding Context
@@ -8561,7 +10912,7 @@ def extract_protocol_specification(
         CPSAProtocolSpecification,
     )
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=0.0)
+    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
     response = None
     for retry_idx in range(3):
         try:
@@ -8572,7 +10923,8 @@ def extract_protocol_specification(
                     {"role": "user", "content": user_prompt},
                 ],
                 response_format={"type": "json_object"},
-                timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+                timeout=extraction_spec.timeout,
+                num_retries=0,
             )
             break
         except Exception as exc:
@@ -8596,25 +10948,31 @@ def extract_protocol_specification(
     try:
         parsed_data = json.loads(raw_content)
     except Exception:
-        import json_repair
         parsed_data = json_repair.loads(raw_content)
 
     try:
         specification = CPSAProtocolSpecification.model_validate(parsed_data)
     except ValidationError as validation_error:
+        LAST_EXTRACTION_METADATA["schema_self_correction_triggered"] = True
+        LAST_EXTRACTION_METADATA["schema_validation_error"] = str(validation_error)
         logger.warning(
             "Stage 2 schema validation error encountered: %s. Initiating 1-shot self-healing correction...",
             validation_error,
         )
-        correction_template = load_prompt(PROMPT_SCHEMA_SELF_CORRECTION)
+        corr_spec = load_prompt_spec(PROMPT_SCHEMA_SELF_CORRECTION)
+        correction_template = corr_spec.body
         if "{validation_error}" in correction_template:
             correction_prompt = correction_template.replace("{validation_error}", str(validation_error))
         else:
             correction_prompt = f"{correction_template}\n\nValidation Errors:\n{validation_error}"
 
+        corr_model = model or corr_spec.model
+        corr_temp = corr_spec.temperature if corr_spec.temperature is not None else 0.0
+        corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(corr_model, temperature=corr_temp)
+
         try:
             correction_response = litellm.completion(
-                **llm_kwargs,
+                **corr_kwargs,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
@@ -8622,13 +10980,13 @@ def extract_protocol_specification(
                     {"role": "user", "content": correction_prompt},
                 ],
                 response_format={"type": "json_object"},
-                timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+                timeout=corr_spec.timeout,
+                num_retries=0,
             )
             corrected_content = correction_response.choices[0].message.content
             try:
                 corrected_data = json.loads(corrected_content)
             except Exception:
-                import json_repair
                 corrected_data = json_repair.loads(corrected_content)
             specification = CPSAProtocolSpecification.model_validate(corrected_data)
             logger.info("Stage 2 self-healing correction SUCCEEDED")
@@ -8757,9 +11115,11 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
 
 ### `src/system_config.py`
 
-*sha256:`04252dcbed05` · 116 lines · 5.3 KB (~1,356 tokens) · lang:`python`*
+*sha256:`12d4a58e1428` · 139 lines · 6.0 KB (~1,537 tokens) · lang:`python`*
 
 ```python
+"""Global environment, binary paths, execution limits, and provider configuration."""
+
 import os
 import warnings
 import logging
@@ -8767,7 +11127,6 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 import litellm
-from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 # Suppress third-party LiteLLM verbosity, debug info, and deprecation warnings
@@ -8779,18 +11138,18 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module=".*litellm
 warnings.filterwarnings("ignore", category=UserWarning, module=".*litellm.*")
 warnings.filterwarnings("ignore", message=".*temperature.*")
 
-# Load .env file eagerly from project root
+# Load .env file eagerly from project root (credentials & base URLs only)
 _ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 if _ENV_PATH.exists():
     load_dotenv(_ENV_PATH)
 
 
 class SystemEnvironmentConfig(BaseSettings):
-    """Global system file paths, external tool binaries, and directories."""
+    """Global system file paths, external tool binaries, API credentials, and endpoints."""
 
     # Project Directories
     PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
-    PROMPTS_DIR: Path = PROJECT_ROOT / ".prompts"
+    PROMPTS_DIR: Path = PROJECT_ROOT / "prompts"
     RFCS_DIR: Path = PROJECT_ROOT / "refrences" / "all_RFCs"
     CHUNKS_DIR: Path = PROJECT_ROOT / "refrences" / "chunks"
     LOGS_DIR: Path = PROJECT_ROOT / "logs"
@@ -8806,41 +11165,59 @@ class SystemEnvironmentConfig(BaseSettings):
     CPSA4GRAPH_BIN: Path = CABAL_BIN_DIR / "cpsa4graph"
     CPSA4PROT_BIN: Path = CABAL_BIN_DIR / "cpsa4prot"
 
-    # API Keys & Cloud Endpoints
+    # API Keys & Base Endpoints (Loaded from .env)
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
     NOUS_API_KEY: Optional[str] = os.getenv("NOUS_API_KEY")
     NOUS_API_BASE: str = os.getenv("NOUS_API_BASE", "https://inference-api.nousresearch.com/v1")
     OLLAMA_API_BASE: str = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
+    STRATA_API_BASE: str = os.getenv("STRATA_API_BASE", "http://localhost:11435/v1")
+    STRATA_API_KEY: str = os.getenv("STRATA_API_KEY", "local-strata")
 
-    # LLM Settings (Defaults read from MODEL_NAME or LLM_*_MODEL env vars)
-    DEFAULT_MODEL: str = os.getenv("MODEL_NAME") or "gemini/gemini-3.5-flash-lite"
-    DEFAULT_QUERY_MODEL: str = os.getenv("LLM_QUERY_MODEL") or os.getenv("MODEL_NAME") or "gemini/gemini-3.5-flash-lite"
-    DEFAULT_ROUTER_MODEL: str = os.getenv("LLM_ROUTER_MODEL") or os.getenv("MODEL_NAME") or "gemini/gemini-3.5-flash-lite"
-    DEFAULT_EXTRACTION_MODEL: str = os.getenv("LLM_EXTRACTION_MODEL") or os.getenv("MODEL_NAME") or "gemini/gemini-3.5-flash-lite"
-    DEFAULT_REPAIR_MODEL: str = os.getenv("LLM_REPAIR_MODEL") or os.getenv("MODEL_NAME") or "gemini/gemini-3.5-flash-lite"
-
-    # Timeouts & Limits
-    SUBPROCESS_TIMEOUT_SECONDS: int = 180
+    # Compiler & Harness Execution Limits
+    LLM_TIMEOUT_SECONDS: int = 180
+    CPSA_TIMEOUT_SECONDS: int = 60
     ROLETRAN_TIMEOUT_SECONDS: int = 15
     MAX_REPAIR_ATTEMPTS: int = 50
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
-    @model_validator(mode="after")
-    def resolve_empty_models(self) -> "SystemEnvironmentConfig":
-        fallback = (self.DEFAULT_MODEL or "").strip() or "gemini/gemini-3.5-flash-lite"
-        self.DEFAULT_MODEL = fallback
-        if not (self.DEFAULT_QUERY_MODEL or "").strip():
-            self.DEFAULT_QUERY_MODEL = fallback
-        if not (self.DEFAULT_ROUTER_MODEL or "").strip():
-            self.DEFAULT_ROUTER_MODEL = fallback
-        if not (self.DEFAULT_EXTRACTION_MODEL or "").strip():
-            self.DEFAULT_EXTRACTION_MODEL = fallback
-        if not (self.DEFAULT_REPAIR_MODEL or "").strip():
-            self.DEFAULT_REPAIR_MODEL = fallback
-        return self
+    # Live model properties backed directly by `prompts/*.md` YAML frontmatter
+    @property
+    def DEFAULT_ROUTER_MODEL(self) -> str:
+        from src.prompt_loader import PROMPT_APPLICABILITY_GATE, resolve_prompt_model
+        return resolve_prompt_model(PROMPT_APPLICABILITY_GATE)
+
+    @property
+    def DEFAULT_SECTION_ROUTER_MODEL(self) -> str:
+        from src.prompt_loader import PROMPT_SECTION_ROUTER, resolve_prompt_model
+        return resolve_prompt_model(PROMPT_SECTION_ROUTER)
+
+    @property
+    def DEFAULT_EXTRACTION_MODEL(self) -> str:
+        from src.prompt_loader import PROMPT_PROTOCOL_EXTRACTION, resolve_prompt_model
+        return resolve_prompt_model(PROMPT_PROTOCOL_EXTRACTION)
+
+    @property
+    def DEFAULT_CORRECTION_MODEL(self) -> str:
+        from src.prompt_loader import PROMPT_SCHEMA_SELF_CORRECTION, resolve_prompt_model
+        return resolve_prompt_model(PROMPT_SCHEMA_SELF_CORRECTION)
+
+    @property
+    def DEFAULT_QUERY_MODEL(self) -> str:
+        from src.prompt_loader import PROMPT_RAG_QUERY_FORMULATION, resolve_prompt_model
+        return resolve_prompt_model(PROMPT_RAG_QUERY_FORMULATION)
+
+    @property
+    def DEFAULT_REPAIR_MODEL(self) -> str:
+        from src.prompt_loader import PROMPT_COMPILER_REPAIR, resolve_prompt_model
+        return resolve_prompt_model(PROMPT_COMPILER_REPAIR)
+
+    @property
+    def DEFAULT_THINK_MODEL(self) -> str:
+        from src.prompt_loader import PROMPT_THINK_SYNTHESIZER, resolve_prompt_model
+        return resolve_prompt_model(PROMPT_THINK_SYNTHESIZER)
 
     def get_llm_kwargs(self, model_name: str, temperature: Optional[float] = None) -> Dict[str, Any]:
         """Returns provider-specific arguments (API keys, base URLs, sampling) for LiteLLM."""
@@ -8851,6 +11228,10 @@ class SystemEnvironmentConfig(BaseSettings):
             kwargs["api_base"] = self.NOUS_API_BASE
             if self.NOUS_API_KEY:
                 kwargs["api_key"] = self.NOUS_API_KEY
+        elif model_name.startswith("strata/"):
+            kwargs["model"] = f"openai/{model_name}"
+            kwargs["api_base"] = self.STRATA_API_BASE
+            kwargs["api_key"] = self.STRATA_API_KEY
         elif model_name.startswith("ollama/"):
             kwargs["api_base"] = self.OLLAMA_API_BASE
         elif model_name.startswith("gemini/"):
@@ -8882,15 +11263,12 @@ SYSTEM_CONFIG = SystemEnvironmentConfig()
 
 ### `src/verification_engine/__init__.py`
 
-*sha256:`03985b76b991` · 33 lines · 1.0 KB (~260 tokens) · lang:`python`*
+*sha256:`bfcbde4ba078` · 39 lines · 1.2 KB (~308 tokens) · lang:`python`*
 
 ```python
-"""Verification Engine package for Stages 5 & 6 roletran executability, self-healing repair, and MITRE CPSA build."""
+"""Verification Engine package for Stages 4, 5 & 6 roletran check, self-healing repair, and MITRE CPSA compilation."""
 
 from src.verification_engine.compiler_diagnostic_repair import (
-    DIAGNOSTIC_QUERY_SYSTEM_PROMPT,
-    REPAIR_SYSTEM_PROMPT,
-    clean_rag_diagnostic_query,
     fallback_sanitize_diagnostic_query,
     formulate_rag_diagnostic_query,
     repair_protocol_specification,
@@ -8904,6 +11282,13 @@ from src.verification_engine.roletran_executability_gate import (
     RoletranVerificationResult,
     verify_role_executability,
 )
+from src.verification_engine.trajectory_metadata_exporter import (
+    analyze_exploration_txt,
+    analyze_shapes_txt,
+    build_scm_metadata_header,
+    compute_quality_assessment,
+    write_trajectory_metadata_bundle,
+)
 
 __all__ = [
     "RoletranVerificationResult",
@@ -8911,12 +11296,14 @@ __all__ = [
     "CPSABuildArtifacts",
     "CPSABuildError",
     "execute_mitre_make_build",
-    "REPAIR_SYSTEM_PROMPT",
-    "DIAGNOSTIC_QUERY_SYSTEM_PROMPT",
     "fallback_sanitize_diagnostic_query",
     "formulate_rag_diagnostic_query",
-    "clean_rag_diagnostic_query",
     "repair_protocol_specification",
+    "analyze_exploration_txt",
+    "analyze_shapes_txt",
+    "build_scm_metadata_header",
+    "compute_quality_assessment",
+    "write_trajectory_metadata_bundle",
 ]
 ```
 
@@ -8924,7 +11311,7 @@ __all__ = [
 
 ### `src/verification_engine/compiler_diagnostic_repair.py`
 
-*sha256:`00293b30d723` · 217 lines · 8.5 KB (~2,188 tokens) · lang:`python`*
+*sha256:`ccf0d15f637d` · 222 lines · 8.7 KB (~2,234 tokens) · lang:`python`*
 
 ```python
 """Compiler Diagnostic Repair Engine with RAG-Guided Self-Healing.
@@ -8939,15 +11326,17 @@ import json
 import re
 import time
 from typing import Literal, Optional
+import json_repair
 import litellm
 
+from src import rag_retriever_client
 from src.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
 from src.logging_config import get_pipeline_logger
 from src.prompt_loader import (
     PROMPT_COMPILER_REPAIR,
     PROMPT_RAG_QUERY_FORMULATION,
     build_schema_system_prompt,
-    load_prompt,
+    load_prompt_spec,
 )
 from src.rag_retriever_client import (
     get_cpsa_manual_retriever,
@@ -8960,12 +11349,10 @@ from src.system_config import SYSTEM_CONFIG
 
 logger = get_pipeline_logger("diagnostic_repair")
 
-# Legacy helper alias preserved for compatibility
-_get_retriever = get_cpsa_manual_retriever
-
-# Loaded from .prompts/06_compiler_repair.md and .prompts/05_rag_query_formulation.md
-REPAIR_SYSTEM_PROMPT: str = load_prompt(PROMPT_COMPILER_REPAIR)
-DIAGNOSTIC_QUERY_SYSTEM_PROMPT: str = load_prompt(PROMPT_RAG_QUERY_FORMULATION)
+LAST_REPAIR_METADATA: dict = {
+    "rag_query": None,
+    "retrieved_chunk_ids": [],
+}
 
 
 def fallback_sanitize_diagnostic_query(diagnostic: str, failure_stage: str) -> str:
@@ -8998,10 +11385,12 @@ def formulate_rag_diagnostic_query(
     """Uses a dedicated LLM call to formulate a targeted conceptual query for the MITRE CPSA manual,
     purging concrete variable names and local file paths. Falls back to deterministic sanitization if offline.
     """
-    query_model = model or SYSTEM_CONFIG.DEFAULT_QUERY_MODEL
+    query_spec = load_prompt_spec(PROMPT_RAG_QUERY_FORMULATION)
+    query_model = model or query_spec.model
+    sampling_temp = query_spec.temperature if query_spec.temperature is not None else 0.0
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(query_model, temperature=0.0)
-        system_prompt = load_prompt(PROMPT_RAG_QUERY_FORMULATION)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(query_model, temperature=sampling_temp)
+        system_prompt = query_spec.body
         user_prompt = f"Failure Stage: {failure_stage}\nCompiler Diagnostic:\n{diagnostic}"
         response = litellm.completion(
             **llm_kwargs,
@@ -9009,7 +11398,7 @@ def formulate_rag_diagnostic_query(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            timeout=10,
+            timeout=query_spec.timeout,
         )
         raw_content = response.choices[0].message.content
         if raw_content:
@@ -9022,15 +11411,6 @@ def formulate_rag_diagnostic_query(
     return fallback_sanitize_diagnostic_query(diagnostic, failure_stage)
 
 
-def clean_rag_diagnostic_query(
-    diagnostic: str,
-    failure_stage: str,
-    model: Optional[str] = None,
-) -> str:
-    """Legacy alias routing to LLM query formulation."""
-    return formulate_rag_diagnostic_query(diagnostic, failure_stage, model=model)
-
-
 def repair_protocol_specification(
     failing_spec: CPSAProtocolSpecification,
     error_diagnostic: str,
@@ -9041,16 +11421,19 @@ def repair_protocol_specification(
     cycle_detected: bool = False,
 ) -> CPSAProtocolSpecification:
     """Uses RAG-guided diagnostic repair to patch a failing CPSAProtocolSpecification."""
-    model_name = model or SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL
+    repair_spec = load_prompt_spec(PROMPT_COMPILER_REPAIR)
+    model_name = model or repair_spec.model
     logger.info(
-        "Executing RAG-guided repair for stage '%s' (cycle_detected=%s) with diagnostic: %s",
+        "Executing RAG-guided repair for stage '%s' using %s (cycle_detected=%s) with diagnostic: %s",
         failure_stage,
+        model_name,
         cycle_detected,
         error_diagnostic,
     )
 
     # 1. Formulate RAG query and retrieve manual guidance only when a retriever is available
-    retriever = _get_retriever()
+    global LAST_REPAIR_METADATA
+    retriever = get_cpsa_manual_retriever()
     if retriever:
         rag_query = formulate_rag_diagnostic_query(
             error_diagnostic,
@@ -9065,7 +11448,15 @@ def repair_protocol_specification(
             top_k=2,
             fallback_message="Review standard CPSA executability and preskeleton assumption rules.",
         )
+        LAST_REPAIR_METADATA = {
+            "rag_query": rag_query,
+            "retrieved_chunk_ids": list(rag_retriever_client.LAST_RETRIEVED_CHUNK_IDS),
+        }
     else:
+        LAST_REPAIR_METADATA = {
+            "rag_query": None,
+            "retrieved_chunk_ids": [],
+        }
         guidance_text = "Review standard CPSA executability and preskeleton assumption rules."
 
     cycle_warning = ""
@@ -9096,7 +11487,8 @@ def repair_protocol_specification(
     )
 
     # Use higher temperature if cycle detected to break greedy minimum
-    sampling_temperature = 0.4 if cycle_detected else 0.0
+    base_temp = repair_spec.temperature if repair_spec.temperature is not None else 0.0
+    sampling_temperature = max(0.4, base_temp) if cycle_detected else base_temp
     system_prompt = build_schema_system_prompt(
         PROMPT_COMPILER_REPAIR,
         CPSAProtocolSpecification,
@@ -9113,7 +11505,8 @@ def repair_protocol_specification(
                     {"role": "user", "content": user_prompt},
                 ],
                 response_format={"type": "json_object"},
-                timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
+                timeout=repair_spec.timeout,
+                num_retries=0,
             )
             break
         except Exception as exc:
@@ -9136,7 +11529,6 @@ def repair_protocol_specification(
     try:
         parsed_data = json.loads(raw_content)
     except Exception:
-        import json_repair
         parsed_data = json_repair.loads(raw_content)
 
     repaired_spec = CPSAProtocolSpecification.model_validate(parsed_data)
@@ -9150,22 +11542,60 @@ def repair_protocol_specification(
 
 ### `src/verification_engine/mitre_build_orchestrator.py`
 
-*sha256:`ae19df718b6d` · 151 lines · 5.6 KB (~1,433 tokens) · lang:`python`*
+*sha256:`920a0ddd73de` · 197 lines · 7.3 KB (~1,868 tokens) · lang:`python`*
 
 ```python
 """MITRE Build Orchestrator for CPSA Verification and Visualization."""
 
 import os
+import re
 import shutil
+import signal
 import subprocess
+import time
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 
 from src.system_config import SYSTEM_CONFIG
 from src.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("build_orchestrator")
+
+
+def _run_make_with_hard_timeout(
+    cmd: List[str],
+    cwd: Path,
+    env: Dict[str, str],
+    timeout_seconds: float,
+) -> Tuple[int, str, str]:
+    """Runs a command in its own process group and hard-kills all child processes (e.g. cpsa4) on timeout."""
+    proc = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        stdout_str, stderr_str = proc.communicate(timeout=timeout_seconds)
+        return proc.returncode, stdout_str or "", stderr_str or ""
+    except subprocess.TimeoutExpired as exc:
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        try:
+            proc.kill()
+            proc.communicate(timeout=2.0)
+        except Exception:
+            pass
+        raise CPSABuildError(
+            f"MITRE CPSA compilation timed out after {timeout_seconds:.0f} seconds "
+            f"(state-space explosion / infinite strand loop in {' '.join(cmd)})."
+        ) from exc
 
 
 class CPSABuildArtifacts(BaseModel):
@@ -9218,8 +11648,9 @@ def _count_shapes_in_file(shapes_txt_path: Path) -> int:
     try:
         with open(shapes_txt_path, "r", encoding="utf-8") as f:
             content = f.read()
-        import re
-        # Skeletons that are shapes are identified by "(shape" or "(defskeleton" in shapes.txt
+        shape_flags = re.findall(r"\(\s*shape\s*\)", content)
+        if shape_flags:
+            return len(shape_flags)
         matches = re.findall(r"\(defskeleton\s+", content)
         return len(matches)
     except Exception as e:
@@ -9252,35 +11683,42 @@ def execute_mitre_make_build(
     cabal_bin_str = str(SYSTEM_CONFIG.CABAL_BIN_DIR)
     env["PATH"] = f"{cabal_bin_str}:{env.get('PATH', '')}"
 
+    # Remove stale derived artifacts before running make so each attempt is fresh
+    for stale_name in (f"{stem}.txt", f"{stem}_shapes.txt", f"{stem}_shapes.xhtml", f"{stem}.xhtml"):
+        stale_file = build_dir / stale_name
+        if stale_file.exists():
+            stale_file.unlink()
+
+    max_budget_sec = min(60.0, float(getattr(SYSTEM_CONFIG, "CPSA_TIMEOUT_SECONDS", 60)))
+    start_ts = time.monotonic()
+
     # Target 1: Minimal shapes graph (triggers cpsa4, cpsa4shapes, and cpsa4graph)
     target_shapes_xhtml = f"{stem}_shapes.xhtml"
-    proc_shapes = subprocess.run(
-        ["make", target_shapes_xhtml],
+    rc_shapes, out_shapes, err_shapes = _run_make_with_hard_timeout(
+        ["make", "-B", target_shapes_xhtml],
         cwd=build_dir,
-        capture_output=True,
-        text=True,
         env=env,
-        timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
-        check=False,
+        timeout_seconds=max_budget_sec,
     )
 
-    if proc_shapes.returncode != 0:
-        err_msg = proc_shapes.stderr.strip() or proc_shapes.stdout.strip()
+    if rc_shapes != 0:
+        err_msg = err_shapes.strip() or out_shapes.strip()
         logger.error("Make build failed for %s: %s", target_shapes_xhtml, err_msg)
         raise CPSABuildError(f"MITRE build failed for {target_shapes_xhtml}: {err_msg}")
 
-    # Target 2 (Optional): Full derivation search graph
+    # Target 2 (Optional): Full derivation search graph (capped within remaining 60s budget)
     if build_full_graph:
+        remaining_sec = max(1.0, max_budget_sec - (time.monotonic() - start_ts))
         target_full_xhtml = f"{stem}.xhtml"
-        subprocess.run(
-            ["make", target_full_xhtml],
-            cwd=build_dir,
-            capture_output=True,
-            text=True,
-            env=env,
-            timeout=SYSTEM_CONFIG.SUBPROCESS_TIMEOUT_SECONDS,
-            check=False,
-        )
+        try:
+            _run_make_with_hard_timeout(
+                ["make", target_full_xhtml],
+                cwd=build_dir,
+                env=env,
+                timeout_seconds=remaining_sec,
+            )
+        except CPSABuildError:
+            logger.warning("Full derivation graph %s exceeded remaining budget; keeping shapes graph.", target_full_xhtml)
 
     # Verify generated artifact paths
     trace_txt = build_dir / f"{stem}.txt"
@@ -9310,7 +11748,7 @@ def execute_mitre_make_build(
 
 ### `src/verification_engine/roletran_executability_gate.py`
 
-*sha256:`08032193b650` · 116 lines · 5.0 KB (~1,283 tokens) · lang:`python`*
+*sha256:`1e3ff9b9832e` · 141 lines · 6.4 KB (~1,650 tokens) · lang:`python`*
 
 ```python
 """MITRE CPSA Roletran Pre-Flight Executability Gate (<15 ms)."""
@@ -9333,6 +11771,8 @@ class RoletranVerificationResult(BaseModel):
     error_diagnostic: Optional[str] = Field(None, description="Concise error diagnostic if executability failed")
     procedural_defproc_code: Optional[str] = Field(None, description="Compiled defproc procedural code if successful")
     raw_stderr: str = Field(default="", description="Complete stderr from roletran execution")
+    validator_binary: str = Field(default="cpsa4roletran", description="Exact binary executed ('cpsa4roletran' or 'cpsa4 -l 1')")
+    roletran_algebra_supported: bool = Field(default=True, description="True if protocol uses basic algebra supported by cpsa4roletran")
 
 
 def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
@@ -9362,24 +11802,47 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
             stderr_output = proc.stderr.strip()
             stdout_output = proc.stdout.strip()
             combined = (stderr_output + "\n" + stdout_output).strip()
-            if "Role not well formed" in combined or "error" in combined.lower() or proc.returncode != 0:
+            # Note: When invoked with '-l 1', cpsa4 validates all defprotocol, defrole,
+            # and defskeleton blocks before taking 1 search step and exiting with
+            # 'Step limit exceeded' on stderr. Reaching 'Step limit exceeded' proves
+            # the specification passed all pre-flight syntax, sort, and role checks.
+            is_step_limit_only = (
+                "Step limit exceeded" in stderr_output
+                and "Role not well formed" not in combined
+                and "Expecting" not in combined
+            )
+            has_real_error = (
+                "Role not well formed" in combined
+                or ("error" in stderr_output.lower() and not is_step_limit_only)
+                or (proc.returncode != 0 and not is_step_limit_only)
+            )
+            if has_real_error:
                 error_msg = ""
-                for line in combined.splitlines():
-                    if "Role not well formed" in line or "error" in line.lower() or "Expecting" in line:
+                for line in stderr_output.splitlines():
+                    if line.strip() and "Step limit exceeded" not in line:
                         error_msg = line.strip()
                         break
-                error_msg = error_msg or combined[:300]
+                if not error_msg:
+                    for line in combined.splitlines():
+                        if "Role not well formed" in line or "error" in line.lower() or "Expecting" in line:
+                            error_msg = line.strip()
+                            break
+                error_msg = error_msg or stderr_output[:300] or combined[:300]
                 logger.warning("Diffie-Hellman pre-flight validation REJECT: %s", error_msg)
                 return RoletranVerificationResult(
                     is_executable=False,
                     error_diagnostic=error_msg,
-                    raw_stderr=combined,
+                    raw_stderr=stderr_output or combined,
+                    validator_binary="cpsa4 -l 1",
+                    roletran_algebra_supported=False,
                 )
             logger.info("Diffie-Hellman pre-flight validation PASS: All roles are algebraically well-formed")
             return RoletranVerificationResult(
                 is_executable=True,
-                procedural_defproc_code="(diffie-hellman-validated)",
+                procedural_defproc_code=None,
                 raw_stderr="",
+                validator_binary="cpsa4 -l 1",
+                roletran_algebra_supported=False,
             )
 
         proc = subprocess.run(
@@ -9433,6 +11896,622 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
 
 ---
 
+### `src/verification_engine/trajectory_metadata_exporter.py`
+
+*sha256:`bf2372345d8f` · 608 lines · 23.2 KB (~5,936 tokens) · lang:`python`*
+
+```python
+"""Programmatic Trajectory & Formal Verification Metadata Exporter.
+
+Parses MITRE CPSA 4.4.9 solver outputs (`<stem>.txt` and `<stem>_shapes.txt`),
+computes deterministic quality tiers (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`),
+prepends structured MoE router conditioning headers to `.scm` files, and writes
+the separated `<stem>_trajectory.json` artifact for ROCm Megatron-LM post-training.
+"""
+
+import datetime as dt
+import json
+import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from src.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
+from src.logging_config import get_pipeline_logger
+
+logger = get_pipeline_logger("trajectory_exporter")
+
+
+def split_top_level_sexprs(content: str) -> List[str]:
+    """Splits a CPSA Scheme/text file into top-level balanced S-expressions."""
+    blocks: List[str] = []
+    depth = 0
+    in_string = False
+    escape = False
+    in_comment = False
+    start_idx: Optional[int] = None
+
+    for idx, ch in enumerate(content):
+        if in_comment:
+            if ch == "\n":
+                in_comment = False
+            continue
+
+        if in_string:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_string = False
+            continue
+
+        if ch == ";":
+            in_comment = True
+            continue
+        if ch == '"':
+            in_string = True
+            continue
+
+        if ch == "(":
+            if depth == 0:
+                start_idx = idx
+            depth += 1
+        elif ch == ")":
+            if depth > 0:
+                depth -= 1
+                if depth == 0 and start_idx is not None:
+                    blocks.append(content[start_idx : idx + 1])
+                    start_idx = None
+
+    return blocks
+
+
+def _extract_int_clause(sexpr: str, keyword: str) -> Optional[int]:
+    match = re.search(rf"\(\s*{re.escape(keyword)}\s+(\d+)\s*\)", sexpr)
+    return int(match.group(1)) if match else None
+
+
+def _has_flag_clause(sexpr: str, keyword: str) -> bool:
+    return bool(re.search(rf"\(\s*{re.escape(keyword)}\s*\)", sexpr))
+
+
+def _extract_clause_block(sexpr: str, keyword: str) -> Optional[str]:
+    """Extracts a complete balanced sub-expression starting with `(<keyword>`."""
+    pattern = re.compile(rf"\(\s*{re.escape(keyword)}\b")
+    match = pattern.search(sexpr)
+    if not match:
+        return None
+    sub = sexpr[match.start() :]
+    blocks = split_top_level_sexprs(sub)
+    return blocks[0] if blocks else None
+
+
+def _extract_root_deflistener(sexpr: str) -> Optional[str]:
+    """Extracts the listener term from a root preskeleton if `(deflistener ...)` is present outside `(operation ...)`."""
+    op_block = _extract_clause_block(sexpr, "operation")
+    cleaned = sexpr.replace(op_block, "") if op_block else sexpr
+    dl_block = _extract_clause_block(cleaned, "deflistener")
+    if not dl_block:
+        return None
+    inner = re.sub(r"^\(\s*deflistener\s+", "", dl_block[:-1]).strip()
+    return inner
+
+
+def _extract_defstrands(sexpr: str) -> List[Dict[str, Any]]:
+    """Extracts all `(defstrand <role> <height> ...)` instances from a skeleton block."""
+    # Exclude any `(defstrand ...)` inside `(operation ...)`
+    op_block = _extract_clause_block(sexpr, "operation")
+    cleaned = sexpr.replace(op_block, "") if op_block else sexpr
+    strands: List[Dict[str, Any]] = []
+    for match in re.finditer(r"\(\s*defstrand(?:max)?\s+([^\s\(\)]+)(?:\s+(\d+))?", cleaned):
+        role_name = match.group(1)
+        height = int(match.group(2)) if match.group(2) else None
+        strands.append({"role": role_name, "height": height})
+    return strands
+
+
+def _extract_comment_string(sexpr: str) -> Optional[str]:
+    """Extracts the first descriptive user comment from a skeleton block."""
+    for match in re.finditer(r'\(\s*comment\s+"([^"]+)"\s*\)', sexpr):
+        text = match.group(1)
+        if not text.startswith("Not a skeleton") and "in cohort" not in text and "empty cohort" not in text:
+            return text
+    return None
+
+
+def _extract_goal_satisfaction(sexpr: str) -> Optional[str]:
+    sat_block = _extract_clause_block(sexpr, "satisfies")
+    if not sat_block:
+        return None
+    if re.search(r"\(\s*satisfies\s+yes\s*\)", sat_block):
+        return "yes"
+    if re.search(r"\(\s*no\b", sat_block):
+        return "no"
+    return sat_block
+
+
+def analyze_exploration_txt(
+    txt_path: Optional[Path],
+    dead_root_labels: Optional[List[int]] = None,
+) -> Dict[str, Any]:
+    """Extracts compact search telemetry and dead-branch diagnostics from `<stem>.txt`."""
+    if not txt_path or not txt_path.exists():
+        return {
+            "source_file": txt_path.name if txt_path else None,
+            "txt_file_size_bytes": 0,
+            "total_explored_labels": 0,
+            "dead_branch_nodes_count": 0,
+            "step_limit_or_bound_hit": False,
+            "state_explosion_detected": False,
+            "dead_preskeleton_diagnostics": [],
+        }
+
+    content = txt_path.read_text(encoding="utf-8", errors="replace")
+    file_size = txt_path.stat().st_size
+    labels = [int(m.group(1)) for m in re.finditer(r"\(\s*label\s+(\d+)\s*\)", content)]
+    total_explored = len(labels)
+    dead_count = len(re.findall(r"\(\s*dead\s*\)", content))
+    limit_hit = any(
+        marker in content
+        for marker in (
+            "Step count limited",
+            "Strand count bounded",
+            "Cohort limit",
+            "aborted",
+        )
+    )
+
+    dead_diagnostics: List[Dict[str, Any]] = []
+    if dead_root_labels:
+        target_roots = set(dead_root_labels)
+        blocks = split_top_level_sexprs(content)
+        parent_to_root: Dict[int, int] = {}
+        deepest_dead_per_root: Dict[int, Dict[str, Any]] = {}
+
+        for block in blocks:
+            if not block.startswith("(defskeleton"):
+                continue
+            lbl = _extract_int_clause(block, "label")
+            if lbl is None:
+                continue
+            parent = _extract_int_clause(block, "parent")
+            if parent is None:
+                parent_to_root[lbl] = lbl
+                root_lbl = lbl
+            else:
+                root_lbl = parent_to_root.get(parent, parent)
+                parent_to_root[lbl] = root_lbl
+
+            if root_lbl in target_roots:
+                unrealized = _extract_clause_block(block, "unrealized")
+                op_block = _extract_clause_block(block, "operation")
+                is_dead_node = _has_flag_clause(block, "dead") or "empty cohort" in block
+                if is_dead_node or lbl == root_lbl:
+                    deepest_dead_per_root[root_lbl] = {
+                        "root_label": root_lbl,
+                        "deepest_dead_label": lbl,
+                        "parent_label": parent,
+                        "last_operation": " ".join(op_block.split()) if op_block else None,
+                        "stuck_unrealized_nodes": " ".join(unrealized.split()) if unrealized else None,
+                    }
+
+        dead_diagnostics = list(deepest_dead_per_root.values())
+
+    return {
+        "source_file": txt_path.name,
+        "txt_file_size_bytes": file_size,
+        "total_explored_labels": total_explored,
+        "dead_branch_nodes_count": dead_count,
+        "step_limit_or_bound_hit": limit_hit,
+        "state_explosion_detected": total_explored > 500,
+        "dead_preskeleton_diagnostics": dead_diagnostics,
+    }
+
+
+def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
+    """Programmatically parses `<stem>_shapes.txt` into per-preskeleton formal verification verdicts."""
+    if not shapes_txt_path or not shapes_txt_path.exists():
+        return {
+            "source_file": shapes_txt_path.name if shapes_txt_path else None,
+            "shapes_file_size_bytes": 0,
+            "total_preskeletons": 0,
+            "total_realized_shapes": 0,
+            "per_preskeleton_outcomes": [],
+        }
+
+    content = shapes_txt_path.read_text(encoding="utf-8", errors="replace")
+    file_size = shapes_txt_path.stat().st_size
+    blocks = split_top_level_sexprs(content)
+
+    preskeleton_groups: List[Dict[str, Any]] = []
+    label_to_group_idx: Dict[int, int] = {}
+
+    for block in blocks:
+        if not block.startswith("(defskeleton"):
+            continue
+        lbl = _extract_int_clause(block, "label")
+        parent = _extract_int_clause(block, "parent")
+        is_shape = _has_flag_clause(block, "shape")
+
+        if parent is None:
+            listener_term = _extract_root_deflistener(block)
+            has_listener = listener_term is not None
+            group_idx = len(preskeleton_groups)
+            if lbl is not None:
+                label_to_group_idx[lbl] = group_idx
+
+            group: Dict[str, Any] = {
+                "skeleton_index": group_idx,
+                "root_label": lbl,
+                "skeleton_type": "secrecy_listener_pov" if has_listener else "participant_pov",
+                "comment": _extract_comment_string(block),
+                "has_deflistener": has_listener,
+                "listener_term": listener_term,
+                "realized_shape_labels": [],
+                "realized_shapes_count": 0,
+                "max_strands_in_realized_shape": 0,
+                "instantiated_roles_in_shape": [],
+                "is_trivial_single_strand_shape": False,
+                "goal_satisfied": _extract_goal_satisfaction(block),
+                "verdict": "UNREALIZED",
+            }
+            if is_shape:
+                strands = _extract_defstrands(block)
+                group["realized_shape_labels"].append(lbl)
+                group["realized_shapes_count"] = 1
+                group["max_strands_in_realized_shape"] = len(strands)
+                group["instantiated_roles_in_shape"] = strands
+            preskeleton_groups.append(group)
+        else:
+            group_idx = label_to_group_idx.get(parent, len(preskeleton_groups) - 1)
+            if lbl is not None and group_idx >= 0:
+                label_to_group_idx[lbl] = group_idx
+            if is_shape and 0 <= group_idx < len(preskeleton_groups):
+                group = preskeleton_groups[group_idx]
+                strands = _extract_defstrands(block)
+                group["realized_shape_labels"].append(lbl)
+                group["realized_shapes_count"] += 1
+                if len(strands) >= group["max_strands_in_realized_shape"]:
+                    group["max_strands_in_realized_shape"] = len(strands)
+                    group["instantiated_roles_in_shape"] = strands
+                sat = _extract_goal_satisfaction(block)
+                if sat is not None:
+                    group["goal_satisfied"] = sat
+
+    total_shapes = 0
+    for group in preskeleton_groups:
+        shapes_cnt = group["realized_shapes_count"]
+        total_shapes += shapes_cnt
+        max_strands = group["max_strands_in_realized_shape"]
+        if group["skeleton_type"] == "participant_pov":
+            if shapes_cnt == 0:
+                group["verdict"] = "DEAD_HANDSHAKE"
+                group["is_trivial_single_strand_shape"] = False
+            elif max_strands >= 2:
+                group["verdict"] = "AUTHENTICATED_MULTI_STRAND"
+                group["is_trivial_single_strand_shape"] = False
+            else:
+                group["verdict"] = "TRIVIAL_SINGLE_STRAND"
+                group["is_trivial_single_strand_shape"] = True
+        else:
+            if shapes_cnt == 0:
+                group["verdict"] = "SECRECY_PROVED_UNREALIZED"
+                group["is_trivial_single_strand_shape"] = False
+            else:
+                group["verdict"] = "SECRECY_LEAKED_SHAPE_FOUND"
+                group["is_trivial_single_strand_shape"] = max_strands == 1
+
+    return {
+        "source_file": shapes_txt_path.name,
+        "shapes_file_size_bytes": file_size,
+        "total_preskeletons": len(preskeleton_groups),
+        "total_realized_shapes": total_shapes,
+        "per_preskeleton_outcomes": preskeleton_groups,
+    }
+
+
+def compute_quality_assessment(
+    solver_passed: bool,
+    shapes_analysis: Dict[str, Any],
+    stage5_attempts_count: int,
+    stage6_attempts_count: int,
+) -> Dict[str, Any]:
+    """Computes the deterministic 4-tier quality grade (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`)."""
+    outcomes = shapes_analysis.get("per_preskeleton_outcomes", [])
+    participant_povs = [o for o in outcomes if o.get("skeleton_type") == "participant_pov"]
+    listener_povs = [o for o in outcomes if o.get("skeleton_type") == "secrecy_listener_pov"]
+
+    if not solver_passed or not outcomes:
+        return {
+            "quality_tier": "REJECTED",
+            "all_participant_povs_realized": False,
+            "all_participant_povs_multi_strand": False,
+            "all_secrecy_listeners_unrealized": False,
+            "post_training_routing": {
+                "eligible_for_sft_positive": False,
+                "dpo_contrastive_pairs_available": 0,
+                "compiler_repair_trajectories_available": stage5_attempts_count + stage6_attempts_count,
+            },
+        }
+
+    all_povs_realized = bool(participant_povs) and all(
+        o.get("realized_shapes_count", 0) > 0 for o in participant_povs
+    )
+    all_povs_multi_strand = all_povs_realized and all(
+        o.get("max_strands_in_realized_shape", 0) >= 2 for o in participant_povs
+    )
+    all_listeners_unrealized = all(
+        o.get("realized_shapes_count", 0) == 0 for o in listener_povs
+    )
+
+    if not all_povs_realized:
+        tier = "BRONZE"
+    elif all_povs_multi_strand and all_listeners_unrealized:
+        tier = "GOLD"
+    else:
+        tier = "SILVER"
+
+    total_repairs = stage5_attempts_count + stage6_attempts_count
+    return {
+        "quality_tier": tier,
+        "all_participant_povs_realized": all_povs_realized,
+        "all_participant_povs_multi_strand": all_povs_multi_strand,
+        "all_secrecy_listeners_unrealized": all_listeners_unrealized,
+        "post_training_routing": {
+            "eligible_for_sft_positive": tier == "GOLD",
+            "dpo_contrastive_pairs_available": total_repairs if tier in ("GOLD", "SILVER") else 0,
+            "compiler_repair_trajectories_available": total_repairs,
+        },
+    }
+
+
+def build_scm_metadata_header(
+    rfc_id: str,
+    protocol_name: str,
+    selected_sections: List[str],
+    algebra: str,
+    roles: List[str],
+    quality_tier: str,
+    realized_shapes: int,
+    secrecy_proved: bool,
+) -> str:
+    """Formats the structured Scheme comment header for MoE router conditioning."""
+    sections_str = ", ".join(selected_sections) if selected_sections else "all"
+    roles_str = ", ".join(roles) if roles else "none"
+    secrecy_str = "PROVED" if secrecy_proved else "UNVERIFIED"
+    lines = [
+        f";;; [RFC-ID: {rfc_id}]",
+        f";;; [PROTOCOL: {protocol_name}]",
+        f";;; [SECTIONS: {sections_str}]",
+        f";;; [ALGEBRA: {algebra}]",
+        f";;; [ROLES: {roles_str}]",
+        f";;; [QUALITY-TIER: {quality_tier} | REALIZED-SHAPES: {realized_shapes} | SECRECY: {secrecy_str}]",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def write_trajectory_metadata_bundle(
+    output_dir: Path,
+    rfc_id: str,
+    rfc_title: str,
+    protocol_name: str,
+    participating_principals: List[str],
+    selected_sections: List[str],
+    verbatim_slice: str,
+    duration_seconds: float,
+    stage2_record: Dict[str, Any],
+    stage5_record: Dict[str, Any],
+    stage6_record: Dict[str, Any],
+    final_spec: Optional[CPSAProtocolSpecification],
+    final_scm_path: Optional[Path],
+    trace_txt_path: Optional[Path],
+    shapes_txt_path: Optional[Path],
+    solver_passed: bool,
+) -> Path:
+    """Computes programmatic CPSA verification metrics, prepends `.scm` metadata headers,
+    and writes `<protocol_stem>_trajectory.json` into `output_dir`.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    now_utc = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    compact_ts = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+    shapes_analysis = analyze_shapes_txt(shapes_txt_path)
+    dead_root_labels = [
+        o["root_label"]
+        for o in shapes_analysis.get("per_preskeleton_outcomes", [])
+        if o.get("skeleton_type") == "participant_pov"
+        and o.get("realized_shapes_count", 0) == 0
+        and o.get("root_label") is not None
+    ]
+    exploration_telemetry = analyze_exploration_txt(trace_txt_path, dead_root_labels=dead_root_labels)
+
+    stage5_attempts = stage5_record.get("repair_attempts", [])
+    stage6_attempts = stage6_record.get("repair_attempts", [])
+    quality_assessment = compute_quality_assessment(
+        solver_passed=solver_passed,
+        shapes_analysis=shapes_analysis,
+        stage5_attempts_count=len(stage5_attempts),
+        stage6_attempts_count=len(stage6_attempts),
+    )
+
+    stage6_full = {
+        **stage6_record,
+        "exploration_telemetry_from_txt": exploration_telemetry,
+        "shapes_analysis_from_shapes_txt": shapes_analysis,
+    }
+
+    final_scm_with_header = ""
+    algebra_str = final_spec.message_algebra if final_spec else "basic"
+    role_names = [r.role_name for r in final_spec.roles] if final_spec else []
+
+    if final_scm_path and final_scm_path.exists():
+        raw_scm = final_scm_path.read_text(encoding="utf-8", errors="replace")
+        # Strip any previously prepended metadata header lines before writing fresh header
+        cleaned_lines = [
+            line for line in raw_scm.splitlines() if not line.startswith(";;; [")
+        ]
+        clean_scm_body = "\n".join(cleaned_lines).lstrip("\n") + "\n"
+        header = build_scm_metadata_header(
+            rfc_id=rfc_id,
+            protocol_name=final_spec.protocol_name if final_spec else protocol_name,
+            selected_sections=selected_sections,
+            algebra=algebra_str,
+            roles=role_names,
+            quality_tier=quality_assessment["quality_tier"],
+            realized_shapes=shapes_analysis["total_realized_shapes"],
+            secrecy_proved=quality_assessment["all_secrecy_listeners_unrealized"],
+        )
+        final_scm_with_header = header + clean_scm_body
+        final_scm_path.write_text(final_scm_with_header, encoding="utf-8")
+
+    distilled_shapes_content = None
+    if shapes_txt_path and shapes_txt_path.exists():
+        distilled_shapes_content = shapes_txt_path.read_text(encoding="utf-8", errors="replace")
+
+    stem = (
+        final_scm_path.stem
+        if final_scm_path
+        else (final_spec.protocol_name if final_spec else rfc_id).replace(" ", "_").lower()
+    )
+    trajectory_path = output_dir / f"{stem}_trajectory.json"
+
+    payload: Dict[str, Any] = {
+        "schema_version": "1.0.0",
+        "run_id": f"{rfc_id.lower()}_{compact_ts}",
+        "timestamp_utc": now_utc,
+        "duration_seconds": round(duration_seconds, 2),
+        "rfc_metadata": {
+            "rfc_id": rfc_id,
+            "rfc_title": rfc_title,
+            "protocol_name": final_spec.protocol_name if final_spec else protocol_name,
+            "algebra": algebra_str,
+            "participating_principals": participating_principals,
+            "selected_sections": selected_sections,
+            "sliced_lines_count": len(verbatim_slice.splitlines()),
+            "verbatim_rfc_slice": verbatim_slice,
+        },
+        "stage2_initial_extraction": stage2_record,
+        "stage5_preflight_gate": stage5_record,
+        "stage6_cpsa4_solver": stage6_full,
+        "quality_assessment": quality_assessment,
+        "final_verified_output": {
+            "final_ast": final_spec.model_dump() if final_spec else None,
+            "final_scm_with_header": final_scm_with_header or None,
+            "distilled_shapes_txt": distilled_shapes_content,
+        },
+    }
+
+    with open(trajectory_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+
+    logger.info(
+        "Wrote trajectory metadata (%s, shapes=%d) to %s",
+        quality_assessment["quality_tier"],
+        shapes_analysis["total_realized_shapes"],
+        trajectory_path,
+    )
+    return trajectory_path
+
+
+def update_run_metadata_index(
+    run_root_dir: Path,
+    rfc_id: str,
+    protocol_name: Optional[str],
+    rfc_dir: Path,
+    scm_path: Optional[Path],
+    trajectory_json_path: Optional[Path],
+    quality_tier: Optional[str],
+    is_eligible: bool,
+    build_successful: bool,
+    error_message: Optional[str] = None,
+    tab_index: Optional[int] = None,
+    rejection_gate: Optional[str] = None,
+    duration_seconds: float = 0.0,
+) -> Path:
+    """Updates the master `metadata_index.json` in the timestamped run directory
+    with the locations of all generated RFC directories and JSON metadata files.
+    """
+    run_root_dir.mkdir(parents=True, exist_ok=True)
+    index_path = run_root_dir / "metadata_index.json"
+
+    if index_path.exists():
+        try:
+            index_data = json.loads(index_path.read_text(encoding="utf-8"))
+        except Exception:
+            index_data = {}
+    else:
+        index_data = {}
+
+    now_utc = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if not index_data:
+        index_data = {
+            "schema_version": "1.0.0",
+            "run_directory": str(run_root_dir.resolve()),
+            "created_at_utc": now_utc,
+            "updated_at_utc": now_utc,
+            "total_rfcs_processed": 0,
+            "total_ineligible_filtered": 0,
+            "total_eligible_protocols": 0,
+            "metadata_json_files": [],
+            "rfc_directories": [],
+            "runs": [],
+            "filtered_rfcs": [],
+        }
+
+    index_data["updated_at_utc"] = now_utc
+    index_data["total_rfcs_processed"] = int(index_data.get("total_rfcs_processed", 0)) + 1
+    index_data.setdefault("filtered_rfcs", [])
+
+    if not is_eligible:
+        index_data["total_ineligible_filtered"] = int(index_data.get("total_ineligible_filtered", 0)) + 1
+        index_data["filtered_rfcs"].append({
+            "rfc_id": rfc_id,
+            "title": protocol_name or rfc_id,
+            "gate": rejection_gate or "Intake Gate",
+            "reason": error_message or "Ineligible",
+            "duration_seconds": round(float(duration_seconds), 2),
+        })
+        with open(index_path, "w", encoding="utf-8") as handle:
+            json.dump(index_data, handle, indent=2)
+        return index_path
+
+    index_data["total_eligible_protocols"] = int(index_data.get("total_eligible_protocols", 0)) + 1
+    rfc_dir_str = str(rfc_dir.resolve())
+    if rfc_dir_str not in index_data["rfc_directories"]:
+        index_data["rfc_directories"].append(rfc_dir_str)
+
+    if trajectory_json_path and trajectory_json_path.exists():
+        traj_str = str(trajectory_json_path.resolve())
+        if traj_str not in index_data["metadata_json_files"]:
+            index_data["metadata_json_files"].append(traj_str)
+    else:
+        traj_str = None
+
+    scm_str = str(scm_path.resolve()) if (scm_path and scm_path.exists()) else None
+    effective_tab_idx = tab_index if tab_index is not None else (len(index_data.get("runs", [])) + 1)
+
+    index_data["runs"].append({
+        "tab_index": effective_tab_idx,
+        "rfc_id": rfc_id,
+        "protocol_name": protocol_name,
+        "is_eligible": is_eligible,
+        "build_successful": build_successful,
+        "quality_tier": quality_tier or ("REJECTED" if is_eligible else "INELIGIBLE"),
+        "rfc_directory": rfc_dir_str,
+        "scm_file": scm_str,
+        "metadata_json_file": traj_str,
+        "error_message": error_message,
+    })
+
+    with open(index_path, "w", encoding="utf-8") as handle:
+        json.dump(index_data, handle, indent=2)
+
+    return index_path
+```
+
+---
+
 ### `src/visualizer/__init__.py`
 
 *sha256:`b5ef0fe4ac5a` · 1 lines · 0.1 KB (~16 tokens) · lang:`python`*
@@ -9445,16 +12524,19 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
 
 ### `src/visualizer/server.py`
 
-*sha256:`e377cb5b737c` · 160 lines · 5.9 KB (~1,500 tokens) · lang:`python`*
+*sha256:`49a09e93c975` · 557 lines · 23.7 KB (~6,070 tokens) · lang:`python`*
 
 ```python
-"""Asynchronous web server for live RFC-to-CPSA synthesis visualization."""
+"""Asynchronous web server for live and offline multi-RFC synthesis visualization."""
 
 import asyncio
 import json
 import logging
+import socket
+import threading
+import time
 from pathlib import Path
-from typing import Set
+from typing import Any, Dict, List, Optional, Set
 from aiohttp import web
 
 from src.system_config import SYSTEM_CONFIG
@@ -9464,9 +12546,337 @@ logger = logging.getLogger("rfc_llm.visualizer")
 
 HTML_TEMPLATE_PATH = Path(__file__).parent / "static" / "index.html"
 
+# Lazy lightweight chunk-id -> {title, source_file, snippet} lookup cache for offline hydration
+_MANUAL_CHUNK_LOOKUP: Optional[Dict[str, Dict[str, str]]] = None
+
+
+def _get_manual_chunk_lookup() -> Dict[str, Dict[str, str]]:
+    """Loads compact chunk metadata once from manual_chunks.jsonl for offline RAG card hydration."""
+    global _MANUAL_CHUNK_LOOKUP
+    if _MANUAL_CHUNK_LOOKUP is not None:
+        return _MANUAL_CHUNK_LOOKUP
+
+    lookup: Dict[str, Dict[str, str]] = {}
+    jsonl_path = SYSTEM_CONFIG.CHUNKS_DIR / "manual_chunks.jsonl"
+    if jsonl_path.exists():
+        try:
+            with open(jsonl_path, "r", encoding="utf-8", errors="ignore") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    obj = json.loads(line)
+                    cid = str(obj.get("chunk_id") or obj.get("id") or "")
+                    if cid:
+                        txt = obj.get("text") or obj.get("content") or ""
+                        lookup[cid] = {
+                            "chunk_id": cid,
+                            "title": obj.get("title") or obj.get("breadcrumb") or f"Chunk #{cid}",
+                            "source_file": obj.get("source_file") or "MITRE Manual",
+                            "snippet": txt[:280].strip() + ("..." if len(txt) > 280 else ""),
+                        }
+        except Exception:
+            pass
+    _MANUAL_CHUNK_LOOKUP = lookup
+    return lookup
+
+
+def _resolve_chunks_by_ids(chunk_ids: List[Any]) -> List[Dict[str, str]]:
+    lookup = _get_manual_chunk_lookup()
+    resolved = []
+    for raw_id in chunk_ids or []:
+        cid = str(raw_id)
+        if cid in lookup:
+            resolved.append(lookup[cid])
+        else:
+            resolved.append({
+                "chunk_id": cid,
+                "title": f"MITRE CPSA Manual Chunk #{cid}",
+                "source_file": "manual_chunks.jsonl",
+                "snippet": "",
+            })
+    return resolved
+
+
+def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
+    """Hydrates a single numbered RFC tab on demand from disk (<rfc_dir>/events.jsonl + <stem>_trajectory.json)."""
+    rfc_dir = Path(tab_summary["rfc_dir"]) if tab_summary.get("rfc_dir") else None
+    traj_path = Path(tab_summary["trajectory_path"]) if tab_summary.get("trajectory_path") else None
+    if (not traj_path or not traj_path.exists()) and rfc_dir and rfc_dir.exists():
+        candidates = sorted(rfc_dir.glob("*_trajectory.json"))
+        if candidates:
+            traj_path = candidates[0]
+
+    traj: Dict[str, Any] = {}
+    if traj_path and traj_path.exists():
+        try:
+            traj = json.loads(traj_path.read_text(encoding="utf-8", errors="ignore"))
+        except Exception:
+            traj = {}
+
+    meta = traj.get("rfc_metadata", {})
+    s2 = traj.get("stage2_initial_extraction", {})
+    s5 = traj.get("stage5_preflight_gate", {})
+    s6 = traj.get("stage6_cpsa4_solver", {})
+    qa = traj.get("quality_assessment", {})
+    final_out = traj.get("final_verified_output", {})
+
+    # 1. Verbatim RFC Slice
+    verbatim_slice = meta.get("verbatim_rfc_slice") or ""
+    if not verbatim_slice and rfc_dir and (rfc_dir / "verbatim_slice.txt").exists():
+        verbatim_slice = (rfc_dir / "verbatim_slice.txt").read_text(encoding="utf-8", errors="ignore")
+
+    # 2. Build Ordered Per-Attempt Time-Travel Snapshots
+    attempts: List[Dict[str, Any]] = []
+    s5_repairs = s5.get("repair_attempts") or []
+    s6_repairs = s6.get("repair_attempts") or []
+
+    initial_ast = s2.get("initial_ast")
+    initial_scm = s2.get("initial_scm")
+    if not initial_scm and s5_repairs:
+        initial_scm = s5_repairs[0].get("rejected_scm")
+    if not initial_scm and s6_repairs:
+        initial_scm = s6_repairs[0].get("rejected_scm")
+
+    # Determine whether Attempt 0 passed directly or what diagnostic rejected it
+    attempt0_diag: Optional[str] = None
+    if s5_repairs:
+        attempt0_diag = s5_repairs[0].get("parsed_diagnostic") or s5_repairs[0].get("raw_stderr")
+        attempt0_status = "REJECTED"
+    elif s6_repairs:
+        attempt0_diag = s6_repairs[0].get("parsed_diagnostic") or s6_repairs[0].get("raw_stderr")
+        attempt0_status = "REJECTED"
+    elif s2.get("schema_validation_error") and not initial_ast:
+        attempt0_diag = s2.get("schema_validation_error")
+        attempt0_status = "FAILED"
+    elif s6.get("final_passed"):
+        attempt0_status = "PASSED"
+    elif initial_ast or initial_scm:
+        attempt0_diag = tab_summary.get("error_message")
+        attempt0_status = "GENERATED"
+    else:
+        attempt0_diag = tab_summary.get("error_message") or "Initial JSON extraction did not complete."
+        attempt0_status = "FAILED"
+
+    attempts.append({
+        "attempt_number": 0,
+        "attempt_id": "attempt_0",
+        "label": "Attempt 0 | Initial",
+        "stage": "Stage 2/3: Initial JSON & .scm Synthesis",
+        "status": attempt0_status,
+        "cycle_detected": False,
+        "scm": initial_scm or "; No .scm emitted on Attempt 0.",
+        "ast": initial_ast,
+        "diagnostic": attempt0_diag,
+        "rag_query": None,
+        "retrieved_chunks": [],
+    })
+
+    seq_num = 0
+    for idx, rep in enumerate(s5_repairs):
+        seq_num += 1
+        # Diagnostic that this repair produced on the NEXT check (if another repair followed)
+        next_diag = None
+        if not rep.get("passed_after_repair"):
+            if idx + 1 < len(s5_repairs):
+                next_diag = s5_repairs[idx + 1].get("parsed_diagnostic")
+            elif rep.get("repair_exception"):
+                next_diag = rep.get("repair_exception")
+        attempts.append({
+            "attempt_number": seq_num,
+            "attempt_id": f"roletran_{rep.get('attempt_number', idx + 1)}",
+            "label": f"Attempt {seq_num} | Roletran Repair",
+            "stage": f"Stage 5: Roletran Self-Healing (#{rep.get('attempt_number', idx + 1)})",
+            "status": "PASSED" if rep.get("passed_after_repair") else "REJECTED",
+            "cycle_detected": bool(rep.get("cycle_detected", False)),
+            "scm": rep.get("repaired_scm") or rep.get("rejected_scm") or "; Repair failed to emit .scm",
+            "rejected_scm": rep.get("rejected_scm"),
+            "ast": rep.get("repaired_ast") or rep.get("rejected_ast"),
+            "trigger_diagnostic": rep.get("parsed_diagnostic") or rep.get("raw_stderr"),
+            "diagnostic": rep.get("parsed_diagnostic") or rep.get("repair_exception") or next_diag,
+            "rag_query": rep.get("rag_query"),
+            "retrieved_chunks": _resolve_chunks_by_ids(rep.get("retrieved_chunk_ids", [])),
+        })
+
+    for idx, rep in enumerate(s6_repairs):
+        seq_num += 1
+        attempts.append({
+            "attempt_number": seq_num,
+            "attempt_id": f"solver_{rep.get('attempt_number', idx + 1)}",
+            "label": f"Attempt {seq_num} | CPSA Repair",
+            "stage": f"Stage 6: CPSA Compilation Self-Healing (#{rep.get('attempt_number', idx + 1)})",
+            "status": "PASSED" if rep.get("passed_after_repair") else "REJECTED",
+            "cycle_detected": bool(rep.get("cycle_detected", False)),
+            "scm": rep.get("repaired_scm") or rep.get("rejected_scm") or "; Repair failed to emit .scm",
+            "rejected_scm": rep.get("rejected_scm"),
+            "ast": rep.get("repaired_ast") or rep.get("rejected_ast"),
+            "trigger_diagnostic": rep.get("parsed_diagnostic") or rep.get("raw_stderr"),
+            "diagnostic": rep.get("parsed_diagnostic") or rep.get("repair_exception") or rep.get("raw_stderr"),
+            "rag_query": rep.get("rag_query"),
+            "retrieved_chunks": _resolve_chunks_by_ids(rep.get("retrieved_chunk_ids", [])),
+        })
+
+    final_scm = final_out.get("final_scm_with_header")
+    final_ast = final_out.get("final_ast")
+    if not final_scm and tab_summary.get("scm_path") and Path(tab_summary["scm_path"]).exists():
+        final_scm = Path(tab_summary["scm_path"]).read_text(encoding="utf-8", errors="ignore")
+
+    if final_scm or final_ast:
+        tier = qa.get("quality_tier") or tab_summary.get("quality_tier") or "REJECTED"
+        shapes_n = int(
+            s6.get("shapes_analysis_from_shapes_txt", {}).get(
+                "total_realized_shapes", tab_summary.get("shapes_count", 0)
+            )
+        )
+        solver_ok = bool(s6.get("final_passed") or tab_summary.get("status") == "VERIFIED")
+        final_label = f"Final | {tier} ({shapes_n} Shapes)" if solver_ok else f"Final | {tier}"
+        attempts.append({
+            "attempt_number": seq_num + 1,
+            "attempt_id": "final",
+            "label": final_label,
+            "stage": "Final Synthesized Artifact",
+            "status": "VERIFIED" if solver_ok else "FAILED",
+            "cycle_detected": False,
+            "scm": final_scm or "; No final .scm file.",
+            "ast": final_ast,
+            "diagnostic": None if solver_ok else tab_summary.get("error_message"),
+            "rag_query": None,
+            "retrieved_chunks": [],
+        })
+
+    # 3. Load Chronological Events (from events.jsonl if available, else synthesize from trajectory)
+    events: List[Dict[str, Any]] = []
+    events_jsonl_path = (
+        Path(tab_summary["events_jsonl"])
+        if tab_summary.get("events_jsonl")
+        else (rfc_dir / "events.jsonl" if rfc_dir else None)
+    )
+    if events_jsonl_path and events_jsonl_path.exists():
+        try:
+            with open(events_jsonl_path, "r", encoding="utf-8", errors="ignore") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if line:
+                        events.append(json.loads(line))
+        except Exception:
+            events = []
+
+    if not events:
+        events = _synthesize_events_from_trajectory(tab_summary, traj, attempts)
+
+    # Check if this tab is currently the active live tab and append any newer in-memory events
+    active_state = GLOBAL_EVENT_BUS.get_active_state()
+    if active_state.get("tab_index") == tab_summary.get("tab_index") and active_state.get("events"):
+        if not events_jsonl_path or not events_jsonl_path.exists():
+            events = active_state["events"]
+
+    shapes_xhtml = tab_summary.get("shapes_xhtml")
+    if not shapes_xhtml and rfc_dir and rfc_dir.exists():
+        xhtmls = sorted(rfc_dir.glob("*_shapes.xhtml"))
+        if xhtmls:
+            shapes_xhtml = str(xhtmls[0])
+
+    return {
+        "tab": {**tab_summary, "shapes_xhtml": shapes_xhtml},
+        "rfc_metadata": meta,
+        "quality_assessment": qa,
+        "verbatim_slice": verbatim_slice,
+        "shapes_xhtml": shapes_xhtml,
+        "attempts": attempts,
+        "events": events,
+    }
+
+
+def _synthesize_events_from_trajectory(
+    tab_summary: Dict[str, Any],
+    traj: Dict[str, Any],
+    attempts: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Synthesizes clean replay events and RAG cards for legacy runs created prior to events.jsonl."""
+    base_ts = time.time()
+    evts: List[Dict[str, Any]] = []
+    meta = traj.get("rfc_metadata", {})
+    s2 = traj.get("stage2_initial_extraction", {})
+    s5 = traj.get("stage5_preflight_gate", {})
+    s6 = traj.get("stage6_cpsa4_solver", {})
+    tab_idx = tab_summary.get("tab_index")
+    rfc_id = tab_summary.get("rfc_id")
+
+    def _push(offset: float, etype: str, stage: Optional[int], data: Dict[str, Any]):
+        evts.append({
+            "timestamp": base_ts + offset,
+            "event_type": etype,
+            "stage": stage,
+            "stage_name": None,
+            "rfc_id": rfc_id,
+            "tab_index": tab_idx,
+            "data": data,
+        })
+
+    _push(0.0, "pipeline_started", 1, {"rfc_id": rfc_id, "rfc_file": rfc_id})
+    _push(0.1, "stage_completed", 1, {"protocol_name": tab_summary.get("protocol_name")})
+    if meta.get("selected_sections"):
+        _push(0.2, "slice_ready", 1, {
+            "sections": meta.get("selected_sections", []),
+            "line_count": meta.get("sliced_lines_count", 0),
+        })
+
+    if s2.get("initial_ast"):
+        _push(0.3, "stage_completed", 2, {
+            "roles_count": len(s2["initial_ast"].get("roles", [])),
+            "skeletons_count": len(s2["initial_ast"].get("skeletons", [])),
+        })
+        _push(0.4, "stage_completed", 3, {"scm_path": tab_summary.get("scm_path")})
+    else:
+        err = s2.get("schema_validation_error") or tab_summary.get("error_message") or "Extraction failed"
+        _push(0.3, "stage_failed", 2, {"error_message": err})
+        _push(0.4, "pipeline_failed", 2, {"error_message": err})
+        return evts
+
+    t_off = 0.5
+    for att in attempts:
+        if att["attempt_id"] in ("attempt_0", "final"):
+            continue
+        is_roletran = att["attempt_id"].startswith("roletran_")
+        st_num = 5 if is_roletran else 6
+        if att.get("rag_query") or att.get("retrieved_chunks"):
+            _push(t_off, "rag_retrieval", st_num, {
+                "purpose": att["stage"],
+                "query": att.get("rag_query") or "",
+                "chunks": att.get("retrieved_chunks") or [],
+            })
+            t_off += 0.05
+        _push(t_off, "repair_attempt", st_num, {
+            "attempt": att["attempt_number"],
+            "max_attempts": SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS,
+            "diagnostic": att.get("diagnostic") or "",
+            "cycle_detected": att.get("cycle_detected", False),
+        })
+        t_off += 0.05
+
+    if s5.get("final_passed"):
+        _push(t_off, "stage_completed", 4, {"status": "passed"})
+        _push(t_off + 0.02, "stage_completed", 5, {"status": "passed", "attempts": s5.get("total_attempts", 0)})
+    else:
+        _push(t_off, "stage_failed", 5, {"reason": "Roletran executability unfulfilled"})
+
+    if s6.get("final_passed") or tab_summary.get("status") == "VERIFIED":
+        _push(t_off + 0.1, "pipeline_completed", 6, {
+            "success": True,
+            "protocol_name": tab_summary.get("protocol_name"),
+            "shapes_count": tab_summary.get("shapes_count", 0),
+            "quality_tier": tab_summary.get("quality_tier"),
+            "shapes_xhtml": tab_summary.get("shapes_xhtml"),
+        })
+    else:
+        _push(t_off + 0.1, "stage_failed", 6, {"error_message": tab_summary.get("error_message")})
+        _push(t_off + 0.12, "pipeline_failed", 6, {"error_message": tab_summary.get("error_message")})
+
+    return evts
+
 
 class VisualizerServer:
-    """Manages SSE streaming, artifact serving, and dashboard state."""
+    """Manages SSE streaming, lazy per-tab hydration, and dashboard state."""
 
     def __init__(self, host: str = "127.0.0.1", port: int = 8080):
         self.host = host
@@ -9482,8 +12892,63 @@ class VisualizerServer:
         self.app.router.add_get("/", self.handle_index)
         self.app.router.add_get("/api/events", self.handle_sse)
         self.app.router.add_get("/api/history", self.handle_history)
+        self.app.router.add_get("/api/tabs", self.handle_tabs)
+        self.app.router.add_get("/api/active", self.handle_active)
+        self.app.router.add_get("/api/tab/{tab_index}", self.handle_tab_detail)
+        self.app.router.add_get("/api/filtered", self.handle_filtered)
+        self.app.router.add_get("/api/models", self.handle_models)
         self.app.router.add_get("/api/artifact", self.handle_artifact)
-        self.app.router.add_static("/output", SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR, show_index=True)
+        if SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR.exists():
+            self.app.router.add_static("/output", SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR, show_index=True)
+
+    async def handle_models(self, request: web.Request) -> web.Response:
+        """Returns the live stage-specific models resolved from prompts/*.md frontmatter."""
+        return web.json_response({
+            "router_model": SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL,
+            "section_router_model": SYSTEM_CONFIG.DEFAULT_SECTION_ROUTER_MODEL,
+            "extraction_model": SYSTEM_CONFIG.DEFAULT_EXTRACTION_MODEL,
+            "correction_model": SYSTEM_CONFIG.DEFAULT_CORRECTION_MODEL,
+            "repair_model": SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL,
+            "query_model": SYSTEM_CONFIG.DEFAULT_QUERY_MODEL,
+            "think_model": SYSTEM_CONFIG.DEFAULT_THINK_MODEL,
+            "cpsa_timeout_seconds": SYSTEM_CONFIG.CPSA_TIMEOUT_SECONDS,
+        })
+
+    async def handle_tabs(self, request: web.Request) -> web.Response:
+        """Returns the compact O(N) tab summary list and filtered count."""
+        return web.json_response(GLOBAL_EVENT_BUS.get_tabs_overview())
+
+    async def handle_active(self, request: web.Request) -> web.Response:
+        """Returns the bounded in-memory event stream for the currently running RFC only."""
+        return web.json_response(GLOBAL_EVENT_BUS.get_active_state())
+
+    async def handle_tab_detail(self, request: web.Request) -> web.Response:
+        """Hydrates a numbered tab (#1..#N) on demand from disk JSON artifacts."""
+        raw_idx = request.match_info.get("tab_index", "")
+        try:
+            tab_idx = int(raw_idx)
+        except ValueError:
+            return web.json_response({"error": f"Invalid tab_index: {raw_idx}"}, status=400)
+
+        tab_summary = GLOBAL_EVENT_BUS.get_tab_summary(tab_idx)
+        if not tab_summary:
+            return web.json_response({"error": f"Tab #{tab_idx} not found"}, status=404)
+
+        payload = hydrate_tab_payload(tab_summary)
+        return web.json_response(payload)
+
+    async def handle_filtered(self, request: web.Request) -> web.Response:
+        """Returns paginated disqualified/filtered RFCs for the collapsible drawer."""
+        try:
+            offset = int(request.query.get("offset", "0"))
+        except ValueError:
+            offset = 0
+        try:
+            limit = int(request.query.get("limit", "100"))
+        except ValueError:
+            limit = 100
+        query = request.query.get("q", "")
+        return web.json_response(GLOBAL_EVENT_BUS.get_filtered_slice(offset=offset, limit=limit, query=query))
 
     def _on_bus_event(self, event: PipelineEvent):
         """Dispatches an event from the pipeline event bus to all connected web clients thread-safely."""
@@ -9509,23 +12974,39 @@ class VisualizerServer:
         return web.Response(text=content, content_type="text/html")
 
     async def handle_history(self, request: web.Request) -> web.Response:
-        """Returns JSON array of past events for state reconstruction on page load."""
+        """Returns JSON array of active RFC events (bounded)."""
         history = [e.model_dump() for e in GLOBAL_EVENT_BUS.get_history()]
         return web.json_response(history)
 
+    def _is_allowed_artifact_path(self, resolved_path: Path) -> bool:
+        """Restricts /api/artifact reads strictly to pipeline output directories and rejects dotfiles."""
+        if resolved_path.name.startswith("."):
+            return False
+        allowed_roots = [SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR.resolve()]
+        overview = GLOBAL_EVENT_BUS.get_tabs_overview()
+        run_dir = overview.get("run_directory")
+        if run_dir:
+            allowed_roots.append(Path(run_dir).resolve())
+        for tab in overview.get("accepted_tabs", []):
+            rfc_dir = tab.get("rfc_dir")
+            if rfc_dir:
+                allowed_roots.append(Path(rfc_dir).resolve())
+        return any(resolved_path.is_relative_to(root) for root in allowed_roots)
+
     async def handle_artifact(self, request: web.Request) -> web.Response:
-        """Serves synthesized code or MITRE verification output files."""
+        """Serves synthesized code or MITRE verification output files within authorized run directories."""
         filepath_str = request.query.get("path")
         if not filepath_str:
             return web.Response(text="Missing 'path' parameter", status=400)
 
         path = Path(filepath_str).resolve()
-        if not path.exists():
-            return web.Response(text=f"Artifact not found: {path}", status=404)
+        if not self._is_allowed_artifact_path(path):
+            return web.Response(text="Forbidden: path outside authorized output directories", status=403)
+        if not path.exists() or not path.is_file():
+            return web.Response(text=f"Artifact not found: {path.name}", status=404)
 
-        # Content-type detection
         content_type = "text/plain"
-        if path.suffix == ".xhtml" or path.suffix == ".html":
+        if path.suffix in (".xhtml", ".html"):
             content_type = "application/xhtml+xml"
         elif path.suffix == ".svg":
             content_type = "image/svg+xml"
@@ -9556,7 +13037,6 @@ class VisualizerServer:
         client_queue: asyncio.Queue = asyncio.Queue()
         self._sse_clients.add(client_queue)
 
-        # Initial ping
         await response.write(b": ping\n\n")
 
         try:
@@ -9566,7 +13046,6 @@ class VisualizerServer:
                     sse_msg = event.to_sse_message().encode("utf-8")
                     await response.write(sse_msg)
                 except asyncio.TimeoutError:
-                    # Keep-alive heartbeat
                     await response.write(b": heartbeat\n\n")
         except (asyncio.CancelledError, ConnectionResetError):
             pass
@@ -9577,10 +13056,7 @@ class VisualizerServer:
 
 
 def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
-    """Starts the visualizer server in a background daemon thread."""
-    import threading
-    import socket
-    import time
+    """Starts the visualizer server in a background daemon thread with access_log disabled."""
 
     def _is_port_available(p: int) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -9597,7 +13073,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         server.loop = loop
-        runner = web.AppRunner(server.app)
+        runner = web.AppRunner(server.app, access_log=None)
         loop.run_until_complete(runner.setup())
         site = web.TCPSite(runner, host, actual_port)
         loop.run_until_complete(site.start())
@@ -9614,7 +13090,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
 ### `src/visualizer/static/index.html`
 
-*sha256:`57cd7359c23f` · 625 lines · 20.0 KB (~5,122 tokens) · lang:`html`*
+*sha256:`9138d35edc79` · 1924 lines · 69.3 KB (~17,740 tokens) · lang:`html`*
 
 ```html
 <!DOCTYPE html>
@@ -9657,28 +13133,43 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     header {
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border-color);
-      padding: 8px 16px;
+      padding: 7px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
+      gap: 12px;
     }
     .header-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      white-space: nowrap;
     }
     .header-title {
       font-weight: 700;
       font-size: 14px;
       letter-spacing: -0.01em;
     }
+    .run-dir-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--bg-base);
+      border: 1px solid var(--border-color);
+      padding: 2px 6px;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .header-right {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
+      flex-wrap: nowrap;
     }
     .status-badge {
       display: inline-block;
@@ -9691,7 +13182,275 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     .status-badge.idle { background: #21262d; color: var(--text-muted); }
     .status-badge.running { background: #0c2d6b; color: #58a6ff; border-color: #1f6feb; }
     .status-badge.success { background: #0e4429; color: #3fb950; border-color: #238636; }
+    .status-badge.partial { background: #3b2300; color: #d29922; border-color: #9e6a03; }
     .status-badge.failed { background: #490202; color: #f85149; border-color: #da3633; }
+
+    /* Virtualized Numbered RFC Tab Bar */
+    .rfc-tabbar {
+      display: flex;
+      align-items: stretch;
+      background: #10141b;
+      border-bottom: 1px solid var(--border-color);
+      height: 44px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .live-pin-btn {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4px 12px;
+      min-width: 145px;
+      max-width: 185px;
+      background: var(--bg-surface);
+      border: none;
+      border-right: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      cursor: pointer;
+      text-align: left;
+      flex-shrink: 0;
+    }
+    .live-pin-btn:hover {
+      background: #1c222d;
+      color: var(--text-main);
+    }
+    .live-pin-btn.active {
+      background: #0d2149;
+      color: var(--text-main);
+      border-bottom: 2px solid var(--color-blue);
+    }
+    .live-pin-btn.replay-mode {
+      cursor: default;
+      background: #161b22;
+    }
+    .live-pin-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .live-pin-sub {
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .dot.running { background: var(--color-blue); box-shadow: 0 0 6px var(--color-blue); }
+    .dot.verified { background: var(--color-green); }
+    .dot.partial { background: var(--color-yellow); }
+    .dot.failed { background: var(--color-red); }
+    .dot.idle { background: var(--text-muted); }
+
+    /* Virtual Scroll Viewport */
+    .vtab-scroll {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      position: relative;
+      scrollbar-width: thin;
+      scrollbar-color: #30363d #10141b;
+    }
+    .vtab-scroll::-webkit-scrollbar { height: 5px; }
+    .vtab-scroll::-webkit-scrollbar-track { background: #10141b; }
+    .vtab-scroll::-webkit-scrollbar-thumb { background: #30363d; }
+    .vtab-spacer {
+      position: relative;
+      height: 100%;
+    }
+    .vtab-empty {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .rfc-vtab {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 230px;
+      padding: 4px 10px;
+      background: #121720;
+      border: none;
+      border-right: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: left;
+    }
+    .rfc-vtab:hover {
+      background: #1b2230;
+      color: var(--text-main);
+    }
+    .rfc-vtab.active {
+      background: var(--bg-panel);
+      color: var(--text-main);
+      border-bottom: 2px solid var(--color-blue);
+    }
+    .rfc-vtab-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      width: 100%;
+    }
+    .rfc-vtab-id {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .rfc-vtab-num {
+      color: var(--color-blue);
+    }
+    .rfc-vtab-tier {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 0 4px;
+      border: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+    .rfc-vtab-tier.GOLD, .rfc-vtab-tier.VERIFIED { color: #3fb950; border-color: #238636; background: #0e442966; }
+    .rfc-vtab-tier.SILVER { color: #58a6ff; border-color: #1f6feb; background: #0c2d6b66; }
+    .rfc-vtab-tier.BRONZE, .rfc-vtab-tier.PARTIAL { color: #d29922; border-color: #9e6a03; background: #3b230066; }
+    .rfc-vtab-tier.REJECTED, .rfc-vtab-tier.FAILED, .rfc-vtab-tier.INTERRUPTED { color: #f85149; border-color: #da3633; background: #49020266; }
+    .rfc-vtab-tier.PENDING, .rfc-vtab-tier.RUNNING { color: #bc8cff; border-color: #8957e5; background: #bc8cff18; }
+    .rfc-vtab-proto {
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+      width: 100%;
+    }
+    .rfc-vtab.active .rfc-vtab-proto {
+      color: #c9d1d9;
+    }
+
+    /* Right Controls on Tab Bar */
+    .tabbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+    .ctrl-input, .ctrl-select {
+      background: var(--bg-base);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 4px 7px;
+      outline: none;
+    }
+    .ctrl-input:focus, .ctrl-select:focus {
+      border-color: var(--border-focus);
+    }
+    .ctrl-input { width: 165px; }
+    .ctrl-btn {
+      background: #21262d;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 9px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .ctrl-btn:hover {
+      background: #2d333b;
+      border-color: #484f58;
+    }
+    .ctrl-btn.active {
+      background: #0c2d6b;
+      border-color: var(--color-blue);
+      color: var(--color-blue);
+    }
+
+    /* Collapsible Filtered / Rejected Drawer */
+    .filtered-drawer {
+      display: none;
+      flex-direction: column;
+      background: #11161d;
+      border-bottom: 2px solid var(--color-blue);
+      max-height: 290px;
+      flex-shrink: 0;
+    }
+    .filtered-drawer.open {
+      display: flex;
+    }
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 14px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .drawer-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .drawer-table-wrap {
+      overflow-y: auto;
+      flex: 1;
+    }
+    .drawer-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .drawer-table th {
+      position: sticky;
+      top: 0;
+      background: #161b22;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 5px 10px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .drawer-table td {
+      padding: 5px 10px;
+      border-bottom: 1px solid #21262d;
+      color: #c9d1d9;
+      vertical-align: top;
+    }
+    .drawer-table tr:hover td {
+      background: #1b2129;
+    }
 
     /* Pipeline Stages Strip */
     .stepper {
@@ -9702,16 +13461,15 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     }
     .step-item {
       flex: 1;
-      padding: 8px 12px;
+      padding: 7px 12px;
       border-right: 1px solid var(--border-color);
       background: var(--bg-surface);
       display: flex;
       flex-direction: column;
       gap: 2px;
+      min-width: 0;
     }
-    .step-item:last-child {
-      border-right: none;
-    }
+    .step-item:last-child { border-right: none; }
     .step-item.active {
       background: #111a2c;
       border-bottom: 2px solid var(--color-blue);
@@ -9742,6 +13500,62 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       color: var(--text-muted);
       font-family: var(--mono);
     }
+    .step-model {
+      font-size: 10px;
+      color: var(--color-purple);
+      font-family: var(--mono);
+      background: #bc8cff14;
+      border: 1px solid #bc8cff33;
+      padding: 1px 5px;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .model-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-weight: 600;
+      font-size: 11px;
+      color: var(--color-purple);
+      background: #bc8cff18;
+      border: 1px solid #bc8cff44;
+      font-family: var(--mono);
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .timer-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-weight: 700;
+      font-size: 11px;
+      color: var(--color-blue);
+      background: #58a6ff18;
+      border: 1px solid #58a6ff44;
+      font-family: var(--mono);
+      min-width: 68px;
+      text-align: center;
+    }
+    .diag-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-weight: 600;
+      font-size: 11px;
+      font-family: var(--mono);
+      border: 1px solid var(--border-color);
+      background: #21262d;
+      color: var(--text-muted);
+    }
+    .diag-badge.normal { color: #58a6ff; background: #0c2d6b88; border-color: #1f6feb; }
+    .diag-badge.syntax { color: #d29922; background: #3b2300aa; border-color: #d29922; }
+    .diag-badge.snowball { color: #f85149; background: #490202cc; border-color: #f85149; animation: pulse-warn 1.2s infinite; }
+    @keyframes pulse-warn {
+      0%, 100% { opacity: 1.0; }
+      50% { opacity: 0.65; }
+    }
 
     /* Main Grid */
     .main-grid {
@@ -9752,7 +13566,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
     /* Left: Live Terminal & Diagnostics */
     .log-panel {
-      width: 44%;
+      width: 42%;
       border-right: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
@@ -9787,18 +13601,10 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       padding: 6px 8px;
       line-height: 1.45;
     }
-    .log-entry.repair {
-      border-left: 3px solid var(--color-yellow);
-    }
-    .log-entry.cycle {
-      border-left: 3px solid var(--color-purple);
-    }
-    .log-entry.error {
-      border-left: 3px solid var(--color-red);
-    }
-    .log-entry.success {
-      border-left: 3px solid var(--color-green);
-    }
+    .log-entry.repair { border-left: 3px solid var(--color-yellow); }
+    .log-entry.cycle { border-left: 3px solid var(--color-purple); }
+    .log-entry.error { border-left: 3px solid var(--color-red); }
+    .log-entry.success { border-left: 3px solid var(--color-green); }
     .log-meta {
       display: flex;
       justify-content: space-between;
@@ -9812,24 +13618,26 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     }
     .log-data {
       white-space: pre-wrap;
-      word-break: break-all;
+      word-break: break-word;
       color: #c9d1d9;
     }
 
     /* Right: Code & Model Inspection */
     .viewer-panel {
-      width: 56%;
+      width: 58%;
       display: flex;
       flex-direction: column;
       background: var(--bg-code);
+      min-width: 0;
     }
     .tab-strip {
       display: flex;
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
     }
     .tab {
-      padding: 8px 14px;
+      padding: 8px 13px;
       background: transparent;
       border: none;
       border-right: 1px solid var(--border-color);
@@ -9845,6 +13653,93 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       border-top: 2px solid var(--color-blue);
       margin-top: -1px;
     }
+
+    /* Per-Attempt Time-Travel Stepper Bar */
+    .attempt-stepper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: #121720;
+      border-bottom: 1px solid var(--border-color);
+      overflow-x: auto;
+      flex-shrink: 0;
+      scrollbar-width: thin;
+    }
+    .attempt-stepper-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-right: 4px;
+      flex-shrink: 0;
+    }
+    .attempt-pill {
+      padding: 3px 9px;
+      background: #1b2129;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .attempt-pill:hover {
+      color: var(--text-main);
+      border-color: #484f58;
+    }
+    .attempt-pill.passed, .attempt-pill.verified {
+      border-left: 3px solid var(--color-green);
+    }
+    .attempt-pill.rejected, .attempt-pill.failed {
+      border-left: 3px solid var(--color-red);
+    }
+    .attempt-pill.cycle {
+      border-left: 3px solid var(--color-purple);
+    }
+    .attempt-pill.active {
+      background: #0c2d6b;
+      color: #ffffff;
+      border-color: var(--color-blue);
+    }
+
+    /* Per-Attempt Context & Diagnostic Banner */
+    .attempt-banner {
+      display: none;
+      padding: 7px 12px;
+      background: #151b24;
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+      flex-shrink: 0;
+    }
+    .attempt-banner.visible {
+      display: block;
+    }
+    .attempt-banner-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 3px;
+    }
+    .attempt-banner-diag {
+      color: #f0883e;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 85px;
+      overflow-y: auto;
+    }
+    .attempt-banner-rag {
+      color: var(--color-purple);
+      font-size: 10px;
+      margin-top: 3px;
+    }
+
     .tab-viewport {
       flex: 1;
       overflow: auto;
@@ -9900,7 +13795,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       font-size: 11px;
       color: var(--color-blue);
       line-height: 1.45;
-      word-break: break-all;
+      word-break: break-word;
     }
     .rag-chunks-container {
       display: flex;
@@ -9929,9 +13824,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       padding: 1px 5px;
       font-weight: 700;
     }
-    .rag-chunk-source {
-      color: var(--text-muted);
-    }
+    .rag-chunk-source { color: var(--text-muted); }
     .rag-chunk-title {
       font-weight: 600;
       color: var(--text-main);
@@ -9956,66 +13849,172 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
   <header>
     <div class="header-left">
       <span class="header-title">RFC-LLM Pipeline Monitor</span>
+      <span class="run-dir-label" id="run-dir-badge" title="Active Run Directory">Initializing...</span>
     </div>
     <div class="header-right">
+      <div>Stage Diagnosis: <span id="stage-diagnosis" class="diag-badge">Idle</span></div>
+      <div>Attempt Timer: <span id="attempt-timer" class="timer-badge">0.0s</span></div>
+      <div>Active Model: <span id="active-model" class="model-badge">nous/z-ai/glm-5.3</span></div>
       <div>RFC: <span id="rfc-name" style="color:var(--text-main); font-weight:700;">Waiting...</span></div>
       <div id="pipeline-status" class="status-badge idle">IDLE</div>
     </div>
   </header>
+
+  <!-- Virtualized Numbered Accepted-RFC Tab Strip (#1..#N) -->
+  <div class="rfc-tabbar">
+    <button class="live-pin-btn active" id="btn-live-follow" onclick="selectLiveFollow()">
+      <div class="live-pin-top">
+        <span class="dot idle" id="live-pin-dot"></span>
+        <span id="live-pin-label">LIVE STREAM</span>
+      </div>
+      <div class="live-pin-sub" id="live-pin-rfc">Waiting for RFC...</div>
+    </button>
+
+    <div class="vtab-scroll" id="vtab-scroll">
+      <div class="vtab-spacer" id="vtab-spacer">
+        <div class="vtab-empty" id="vtab-empty">No accepted cryptographic protocol tabs yet.</div>
+      </div>
+    </div>
+
+    <div class="tabbar-controls">
+      <input
+        type="text"
+        id="tab-search-input"
+        class="ctrl-input"
+        placeholder="Jump # or filter RFC/proto..."
+        oninput="onTabFilterChange()"
+        onkeydown="onTabSearchKeydown(event)"
+      />
+      <select id="tab-status-filter" class="ctrl-select" onchange="onTabFilterChange()">
+        <option value="ALL">ALL TABS (0)</option>
+        <option value="VERIFIED">VERIFIED</option>
+        <option value="PARTIAL">PARTIAL</option>
+        <option value="FAILED">FAILED</option>
+      </select>
+      <button class="ctrl-btn" id="btn-filtered-toggle" onclick="toggleFilteredDrawer()">
+        Filtered / Skipped (0)
+      </button>
+    </div>
+  </div>
+
+  <!-- Collapsible Filtered / Disqualified RFC Drawer -->
+  <div class="filtered-drawer" id="filtered-drawer">
+    <div class="drawer-header">
+      <div>
+        <strong>FILTERED / DISQUALIFIED RFCS</strong>
+        <span id="filtered-range-label" style="color:var(--text-muted); margin-left:8px;">0 entries</span>
+      </div>
+      <div class="drawer-controls">
+        <input
+          type="text"
+          id="filtered-search-input"
+          class="ctrl-input"
+          placeholder="Search filtered RFCs..."
+          oninput="onFilteredSearchInput()"
+        />
+        <button class="ctrl-btn" onclick="pageFiltered(-100)">Prev 100</button>
+        <button class="ctrl-btn" onclick="pageFiltered(100)">Next 100</button>
+        <button class="ctrl-btn" onclick="toggleFilteredDrawer()">Close</button>
+      </div>
+    </div>
+    <div class="drawer-table-wrap">
+      <table class="drawer-table">
+        <thead>
+          <tr>
+            <th style="width:55px;">#</th>
+            <th style="width:110px;">RFC ID</th>
+            <th style="width:260px;">Title</th>
+            <th style="width:190px;">Rejection Gate</th>
+            <th>Disqualification Rationale</th>
+          </tr>
+        </thead>
+        <tbody id="filtered-tbody">
+          <tr><td colspan="5" style="color:var(--text-muted);">No filtered RFCs recorded yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <!-- Horizontal Pipeline Stepper -->
   <div class="stepper">
     <div class="step-item" id="step-1">
       <div class="step-header"><span>01</span><span id="step-1-time">--:--</span></div>
       <div class="step-name">Document Intake</div>
+      <div class="step-model" id="step-1-model" title="Router & Gatekeeper Model">nous/z-ai/glm-5.3</div>
       <div class="step-status" id="step-1-status">Pending</div>
     </div>
     <div class="step-item" id="step-2">
       <div class="step-header"><span>02</span><span id="step-2-time">--:--</span></div>
-      <div class="step-name">AST Extraction</div>
+      <div class="step-name">JSON CPSA Generation</div>
+      <div class="step-model" id="step-2-model" title="JSON CPSA Generation Model">nous/google/gemini-4-argon</div>
       <div class="step-status" id="step-2-status">Pending</div>
     </div>
     <div class="step-item" id="step-3">
       <div class="step-header"><span>03</span><span id="step-3-time">--:--</span></div>
-      <div class="step-name">Scheme Emission</div>
+      <div class="step-name">CPSA4json -> scm</div>
+      <div class="step-model" id="step-3-model" title="Deterministic Code Emitter">cpsa_scheme_emitter.py</div>
       <div class="step-status" id="step-3-status">Pending</div>
     </div>
     <div class="step-item" id="step-4">
       <div class="step-header"><span>04</span><span id="step-4-time">--:--</span></div>
-      <div class="step-name">Roletran Gate</div>
+      <div class="step-name">Roletran Check</div>
+      <div class="step-model" id="step-4-model" title="Pre-flight Executability Binary">cpsa4roletran + cpsa4 -l 1</div>
       <div class="step-status" id="step-4-status">Pending</div>
     </div>
     <div class="step-item" id="step-5">
       <div class="step-header"><span>05</span><span id="step-5-time">--:--</span></div>
       <div class="step-name">Self-Healing Loop</div>
+      <div class="step-model" id="step-5-model" title="Repair + RAG Query Models">gemini-3.8-flash + haiku-5.5</div>
       <div class="step-status" id="step-5-status">Pending</div>
     </div>
     <div class="step-item" id="step-6">
       <div class="step-header"><span>06</span><span id="step-6-time">--:--</span></div>
-      <div class="step-name">MITRE Solver</div>
+      <div class="step-name">CPSA Compilation</div>
+      <div class="step-model" id="step-6-model" title="CPSA4 Compiler + Graph Builder">cpsa4 + cpsa4graph</div>
       <div class="step-status" id="step-6-status">Pending</div>
     </div>
   </div>
 
-  <!-- Main View -->
+  <!-- Main Single Shared Viewport (O(1) DOM Nodes regardless of 5 or 5,000 RFC tabs) -->
   <div class="main-grid">
     <!-- Left: Event Stream -->
     <div class="log-panel">
       <div class="panel-heading">
-        <span>Execution Diagnostics</span>
+        <span id="log-panel-title">Execution Diagnostics</span>
         <span id="event-counter" style="color:var(--text-muted); font-size:10px;">0 Events</span>
       </div>
       <div class="log-feed" id="log-feed"></div>
     </div>
 
-    <!-- Right: Code and Proof Inspection -->
+    <!-- Right: Code, Per-Attempt Stepper, and Proof Inspection -->
     <div class="viewer-panel">
       <div class="tab-strip">
-        <button class="tab active" onclick="switchTab('scm')">CPSA Scheme (.scm)</button>
-        <button class="tab" onclick="switchTab('ast')">Pydantic AST (JSON)</button>
-        <button class="tab" onclick="switchTab('slice')">RFC Sliced Text</button>
-        <button class="tab" id="tab-btn-rag" onclick="switchTab('rag')">RAG Knowledge</button>
-        <button class="tab" onclick="switchTab('graph')">Verified Shapes (SVG)</button>
+        <button class="tab active" data-subtab="scm" onclick="switchTab('scm')">CPSA Scheme (.scm)</button>
+        <button class="tab" data-subtab="ast" onclick="switchTab('ast')">Pydantic AST (JSON)</button>
+        <button class="tab" data-subtab="slice" onclick="switchTab('slice')">RFC Sliced Text</button>
+        <button class="tab" data-subtab="rag" id="tab-btn-rag" onclick="switchTab('rag')">RAG Knowledge</button>
+        <button class="tab" data-subtab="graph" onclick="switchTab('graph')">Verified Shapes (SVG)</button>
+      </div>
+
+      <!-- Per-Attempt Time-Travel Stepper -->
+      <div class="attempt-stepper" id="attempt-stepper">
+        <span class="attempt-stepper-label">Attempts:</span>
+        <span style="color:var(--text-muted); font-family:var(--mono); font-size:10px;">Waiting for synthesis...</span>
+      </div>
+
+      <!-- Per-Attempt Diagnostic & RAG Context Banner -->
+      <div class="attempt-banner" id="attempt-banner">
+        <div class="attempt-banner-head">
+          <strong id="attempt-banner-stage">Attempt</strong>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button class="ctrl-btn" id="btn-toggle-rejected-scm" style="display:none; padding:1px 6px; font-size:10px;" onclick="toggleRejectedScmView()">
+              Show Rejected Input .scm
+            </button>
+            <span id="attempt-banner-status" class="status-badge idle">PENDING</span>
+          </div>
+        </div>
+        <div class="attempt-banner-diag" id="attempt-banner-diag"></div>
+        <div class="attempt-banner-rag" id="attempt-banner-rag"></div>
       </div>
 
       <div class="tab-viewport" id="tab-scm">
@@ -10030,7 +14029,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       <div class="tab-viewport" id="tab-rag" style="display:none; padding:12px; overflow-y:auto;">
         <div id="rag-feed" style="display:flex; flex-direction:column; gap:10px;">
           <div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
-            RAG queries and retrieved manual chunks will stream here in real time...
+            RAG queries and retrieved manual chunks will appear here...
           </div>
         </div>
       </div>
@@ -10043,20 +14042,589 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
   </div>
 
   <script>
-    let activeTabId = 'scm';
+    // =========================================================================
+    // Global State (Bounded O(1) DOM & 20-entry LRU Tab Cache)
+    // =========================================================================
+    const VTAB_WIDTH = 230;
+    const LRU_MAX_TABS = 20;
+
+    let viewMode = 'live';           // 'live' | 'tab'
+    let isServerLive = true;
+    let selectedTabIndex = null;
+    let liveActiveTabIndex = null;
+    let liveActiveRfcId = null;
+
+    // Compact summary array of all accepted tabs (~150 bytes each -> 5,000 tabs = ~750 KB)
+    let acceptedTabs = [];
+    const acceptedTabsByIndex = new Map();
+    let visibleFilteredTabs = [];
+    let filteredTotalCount = 0;
+
+    // 20-entry LRU cache mapping tab_index -> hydrated /api/tab/:idx payload
+    const tabLruCache = new Map();
+
+    // Active viewport state
     const seenEventKeys = new Set();
     let eventCount = 0;
+    let pipelineRunning = false;
+    let currentStageNum = 1;
+    let activeAttemptEpoch = null;
+    let currentActivityMode = 'idle';
+    let currentRepairAttempt = 0;
+    const stageStartEpochs = {};
+    let ragFirstEvent = true;
+
+    // Attempt time-travel state for currently displayed tab
+    let currentAttemptsList = [];
+    let selectedAttemptIdx = -1;
+    let showingRejectedScm = false;
+
+    let defaultModelCfg = {
+      router_model: 'nous/z-ai/glm-5.3',
+      extraction_model: 'nous/google/gemini-4-argon',
+      repair_model: 'nous/google/gemini-3.8-flash',
+      query_model: 'nous/anthropic/claude-haiku-5.5'
+    };
+
+    function lruGet(tabIdx) {
+      if (!tabLruCache.has(tabIdx)) return null;
+      const val = tabLruCache.get(tabIdx);
+      tabLruCache.delete(tabIdx);
+      tabLruCache.set(tabIdx, val);
+      return val;
+    }
+
+    function lruSet(tabIdx, payload) {
+      if (tabLruCache.has(tabIdx)) tabLruCache.delete(tabIdx);
+      tabLruCache.set(tabIdx, payload);
+      if (tabLruCache.size > LRU_MAX_TABS) {
+        const oldestKey = tabLruCache.keys().next().value;
+        tabLruCache.delete(oldestKey);
+      }
+    }
+
+    // =========================================================================
+    // Virtualized Horizontal Tab Bar (Handles 5,000+ Tabs with ~25 DOM Nodes)
+    // =========================================================================
+    function recomputeVisibleTabs() {
+      const q = (document.getElementById('tab-search-input')?.value || '').trim().toLowerCase();
+      const statusFilter = document.getElementById('tab-status-filter')?.value || 'ALL';
+
+      const allOption = document.querySelector('#tab-status-filter option[value="ALL"]');
+      if (allOption) allOption.innerText = `ALL TABS (${acceptedTabs.length})`;
+
+      visibleFilteredTabs = acceptedTabs.filter(t => {
+        if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
+        if (!q) return true;
+        const numMatch = `#${t.tab_index}` === q || `${t.tab_index}` === q;
+        return (
+          numMatch ||
+          (t.rfc_id || '').toLowerCase().includes(q) ||
+          (t.protocol_name || '').toLowerCase().includes(q) ||
+          (t.rfc_title || '').toLowerCase().includes(q) ||
+          (t.quality_tier || '').toLowerCase().includes(q)
+        );
+      });
+
+      renderVirtualTabs();
+    }
+
+    function renderVirtualTabs() {
+      const scrollEl = document.getElementById('vtab-scroll');
+      const spacerEl = document.getElementById('vtab-spacer');
+      if (!scrollEl || !spacerEl) return;
+
+      const total = visibleFilteredTabs.length;
+      if (total === 0) {
+        spacerEl.style.width = '100%';
+        const msg = acceptedTabs.length === 0
+          ? 'No accepted cryptographic protocol tabs yet.'
+          : 'No tabs match current filter.';
+        spacerEl.innerHTML = `<div class="vtab-empty">${msg}</div>`;
+        return;
+      }
+
+      const totalWidth = total * VTAB_WIDTH;
+      spacerEl.style.width = `${totalWidth}px`;
+
+      const scrollLeft = scrollEl.scrollLeft;
+      const viewportW = scrollEl.clientWidth || 1200;
+      const firstIdx = Math.max(0, Math.floor(scrollLeft / VTAB_WIDTH) - 4);
+      const lastIdx = Math.min(total - 1, Math.ceil((scrollLeft + viewportW) / VTAB_WIDTH) + 4);
+
+      const frag = document.createDocumentFragment();
+      for (let i = firstIdx; i <= lastIdx; i++) {
+        const t = visibleFilteredTabs[i];
+        const btn = document.createElement('button');
+        const isSelected = (viewMode === 'tab' && selectedTabIndex === t.tab_index);
+        btn.className = `rfc-vtab${isSelected ? ' active' : ''}`;
+        btn.style.left = `${i * VTAB_WIDTH}px`;
+        btn.onclick = () => selectNumberedTab(t.tab_index);
+
+        const dotClass = t.status === 'VERIFIED' ? 'verified'
+          : (t.status === 'PARTIAL' ? 'partial'
+          : (t.status === 'RUNNING' ? 'running' : 'failed'));
+        const badgeText = (t.status === 'RUNNING') ? 'LIVE' : (t.quality_tier || t.status || '');
+        const badgeClass = (t.status === 'RUNNING') ? 'RUNNING' : (t.quality_tier || t.status || '');
+        const protoDisplay = t.protocol_name || t.rfc_title || t.rfc_id;
+
+        btn.title = [
+          `Tab #${t.tab_index} | ${t.rfc_id}`,
+          `Protocol: ${protoDisplay}`,
+          t.rfc_title && t.rfc_title !== protoDisplay ? `Title: ${t.rfc_title}` : null,
+          `Status: ${t.status} | Tier: ${t.quality_tier}`,
+          `Repairs: ${t.total_attempts || 0} | Shapes: ${t.shapes_count || 0} | Time: ${t.duration_seconds || 0}s`
+        ].filter(Boolean).join('\n');
+
+        const topDiv = document.createElement('div');
+        topDiv.className = 'rfc-vtab-top';
+
+        const idSpan = document.createElement('div');
+        idSpan.className = 'rfc-vtab-id';
+        idSpan.innerHTML = `<span class="dot ${dotClass}"></span><span class="rfc-vtab-num">#${t.tab_index}</span><span>${escapeHtml(t.rfc_id)}</span>`;
+
+        const tierSpan = document.createElement('span');
+        tierSpan.className = `rfc-vtab-tier ${badgeClass}`;
+        tierSpan.innerText = badgeText;
+
+        topDiv.appendChild(idSpan);
+        topDiv.appendChild(tierSpan);
+
+        const protoDiv = document.createElement('div');
+        protoDiv.className = 'rfc-vtab-proto';
+        protoDiv.innerText = protoDisplay;
+
+        btn.appendChild(topDiv);
+        btn.appendChild(protoDiv);
+        frag.appendChild(btn);
+      }
+
+      spacerEl.innerHTML = '';
+      spacerEl.appendChild(frag);
+    }
+
+    document.getElementById('vtab-scroll').addEventListener('scroll', () => {
+      window.requestAnimationFrame(renderVirtualTabs);
+    });
+    window.addEventListener('resize', () => {
+      window.requestAnimationFrame(renderVirtualTabs);
+    });
+
+    function onTabFilterChange() {
+      recomputeVisibleTabs();
+    }
+
+    function onTabSearchKeydown(e) {
+      if (e.key === 'Enter') {
+        const raw = e.target.value.trim().replace(/^#/, '');
+        const num = parseInt(raw, 10);
+        if (!isNaN(num) && acceptedTabsByIndex.has(num)) {
+          selectNumberedTab(num);
+          scrollTabIntoView(num);
+        } else if (visibleFilteredTabs.length > 0) {
+          selectNumberedTab(visibleFilteredTabs[0].tab_index);
+        }
+      }
+    }
+
+    function scrollTabIntoView(tabIndex) {
+      const pos = visibleFilteredTabs.findIndex(t => t.tab_index === tabIndex);
+      if (pos < 0) return;
+      const scrollEl = document.getElementById('vtab-scroll');
+      const targetLeft = pos * VTAB_WIDTH;
+      if (targetLeft < scrollEl.scrollLeft || targetLeft + VTAB_WIDTH > scrollEl.scrollLeft + scrollEl.clientWidth) {
+        scrollEl.scrollLeft = Math.max(0, targetLeft - VTAB_WIDTH);
+      }
+    }
+
+    function upsertTabSummary(tabObj) {
+      if (!tabObj || !tabObj.tab_index) return;
+      if (acceptedTabsByIndex.has(tabObj.tab_index)) {
+        const existing = acceptedTabsByIndex.get(tabObj.tab_index);
+        Object.assign(existing, tabObj);
+      } else {
+        acceptedTabs.push(tabObj);
+        acceptedTabs.sort((a, b) => a.tab_index - b.tab_index);
+        acceptedTabsByIndex.set(tabObj.tab_index, tabObj);
+      }
+      tabLruCache.delete(tabObj.tab_index);
+      recomputeVisibleTabs();
+    }
+
+    function updateFilteredButtonCount(count) {
+      filteredTotalCount = count;
+      const btn = document.getElementById('btn-filtered-toggle');
+      if (btn) btn.innerText = `Filtered / Skipped (${count})`;
+    }
+
+    function updateLivePinButton() {
+      const btn = document.getElementById('btn-live-follow');
+      const dot = document.getElementById('live-pin-dot');
+      const lbl = document.getElementById('live-pin-label');
+      const sub = document.getElementById('live-pin-rfc');
+      if (!btn) return;
+
+      btn.classList.toggle('active', viewMode === 'live');
+      if (!isServerLive) {
+        btn.classList.add('replay-mode');
+        dot.className = 'dot idle';
+        lbl.innerText = 'OFFLINE REPLAY';
+        sub.innerText = `${acceptedTabs.length} Accepted Tabs`;
+      } else {
+        btn.classList.remove('replay-mode');
+        dot.className = pipelineRunning ? 'dot running' : 'dot idle';
+        lbl.innerText = liveActiveTabIndex ? `LIVE | TAB #${liveActiveTabIndex}` : 'LIVE STREAM';
+        sub.innerText = liveActiveRfcId || 'Waiting...';
+      }
+    }
+
+    // =========================================================================
+    // Viewport Reset & Switching Between [LIVE] and Historical Tab #1..#N
+    // =========================================================================
+    function resetViewportDom(headerTitle) {
+      seenEventKeys.clear();
+      eventCount = 0;
+      ragFirstEvent = true;
+      currentAttemptsList = [];
+      selectedAttemptIdx = -1;
+      showingRejectedScm = false;
+
+      document.getElementById('event-counter').innerText = '0 Events';
+      document.getElementById('log-panel-title').innerText = headerTitle || 'Execution Diagnostics';
+      document.getElementById('log-feed').innerHTML = '';
+      document.getElementById('rag-feed').innerHTML = `
+        <div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
+          No RAG manual retrievals recorded for this protocol yet.
+        </div>`;
+      document.getElementById('code-scm').innerText = '; CPSA Scheme model output will appear here...';
+      document.getElementById('code-ast').innerText = '// Pydantic JSON AST will appear here...';
+      document.getElementById('code-slice').innerText = 'Verbatim RFC section slice will appear here...';
+      document.getElementById('graph-container').innerHTML =
+        'MITRE CPSA shapes graph will render here upon successful verification.';
+      document.getElementById('attempt-banner').classList.remove('visible');
+      document.getElementById('attempt-stepper').innerHTML =
+        '<span class="attempt-stepper-label">Attempts:</span><span style="color:var(--text-muted); font-family:var(--mono); font-size:10px;">Live synthesis...</span>';
+
+      for (let s = 1; s <= 6; s++) {
+        const el = document.getElementById(`step-${s}`);
+        if (el) el.classList.remove('active', 'passed', 'failed');
+        const st = document.getElementById(`step-${s}-status`);
+        if (st) st.innerText = 'Pending';
+        const tm = document.getElementById(`step-${s}-time`);
+        if (tm) tm.innerText = '--:--';
+      }
+    }
+
+    function selectLiveFollow() {
+      if (!isServerLive) {
+        if (acceptedTabs.length > 0) selectNumberedTab(acceptedTabs[0].tab_index);
+        return;
+      }
+      viewMode = 'live';
+      selectedTabIndex = null;
+      updateLivePinButton();
+      renderVirtualTabs();
+      resetViewportDom('Live Execution Diagnostics');
+
+      fetch('/api/active')
+        .then(r => r.json())
+        .then(state => {
+          if (state && Array.isArray(state.events)) {
+            state.events.forEach(evt => renderEventIntoViewport(evt, true));
+          }
+        })
+        .catch(() => {});
+    }
+
+    function selectNumberedTab(tabIndex) {
+      viewMode = 'tab';
+      selectedTabIndex = tabIndex;
+      pipelineRunning = false;
+      updateLivePinButton();
+      renderVirtualTabs();
+
+      const summary = acceptedTabsByIndex.get(tabIndex);
+      resetViewportDom(summary ? `Tab #${tabIndex} | ${summary.rfc_id} (${summary.protocol_name})` : `Tab #${tabIndex}`);
+
+      const cached = lruGet(tabIndex);
+      if (cached) {
+        applyHydratedTabPayload(cached);
+        return;
+      }
+
+      document.getElementById('stage-diagnosis').innerText = `Loading Tab #${tabIndex}...`;
+      fetch(`/api/tab/${tabIndex}`)
+        .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+        .then(payload => {
+          if (payload.tab && payload.tab.status !== 'RUNNING') {
+            lruSet(tabIndex, payload);
+          }
+          if (viewMode === 'tab' && selectedTabIndex === tabIndex) {
+            applyHydratedTabPayload(payload);
+          }
+        })
+        .catch(err => {
+          document.getElementById('code-scm').innerText = `; Failed to load Tab #${tabIndex}: ${err}`;
+        });
+    }
+
+    function applyHydratedTabPayload(payload) {
+      const tab = payload.tab || {};
+      document.getElementById('rfc-name').innerText = `#${tab.tab_index} ${tab.rfc_id} (${tab.protocol_name || ''})`;
+      document.getElementById('attempt-timer').innerText = `${(tab.duration_seconds || 0).toFixed(1)}s`;
+
+      const pill = document.getElementById('pipeline-status');
+      if (tab.status === 'VERIFIED') {
+        pill.className = 'status-badge success';
+        pill.innerText = `${tab.quality_tier || 'VERIFIED'}`;
+        setDiagnosisBadge(`Verified (${tab.shapes_count || 0} Realized Shapes)`, 'normal');
+      } else if (tab.status === 'PARTIAL') {
+        pill.className = 'status-badge partial';
+        pill.innerText = 'PARTIAL';
+        setDiagnosisBadge('Roletran Passed | CPSA Failed', 'syntax');
+      } else if (tab.status === 'RUNNING') {
+        pill.className = 'status-badge running';
+        pill.innerText = 'RUNNING';
+        setDiagnosisBadge('Active Synthesis...', 'normal');
+      } else {
+        pill.className = 'status-badge failed';
+        pill.innerText = tab.status || 'FAILED';
+        setDiagnosisBadge(tab.error_message ? 'Failed (See Attempt Banner)' : 'Halted', 'syntax');
+      }
+
+      if (payload.verbatim_slice) {
+        document.getElementById('code-slice').innerText = payload.verbatim_slice;
+      }
+
+      if (Array.isArray(payload.events)) {
+        payload.events.forEach(evt => renderEventIntoViewport(evt, false));
+      }
+
+      if (payload.shapes_xhtml) {
+        document.getElementById('graph-container').innerHTML =
+          `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(payload.shapes_xhtml)}"></iframe>`;
+      }
+
+      currentAttemptsList = Array.isArray(payload.attempts) ? payload.attempts : [];
+      renderAttemptStepper();
+      if (currentAttemptsList.length > 0) {
+        selectAttemptSnapshot(currentAttemptsList.length - 1);
+      }
+    }
+
+    // =========================================================================
+    // Per-Attempt Time-Travel Stepper (#0 Initial -> #1..#K Repairs -> Final)
+    // =========================================================================
+    function renderAttemptStepper() {
+      const bar = document.getElementById('attempt-stepper');
+      if (!bar) return;
+      if (!currentAttemptsList.length) {
+        bar.innerHTML = '<span class="attempt-stepper-label">Attempts:</span><span style="color:var(--text-muted); font-family:var(--mono); font-size:10px;">No attempt snapshots recorded.</span>';
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      const lbl = document.createElement('span');
+      lbl.className = 'attempt-stepper-label';
+      lbl.innerText = `Attempts (${currentAttemptsList.length}):`;
+      frag.appendChild(lbl);
+
+      currentAttemptsList.forEach((att, idx) => {
+        const btn = document.createElement('button');
+        const stLow = (att.status || '').toLowerCase();
+        const cyc = att.cycle_detected ? ' cycle' : '';
+        const act = (idx === selectedAttemptIdx) ? ' active' : '';
+        btn.className = `attempt-pill ${stLow}${cyc}${act}`;
+        btn.innerText = att.label || `Attempt ${idx}`;
+        btn.title = `${att.stage}\nStatus: ${att.status}${att.cycle_detected ? ' (Cycle Perturbation)' : ''}`;
+        btn.onclick = () => selectAttemptSnapshot(idx);
+        frag.appendChild(btn);
+      });
+
+      bar.innerHTML = '';
+      bar.appendChild(frag);
+    }
+
+    function selectAttemptSnapshot(idx) {
+      if (idx < 0 || idx >= currentAttemptsList.length) return;
+      selectedAttemptIdx = idx;
+      showingRejectedScm = false;
+      renderAttemptStepper();
+
+      const att = currentAttemptsList[idx];
+      document.getElementById('code-scm').innerText = att.scm || '; No .scm recorded for this attempt.';
+      document.getElementById('code-ast').innerText = att.ast
+        ? JSON.stringify(att.ast, null, 2)
+        : '// No JSON AST recorded for this attempt.';
+
+      const banner = document.getElementById('attempt-banner');
+      const stageEl = document.getElementById('attempt-banner-stage');
+      const statusEl = document.getElementById('attempt-banner-status');
+      const diagEl = document.getElementById('attempt-banner-diag');
+      const ragEl = document.getElementById('attempt-banner-rag');
+      const toggleBtn = document.getElementById('btn-toggle-rejected-scm');
+
+      banner.classList.add('visible');
+      stageEl.innerText = `${att.label} — ${att.stage}${att.cycle_detected ? ' [CYCLE PERTURBATION]' : ''}`;
+
+      if (att.status === 'VERIFIED' || att.status === 'PASSED') {
+        statusEl.className = 'status-badge success';
+      } else if (att.status === 'GENERATED') {
+        statusEl.className = 'status-badge running';
+      } else {
+        statusEl.className = 'status-badge failed';
+      }
+      statusEl.innerText = att.status || 'INFO';
+
+      if (att.rejected_scm && att.rejected_scm !== att.scm) {
+        toggleBtn.style.display = 'inline-block';
+        toggleBtn.innerText = 'Show Rejected Input .scm';
+      } else {
+        toggleBtn.style.display = 'none';
+      }
+
+      diagEl.innerText = att.diagnostic
+        ? `Diagnostic: ${att.diagnostic}`
+        : 'No compiler errors on this snapshot.';
+      diagEl.style.color = att.diagnostic ? '#f0883e' : '#3fb950';
+
+      if (att.rag_query || (att.retrieved_chunks && att.retrieved_chunks.length)) {
+        const cids = (att.retrieved_chunks || []).map(c => `#${c.chunk_id} (${c.title})`).join(', ');
+        ragEl.innerText = `RAG Query: "${att.rag_query || ''}" | Retrieved: ${cids || 'none'}`;
+      } else {
+        ragEl.innerText = '';
+      }
+    }
+
+    function toggleRejectedScmView() {
+      if (selectedAttemptIdx < 0 || selectedAttemptIdx >= currentAttemptsList.length) return;
+      const att = currentAttemptsList[selectedAttemptIdx];
+      if (!att.rejected_scm) return;
+      showingRejectedScm = !showingRejectedScm;
+      const toggleBtn = document.getElementById('btn-toggle-rejected-scm');
+      if (showingRejectedScm) {
+        document.getElementById('code-scm').innerText = att.rejected_scm;
+        toggleBtn.innerText = 'Show Repaired Output .scm';
+      } else {
+        document.getElementById('code-scm').innerText = att.scm;
+        toggleBtn.innerText = 'Show Rejected Input .scm';
+      }
+    }
+
+    // =========================================================================
+    // Collapsible Filtered / Disqualified RFC Drawer
+    // =========================================================================
+    let filteredOffset = 0;
+    let filteredDebounce = null;
+
+    function toggleFilteredDrawer() {
+      const drawer = document.getElementById('filtered-drawer');
+      const btn = document.getElementById('btn-filtered-toggle');
+      const isOpen = drawer.classList.toggle('open');
+      btn.classList.toggle('active', isOpen);
+      if (isOpen) {
+        filteredOffset = 0;
+        fetchFilteredPage();
+      }
+    }
+
+    function onFilteredSearchInput() {
+      clearTimeout(filteredDebounce);
+      filteredDebounce = setTimeout(() => {
+        filteredOffset = 0;
+        fetchFilteredPage();
+      }, 200);
+    }
+
+    function pageFiltered(delta) {
+      filteredOffset = Math.max(0, filteredOffset + delta);
+      fetchFilteredPage();
+    }
+
+    function fetchFilteredPage() {
+      const q = encodeURIComponent(document.getElementById('filtered-search-input')?.value || '');
+      fetch(`/api/filtered?offset=${filteredOffset}&limit=100&q=${q}`)
+        .then(r => r.json())
+        .then(data => {
+          updateFilteredButtonCount(data.total || 0);
+          const items = data.items || [];
+          const endIdx = Math.min(data.matching || 0, filteredOffset + items.length);
+          const startIdx = items.length ? filteredOffset + 1 : 0;
+          document.getElementById('filtered-range-label').innerText =
+            `Showing ${startIdx}-${endIdx} of ${data.matching || 0} matching (${data.total || 0} total)`;
+
+          const tbody = document.getElementById('filtered-tbody');
+          if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted);">No matching filtered RFCs.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = items.map(it => `
+            <tr>
+              <td>${it.index || ''}</td>
+              <td style="color:var(--color-blue); font-weight:700;">${escapeHtml(it.rfc_id || '')}</td>
+              <td>${escapeHtml(it.title || '')}</td>
+              <td style="color:var(--color-yellow);">${escapeHtml(it.gate || '')}</td>
+              <td style="color:var(--text-muted);">${escapeHtml(it.reason || '')}</td>
+            </tr>
+          `).join('');
+        })
+        .catch(() => {});
+    }
+
+    // =========================================================================
+    // Live Timer, Stepper, and Real-Time SSE Event Dispatcher
+    // =========================================================================
+    function setDiagnosisBadge(text, styleClass) {
+      const el = document.getElementById('stage-diagnosis');
+      if (!el) return;
+      el.innerText = text;
+      el.className = `diag-badge ${styleClass || ''}`;
+    }
+
+    function updateLiveTimers() {
+      if (viewMode !== 'live' || !pipelineRunning || !activeAttemptEpoch) return;
+      const nowSec = Date.now() / 1000;
+      const elapsed = Math.max(0, nowSec - activeAttemptEpoch);
+      const timerEl = document.getElementById('attempt-timer');
+
+      if (currentActivityMode === 'solver' || (currentActivityMode === 'repair_timeout' && elapsed > 20)) {
+        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s / 60s`;
+        if (elapsed > 30) {
+          setDiagnosisBadge(`STATE-SPACE SNOWBALLING (${elapsed.toFixed(0)}s / 60s cap)`, 'snowball');
+        } else if (elapsed > 10) {
+          setDiagnosisBadge(`Deep CPSA4 Strand Search (${elapsed.toFixed(0)}s / 60s)`, 'syntax');
+        } else {
+          setDiagnosisBadge('CPSA4 Compiling & Solving...', 'normal');
+        }
+      } else if (currentActivityMode === 'repair_syntax') {
+        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
+        setDiagnosisBadge(`Fast Syntax/Roletran Reject -> LLM Repair #${currentRepairAttempt}`, 'syntax');
+      } else if (currentActivityMode === 'repair_timeout') {
+        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
+        setDiagnosisBadge(`60s Timeout (Snowball) -> LLM Repair #${currentRepairAttempt}`, 'snowball');
+      } else if (currentActivityMode === 'extraction') {
+        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
+        setDiagnosisBadge('Generating CPSA JSON...', 'normal');
+      } else {
+        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
+      }
+
+      if (currentStageNum) {
+        const stepTimeEl = document.getElementById(`step-${currentStageNum}-time`);
+        const stageStart = stageStartEpochs[currentStageNum] || activeAttemptEpoch;
+        const stageElapsed = Math.max(0, nowSec - stageStart);
+        if (stepTimeEl) stepTimeEl.innerText = `${stageElapsed.toFixed(1)}s`;
+      }
+    }
+    setInterval(updateLiveTimers, 100);
 
     function switchTab(tabId) {
-      activeTabId = tabId;
-      document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-subtab') === tabId);
+      });
       document.querySelectorAll('.tab-viewport').forEach(v => v.style.display = 'none');
-
-      const targetBtn = Array.from(document.querySelectorAll('.tab')).find(b => b.getAttribute('onclick').includes(tabId));
-      if (targetBtn) targetBtn.classList.add('active');
-
       const targetView = document.getElementById(`tab-${tabId}`);
-      if (targetView) targetView.style.display = (tabId === 'graph') ? 'block' : 'block';
+      if (targetView) targetView.style.display = 'block';
     }
 
     function setStepState(stageNum, state, label) {
@@ -10073,7 +14641,53 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       }
     }
 
-    function processEvent(evt) {
+    function handleIncomingBusEvent(evt) {
+      if (!evt || !evt.event_type) return;
+
+      // Global tab & filtered registry updates ALWAYS apply regardless of whether viewing [LIVE] or Tab #k
+      if (evt.event_type === 'tab_accepted' && evt.data && evt.data.tab) {
+        liveActiveTabIndex = evt.data.tab.tab_index;
+        liveActiveRfcId = evt.data.tab.rfc_id;
+        upsertTabSummary(evt.data.tab);
+        updateLivePinButton();
+        return;
+      }
+      if (evt.event_type === 'tab_updated' && evt.data && evt.data.tab) {
+        upsertTabSummary(evt.data.tab);
+        updateLivePinButton();
+        return;
+      }
+      if (evt.event_type === 'rfc_filtered' && evt.data) {
+        updateFilteredButtonCount(evt.data.filtered_total || (filteredTotalCount + 1));
+        if (document.getElementById('filtered-drawer').classList.contains('open')) {
+          fetchFilteredPage();
+        }
+        return;
+      }
+      if (evt.event_type === 'pipeline_started') {
+        liveActiveRfcId = (evt.data && (evt.data.rfc_id || evt.data.rfc_file)) || evt.rfc_id;
+        liveActiveTabIndex = null;
+        pipelineRunning = true;
+        updateLivePinButton();
+        if (viewMode === 'live') {
+          resetViewportDom('Live Execution Diagnostics');
+        }
+      }
+      if (evt.event_type === 'pipeline_completed' || evt.event_type === 'pipeline_failed') {
+        pipelineRunning = false;
+        updateLivePinButton();
+      }
+
+      // Only mutate the shared DOM viewport if following [LIVE]
+      if (viewMode === 'live') {
+        renderEventIntoViewport(evt, true);
+      }
+    }
+
+    function renderEventIntoViewport(evt, fetchLiveArtifacts) {
+      if (evt.event_type === 'tab_accepted' || evt.event_type === 'tab_updated' || evt.event_type === 'rfc_filtered') {
+        return;
+      }
       const key = `${evt.timestamp}_${evt.event_type}_${evt.stage || 0}`;
       if (seenEventKeys.has(key)) return;
       seenEventKeys.add(key);
@@ -10089,25 +14703,81 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       let typeLabel = evt.event_type;
       let bodyText = JSON.stringify(evt.data, null, 2);
 
+      const stageDefaultModels = {
+        1: document.getElementById('step-1-model')?.innerText || defaultModelCfg.router_model,
+        2: document.getElementById('step-2-model')?.innerText || defaultModelCfg.extraction_model,
+        3: 'cpsa_scheme_emitter.py',
+        4: 'cpsa4roletran + cpsa4 -l 1',
+        5: document.getElementById('step-5-model')?.innerText || `${defaultModelCfg.repair_model}`,
+        6: document.getElementById('step-6-model')?.innerText || 'cpsa4 + cpsa4graph'
+      };
+
+      function updateActiveModel(modelStr, stageNum) {
+        if (!modelStr) return;
+        const badge = document.getElementById('active-model');
+        if (badge) badge.innerText = modelStr;
+        if (stageNum) {
+          const stepModelEl = document.getElementById(`step-${stageNum}-model`);
+          if (stepModelEl) stepModelEl.innerText = modelStr;
+        }
+      }
+
       if (evt.event_type === 'pipeline_started') {
         typeLabel = 'PIPELINE_INIT';
-        document.getElementById('rfc-name').innerText = evt.data.rfc_file || evt.data.rfc_id;
-        const pill = document.getElementById('pipeline-status');
-        pill.className = 'status-badge running';
-        pill.innerText = 'RUNNING';
+        if (fetchLiveArtifacts) pipelineRunning = true;
+        currentStageNum = 1;
+        currentRepairAttempt = 0;
+        activeAttemptEpoch = evt.timestamp;
+        stageStartEpochs[1] = evt.timestamp;
+        currentActivityMode = 'intake';
+        if (fetchLiveArtifacts) {
+          setDiagnosisBadge('Screening RFC & TOC...', 'normal');
+          document.getElementById('rfc-name').innerText = evt.data.rfc_file || evt.data.rfc_id;
+          const pill = document.getElementById('pipeline-status');
+          pill.className = 'status-badge running';
+          pill.innerText = 'RUNNING';
+        }
+        if (evt.data.router_model) document.getElementById('step-1-model').innerText = evt.data.router_model;
+        if (evt.data.extraction_model) document.getElementById('step-2-model').innerText = evt.data.extraction_model;
+        if (evt.data.repair_model) {
+          const qm = evt.data.query_model ? ` + ${evt.data.query_model.split('/').pop()}` : '';
+          document.getElementById('step-5-model').innerText = `${evt.data.repair_model}${qm}`;
+          document.getElementById('step-6-model').innerText = `cpsa4 + ${evt.data.repair_model}`;
+        }
+        updateActiveModel(evt.data.router_model || stageDefaultModels[1], 1);
         setStepState(1, 'active', 'Started');
       } else if (evt.event_type === 'stage_started') {
         typeLabel = `STAGE_${evt.stage}_START`;
+        currentStageNum = evt.stage;
+        activeAttemptEpoch = evt.timestamp;
+        stageStartEpochs[evt.stage] = evt.timestamp;
+        if (fetchLiveArtifacts) {
+          if (evt.stage === 1) { currentActivityMode = 'intake'; setDiagnosisBadge('Screening RFC & TOC...', 'normal'); }
+          else if (evt.stage === 2) { currentActivityMode = 'extraction'; setDiagnosisBadge('Generating CPSA JSON...', 'normal'); }
+          else if (evt.stage === 4 || evt.stage === 5) { currentActivityMode = 'roletran'; setDiagnosisBadge('Roletran Check...', 'normal'); }
+          else if (evt.stage === 6) { currentActivityMode = 'solver'; setDiagnosisBadge('CPSA4 Compiling & Solving...', 'normal'); }
+        }
         setStepState(evt.stage, 'active', 'Processing');
-        const timeEl = document.getElementById(`step-${evt.stage}-time`);
-        if (timeEl) timeEl.innerText = timeStr;
+        updateActiveModel((evt.data && evt.data.model) || stageDefaultModels[evt.stage], evt.stage);
+      } else if (evt.event_type === 'compiler_check_started') {
+        typeLabel = `COMPILER_RUN_${evt.data.attempt || 0}`;
+        currentStageNum = evt.stage || 6;
+        activeAttemptEpoch = evt.timestamp;
+        currentActivityMode = (evt.stage === 6) ? 'solver' : 'roletran';
+        updateActiveModel(evt.data.model || 'cpsa4 + cpsa4graph', evt.stage || 6);
+        setStepState(evt.stage || 6, 'active', `Testing #${evt.data.attempt || 0}`);
       } else if (evt.event_type === 'stage_completed') {
         typeLabel = `STAGE_${evt.stage}_OK`;
         setStepState(evt.stage, 'passed', 'Passed');
-        if (evt.data && evt.data.ast) {
+        if (stageStartEpochs[evt.stage]) {
+          const dur = Math.max(0, evt.timestamp - stageStartEpochs[evt.stage]);
+          const timeEl = document.getElementById(`step-${evt.stage}-time`);
+          if (timeEl) timeEl.innerText = `${dur.toFixed(1)}s`;
+        }
+        if (fetchLiveArtifacts && evt.data && evt.data.ast) {
           document.getElementById('code-ast').innerText = JSON.stringify(evt.data.ast, null, 2);
         }
-        if (evt.data && evt.data.scm_path) {
+        if (fetchLiveArtifacts && evt.data && evt.data.scm_path) {
           fetch(`/api/artifact?path=${encodeURIComponent(evt.data.scm_path)}`)
             .then(r => r.text())
             .then(txt => { document.getElementById('code-scm').innerText = txt; })
@@ -10116,7 +14786,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       } else if (evt.event_type === 'slice_ready') {
         typeLabel = 'SLICE_EXTRACTED';
         bodyText = `Sections: ${JSON.stringify(evt.data.sections)}\nLine count: ${evt.data.line_count}`;
-        if (evt.data && evt.data.slice_path) {
+        if (fetchLiveArtifacts && evt.data && evt.data.slice_path) {
           fetch(`/api/artifact?path=${encodeURIComponent(evt.data.slice_path)}`)
             .then(r => r.text())
             .then(txt => { document.getElementById('code-slice').innerText = txt; })
@@ -10124,51 +14794,71 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         }
       } else if (evt.event_type === 'rag_retrieval') {
         typeLabel = 'RAG_GROUNDING';
+        activeAttemptEpoch = evt.timestamp;
         const chkCount = (evt.data && evt.data.chunks) ? evt.data.chunks.length : 0;
-        bodyText = `Purpose: ${evt.data.purpose || 'RAG Retrieval'}\nQuery: ${evt.data.query || ''}\nRetrieved: ${chkCount} chunks`;
+        const ragMod = (evt.stage === 2) ? 'BM25 + Dense RRF' : `${defaultModelCfg.query_model} (RAG Query)`;
+        updateActiveModel(ragMod);
+        bodyText = `Model: ${ragMod}\nPurpose: ${evt.data.purpose || 'RAG Retrieval'}\nQuery: ${evt.data.query || ''}\nRetrieved: ${chkCount} chunks`;
         renderRagEvent(evt);
       } else if (evt.event_type === 'repair_attempt') {
         item.classList.add('repair');
         if (evt.data.cycle_detected) item.classList.add('cycle');
         typeLabel = `REPAIR_${evt.data.attempt}_OF_${evt.data.max_attempts}`;
-        bodyText = `Diagnostic: ${evt.data.diagnostic}\nCycle Detected: ${evt.data.cycle_detected ? 'YES (Perturbation active)' : 'NO'}`;
-        setStepState(5, 'active', `Attempt ${evt.data.attempt}/50`);
+        currentStageNum = evt.stage || 5;
+        currentRepairAttempt = evt.data.attempt || 1;
+        activeAttemptEpoch = evt.timestamp;
+        const diagStr = (evt.data.diagnostic || '').toLowerCase();
+        const isTimeout = diagStr.includes('timed out') || diagStr.includes('step limit');
+        currentActivityMode = isTimeout ? 'repair_timeout' : 'repair_syntax';
+        const failureTag = isTimeout ? '[60s TIMEOUT / STATE-SPACE SNOWBALL]' : '[FAST SYNTAX / ROLETRAN ERROR]';
+        const repMod = evt.data.model || defaultModelCfg.repair_model;
+        const qMod = evt.data.query_model || defaultModelCfg.query_model;
+        updateActiveModel(`${repMod} (RAG: ${qMod.split('/').pop()})`, evt.stage || 5);
+        bodyText = `${failureTag}\nRepair Model: ${repMod} | Query Model: ${qMod}\nDiagnostic: ${evt.data.diagnostic}\nCycle Detected: ${evt.data.cycle_detected ? 'YES (Perturbation active)' : 'NO'}`;
+        setStepState(evt.stage || 5, 'active', `Attempt ${evt.data.attempt}/${evt.data.max_attempts || 50}`);
       } else if (evt.event_type === 'stage_failed') {
         item.classList.add('error');
         typeLabel = `STAGE_${evt.stage}_FAIL`;
         setStepState(evt.stage, 'failed', 'Failed');
       } else if (evt.event_type === 'pipeline_completed') {
         item.classList.add('success');
-        typeLabel = 'SYNTHESIS_VERIFIED';
-        const pill = document.getElementById('pipeline-status');
-        pill.className = 'status-badge success';
-        pill.innerText = 'VERIFIED';
-        setStepState(6, 'passed', `Shapes: ${evt.data.shapes_count}`);
-        if (evt.data.shapes_xhtml) {
-          const container = document.getElementById('graph-container');
-          container.innerHTML = `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
+        if (fetchLiveArtifacts) {
+          pipelineRunning = false;
+          setDiagnosisBadge(`Verified (${evt.data.shapes_count} Realized Shapes)`, 'normal');
+          const pill = document.getElementById('pipeline-status');
+          pill.className = 'status-badge success';
+          pill.innerText = evt.data.quality_tier || 'VERIFIED';
+          if (evt.data.shapes_xhtml) {
+            document.getElementById('graph-container').innerHTML =
+              `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
+          }
         }
+        typeLabel = 'SYNTHESIS_VERIFIED';
+        setStepState(6, 'passed', `Shapes: ${evt.data.shapes_count}`);
       } else if (evt.event_type === 'pipeline_failed') {
         item.classList.add('error');
+        if (fetchLiveArtifacts) {
+          pipelineRunning = false;
+          setDiagnosisBadge('Halted / Max Attempts Reached', 'snowball');
+          const pill = document.getElementById('pipeline-status');
+          pill.className = 'status-badge failed';
+          pill.innerText = 'FAILED';
+        }
         typeLabel = 'PIPELINE_HALTED';
-        const pill = document.getElementById('pipeline-status');
-        pill.className = 'status-badge failed';
-        pill.innerText = 'FAILED';
       }
 
       item.innerHTML = `
         <div class="log-meta">
-          <span class="log-type">${typeLabel}</span>
-          <span>${timeStr}</span>
+          <span class="log-type">${escapeHtml(typeLabel)}</span>
+          <span>${escapeHtml(timeStr)}</span>
         </div>
-        <div class="log-data">${bodyText}</div>
+        <div class="log-data">${escapeHtml(bodyText)}</div>
       `;
 
       feed.appendChild(item);
       feed.scrollTop = feed.scrollHeight;
     }
 
-    let ragFirstEvent = true;
     function renderRagEvent(evt) {
       const feed = document.getElementById('rag-feed');
       if (!feed) return;
@@ -10190,21 +14880,21 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         chunksHtml += `
           <div class="rag-chunk-card">
             <div class="rag-chunk-meta">
-              <span class="rag-chunk-id">Chunk #${chk.chunk_id}</span>
-              <span class="rag-chunk-source">${chk.source_file || 'Manual'}</span>
+              <span class="rag-chunk-id">Chunk #${escapeHtml(String(chk.chunk_id))}</span>
+              <span class="rag-chunk-source">${escapeHtml(chk.source_file || 'Manual')}</span>
             </div>
-            <div class="rag-chunk-title">${chk.title || ''}</div>
-            <div class="rag-chunk-snippet">${chk.snippet || ''}</div>
+            <div class="rag-chunk-title">${escapeHtml(chk.title || '')}</div>
+            ${chk.snippet ? `<div class="rag-chunk-snippet">${escapeHtml(chk.snippet)}</div>` : ''}
           </div>
         `;
       });
 
       card.innerHTML = `
         <div class="rag-card-header">
-          <span class="rag-purpose">${purpose}</span>
-          <span>${timeStr}</span>
+          <span class="rag-purpose">${escapeHtml(purpose)}</span>
+          <span>${escapeHtml(timeStr)}</span>
         </div>
-        <div class="rag-query-box"><strong>Query:</strong> ${query}</div>
+        <div class="rag-query-box"><strong>Query:</strong> ${escapeHtml(query)}</div>
         <div class="rag-chunks-container">
           <div style="font-size:10px; color:var(--text-muted); font-family:var(--mono);">Retrieved Grounding Chunks (${chunks.length}):</div>
           ${chunksHtml}
@@ -10214,31 +14904,116 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       feed.prepend(card);
     }
 
-    // 1. Initial history fetch
-    function syncHistory() {
-      fetch('/api/history')
-        .then(r => r.json())
-        .then(events => {
-          if (Array.isArray(events)) {
-            events.forEach(processEvent);
-          }
-        })
-        .catch(err => console.error('History sync error:', err));
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     }
 
-    syncHistory();
+    // =========================================================================
+    // Initial Bootstrap & Named-Event SSE Subscription (Zero Polling Spam!)
+    // =========================================================================
+    fetch('/api/models')
+      .then(r => r.ok ? r.json() : null)
+      .then(cfg => {
+        if (!cfg) return;
+        defaultModelCfg = Object.assign(defaultModelCfg, cfg);
+        if (cfg.router_model) document.getElementById('step-1-model').innerText = cfg.router_model;
+        if (cfg.extraction_model) document.getElementById('step-2-model').innerText = cfg.extraction_model;
+        if (cfg.repair_model) {
+          const qm = cfg.query_model ? ` + ${cfg.query_model.split('/').pop()}` : '';
+          document.getElementById('step-5-model').innerText = `${cfg.repair_model}${qm}`;
+          document.getElementById('step-6-model').innerText = `cpsa4 + ${cfg.repair_model}`;
+        }
+      })
+      .catch(() => {});
 
-    // 2. Real-time SSE Connection
+    function syncInitialState() {
+      fetch('/api/tabs')
+        .then(r => {
+          if (!r.ok) throw new Error('legacy server');
+          return r.json();
+        })
+        .then(overview => {
+          isServerLive = Boolean(overview.is_live);
+          liveActiveRfcId = overview.active_rfc_id;
+          liveActiveTabIndex = overview.active_tab_index;
+
+          const runDirEl = document.getElementById('run-dir-badge');
+          if (runDirEl) {
+            const rd = overview.run_directory || (isServerLive ? 'Live Session' : 'Offline Replay');
+            runDirEl.innerText = rd.split('/').slice(-2).join('/');
+            runDirEl.title = rd;
+          }
+
+          acceptedTabs = [];
+          acceptedTabsByIndex.clear();
+          (overview.accepted_tabs || []).forEach(t => {
+            acceptedTabs.push(t);
+            acceptedTabsByIndex.set(t.tab_index, t);
+          });
+          acceptedTabs.sort((a, b) => a.tab_index - b.tab_index);
+          updateFilteredButtonCount(overview.filtered_total || 0);
+          recomputeVisibleTabs();
+          updateLivePinButton();
+
+          if (!isServerLive) {
+            if (acceptedTabs.length > 0) {
+              selectNumberedTab(acceptedTabs[0].tab_index);
+            } else {
+              setDiagnosisBadge('Replay Loaded (0 Accepted Tabs)', 'normal');
+            }
+          } else if (viewMode === 'live') {
+            return fetch('/api/active')
+              .then(r => r.json())
+              .then(state => {
+                if (state && Array.isArray(state.events)) {
+                  state.events.forEach(evt => renderEventIntoViewport(evt, true));
+                }
+              });
+          }
+        })
+        .catch(() => {
+          // Graceful fallback if connected to an older in-memory server without /api/tabs
+          fetch('/api/history')
+            .then(r => r.json())
+            .then(events => {
+              if (Array.isArray(events)) events.forEach(e => renderEventIntoViewport(e, true));
+            })
+            .catch(() => {});
+        });
+    }
+
+    syncInitialState();
+
+    // Real-time Server-Sent Events: listen on all named event types so frames fire in <1ms
     const sse = new EventSource('/api/events');
-    sse.onmessage = function(e) {
-      try {
-        const evt = JSON.parse(e.data);
-        processEvent(evt);
-      } catch (err) {}
-    };
-
-    // 3. Fallback sync polling every 1500ms
-    setInterval(syncHistory, 1500);
+    const SSE_EVENT_TYPES = [
+      'pipeline_started',
+      'stage_started',
+      'compiler_check_started',
+      'stage_completed',
+      'slice_ready',
+      'rag_retrieval',
+      'repair_attempt',
+      'stage_failed',
+      'pipeline_completed',
+      'pipeline_failed',
+      'tab_accepted',
+      'tab_updated',
+      'rfc_filtered',
+      'message'
+    ];
+    SSE_EVENT_TYPES.forEach(evtName => {
+      sse.addEventListener(evtName, function(e) {
+        try {
+          const evt = JSON.parse(e.data);
+          handleIncomingBusEvent(evt);
+        } catch (err) {}
+      });
+    });
   </script>
 </body>
 </html>
