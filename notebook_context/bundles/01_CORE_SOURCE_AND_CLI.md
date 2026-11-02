@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-02 20:54:06 UTC · Git: `main` @ `2902ce399eca` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 46 · Estimated Tokens: ~172,942*
+*Generated: 2026-11-02 20:54:28 UTC · Git: `main` @ `b4cd7635e6d6` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 46 · Estimated Tokens: ~172,942*
 
 ## Table of Contents
 

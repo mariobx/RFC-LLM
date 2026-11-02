@@ -2,14 +2,14 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-02 20:54:06 UTC · Git: `main` @ `2902ce399eca` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,863*
+*Generated: 2026-11-02 20:54:28 UTC · Git: `main` @ `b4cd7635e6d6` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,863*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `2902ce399eca` — feat(kb): transition to CPSA 4.4.9 Knowledge Base, TOC rebuild flag, Agentic Searcher, and Two-Speed Repair
+- **Git commit:** `b4cd7635e6d6` — chore(context): sync notebook_context bundles with CPSA 4.4.9 KB
 - No file changes detected since the previous sync.
 - **Added (0):** none
 - **Modified (0):** none

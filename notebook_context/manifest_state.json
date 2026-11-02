@@ -1483,15 +1483,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-02 20:54:06 UTC",
+  "generated_at": "2026-11-02 20:54:28 UTC",
   "git": {
     "branch": "main",
-    "commit": "2902ce399ecae04f69d4767c31cba1e2b0564667",
-    "subject": "feat(kb): transition to CPSA 4.4.9 Knowledge Base, TOC rebuild flag, Agentic Searcher, and Two-Speed Repair"
+    "commit": "b4cd7635e6d6438d11dc27d40760c1ceb6ddd5be",
+    "subject": "chore(context): sync notebook_context bundles with CPSA 4.4.9 KB"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "074424f1e267b800239cc373ce0aa94453821650",
-    "subject": "Move model routing to prompts/ frontmatter, add scalable multi-RFC visualizer, and harden pipeline"
+    "commit": "ebb0ae85d84e858e204c64c397dcaac9dd334235",
+    "subject": "feat(kb): transition to CPSA 4.4.9 Knowledge Base, TOC rebuild flag, Agentic Searcher, and Two-Speed Repair"
   }
 }

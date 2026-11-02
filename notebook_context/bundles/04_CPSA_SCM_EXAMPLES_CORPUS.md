@@ -2,7 +2,7 @@
 
 > Tier 3 Reference Corpus — Complete collection of all 151 official MITRE CPSA 4.4.9 `.scm` protocol specifications (`refrences/cpsa_kb/03_examples_scm/`) and their structured A-to-Z concept catalogs (`refrences/cpsa_kb/04_examples_catalog/*.md`).
 
-*Generated: 2026-11-02 20:54:06 UTC · Git: `main` @ `2902ce399eca` · Tier: Tier 3 — Domain Reference Code Corpus (.scm) · Files: 155 · Estimated Tokens: ~234,169*
+*Generated: 2026-11-02 20:54:28 UTC · Git: `main` @ `b4cd7635e6d6` · Tier: Tier 3 — Domain Reference Code Corpus (.scm) · Files: 155 · Estimated Tokens: ~234,169*
 
 ## Table of Contents
 
