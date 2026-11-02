@@ -121,6 +121,7 @@ def _run_roletran_self_healing_loop(
         )
     attempt = 0
     seen_roletran_hashes = set()
+    prev_roletran_diag: Optional[str] = None
     max_attempts = SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS
     repair_attempts_log: List[dict] = []
 
@@ -134,6 +135,12 @@ def _run_roletran_self_healing_loop(
         rejected_scm_snapshot = _read_scm_safe(scm_path)
         failed_stderr = roletran_result.raw_stderr
         failed_diag = roletran_result.error_diagnostic
+        use_searcher = bool(
+            attempt >= 3
+            or cycle_detected
+            or (attempt == 2 and failed_diag and failed_diag == prev_roletran_diag)
+        )
+        prev_roletran_diag = failed_diag
 
         live_repair = resolve_prompt_model(PROMPT_COMPILER_REPAIR, repair_model_override)
         live_query = resolve_prompt_model(PROMPT_RAG_QUERY_FORMULATION, query_model_override)
@@ -145,14 +152,15 @@ def _run_roletran_self_healing_loop(
             diagnostic=roletran_result.error_diagnostic,
             cycle_detected=cycle_detected,
             model=live_repair,
-            query_model=live_query,
+            query_model=live_query if use_searcher else "Pinned CPSA Header (Direct)",
         )
 
         logger.warning(
-            "Roletran check failed on attempt %d/%d (cycle=%s): %s. Initiating fast self-healing repair...",
+            "Roletran check failed on attempt %d/%d (cycle=%s, searcher=%s): %s. Initiating self-healing repair...",
             attempt,
             max_attempts,
             cycle_detected,
+            use_searcher,
             roletran_result.error_diagnostic,
         )
         try:
@@ -164,6 +172,7 @@ def _run_roletran_self_healing_loop(
                 model=repair_model_override,
                 query_model=query_model_override,
                 cycle_detected=cycle_detected,
+                use_agentic_searcher=use_searcher,
             )
             scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
             GLOBAL_EVENT_BUS.emit(
@@ -191,6 +200,8 @@ def _run_roletran_self_healing_loop(
                 "parsed_diagnostic": failed_diag,
                 "rag_query": repair_meta.get("rag_query"),
                 "retrieved_chunk_ids": list(repair_meta.get("retrieved_chunk_ids", [])),
+                "searcher_diagnosis": repair_meta.get("searcher_diagnosis"),
+                "searcher_turns": list(repair_meta.get("searcher_turns", [])),
                 "repaired_ast": protocol_ast.model_dump(),
                 "repaired_scm": _read_scm_safe(scm_path),
                 "passed_after_repair": roletran_result.is_executable,
@@ -261,6 +272,7 @@ def _run_mitre_solver_self_healing_loop(
     artifacts: Optional[CPSABuildArtifacts] = None
     build_attempt = 0
     last_build_error: Optional[str] = None
+    prev_solver_diag: Optional[str] = None
     seen_solver_hashes = set()
     max_attempts = SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS
     solver_attempts_log: List[dict] = []
@@ -294,6 +306,12 @@ def _run_mitre_solver_self_healing_loop(
 
                 rejected_ast_snapshot = protocol_ast.model_dump()
                 rejected_scm_snapshot = _read_scm_safe(scm_path)
+                use_searcher = bool(
+                    build_attempt >= 3
+                    or cycle_detected
+                    or (build_attempt == 2 and last_build_error and last_build_error == prev_solver_diag)
+                )
+                prev_solver_diag = last_build_error
 
                 live_repair = resolve_prompt_model(PROMPT_COMPILER_REPAIR, repair_model_override)
                 live_query = resolve_prompt_model(PROMPT_RAG_QUERY_FORMULATION, query_model_override)
@@ -305,14 +323,15 @@ def _run_mitre_solver_self_healing_loop(
                     diagnostic=last_build_error,
                     cycle_detected=cycle_detected,
                     model=live_repair,
-                    query_model=live_query,
+                    query_model=live_query if use_searcher else "Pinned CPSA Header (Direct)",
                 )
 
                 logger.warning(
-                    "MITRE make build failed (attempt %d/%d, cycle=%s): %s. Initiating RAG self-healing repair...",
+                    "MITRE make build failed (attempt %d/%d, cycle=%s, searcher=%s): %s. Initiating self-healing repair...",
                     build_attempt,
                     max_attempts,
                     cycle_detected,
+                    use_searcher,
                     last_build_error,
                 )
                 try:
@@ -331,6 +350,7 @@ def _run_mitre_solver_self_healing_loop(
                         model=repair_model_override,
                         query_model=query_model_override,
                         cycle_detected=cycle_detected,
+                        use_agentic_searcher=use_searcher,
                     )
                     scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
                     GLOBAL_EVENT_BUS.emit(

@@ -1061,7 +1061,8 @@
       for (let i = firstIdx; i <= lastIdx; i++) {
         const t = visibleFilteredTabs[i];
         const btn = document.createElement('button');
-        const isSelected = (viewMode === 'tab' && selectedTabIndex === t.tab_index);
+        const isSelected = (viewMode === 'tab' && selectedTabIndex === t.tab_index)
+          || (viewMode === 'live' && liveActiveTabIndex === t.tab_index);
         btn.className = `rfc-vtab${isSelected ? ' active' : ''}`;
         btn.style.left = `${i * VTAB_WIDTH}px`;
         btn.onclick = () => selectNumberedTab(t.tab_index);
@@ -1242,13 +1243,17 @@
     }
 
     function selectNumberedTab(tabIndex) {
+      const summary = acceptedTabsByIndex.get(tabIndex);
+      if (isServerLive && tabIndex === liveActiveTabIndex && summary && summary.status === 'RUNNING') {
+        selectLiveFollow();
+        return;
+      }
       viewMode = 'tab';
       selectedTabIndex = tabIndex;
       pipelineRunning = false;
       updateLivePinButton();
       renderVirtualTabs();
 
-      const summary = acceptedTabsByIndex.get(tabIndex);
       resetViewportDom(summary ? `Tab #${tabIndex} | ${summary.rfc_id} (${summary.protocol_name})` : `Tab #${tabIndex}`);
 
       const cached = lruGet(tabIndex);
@@ -1393,9 +1398,12 @@
         : 'No compiler errors on this snapshot.';
       diagEl.style.color = att.diagnostic ? '#f0883e' : '#3fb950';
 
-      if (att.rag_query || (att.retrieved_chunks && att.retrieved_chunks.length)) {
-        const cids = (att.retrieved_chunks || []).map(c => `#${c.chunk_id} (${c.title})`).join(', ');
-        ragEl.innerText = `RAG Query: "${att.rag_query || ''}" | Retrieved: ${cids || 'none'}`;
+      if (att.rag_query || (att.retrieved_chunks && att.retrieved_chunks.length) || att.searcher_diagnosis) {
+        const cids = (att.retrieved_chunks || []).map(c => `${c.chunk_id}`).join(', ');
+        const diagLine = att.searcher_diagnosis ? `\nSearcher Fix Brief: ${att.searcher_diagnosis}` : '';
+        ragEl.innerText = `Agentic KB Tools: ${att.rag_query || 'direct'} | Retrieved: ${cids || 'none'}${diagLine}`;
+      } else if (att.attempt_number >= 1 && att.attempt_id !== 'final') {
+        ragEl.innerText = 'Fast Direct Repair Pass (Pinned CPSA System Header — Agentic Searcher skipped)';
       } else {
         ragEl.innerText = '';
       }
@@ -1698,12 +1706,14 @@
             .catch(() => {});
         }
       } else if (evt.event_type === 'rag_retrieval') {
-        typeLabel = 'RAG_GROUNDING';
+        typeLabel = 'AGENTIC_KB_SEARCH';
         activeAttemptEpoch = evt.timestamp;
         const chkCount = (evt.data && evt.data.chunks) ? evt.data.chunks.length : 0;
-        const ragMod = (evt.stage === 2) ? 'BM25 + Dense RRF' : `${defaultModelCfg.query_model} (RAG Query)`;
+        const turnsCount = (evt.data && evt.data.searcher_turns) ? evt.data.searcher_turns.length : 1;
+        const ragMod = `${defaultModelCfg.query_model} (Agentic KB Searcher)`;
         updateActiveModel(ragMod);
-        bodyText = `Model: ${ragMod}\nPurpose: ${evt.data.purpose || 'RAG Retrieval'}\nQuery: ${evt.data.query || ''}\nRetrieved: ${chkCount} chunks`;
+        const diagSnippet = (evt.data && evt.data.searcher_diagnosis) ? `\n${evt.data.searcher_diagnosis}` : '';
+        bodyText = `Model: ${ragMod} (${turnsCount} turn${turnsCount > 1 ? 's' : ''})\nPurpose: ${evt.data.purpose || 'Agentic KB Search'}\nTools / Queries: ${evt.data.query || ''}\nRetrieved: ${chkCount} KB rules/examples${diagSnippet}`;
         renderRagEvent(evt);
       } else if (evt.event_type === 'repair_attempt') {
         item.classList.add('repair');
@@ -1776,17 +1786,60 @@
       card.className = 'rag-card';
 
       const timeStr = new Date(evt.timestamp * 1000).toLocaleTimeString([], { hour12: false });
-      const purpose = (evt.data && evt.data.purpose) || 'RAG Retrieval';
+      const purpose = (evt.data && evt.data.purpose) || 'Agentic KB Search';
       const query = (evt.data && evt.data.query) || '';
+      const searcherDiagnosis = (evt.data && evt.data.searcher_diagnosis) || '';
+      const searcherTurns = (evt.data && evt.data.searcher_turns) || [];
       const chunks = (evt.data && evt.data.chunks) || [];
+
+      let turnsHtml = '';
+      if (searcherTurns.length > 0) {
+        let turnItems = '';
+        searcherTurns.forEach((t) => {
+          let toolsList = '';
+          (t.tool_calls || []).forEach((tc) => {
+            toolsList += `
+              <div style="margin-top:4px; padding:4px 6px; background:rgba(88,166,255,0.08); border-left:2px solid #58a6ff; font-family:var(--mono); font-size:11px;">
+                <span style="color:#58a6ff; font-weight:600;">${escapeHtml(tc.tool || 'tool')}</span>(${escapeHtml(tc.args || '')})
+                <div style="color:var(--text-muted); margin-top:2px;">↳ Retrieved: ${escapeHtml(tc.retrieved || '')}</div>
+              </div>
+            `;
+          });
+          turnItems += `
+            <div style="padding:6px 8px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:4px; margin-top:6px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; font-family:var(--mono);">
+                <strong style="color:#d2a8ff;">Searcher Turn #${escapeHtml(String(t.turn || 1))}</strong>
+                <span style="color:${t.is_final ? '#3fb950' : '#f0883e'};">${escapeHtml(t.status || '')}</span>
+              </div>
+              ${toolsList}
+              ${t.ast_root_cause ? `<div style="margin-top:4px; font-size:11px; color:var(--text-main);"><strong>Thought / Cause:</strong> ${escapeHtml(t.ast_root_cause)}</div>` : ''}
+            </div>
+          `;
+        });
+        turnsHtml = `
+          <div style="margin-bottom:8px;">
+            <div style="font-size:10px; color:var(--text-muted); font-family:var(--mono);">Agentic Searcher Tool-Use Trace (${searcherTurns.length} Turn${searcherTurns.length > 1 ? 's' : ''}):</div>
+            ${turnItems}
+          </div>
+        `;
+      }
+
+      const diagnosisHtml = searcherDiagnosis ? `
+        <div class="rag-query-box" style="border-left:3px solid #3fb950; background:rgba(63,185,80,0.08); white-space:pre-wrap; margin-bottom:8px;">
+          <strong style="color:#3fb950;">Compiled Fix Brief Passed to Repair LLM:</strong>\n${escapeHtml(searcherDiagnosis)}
+        </div>
+      ` : '';
 
       let chunksHtml = '';
       chunks.forEach((chk) => {
+        const cidStr = String(chk.chunk_id || '');
+        const isScm = cidStr.endsWith('.scm');
+        const badgeLabel = isScm ? `MITRE .scm Example` : `KB Section: ${cidStr}`;
         chunksHtml += `
           <div class="rag-chunk-card">
             <div class="rag-chunk-meta">
-              <span class="rag-chunk-id">Chunk #${escapeHtml(String(chk.chunk_id))}</span>
-              <span class="rag-chunk-source">${escapeHtml(chk.source_file || 'Manual')}</span>
+              <span class="rag-chunk-id">${escapeHtml(badgeLabel)}</span>
+              <span class="rag-chunk-source">${escapeHtml(chk.source_file || 'CPSA Knowledge Base')}</span>
             </div>
             <div class="rag-chunk-title">${escapeHtml(chk.title || '')}</div>
             ${chk.snippet ? `<div class="rag-chunk-snippet">${escapeHtml(chk.snippet)}</div>` : ''}
@@ -1799,9 +1852,11 @@
           <span class="rag-purpose">${escapeHtml(purpose)}</span>
           <span>${escapeHtml(timeStr)}</span>
         </div>
-        <div class="rag-query-box"><strong>Query:</strong> ${escapeHtml(query)}</div>
+        <div class="rag-query-box"><strong>Executed Tool Calls / Queries:</strong> ${escapeHtml(query)}</div>
+        ${turnsHtml}
+        ${diagnosisHtml}
         <div class="rag-chunks-container">
-          <div style="font-size:10px; color:var(--text-muted); font-family:var(--mono);">Retrieved Grounding Chunks (${chunks.length}):</div>
+          <div style="font-size:10px; color:var(--text-muted); font-family:var(--mono);">Retrieved CPSA Rules &amp; .scm Examples (${chunks.length}):</div>
           ${chunksHtml}
         </div>
       `;

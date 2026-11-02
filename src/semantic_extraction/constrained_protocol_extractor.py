@@ -26,7 +26,6 @@ from src.prompt_loader import (
     build_schema_system_prompt,
     load_prompt_spec,
 )
-from src.rag_retriever_client import retrieve_cpsa_manual_guidance
 from src.system_config import SYSTEM_CONFIG
 
 logger = get_pipeline_logger("protocol_extractor")
@@ -54,30 +53,15 @@ def extract_protocol_specification(
     sampling_temp = extraction_spec.temperature if extraction_spec.temperature is not None else 0.0
     logger.info("Extracting CPSAProtocolSpecification for '%s' using %s", protocol_name, model_name)
 
-    # 1. Retrieve RAG Grounding Context
-    rag_query = f"{protocol_name} protocol message exchange encryption keys nonces"
-    rag_grounding_text = retrieve_cpsa_manual_guidance(
-        query=rag_query,
-        stage=2,
-        purpose="Protocol Extraction Grounding",
-        header_prefix="Reference",
-        top_k=2,
-        fallback_message="Use standard MITRE CPSA 4.4.9 syntax conventions.",
-    )
-
     principals_hint = f"Expected Principals: {', '.join(principals)}" if principals else ""
 
     user_prompt = (
         f"Protocol Identifier: {protocol_name}\n"
         f"{principals_hint}\n\n"
-        "MITRE CPSA Reference Syntax Examples (Helper Only - Use strictly for syntax and algebraic structure, "
-        "NEVER as ground truth for protocol facts):\n"
-        f"{rag_grounding_text}\n\n"
         "Verbatim RFC Exchange Specification (SOLE GROUND TRUTH):\n"
         f"{verbatim_slice}\n\n"
         "Extract the complete CPSAProtocolSpecification adhering to all executability and sort constraints.\n"
-        "Do NOT copy protocol elements, names, or messages from the reference examples; extract strictly what "
-        "is defined in the Verbatim RFC Exchange Specification."
+        "Extract strictly what is defined in the Verbatim RFC Exchange Specification."
     )
 
     system_prompt = build_schema_system_prompt(

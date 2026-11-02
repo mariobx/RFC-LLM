@@ -1,0 +1,2508 @@
+[
+  {
+    "example_id": "03_examples_scm/DH_hack.scm",
+    "filename": "DH_hack.scm",
+    "protocol_names": [
+      "DH_hack"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 15)"
+    ],
+    "roles": [
+      "init1",
+      "resp",
+      "commute"
+    ],
+    "sorts_used": [
+      "akey",
+      "data",
+      "name",
+      "skey"
+    ],
+    "operators_used": [
+      "enc",
+      "hash",
+      "invk",
+      "privk"
+    ],
+    "keywords_used": [
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Approximates Diffie-Hellman key agreement in the basic algebra using asymmetric key pairs ((invk x), x), hashed shared secrets (hash (invk x) y) and (hash x (invk y)), and an auxiliary commute role."
+  },
+  {
+    "example_id": "03_examples_scm/ab.scm",
+    "filename": "ab.scm",
+    "protocol_names": [
+      "ab"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "A",
+      "B"
+    ],
+    "sorts_used": [
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "enc"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates two-branch A-B search cascading on a dead skeleton where roles A and B emit the expected response (enc x x k) but require unreachable tagged inputs (enc \"A\" x k) and (enc \"B\" x k)."
+  },
+  {
+    "example_id": "03_examples_scm/abc.scm",
+    "filename": "abc.scm",
+    "protocol_names": [
+      "abc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "A",
+      "B",
+      "C"
+    ],
+    "sorts_used": [
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "enc"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Extends ab.scm to three auxiliary roles (A, B, C) to demonstrate three-way A-B-C cascading on a dead skeleton when incoming encrypted tags cannot be produced."
+  },
+  {
+    "example_id": "03_examples_scm/aik.scm",
+    "filename": "aik.scm",
+    "protocol_names": [
+      "aikprot"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ca",
+      "tpm",
+      "pca"
+    ],
+    "sorts_used": [
+      "akey",
+      "name",
+      "skey"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "invk",
+      "privk"
+    ],
+    "keywords_used": [
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the Trusted Computing Group (TCG) Anonymous Identity Key (AIK) credential issuance protocol (aikprot) with a manufacturer CA (ca), TPM (tpm), and Privacy CA (pca)."
+  },
+  {
+    "example_id": "03_examples_scm/atomic-open-closed.scm",
+    "filename": "atomic-open-closed.scm",
+    "protocol_names": [
+      "atomic-open-closed"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 44)"
+    ],
+    "roles": [
+      "dev-up",
+      "owner-power-dev",
+      "owner-open",
+      "owner-close",
+      "dev-open",
+      "dev-close",
+      "dev-pass",
+      "user-pass"
+    ],
+    "sorts_used": [
+      "chan",
+      "indx",
+      "locn",
+      "mesg",
+      "name",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "=",
+      "and",
+      "auth",
+      "conf",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "fact",
+      "forall",
+      "gen-st",
+      "herald",
+      "implies",
+      "load",
+      "or",
+      "p",
+      "prec",
+      "recv",
+      "send",
+      "stor",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models a stateful device controlled by an owner using two mutable state locations (lk, ls of sort locn), a confidential/authenticated power-up channel, macros, and 31 defrule axioms enforcing gen-st, same-device register pairing, single-threaded ordering, and load/stor atomicity."
+  },
+  {
+    "example_id": "03_examples_scm/attest.scm",
+    "filename": "attest.scm",
+    "protocol_names": [
+      "attest-door",
+      "attest-door-trust",
+      "attest-door-trust-attest"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "appraise",
+      "person",
+      "door",
+      "squealer"
+    ],
+    "sorts_used": [
+      "akey",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "and",
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "exists",
+      "false",
+      "forall",
+      "herald",
+      "implies",
+      "non",
+      "non-orig",
+      "p",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models a door entry protocol with remote attestation (appraise) and a rogue fake door (squealer) across three protocol variants using defrule axioms to transfer non-origination trust and rule out squealers."
+  },
+  {
+    "example_id": "03_examples_scm/auth-enc.scm",
+    "filename": "auth-enc.scm",
+    "protocol_names": [
+      "auth-enc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "chan",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "auth",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "inputs",
+      "outputs",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": true,
+    "summary": "Demonstrates roletran (inputs ...) and (outputs ...) declarations in a protocol sending an encrypted nonce (enc n k) followed by (cat n k) over an authenticated channel."
+  },
+  {
+    "example_id": "03_examples_scm/auth-hash.scm",
+    "filename": "auth-hash.scm",
+    "protocol_names": [
+      "auth-hash"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "chan",
+      "text"
+    ],
+    "operators_used": [
+      "hash"
+    ],
+    "keywords_used": [
+      "auth",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "inputs",
+      "outputs",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": true,
+    "summary": "Demonstrates roletran (inputs ...) and (outputs ...) declarations in a protocol sending a hash commitment (hash n) followed by plaintext n over an authenticated channel."
+  },
+  {
+    "example_id": "03_examples_scm/blanchet-strandmax.scm",
+    "filename": "blanchet-strandmax.scm",
+    "protocol_names": [
+      "blanchet-max",
+      "blanchet-max-akey",
+      "blanchet-max-fixed"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"There is a flaw in this protocol by design\")"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "data",
+      "name",
+      "skey"
+    ],
+    "operators_used": [
+      "enc",
+      "invk",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "comment",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "defstrandmax",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models Blanchet's flawed signed-then-encrypted key exchange (with both named pubk/privk and unnamed akey/invk keys) and its fixed variant using (defstrandmax ...) in defskeleton."
+  },
+  {
+    "example_id": "03_examples_scm/blanchet.scm",
+    "filename": "blanchet.scm",
+    "protocol_names": [
+      "blanchet",
+      "blanchet-fixed"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"There is a flaw in this protocol by design\")"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "data",
+      "name",
+      "skey"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "comment",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models Blanchet's flawed signed-then-encrypted key exchange (blanchet) and its recipient-bound fix (blanchet-fixed) using explicit strand heights and listener secrecy checks."
+  },
+  {
+    "example_id": "03_examples_scm/bug_example.scm",
+    "filename": "bug_example.scm",
+    "protocol_names": [
+      "bug_example"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 20)"
+    ],
+    "roles": [
+      "init",
+      "resp",
+      "flip",
+      "flip1",
+      "flip2"
+    ],
+    "sorts_used": [
+      "akey"
+    ],
+    "operators_used": [
+      "enc",
+      "hash",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Tests inverse asymmetric key (invk) flipping inside hashed encryption keys (hash x (invk y)) vs. (hash (invk x) y) using a single generic flip role vs. two explicit flip1/flip2 roles."
+  },
+  {
+    "example_id": "03_examples_scm/cert_lang.scm",
+    "filename": "cert_lang.scm",
+    "protocol_names": [
+      "cert-uni"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "certify",
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "chan",
+      "data",
+      "name",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk",
+      "privk",
+      "pubk",
+      "sign",
+      "tupl"
+    ],
+    "keywords_used": [
+      "and",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "forall",
+      "herald",
+      "implies",
+      "inputs",
+      "lang",
+      "non",
+      "non-orig",
+      "outputs",
+      "p",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": true,
+    "summary": "Demonstrates custom protocol-specific operators via (lang (cert sign) (cert-body (tupl 3))), roletran inputs/outputs, channels, and a certificate validation defrule."
+  },
+  {
+    "example_id": "03_examples_scm/chan-envelope.scm",
+    "filename": "chan-envelope.scm",
+    "protocol_names": [
+      "envelope"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 15)"
+    ],
+    "roles": [
+      "tpm-power-on",
+      "tpm-extend",
+      "tpm-extend-enc",
+      "tpm-quote",
+      "tpm-create-key",
+      "tpm-decrypt",
+      "alice"
+    ],
+    "sorts_used": [
+      "akey",
+      "chan",
+      "data",
+      "mesg",
+      "skey",
+      "strd"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "invk"
+    ],
+    "keywords_used": [
+      "=",
+      "^",
+      "and",
+      "auth",
+      "conf",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "or",
+      "p",
+      "prec",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models the TPM Envelope Protocol with PCR state passed over a confidential and authenticated channel, using defmacro role splicing (^) and three rule sets to prevent state splitting and multi-TPM key confusion."
+  },
+  {
+    "example_id": "03_examples_scm/chan-perrig-song.scm",
+    "filename": "chan-perrig-song.scm",
+    "protocol_names": [
+      "perrig-song"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "chan",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat"
+    ],
+    "keywords_used": [
+      "auth",
+      "conf",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the Perrig-Song two-party challenge-response protocol where the middle message (cat na nb a b) traverses a channel c tested under four combinations of (auth c) and (conf c)."
+  },
+  {
+    "example_id": "03_examples_scm/chan-unilateral.scm",
+    "filename": "chan-unilateral.scm",
+    "protocol_names": [
+      "unilateral"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "chan",
+      "text"
+    ],
+    "operators_used": [],
+    "keywords_used": [
+      "auth",
+      "comment",
+      "conf",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "pen-non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models unilateral authentication over a channel ch and tests all combinations of (auth ch) and (conf ch) from initiator (uniq-orig n) and responder (pen-non-orig n) perspectives."
+  },
+  {
+    "example_id": "03_examples_scm/chan-yahalom-role-decl.scm",
+    "filename": "chan-yahalom-role-decl.scm",
+    "protocol_names": [
+      "yahalom"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 15)"
+    ],
+    "roles": [
+      "init",
+      "resp",
+      "serv"
+    ],
+    "sorts_used": [
+      "chan",
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "auth",
+      "conf",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the Yahalom key distribution protocol without key forwarding using channels (ch1, ch2, ch3) with (auth ...) and (conf ...) declared directly inside defrole."
+  },
+  {
+    "example_id": "03_examples_scm/chan-yahalom.scm",
+    "filename": "chan-yahalom.scm",
+    "protocol_names": [
+      "yahalom"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 15)"
+    ],
+    "roles": [
+      "init",
+      "resp",
+      "serv"
+    ],
+    "sorts_used": [
+      "chan",
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "auth",
+      "conf",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the channel-based Yahalom protocol without key forwarding with (auth ...) and (conf ...) channel assumptions supplied incrementally inside defskeleton queries."
+  },
+  {
+    "example_id": "03_examples_scm/commitment.scm",
+    "filename": "commitment.scm",
+    "protocol_names": [
+      "commit"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "bidder",
+      "bid-trash",
+      "auctioneer"
+    ],
+    "sorts_used": [
+      "data",
+      "mesg",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "privk"
+    ],
+    "keywords_used": [
+      "cheq",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": true,
+    "summary": "Models an auction commitment protocol using the (cheq sealed (hash a b n quote)) equality-check trace event on an opaque commitment variable of sort mesg."
+  },
+  {
+    "example_id": "03_examples_scm/comp_test.scm",
+    "filename": "comp_test.scm",
+    "protocol_names": [
+      "main-ex-src",
+      "main-ex-tgt",
+      "main-ex-tgt-rule"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "qn",
+      "qy",
+      "an",
+      "ay",
+      "sn",
+      "sy"
+    ],
+    "sorts_used": [
+      "akey",
+      "mesg",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "and",
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "exists",
+      "forall",
+      "herald",
+      "implies",
+      "non",
+      "non-orig",
+      "p",
+      "prec",
+      "recv",
+      "send",
+      "trace",
+      "uniq",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models multi-tier protocol refinement and composition across three protocol definitions (main-ex-src, main-ex-tgt, main-ex-tgt-rule) with a compositional defrule."
+  },
+  {
+    "example_id": "03_examples_scm/completeness-test.scm",
+    "filename": "completeness-test.scm",
+    "protocol_names": [
+      "completeness-test"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp",
+      "probe"
+    ],
+    "sorts_used": [
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Tests CPSA strand-order completeness using a Needham-Schroeder liveness exchange followed by an encrypted ok signal to a probe strand listed in varying orders."
+  },
+  {
+    "example_id": "03_examples_scm/crushing.scm",
+    "filename": "crushing.scm",
+    "protocol_names": [
+      "crushing"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "adder",
+      "twister"
+    ],
+    "sorts_used": [
+      "akey",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Tests multi-strand hulling (\"crushing\") using an initiator that collects three values from adder strands and passes them through cyclic permutation twister strands."
+  },
+  {
+    "example_id": "03_examples_scm/dass_simple.scm",
+    "filename": "dass_simple.scm",
+    "protocol_names": [
+      "dass-simple",
+      "dass+"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "invk",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models two variants of the Distributed Authentication Security Service protocol (dass-simple and dass+) contrasting skeleton-level vs. role-level (non-orig (privk a))."
+  },
+  {
+    "example_id": "03_examples_scm/denning-sacco.scm",
+    "filename": "denning-sacco.scm",
+    "protocol_names": [
+      "denning-sacco"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp",
+      "keyserver"
+    ],
+    "sorts_used": [
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the Denning-Sacco public-key key distribution protocol with a certificate keyserver (ks) issuing public-key certificates for initiator a and responder b."
+  },
+  {
+    "example_id": "03_examples_scm/deorig_contract.scm",
+    "filename": "deorig_contract.scm",
+    "protocol_names": [
+      "deorig-contract"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates CPSA deorigination incompleteness during cohort contraction when a responder sends an unbound variable y3 that must unify with a received uniq-orig variable x2."
+  },
+  {
+    "example_id": "03_examples_scm/deorig_mesg.scm",
+    "filename": "deorig_mesg.scm",
+    "protocol_names": [
+      "deorig-mesg"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "mesg",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates deorigination incompleteness when a responder receives an untyped (x mesg) and sends a separate variable (y text) without explicit decryption binding."
+  },
+  {
+    "example_id": "03_examples_scm/deorig_simple.scm",
+    "filename": "deorig_simple.scm",
+    "protocol_names": [
+      "deorig-simple"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates deorigination incompleteness in a two-message nonce test where the responder receives (enc x k) and sends a distinct variable y of sort text."
+  },
+  {
+    "example_id": "03_examples_scm/dh-ca_hack.scm",
+    "filename": "dh-ca_hack.scm",
+    "protocol_names": [
+      "dhca"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(algebra basic)",
+      "(bound 12)"
+    ],
+    "roles": [
+      "init",
+      "resp",
+      "ca",
+      "CDHcalc1",
+      "CDHcalc2"
+    ],
+    "sorts_used": [
+      "akey",
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "invk",
+      "privk"
+    ],
+    "keywords_used": [
+      "comment",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models a CA-certified static Diffie-Hellman exchange in the basic algebra using the (CDH gx gy dhkey) macro and adversary computation roles CDHcalc1 and CDHcalc2."
+  },
+  {
+    "example_id": "03_examples_scm/dh_encrypt_hack.scm",
+    "filename": "dh_encrypt_hack.scm",
+    "protocol_names": [
+      "dhencrypt"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(algebra basic)"
+    ],
+    "roles": [
+      "init",
+      "resp",
+      "CDHcalc1",
+      "CDHcalc2"
+    ],
+    "sorts_used": [
+      "akey",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models an unauthenticated Diffie-Hellman key exchange followed by an encrypted-nonce challenge-response in the basic algebra using the (CDH gx gy dhkey) macro and CDHcalc1/CDHcalc2 roles."
+  },
+  {
+    "example_id": "03_examples_scm/dh_group_sig.scm",
+    "filename": "dh_group_sig.scm",
+    "protocol_names": [
+      "dh_sig"
+    ],
+    "algebra": "diffie-hellman",
+    "herald_flags": [
+      "(algebra diffie-hellman)",
+      "(limit 100)"
+    ],
+    "roles": [
+      "group-init",
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "chan",
+      "expt",
+      "name",
+      "rndx",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "exp",
+      "gen",
+      "privk"
+    ],
+    "keywords_used": [
+      "auth",
+      "conf",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models an improved signed Diffie-Hellman key exchange over a dynamically distributed subgroup generator (exp (gen) alpha) in the diffie-hellman algebra."
+  },
+  {
+    "example_id": "03_examples_scm/dh_group_sig_auth_failure.scm",
+    "filename": "dh_group_sig_auth_failure.scm",
+    "protocol_names": [
+      "dh_sig"
+    ],
+    "algebra": "diffie-hellman",
+    "herald_flags": [
+      "(algebra diffie-hellman)",
+      "(limit 100)"
+    ],
+    "roles": [
+      "group-init",
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "chan",
+      "expt",
+      "name",
+      "rndx",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "exp",
+      "gen",
+      "privk"
+    ],
+    "keywords_used": [
+      "auth",
+      "conf",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models a vulnerable signed group Diffie-Hellman exchange in the diffie-hellman algebra that omits peer identities inside signatures and suffers an authentication failure."
+  },
+  {
+    "example_id": "03_examples_scm/dh_mim_hack.scm",
+    "filename": "dh_mim_hack.scm",
+    "protocol_names": [
+      "dh_mim"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp",
+      "CDHcalc1",
+      "CDHcalc2"
+    ],
+    "sorts_used": [
+      "akey",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates a man-in-the-middle attack on unauthenticated Diffie-Hellman in the basic algebra using the (CDH gx gy dhkey) macro and CDHcalc1/CDHcalc2 calculator roles."
+  },
+  {
+    "example_id": "03_examples_scm/dhnsl_hack.scm",
+    "filename": "dhnsl_hack.scm",
+    "protocol_names": [
+      "dhnsl"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(algebra basic)"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "name",
+      "skey"
+    ],
+    "operators_used": [
+      "enc",
+      "invk",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models a Diffie-Hellman enhanced Needham-Schroeder-Lowe protocol in the basic algebra using the (CDH gx gy dhkey) macro in place of nonces."
+  },
+  {
+    "example_id": "03_examples_scm/dhstatic-state.scm",
+    "filename": "dhstatic-state.scm",
+    "protocol_names": [
+      "dhstatic-state"
+    ],
+    "algebra": "diffie-hellman",
+    "herald_flags": [
+      "(algebra diffie-hellman)",
+      "(bound 16)"
+    ],
+    "roles": [
+      "cert",
+      "get-cert",
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "data",
+      "expt",
+      "locn",
+      "mesg",
+      "name",
+      "rndx",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "exp",
+      "gen",
+      "privk",
+      "sign",
+      "tupl"
+    ],
+    "keywords_used": [
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "facts",
+      "gen-st",
+      "herald",
+      "lang",
+      "load",
+      "neq",
+      "non-orig",
+      "recv",
+      "send",
+      "stor",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models a static Diffie-Hellman protocol in the diffie-hellman algebra combining PKI enrollment, locn state storage (load/stor and gen-st), (facts (neq a b)), and custom (lang ...) operators."
+  },
+  {
+    "example_id": "03_examples_scm/disclosure.scm",
+    "filename": "disclosure.scm",
+    "protocol_names": [
+      "disc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "enc"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "pen-non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models a key-disclosure protocol (disc) using (pen-non-orig k) where the initiator reveals the encryption key k at the end of its run, illustrating listener introduction and generalization."
+  },
+  {
+    "example_id": "03_examples_scm/doorsep.scm",
+    "filename": "doorsep.scm",
+    "protocol_names": [
+      "doorsep"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Door Simple Example Protocol\")"
+    ],
+    "roles": [
+      "person",
+      "door"
+    ],
+    "sorts_used": [
+      "akey",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "and",
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "forall",
+      "herald",
+      "implies",
+      "non",
+      "non-orig",
+      "p",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the Door Simple Example Protocol (doorsep) using unnamed asymmetric keys (akey) and a trust defrule transferring non-origination from person to door."
+  },
+  {
+    "example_id": "03_examples_scm/doorsep2invk.scm",
+    "filename": "doorsep2invk.scm",
+    "protocol_names": [
+      "doorsep"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Door Simple Example Protocol\")"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "and",
+      "comment",
+      "defgoal",
+      "defprotocol",
+      "defrole",
+      "forall",
+      "herald",
+      "implies",
+      "non",
+      "p",
+      "prec",
+      "recv",
+      "send",
+      "trace",
+      "uniq-at",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": true,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Tests a defgoal on the doorsep protocol where peer/self asymmetric key parameters are instantiated with an inverted key (invk akey+3)."
+  },
+  {
+    "example_id": "03_examples_scm/encsig.scm",
+    "filename": "encsig.scm",
+    "protocol_names": [
+      "mult-keys-enc-sig"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Shows examples of key usage of asymmetric keys\")"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates separating encryption keys (pubk \"enc\" a) from signature keys (privk \"sig\" a) in an encrypt-then-sign challenge-response protocol (mult-keys-enc-sig)."
+  },
+  {
+    "example_id": "03_examples_scm/envelope.scm",
+    "filename": "envelope.scm",
+    "protocol_names": [
+      "envelope"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 15)"
+    ],
+    "roles": [
+      "tpm-power-on",
+      "tpm-extend",
+      "tpm-extend-enc",
+      "tpm-quote",
+      "tpm-create-key",
+      "tpm-decrypt",
+      "alice"
+    ],
+    "sorts_used": [
+      "akey",
+      "data",
+      "mesg",
+      "skey",
+      "strd"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "invk"
+    ],
+    "keywords_used": [
+      "=",
+      "^",
+      "and",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "or",
+      "p",
+      "prec",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models the TPM Envelope Protocol without channels by encoding PCR state as (enc current-value (hash pcrkey)) and enforcing linear state ordering via defrule axioms."
+  },
+  {
+    "example_id": "03_examples_scm/epmo-hash.scm",
+    "filename": "epmo-hash.scm",
+    "protocol_names": [
+      "epmo"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Annotated with trust management formulas\")"
+    ],
+    "roles": [
+      "bank",
+      "customer",
+      "merchant"
+    ],
+    "sorts_used": [
+      "data",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "and",
+      "annotations",
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "recv",
+      "says",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the Electronic Purchase with Money Order (epmo) protocol between bank, customer, and merchant using the unary (hash ...) operator and trust-management (annotations ...)."
+  },
+  {
+    "example_id": "03_examples_scm/epmo-key-hash.scm",
+    "filename": "epmo-key-hash.scm",
+    "protocol_names": [
+      "epmo"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Annotated with trust management formulas\")"
+    ],
+    "roles": [
+      "bank",
+      "customer",
+      "merchant"
+    ],
+    "sorts_used": [
+      "data",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "and",
+      "annotations",
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "recv",
+      "says",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the Electronic Purchase with Money Order (epmo) protocol using (enc \"hash\" (cat ...)) key-hashing and trust-management (annotations ...)."
+  },
+  {
+    "example_id": "03_examples_scm/epmo.scm",
+    "filename": "epmo.scm",
+    "protocol_names": [
+      "epmo"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Annotated with trust management formulas\")"
+    ],
+    "roles": [
+      "bank",
+      "customer",
+      "merchant"
+    ],
+    "sorts_used": [
+      "akey",
+      "data",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "invk",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "and",
+      "annotations",
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "recv",
+      "says",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the Electronic Purchase with Money Order (epmo) protocol where hashing is represented as encryption under an asymmetric key variable (hash akey) with (non-orig (invk hash))."
+  },
+  {
+    "example_id": "03_examples_scm/epmo_acctnum-key-hash.scm",
+    "filename": "epmo_acctnum-key-hash.scm",
+    "protocol_names": [
+      "epmo_acctnum"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"This version includes account numbers in exchanges\")"
+    ],
+    "roles": [
+      "bank",
+      "customer",
+      "merchant"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "and",
+      "annotations",
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "exists",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "recv",
+      "says",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models an EPMO protocol variant with account numbers (epmo_acctnum) illustrating how omitting role-level (uniq-orig nb) allows a generalized shape that identifies bank nonce nb with price."
+  },
+  {
+    "example_id": "03_examples_scm/expand.scm",
+    "filename": "expand.scm",
+    "protocol_names": [
+      "expand"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(expand)",
+      "(comment \"test macro expansion\")"
+    ],
+    "roles": [
+      "init"
+    ],
+    "sorts_used": [
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "^",
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "recv",
+      "send",
+      "trace",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Tests CPSA macro definitions (defmacro), the splice operator (^), and the (expand) herald flag."
+  },
+  {
+    "example_id": "03_examples_scm/facts.scm",
+    "filename": "facts.scm",
+    "protocol_names": [
+      "unilateral",
+      "iso-unilateral"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "name",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "invk",
+      "privk"
+    ],
+    "keywords_used": [
+      "and",
+      "comment",
+      "defgoal",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "exists",
+      "fact",
+      "facts",
+      "false",
+      "forall",
+      "herald",
+      "implies",
+      "non",
+      "non-orig",
+      "p",
+      "pen-non-orig",
+      "pnon",
+      "prec",
+      "recv",
+      "send",
+      "trace",
+      "uniq-at",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": true,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates user-defined relational facts ((facts ...) in defskeleton and (fact ...) in defgoal) alongside unilateral authentication security goals (unilateral and iso-unilateral)."
+  },
+  {
+    "example_id": "03_examples_scm/factvar.scm",
+    "filename": "factvar.scm",
+    "protocol_names": [
+      "free-fact-var"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "exists",
+      "fact",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "p",
+      "pen-non-orig",
+      "recv",
+      "send",
+      "trace",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates a defrule whose existential conclusion (exists ((m text)) (fact thing m)) introduces a variable used in a fact that does not occur in any strand."
+  },
+  {
+    "example_id": "03_examples_scm/ffgg.scm",
+    "filename": "ffgg.scm",
+    "protocol_names": [
+      "ffgg"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"From A Necessarily Parallel Attack by Jon K. Millen\")"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "comment",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models Millen's ffgg protocol exhibiting a necessarily parallel two-session oracle attack that leaks secret m."
+  },
+  {
+    "example_id": "03_examples_scm/fluffy_draft03_gske.scm",
+    "filename": "fluffy_draft03_gske.scm",
+    "protocol_names": [
+      "fluffy",
+      "fluffy-rule"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Based on the Internet-Draft: https://www.ietf.org/archive/id/draft-hardjono-ace-fluffy-03.txt\")"
+    ],
+    "roles": [
+      "sp",
+      "keyserv",
+      "client"
+    ],
+    "sorts_used": [
+      "name",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "ltk"
+    ],
+    "keywords_used": [
+      "and",
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "false",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "p",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the GSKE sub-protocol of IETF draft-hardjono-ace-fluffy-03 using shared symmetric keys (ltk s a) and defrule axioms preventing client/service-principal role confusion."
+  },
+  {
+    "example_id": "03_examples_scm/fragile_pruning.scm",
+    "filename": "fragile_pruning.scm",
+    "protocol_names": [
+      "fragile_pruning"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "adder",
+      "final"
+    ],
+    "sorts_used": [
+      "akey",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Illustrates delicate strand pruning requirements when an initiator aggregates three fresh nonces from three isomorphic adder strands."
+  },
+  {
+    "example_id": "03_examples_scm/goals.scm",
+    "filename": "goals.scm",
+    "protocol_names": [
+      "ns",
+      "nsl",
+      "unilateral",
+      "nsl-typeless"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "mesg",
+      "name",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "=",
+      "and",
+      "comment",
+      "defgoal",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "exists",
+      "false",
+      "forall",
+      "goals",
+      "herald",
+      "implies",
+      "non",
+      "non-orig",
+      "p",
+      "prec",
+      "recv",
+      "send",
+      "trace",
+      "uniq",
+      "uniq-at",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": true,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Comprehensive collection of CPSA security goals (defgoal and skeleton-level goals) for Needham-Schroeder (ns), Needham-Schroeder-Lowe (nsl), unilateral, and untyped NSL (nsl-typeless) using (p ...) predicates."
+  },
+  {
+    "example_id": "03_examples_scm/goalsvar.scm",
+    "filename": "goalsvar.scm",
+    "protocol_names": [
+      "ns",
+      "nsl",
+      "unilateral",
+      "nsl-typeless"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "mesg",
+      "name",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "=",
+      "and",
+      "comment",
+      "defgoal",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "exists",
+      "false",
+      "forall",
+      "goals",
+      "herald",
+      "implies",
+      "listener",
+      "non",
+      "non-orig",
+      "prec",
+      "recv",
+      "send",
+      "strand",
+      "trace",
+      "uniq",
+      "uniq-at",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": true,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Counterpart to goals.scm expressing all 12 defgoal declarations and skeleton-level goals using the concise (strand ...) and (listener ...) goal predicates."
+  }
+]

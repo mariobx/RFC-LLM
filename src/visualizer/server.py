@@ -22,12 +22,40 @@ _MANUAL_CHUNK_LOOKUP: Optional[Dict[str, Dict[str, str]]] = None
 
 
 def _get_manual_chunk_lookup() -> Dict[str, Dict[str, str]]:
-    """Loads compact chunk metadata once from manual_chunks.jsonl for offline RAG card hydration."""
+    """Loads compact section/example metadata from `refrences/cpsa_kb/kb_index.json`
+    (plus legacy `manual_chunks.jsonl` if present) for offline RAG card hydration.
+    """
     global _MANUAL_CHUNK_LOOKUP
     if _MANUAL_CHUNK_LOOKUP is not None:
         return _MANUAL_CHUNK_LOOKUP
 
     lookup: Dict[str, Dict[str, str]] = {}
+    kb_index_path = SYSTEM_CONFIG.PROJECT_ROOT / "refrences" / "cpsa_kb" / "kb_index.json"
+    if kb_index_path.exists():
+        try:
+            kb_data = json.loads(kb_index_path.read_text(encoding="utf-8", errors="ignore"))
+            for sec in kb_data.get("sections", []):
+                sid = str(sec.get("section_id") or "")
+                if sid:
+                    txt = sec.get("content") or ""
+                    lookup[sid] = {
+                        "chunk_id": sid,
+                        "title": sec.get("title") or sid,
+                        "source_file": sec.get("source_file") or "CPSA Knowledge Base",
+                        "snippet": txt[:280].strip() + ("..." if len(txt) > 280 else ""),
+                    }
+            for ex in kb_data.get("scm_examples", []):
+                ex_id = str(ex.get("example_id") or "")
+                if ex_id:
+                    lookup[ex_id] = {
+                        "chunk_id": ex_id,
+                        "title": f"MITRE Example: {ex.get('filename')} ({ex.get('algebra', 'basic')})",
+                        "source_file": ex_id,
+                        "snippet": ex.get("summary") or "",
+                    }
+        except Exception:
+            pass
+
     jsonl_path = SYSTEM_CONFIG.CHUNKS_DIR / "manual_chunks.jsonl"
     if jsonl_path.exists():
         try:
@@ -38,7 +66,7 @@ def _get_manual_chunk_lookup() -> Dict[str, Dict[str, str]]:
                         continue
                     obj = json.loads(line)
                     cid = str(obj.get("chunk_id") or obj.get("id") or "")
-                    if cid:
+                    if cid and cid not in lookup:
                         txt = obj.get("text") or obj.get("content") or ""
                         lookup[cid] = {
                             "chunk_id": cid,
@@ -97,6 +125,28 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
     if not verbatim_slice and rfc_dir and (rfc_dir / "verbatim_slice.txt").exists():
         verbatim_slice = (rfc_dir / "verbatim_slice.txt").read_text(encoding="utf-8", errors="ignore")
 
+    # Load Chronological Events early so we can reconstruct in-flight attempts for RUNNING tabs
+    events: List[Dict[str, Any]] = []
+    events_jsonl_path = (
+        Path(tab_summary["events_jsonl"])
+        if tab_summary.get("events_jsonl")
+        else (rfc_dir / "events.jsonl" if rfc_dir else None)
+    )
+    if events_jsonl_path and events_jsonl_path.exists():
+        try:
+            with open(events_jsonl_path, "r", encoding="utf-8", errors="ignore") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if line:
+                        events.append(json.loads(line))
+        except Exception:
+            events = []
+
+    active_state = GLOBAL_EVENT_BUS.get_active_state()
+    if active_state.get("tab_index") == tab_summary.get("tab_index") and active_state.get("events"):
+        if not events:
+            events = active_state["events"]
+
     # 2. Build Ordered Per-Attempt Time-Travel Snapshots
     attempts: List[Dict[str, Any]] = []
     s5_repairs = s5.get("repair_attempts") or []
@@ -108,6 +158,16 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
         initial_scm = s5_repairs[0].get("rejected_scm")
     if not initial_scm and s6_repairs:
         initial_scm = s6_repairs[0].get("rejected_scm")
+
+    # If trajectory.json is not written yet (e.g. tab is RUNNING), recover latest AST/.scm from live events
+    is_running_tab = (tab_summary.get("status") == "RUNNING") and not traj
+    if not initial_ast and events:
+        for evt in events:
+            if evt.get("event_type") == "stage_completed" and evt.get("stage") == 2:
+                initial_ast = (evt.get("data") or {}).get("ast")
+                break
+    if not initial_scm and tab_summary.get("scm_path") and Path(tab_summary["scm_path"]).exists():
+        initial_scm = Path(tab_summary["scm_path"]).read_text(encoding="utf-8", errors="ignore")
 
     # Determine whether Attempt 0 passed directly or what diagnostic rejected it
     attempt0_diag: Optional[str] = None
@@ -125,6 +185,9 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
     elif initial_ast or initial_scm:
         attempt0_diag = tab_summary.get("error_message")
         attempt0_status = "GENERATED"
+    elif is_running_tab:
+        attempt0_diag = "Stage 2 JSON CPSA synthesis currently in progress..."
+        attempt0_status = "GENERATED"
     else:
         attempt0_diag = tab_summary.get("error_message") or "Initial JSON extraction did not complete."
         attempt0_status = "FAILED"
@@ -136,7 +199,7 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
         "stage": "Stage 2/3: Initial JSON & .scm Synthesis",
         "status": attempt0_status,
         "cycle_detected": False,
-        "scm": initial_scm or "; No .scm emitted on Attempt 0.",
+        "scm": initial_scm or "; Synthesizing initial .scm model...",
         "ast": initial_ast,
         "diagnostic": attempt0_diag,
         "rag_query": None,
@@ -166,6 +229,8 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
             "trigger_diagnostic": rep.get("parsed_diagnostic") or rep.get("raw_stderr"),
             "diagnostic": rep.get("parsed_diagnostic") or rep.get("repair_exception") or next_diag,
             "rag_query": rep.get("rag_query"),
+            "searcher_diagnosis": rep.get("searcher_diagnosis"),
+            "searcher_turns": rep.get("searcher_turns") or [],
             "retrieved_chunks": _resolve_chunks_by_ids(rep.get("retrieved_chunk_ids", [])),
         })
 
@@ -184,15 +249,43 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
             "trigger_diagnostic": rep.get("parsed_diagnostic") or rep.get("raw_stderr"),
             "diagnostic": rep.get("parsed_diagnostic") or rep.get("repair_exception") or rep.get("raw_stderr"),
             "rag_query": rep.get("rag_query"),
+            "searcher_diagnosis": rep.get("searcher_diagnosis"),
+            "searcher_turns": rep.get("searcher_turns") or [],
             "retrieved_chunks": _resolve_chunks_by_ids(rep.get("retrieved_chunk_ids", [])),
         })
 
+    # Reconstruct in-progress repair attempts from live events if trajectory.json is not finalized yet
+    if is_running_tab and events:
+        latest_ast = initial_ast
+        for evt in events:
+            et = evt.get("event_type")
+            ed = evt.get("data") or {}
+            if et == "stage_completed" and evt.get("stage") == 3 and ed.get("ast"):
+                latest_ast = ed.get("ast")
+            elif et == "repair_attempt":
+                seq_num += 1
+                stg = evt.get("stage", 5)
+                att_n = ed.get("attempt", seq_num)
+                attempts.append({
+                    "attempt_number": seq_num,
+                    "attempt_id": f"live_repair_{seq_num}",
+                    "label": f"Attempt {seq_num} | {'Roletran' if stg == 5 else 'CPSA'} Repair",
+                    "stage": f"Stage {stg}: Live Self-Healing (#{att_n})",
+                    "status": "GENERATED",
+                    "cycle_detected": bool(ed.get("cycle_detected", False)),
+                    "scm": initial_scm or "; Repair in progress...",
+                    "ast": latest_ast,
+                    "diagnostic": ed.get("diagnostic"),
+                    "rag_query": None,
+                    "retrieved_chunks": [],
+                })
+
     final_scm = final_out.get("final_scm_with_header")
     final_ast = final_out.get("final_ast")
-    if not final_scm and tab_summary.get("scm_path") and Path(tab_summary["scm_path"]).exists():
+    if not is_running_tab and not final_scm and tab_summary.get("scm_path") and Path(tab_summary["scm_path"]).exists():
         final_scm = Path(tab_summary["scm_path"]).read_text(encoding="utf-8", errors="ignore")
 
-    if final_scm or final_ast:
+    if not is_running_tab and (final_scm or final_ast):
         tier = qa.get("quality_tier") or tab_summary.get("quality_tier") or "REJECTED"
         shapes_n = int(
             s6.get("shapes_analysis_from_shapes_txt", {}).get(
@@ -215,31 +308,8 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
             "retrieved_chunks": [],
         })
 
-    # 3. Load Chronological Events (from events.jsonl if available, else synthesize from trajectory)
-    events: List[Dict[str, Any]] = []
-    events_jsonl_path = (
-        Path(tab_summary["events_jsonl"])
-        if tab_summary.get("events_jsonl")
-        else (rfc_dir / "events.jsonl" if rfc_dir else None)
-    )
-    if events_jsonl_path and events_jsonl_path.exists():
-        try:
-            with open(events_jsonl_path, "r", encoding="utf-8", errors="ignore") as handle:
-                for line in handle:
-                    line = line.strip()
-                    if line:
-                        events.append(json.loads(line))
-        except Exception:
-            events = []
-
     if not events:
         events = _synthesize_events_from_trajectory(tab_summary, traj, attempts)
-
-    # Check if this tab is currently the active live tab and append any newer in-memory events
-    active_state = GLOBAL_EVENT_BUS.get_active_state()
-    if active_state.get("tab_index") == tab_summary.get("tab_index") and active_state.get("events"):
-        if not events_jsonl_path or not events_jsonl_path.exists():
-            events = active_state["events"]
 
     shapes_xhtml = tab_summary.get("shapes_xhtml")
     if not shapes_xhtml and rfc_dir and rfc_dir.exists():
@@ -310,10 +380,12 @@ def _synthesize_events_from_trajectory(
             continue
         is_roletran = att["attempt_id"].startswith("roletran_")
         st_num = 5 if is_roletran else 6
-        if att.get("rag_query") or att.get("retrieved_chunks"):
+        if att.get("rag_query") or att.get("retrieved_chunks") or att.get("searcher_turns"):
             _push(t_off, "rag_retrieval", st_num, {
                 "purpose": att["stage"],
                 "query": att.get("rag_query") or "",
+                "searcher_diagnosis": att.get("searcher_diagnosis"),
+                "searcher_turns": att.get("searcher_turns") or [],
                 "chunks": att.get("retrieved_chunks") or [],
             })
             t_off += 0.05

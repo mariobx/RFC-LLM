@@ -96,3 +96,23 @@ def test_heuristic_section_router_tls(tls_rfc_text: str):
     entries = parse_table_of_contents(tls_rfc_text)
     selected = _heuristic_section_router(entries)
     assert "7.3" in selected or "7.4" in selected
+
+
+def test_verbatim_slicer_non_contiguous_sections_excludes_gap():
+    synthetic_rfc = (
+        "1.  Introduction\n"
+        "Intro text line 1.\n"
+        "Intro text line 2.\n\n"
+        "2.  Unrelated Huge Appendix Stuff\n"
+        "Unrelated middle text that must NOT be included.\n\n"
+        "3.  Security Protocol Specification\n"
+        "Alice sends N_A to Bob.\n\n"
+        "4.  IANA Considerations\n"
+        "None.\n"
+    )
+    sliced = slice_verbatim_sections(synthetic_rfc, ["1", "3"])
+    assert "1.  Introduction" in sliced
+    assert "3.  Security Protocol Specification" in sliced
+    assert "Unrelated middle text that must NOT be included." not in sliced
+    assert "4.  IANA Considerations" not in sliced
+

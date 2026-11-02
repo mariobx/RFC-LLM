@@ -25,6 +25,7 @@ from src.prompt_loader import (
 from src.rag_retriever_client import (
     get_cpsa_manual_retriever,
     retrieve_cpsa_manual_guidance,
+    run_agentic_cpsa_searcher,
 )
 from src.semantic_extraction.constrained_protocol_extractor import (
     ensure_three_point_of_view_skeletons,
@@ -103,45 +104,49 @@ def repair_protocol_specification(
     model: Optional[str] = None,
     query_model: Optional[str] = None,
     cycle_detected: bool = False,
+    use_agentic_searcher: bool = True,
 ) -> CPSAProtocolSpecification:
-    """Uses RAG-guided diagnostic repair to patch a failing CPSAProtocolSpecification."""
+    """Uses Two-Speed Pinned Header + Agentic CPSA Knowledge Base Searcher to patch a failing CPSAProtocolSpecification."""
     repair_spec = load_prompt_spec(PROMPT_COMPILER_REPAIR)
     model_name = model or repair_spec.model
     logger.info(
-        "Executing RAG-guided repair for stage '%s' using %s (cycle_detected=%s) with diagnostic: %s",
+        "Executing repair for stage '%s' using %s (cycle_detected=%s, use_agentic_searcher=%s) with diagnostic: %s",
         failure_stage,
         model_name,
         cycle_detected,
+        use_agentic_searcher,
         error_diagnostic,
     )
 
-    # 1. Formulate RAG query and retrieve manual guidance only when a retriever is available
+    # 1. Run Agentic CPSA Knowledge Base Searcher when triggered (Attempt #3+, repeated diagnostic, or cycle)
     global LAST_REPAIR_METADATA
-    retriever = get_cpsa_manual_retriever()
-    if retriever:
-        rag_query = formulate_rag_diagnostic_query(
-            error_diagnostic,
-            failure_stage,
+    retriever = get_cpsa_manual_retriever() if use_agentic_searcher else None
+    if retriever and use_agentic_searcher:
+        guidance_text = run_agentic_cpsa_searcher(
+            error_diagnostic=error_diagnostic,
+            failure_stage=failure_stage,
+            failing_spec=failing_spec,
             model=query_model,
-        )
-        guidance_text = retrieve_cpsa_manual_guidance(
-            query=rag_query,
-            stage=5 if failure_stage == "roletran" else 6,
-            purpose=f"Diagnostic Repair ({failure_stage})",
-            header_prefix="Retrieved Manual Guidance",
-            top_k=2,
-            fallback_message="Review standard CPSA executability and preskeleton assumption rules.",
+            cycle_detected=cycle_detected,
+            fallback_query_fn=fallback_sanitize_diagnostic_query,
         )
         LAST_REPAIR_METADATA = {
-            "rag_query": rag_query,
+            "rag_query": rag_retriever_client.LAST_SEARCHER_QUERY,
             "retrieved_chunk_ids": list(rag_retriever_client.LAST_RETRIEVED_CHUNK_IDS),
+            "searcher_diagnosis": rag_retriever_client.LAST_SEARCHER_DIAGNOSIS,
+            "searcher_turns": list(rag_retriever_client.LAST_SEARCHER_TRACE),
         }
     else:
         LAST_REPAIR_METADATA = {
             "rag_query": None,
             "retrieved_chunk_ids": [],
+            "searcher_diagnosis": None,
+            "searcher_turns": [],
         }
-        guidance_text = "Review standard CPSA executability and preskeleton assumption rules."
+        guidance_text = (
+            "Fast Direct Repair Pass: Apply the Pinned MITRE CPSA 4.4.9 Core Rules & Common Diagnostics "
+            "in the system prompt to resolve the compiler diagnostic directly."
+        )
 
     cycle_warning = ""
     if cycle_detected:

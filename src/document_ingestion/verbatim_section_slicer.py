@@ -1,11 +1,15 @@
 """Verbatim RFC Section Boundary Slicer."""
 
 import re
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from src.logging_config import get_pipeline_logger
 
 logger = get_pipeline_logger("section_slicer")
+
+_ANY_SECTION_HEADING_RE = re.compile(
+    r"^(?:(\d+(?:\.\d+)*)|Appendix\s+([A-Z](?:\.\d+)*))\.?\s+[A-Z]"
+)
 
 
 def _is_rfc_page_break(line: str) -> bool:
@@ -33,12 +37,29 @@ def _find_section_start(lines: List[str], section_id: str, search_from_line: int
     return None
 
 
+def _find_section_end(lines: List[str], section_id: str, start_line_idx: int) -> int:
+    """Finds the line index where `section_id` (and any of its nested subsections) ends."""
+    norm_id = re.sub(r"^Appendix\s+", "", section_id.strip(), flags=re.IGNORECASE).rstrip(".")
+    sub_prefix = f"{norm_id}."
+
+    for idx in range(start_line_idx + 1, len(lines)):
+        match = _ANY_SECTION_HEADING_RE.match(lines[idx])
+        if match:
+            found_id = (match.group(1) or match.group(2) or "").rstrip(".")
+            if found_id and found_id.lower() != norm_id.lower() and not found_id.lower().startswith(sub_prefix.lower()):
+                return idx
+
+    return min(start_line_idx + 600, len(lines))
+
+
 def slice_verbatim_sections(
     raw_rfc_text: str,
     target_section_ids: List[str],
     clean_page_breaks: bool = True,
 ) -> str:
-    """Extracts the verbatim text for the specified section IDs from an RFC document."""
+    """Extracts the verbatim text for the specified section IDs from an RFC document,
+    slicing each requested section individually and merging overlapping/contiguous spans.
+    """
     if not target_section_ids:
         logger.warning("No target section IDs provided for slicing")
         return ""
@@ -52,62 +73,48 @@ def slice_verbatim_sections(
             toc_end_idx = idx
             break
 
-    # Step 2: Locate start of the first requested section
-    first_sec = target_section_ids[0]
-    start_line_idx = _find_section_start(lines, first_sec, search_from_line=toc_end_idx)
+    # Step 2: Resolve [start, end) line intervals for each requested section
+    intervals: List[Tuple[int, int]] = []
+    for sec_id in target_section_ids:
+        start_idx = _find_section_start(lines, sec_id, search_from_line=toc_end_idx)
+        if start_idx is None:
+            start_idx = _find_section_start(lines, sec_id, search_from_line=0)
+        if start_idx is None:
+            if not intervals and sec_id == target_section_ids[0]:
+                logger.error("Could not locate starting section '%s' in document", sec_id)
+                raise ValueError(f"Section '{sec_id}' not found in document")
+            logger.warning("Requested section '%s' not found in document; skipping", sec_id)
+            continue
+        end_idx = _find_section_end(lines, sec_id, start_idx)
+        intervals.append((start_idx, end_idx))
 
-    if start_line_idx is None:
-        # Fallback to searching from line 0
-        start_line_idx = _find_section_start(lines, first_sec, search_from_line=0)
+    if not intervals:
+        raise ValueError(f"None of the requested sections {target_section_ids} were found in document")
 
-    if start_line_idx is None:
-        logger.error("Could not locate starting section '%s' in document", first_sec)
-        raise ValueError(f"Section '{first_sec}' not found in document")
+    # Step 3: Sort and merge overlapping or adjacent intervals
+    intervals.sort(key=lambda pair: pair[0])
+    merged: List[Tuple[int, int]] = [intervals[0]]
+    for cur_start, cur_end in intervals[1:]:
+        prev_start, prev_end = merged[-1]
+        if cur_start <= prev_end:
+            merged[-1] = (prev_start, max(prev_end, cur_end))
+        else:
+            merged.append((cur_start, cur_end))
 
-    # Step 3: Locate end boundary (the start of the section immediately following the target set)
-    last_sec = target_section_ids[-1]
-    # Derive next sibling or parent section boundary
-    parts = last_sec.split(".")
-    candidates_for_next: List[str] = []
-
-    if len(parts) > 1:
-        # e.g., for "7.4", next sibling is "7.5", parent next is "8"
-        try:
-            next_num = int(parts[-1]) + 1
-            candidates_for_next.append(".".join(parts[:-1] + [str(next_num)]))
-        except ValueError:
-            pass
-        try:
-            parent_next = int(parts[0]) + 1
-            candidates_for_next.append(str(parent_next))
-        except ValueError:
-            pass
-    else:
-        try:
-            candidates_for_next.append(str(int(parts[0]) + 1))
-        except ValueError:
-            pass
-
-    end_line_idx: Optional[int] = None
-    for cand in candidates_for_next:
-        idx = _find_section_start(lines, cand, search_from_line=start_line_idx + 1)
-        if idx is not None:
-            if end_line_idx is None or idx < end_line_idx:
-                end_line_idx = idx
-
-    if end_line_idx is None:
-        # If no next section found, slice to end or 500 lines ahead
-        end_line_idx = min(start_line_idx + 600, len(lines))
-
+    total_raw_lines = sum(end - start for start, end in merged)
+    span_desc = ", ".join(f"{s + 1}..{e}" for s, e in merged)
     logger.info(
-        "Slicing sections %s: lines %d to %d (%d raw lines)",
+        "Slicing sections %s: spans [%s] (%d raw lines)",
         target_section_ids,
-        start_line_idx + 1,
-        end_line_idx,
-        end_line_idx - start_line_idx,
+        span_desc,
+        total_raw_lines,
     )
 
-    sliced_lines = lines[start_line_idx:end_line_idx]
+    sliced_lines: List[str] = []
+    for idx, (s_idx, e_idx) in enumerate(merged):
+        if idx > 0 and sliced_lines:
+            sliced_lines.append("")
+        sliced_lines.extend(lines[s_idx:e_idx])
 
     if clean_page_breaks:
         cleaned = [line for line in sliced_lines if not _is_rfc_page_break(line)]

@@ -1,0 +1,2424 @@
+[
+  {
+    "example_id": "03_examples_scm/sdls-ep-challenge.scm",
+    "filename": "sdls-ep-challenge.scm",
+    "protocol_names": [
+      "sdls-ep-key-verification"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "pen-non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "SDLS-EP Key Verification challenge-response protocol between ground and satellite using custom sort (keyid atom), PDU macros, and pen-non-orig session key assumptions."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-key-activation-auth.scm",
+    "filename": "sdls-ep-key-activation-auth.scm",
+    "protocol_names": [
+      "sdls-ep-key-activation-auth"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid",
+      "name",
+      "seq_n",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "hash",
+      "successor"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "SDLS-EP Key Activation with authentication-only framing, modeling sequence number successor as a custom hash operator and MAC via keyed hash."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-key-activation-authenc.scm",
+    "filename": "sdls-ep-key-activation-authenc.scm",
+    "protocol_names": [
+      "sdls-ep-key-activation-auth-enc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid",
+      "name",
+      "seq_n",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "successor"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "SDLS-EP Key Activation with authenticated encryption (Encrypt-then-MAC) using separate encryption and MAC keys and custom atomic sorts."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-key-activation.scm",
+    "filename": "sdls-ep-key-activation.scm",
+    "protocol_names": [
+      "sdls-ep-key-activation"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid"
+    ],
+    "operators_used": [
+      "cat"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "recv",
+      "send",
+      "trace",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Minimal unframed SDLS-EP Key Activation one-way command PDU between ground and satellite using custom sort keyid."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-otar-auth.scm",
+    "filename": "sdls-ep-otar-auth.scm",
+    "protocol_names": [
+      "sdls-ep-otar-auth"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid",
+      "name",
+      "seq_n",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "keyid_of",
+      "successor"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "SDLS-EP Over-the-Air Rekeying (OTAR) with outer link authentication, wrapping new session keys under a master key with functional key IDs (keyid_of hash)."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-otar-authenc.scm",
+    "filename": "sdls-ep-otar-authenc.scm",
+    "protocol_names": [
+      "sdls-ep-otar-auth-enc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid",
+      "name",
+      "seq_n",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "keyid_of",
+      "successor"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "SDLS-EP OTAR under Authenticated Encryption, combining inner master-key encryption of uploaded session keys with outer Encrypt-then-MAC framing."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-otar-transmission.scm",
+    "filename": "sdls-ep-otar-transmission.scm",
+    "protocol_names": [
+      "sdls-ep-otar"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid",
+      "skey"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "keyid_of"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Standalone SDLS-EP OTAR transmission PDU encrypting pairs of key IDs and session keys under a master key."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-sa-rekey-auth.scm",
+    "filename": "sdls-ep-sa-rekey-auth.scm",
+    "protocol_names": [
+      "sdls-ep-rekey-sa-auth"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid",
+      "name",
+      "seq_n",
+      "skey",
+      "spi",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "hash",
+      "successor"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "facts",
+      "herald",
+      "lang",
+      "neq",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "SDLS-EP Rekey SA command with authentication-only framing, custom sorts (seq_n, spi, keyid), and skeleton inequality facts (neq old_arsn new_arsn)."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-sa-rekey-authenc.scm",
+    "filename": "sdls-ep-sa-rekey-authenc.scm",
+    "protocol_names": [
+      "sdls-ep-rekey-sa-auth-enc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid",
+      "name",
+      "seq_n",
+      "skey",
+      "spi",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "successor"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "facts",
+      "herald",
+      "lang",
+      "neq",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "SDLS-EP Rekey SA command under Authenticated Encryption (Encrypt-then-MAC) with custom sorts and sequence number inequality facts."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-sa-rekey.scm",
+    "filename": "sdls-ep-sa-rekey.scm",
+    "protocol_names": [
+      "sdls-ep-rekey-sa"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid",
+      "seq_n",
+      "spi",
+      "text"
+    ],
+    "operators_used": [
+      "cat"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Unframed SDLS-EP Rekey SA PDU transmitting SPI, key IDs, new ARSN, and IV using custom atomic sorts."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-sa-start-auth.scm",
+    "filename": "sdls-ep-sa-start-auth.scm",
+    "protocol_names": [
+      "sdls-ep-start-sa-auth"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "gvcid",
+      "name",
+      "seq_n",
+      "skey",
+      "spi",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "hash",
+      "successor"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "SDLS-EP Start SA command with authentication-only framing and custom atomic sorts (seq_n, spi, gvcid)."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-sa-start-authenc.scm",
+    "filename": "sdls-ep-sa-start-authenc.scm",
+    "protocol_names": [
+      "sdls-ep-start-sa-auth-enc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "gvcid",
+      "name",
+      "seq_n",
+      "skey",
+      "spi",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "successor"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "SDLS-EP Start SA command under Authenticated Encryption (Encrypt-then-MAC) binding SPI and GVCID."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-sa-start.scm",
+    "filename": "sdls-ep-sa-start.scm",
+    "protocol_names": [
+      "sdls-ep-start-sa"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "gvcid",
+      "spi"
+    ],
+    "operators_used": [
+      "cat"
+    ],
+    "keywords_used": [
+      "comment",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "recv",
+      "send",
+      "trace",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Unframed SDLS-EP Start SA command PDU with custom atomic sorts spi and gvcid."
+  },
+  {
+    "example_id": "03_examples_scm/sigenc.scm",
+    "filename": "sigenc.scm",
+    "protocol_names": [
+      "mult-keys-sig-enc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Shows examples of key usage of asymmetric keys\")"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Three-message sign-then-encrypt protocol illustrating tagged asymmetric keys (privk/pubk with \"sig\" and \"enc\" tags) and trust sensitivity analysis."
+  },
+  {
+    "example_id": "03_examples_scm/sorted_epmo_acctnum.scm",
+    "filename": "sorted_epmo_acctnum.scm",
+    "protocol_names": [
+      "sorted_epmo_acctnum"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 12)",
+      "(comment \"This version includes account numbers in exchanges\" \"This version uses sorts to avoid confusion\" \"between a nonce and other data\")"
+    ],
+    "roles": [
+      "bank",
+      "customer",
+      "merchant"
+    ],
+    "sorts_used": [
+      "data",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "and",
+      "annotations",
+      "bound",
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "exists",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "recv",
+      "says",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Electronic Purchase with Money Order (EPMO) variant with account numbers, sort separation between nonces (data) and fields (text), and role annotations."
+  },
+  {
+    "example_id": "03_examples_scm/sts.scm",
+    "filename": "sts.scm",
+    "protocol_names": [
+      "station-to-station"
+    ],
+    "algebra": "diffie-hellman",
+    "herald_flags": [
+      "(bound 20)",
+      "(algebra diffie-hellman)"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "expt",
+      "name",
+      "rndx"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "exp",
+      "gen",
+      "mul",
+      "privk"
+    ],
+    "keywords_used": [
+      "algebra",
+      "bound",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Station-to-Station (STS) authenticated Diffie-Hellman protocol with role-level uniq-gen exponents and forward-secrecy listener skeletons."
+  },
+  {
+    "example_id": "03_examples_scm/sts_non_role.scm",
+    "filename": "sts_non_role.scm",
+    "protocol_names": [
+      "station-weak"
+    ],
+    "algebra": "diffie-hellman",
+    "herald_flags": [
+      "(bound 20)",
+      "(algebra diffie-hellman)"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "expt",
+      "name",
+      "rndx"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "exp",
+      "gen",
+      "mul",
+      "privk"
+    ],
+    "keywords_used": [
+      "algebra",
+      "bound",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Weakened Station-to-Station Diffie-Hellman protocol omitting role-level uniq-gen to contrast skeleton-level vs. role-level fresh exponent assumptions."
+  },
+  {
+    "example_id": "03_examples_scm/sts_weakened_reflect.scm",
+    "filename": "sts_weakened_reflect.scm",
+    "protocol_names": [
+      "station-to-station-reflect"
+    ],
+    "algebra": "diffie-hellman",
+    "herald_flags": [
+      "(bound 20)",
+      "(algebra diffie-hellman)"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "expt",
+      "name",
+      "rndx"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "exp",
+      "gen",
+      "mul",
+      "privk"
+    ],
+    "keywords_used": [
+      "algebra",
+      "bound",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Station-to-Station protocol weakened by omitting the exponent order flip between messages 2 and 3, illustrating reflection vulnerabilities."
+  },
+  {
+    "example_id": "03_examples_scm/subatomic-open-closed-test-genrule.scm",
+    "filename": "subatomic-open-closed-test-genrule.scm",
+    "protocol_names": [
+      "subatomic-open-closed"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 40)"
+    ],
+    "roles": [
+      "dev-up",
+      "owner-power-dev",
+      "owner-open",
+      "owner-close",
+      "dev-open",
+      "dev-close",
+      "dev-pass",
+      "user-pass"
+    ],
+    "sorts_used": [
+      "chan",
+      "indx",
+      "locn",
+      "mesg",
+      "name",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "=",
+      "and",
+      "auth",
+      "bound",
+      "conf",
+      "defgenrule",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "fact",
+      "facts",
+      "false",
+      "forall",
+      "gen-st",
+      "herald",
+      "implies",
+      "leads-to",
+      "load",
+      "or",
+      "p",
+      "prec",
+      "recv",
+      "same-locn",
+      "send",
+      "stor",
+      "trace",
+      "trans",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Stateful device open/closed protocol using load/stor on two locations, channels, gen-st, and 28 explicit defgenrule axioms for subatomic state semantics."
+  },
+  {
+    "example_id": "03_examples_scm/subatomic-open-closed.scm",
+    "filename": "subatomic-open-closed.scm",
+    "protocol_names": [
+      "subatomic-open-closed"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 40)"
+    ],
+    "roles": [
+      "dev-up",
+      "owner-power-dev",
+      "owner-open",
+      "owner-close",
+      "dev-open",
+      "dev-close",
+      "dev-pass",
+      "user-pass"
+    ],
+    "sorts_used": [
+      "chan",
+      "locn",
+      "mesg",
+      "name",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "=",
+      "and",
+      "auth",
+      "bound",
+      "conf",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "fact",
+      "facts",
+      "forall",
+      "gen-st",
+      "herald",
+      "implies",
+      "load",
+      "p",
+      "recv",
+      "send",
+      "stor",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Clean stateful device access-control protocol using macros, two state locations (lk, ls), authenticated/confidential channels, gen-st, and defrule axioms."
+  },
+  {
+    "example_id": "03_examples_scm/sync_locn_envelope.scm",
+    "filename": "sync_locn_envelope.scm",
+    "protocol_names": [
+      "envelope"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(check-nonces)",
+      "(bound 30)",
+      "(limit 6000)"
+    ],
+    "roles": [
+      "tpm-power-on",
+      "tpm-extend-enc",
+      "tpm-quote",
+      "tpm-create-key",
+      "tpm-decrypt",
+      "alice"
+    ],
+    "sorts_used": [
+      "akey",
+      "chan",
+      "data",
+      "locn",
+      "mesg",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "invk"
+    ],
+    "keywords_used": [
+      "^",
+      "and",
+      "auth",
+      "bound",
+      "check-nonces",
+      "conf",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "facts",
+      "forall",
+      "gen-st",
+      "herald",
+      "implies",
+      "limit",
+      "load",
+      "neq",
+      "non-orig",
+      "p",
+      "recv",
+      "send",
+      "stor",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Location-based TPM Envelope Protocol modeling PCR extend/quote/decrypt via load/stor, channels, and multi-form macro splicing (^)."
+  },
+  {
+    "example_id": "03_examples_scm/sync_locn_envelope_no_auth.scm",
+    "filename": "sync_locn_envelope_no_auth.scm",
+    "protocol_names": [
+      "envelope",
+      "envelope-plus",
+      "envelope-plus-2"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(check-nonces)",
+      "(bound 30)",
+      "(limit 6000)"
+    ],
+    "roles": [
+      "tpm-power-on",
+      "tpm-extend-enc",
+      "tpm-quote",
+      "tpm-create-key",
+      "tpm-decrypt",
+      "alice"
+    ],
+    "sorts_used": [
+      "akey",
+      "chan",
+      "data",
+      "locn",
+      "mesg",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "invk"
+    ],
+    "keywords_used": [
+      "=",
+      "^",
+      "and",
+      "bound",
+      "check-nonces",
+      "conf",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "false",
+      "forall",
+      "gen-st",
+      "herald",
+      "implies",
+      "limit",
+      "load",
+      "neq",
+      "non-orig",
+      "or",
+      "p",
+      "prec",
+      "recv",
+      "send",
+      "stor",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "TPM Envelope Protocol without channel auth on tpm-create-key, comparing three protocol variants (envelope, envelope-plus, envelope-plus-2) with state-ordering rules."
+  },
+  {
+    "example_id": "03_examples_scm/targetterms1.scm",
+    "filename": "targetterms1.scm",
+    "protocol_names": [
+      "targetterms"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "mesg",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Minimal test protocol for CPSA's target-terms solved filter where responder unwraps an outer encryption into a mesg variable m."
+  },
+  {
+    "example_id": "03_examples_scm/targetterms2.scm",
+    "filename": "targetterms2.scm",
+    "protocol_names": [
+      "targetterms2"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "trans"
+    ],
+    "sorts_used": [
+      "mesg",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Target-terms experiment chaining generic transformer strands to construct a triple-nested public-key encryption."
+  },
+  {
+    "example_id": "03_examples_scm/targetterms6.scm",
+    "filename": "targetterms6.scm",
+    "protocol_names": [
+      "targetterms6"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "trans"
+    ],
+    "sorts_used": [
+      "mesg",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Target-terms experiment testing cohort pruning and multi-strand contractions with generic mesg variables."
+  },
+  {
+    "example_id": "03_examples_scm/targetterms8.scm",
+    "filename": "targetterms8.scm",
+    "protocol_names": [
+      "targetterms8"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "mesg",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Target-terms experiment demonstrating solved-filter condition 2a with double-encrypted responder unwrapping."
+  },
+  {
+    "example_id": "03_examples_scm/thisthat.scm",
+    "filename": "thisthat.scm",
+    "protocol_names": [
+      "thisthat"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "this",
+      "that"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Needham-Schroeder Public-Key This-That variant where an initiator interacts with two distinct tagged responder roles."
+  },
+  {
+    "example_id": "03_examples_scm/tickle-unique.scm",
+    "filename": "tickle-unique.scm",
+    "protocol_names": [
+      "tickle"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "and",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "fact",
+      "facts",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "p",
+      "recv",
+      "send",
+      "trace",
+      "uniq",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Public-key protocol demonstrating how to toggle a defrule per skeleton using a custom guard fact (fact guard-me)."
+  },
+  {
+    "example_id": "03_examples_scm/timestamping.scm",
+    "filename": "timestamping.scm",
+    "protocol_names": [
+      "timestamping-service"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "client",
+      "server",
+      "origin",
+      "big-bang"
+    ],
+    "sorts_used": [
+      "data",
+      "mesg",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Linked timestamping service protocol modeling hash chains and server state via self-encrypted signed tokens."
+  },
+  {
+    "example_id": "03_examples_scm/trust-anchor.scm",
+    "filename": "trust-anchor.scm",
+    "protocol_names": [
+      "trust-anchor"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Tests rule application on initial skeleton\")"
+    ],
+    "roles": [],
+    "sorts_used": [
+      "akey",
+      "name"
+    ],
+    "operators_used": [
+      "enc",
+      "invk",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "comment",
+      "deflistener",
+      "defprotocol",
+      "defrule",
+      "defskeleton",
+      "fact",
+      "facts",
+      "forall",
+      "herald",
+      "implies",
+      "non",
+      "non-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Minimal test of defrule application on an initial skeleton, deriving (non (invk k)) from (fact trust-anchor k)."
+  },
+  {
+    "example_id": "03_examples_scm/ugen-at.scm",
+    "filename": "ugen-at.scm",
+    "protocol_names": [
+      "yahalom-plus-uniq-at"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp",
+      "serv"
+    ],
+    "sorts_used": [
+      "indx",
+      "mesg",
+      "name",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "ltk"
+    ],
+    "keywords_used": [
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "fact",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "ugen-at",
+      "uniq-at",
+      "uniq-gen",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Yahalom variant testing the (ugen-at v z i) and (uniq-at v z i) predicates inside defrule formulas."
+  },
+  {
+    "example_id": "03_examples_scm/ugo.scm",
+    "filename": "ugo.scm",
+    "protocol_names": [
+      "uniq-gen-example",
+      "uniq-gen-example-alt",
+      "uniq-orig-example"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Non-executable role examples\")"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "skey"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Diagnostic examples contrasting uniq-gen and uniq-orig on asymmetric key pairs (u and (invk u)) in non-executable roles."
+  },
+  {
+    "example_id": "03_examples_scm/uncarried_keys.scm",
+    "filename": "uncarried_keys.scm",
+    "protocol_names": [
+      "uncarried-keys"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates that uniq-orig (unlike uniq-gen) allows a key K to be used in a non-carried encryption position before it is sent."
+  },
+  {
+    "example_id": "03_examples_scm/unilateral.scm",
+    "filename": "unilateral.scm",
+    "protocol_names": [
+      "unilateral",
+      "iso-unilateral"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "name",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "invk",
+      "privk"
+    ],
+    "keywords_used": [
+      "and",
+      "comment",
+      "defgoal",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "exists",
+      "false",
+      "forall",
+      "herald",
+      "implies",
+      "non",
+      "non-orig",
+      "p",
+      "pen-non-orig",
+      "pnon",
+      "prec",
+      "recv",
+      "send",
+      "trace",
+      "uniq-at",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": true,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Unilateral authentication protocols (basic and ISO two-pass) demonstrating equivalence between POV skeletons and explicit defgoal theorems."
+  },
+  {
+    "example_id": "03_examples_scm/uniq-at.scm",
+    "filename": "uniq-at.scm",
+    "protocol_names": [
+      "yahalom-plus-uniq-at"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp",
+      "serv"
+    ],
+    "sorts_used": [
+      "indx",
+      "mesg",
+      "name",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "ltk"
+    ],
+    "keywords_used": [
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "fact",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "ugen-at",
+      "uniq-at",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Yahalom variant using uniq-orig to trigger the (uniq-at v z i) predicate and record origination facts via defrule."
+  },
+  {
+    "example_id": "03_examples_scm/uniq-gen-test.scm",
+    "filename": "uniq-gen-test.scm",
+    "protocol_names": [
+      "uniqgentest"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Skeletons 2, 4, and 7 should have no shapes.\")"
+    ],
+    "roles": [
+      "init",
+      "doubler",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "skey"
+    ],
+    "operators_used": [
+      "enc"
+    ],
+    "keywords_used": [
+      "comment",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Contrasts uniq-gen vs. non-orig on a symmetric key k, showing how uniq-gen blocks independent key-generating strands."
+  },
+  {
+    "example_id": "03_examples_scm/uo.scm",
+    "filename": "uo.scm",
+    "protocol_names": [
+      "uniq-orig"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "text"
+    ],
+    "operators_used": [
+      "enc"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Minimal demonstration that uniq-orig only constrains first carried appearance, allowing prior use as an encryption key."
+  },
+  {
+    "example_id": "03_examples_scm/wang-hash.scm",
+    "filename": "wang-hash.scm",
+    "protocol_names": [
+      "wang"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 10)"
+    ],
+    "roles": [
+      "init1",
+      "init2",
+      "init3",
+      "init4",
+      "init5",
+      "resp1",
+      "resp2",
+      "resp3",
+      "ttp-ab1",
+      "ttp-ab2",
+      "ttp-rc1",
+      "ttp-rc2",
+      "ttp-cf1",
+      "ttp-cf2"
+    ],
+    "sorts_used": [
+      "data",
+      "mesg",
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "bound",
+      "comment",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Comprehensive model of Wang's Fair Exchange Protocol with 14 initiator/responder/TTP roles, 14 macros, and 12 lemma-verification skeletons using built-in hash."
+  },
+  {
+    "example_id": "03_examples_scm/wang-key-hash.scm",
+    "filename": "wang-key-hash.scm",
+    "protocol_names": [
+      "wang"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 10)"
+    ],
+    "roles": [
+      "init1",
+      "init2",
+      "init3",
+      "init4",
+      "init5",
+      "resp1",
+      "resp2",
+      "resp3",
+      "ttp-ab1",
+      "ttp-ab2",
+      "ttp-rc1",
+      "ttp-rc2",
+      "ttp-cf1",
+      "ttp-cf2"
+    ],
+    "sorts_used": [
+      "data",
+      "mesg",
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "bound",
+      "comment",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Wang's Fair Exchange Protocol variant defining (hash x) as a macro (enc \"h\" (cat \"h\" x)) across 14 roles and 12 skeletons."
+  },
+  {
+    "example_id": "03_examples_scm/weird.scm",
+    "filename": "weird.scm",
+    "protocol_names": [
+      "weird",
+      "weird-gen"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "originator",
+      "guesser",
+      "encryptor"
+    ],
+    "sorts_used": [
+      "name",
+      "skey"
+    ],
+    "operators_used": [
+      "enc"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Side-by-side comparison of weird (uniq-orig k) and weird-gen (uniq-gen k) with originator, guesser, and encryptor roles."
+  },
+  {
+    "example_id": "03_examples_scm/wonthull.scm",
+    "filename": "wonthull.scm",
+    "protocol_names": [
+      "wonthull"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 9)"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "bound",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Diagnostic protocol demonstrating hulling/augmentation incompleteness when multiple uniquely-originating nonces unify."
+  },
+  {
+    "example_id": "03_examples_scm/wonthull2.scm",
+    "filename": "wonthull2.scm",
+    "protocol_names": [
+      "wonthull2"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 9)"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "bound",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Variant of wonthull where only x3 is uniq-orig, allowing CPSA to discover the target shape via variable separation."
+  },
+  {
+    "example_id": "03_examples_scm/wonthull3.scm",
+    "filename": "wonthull3.scm",
+    "protocol_names": [
+      "wonthull3"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Third wonthull variant separating the origination node of x3 from the compound encryption step."
+  },
+  {
+    "example_id": "03_examples_scm/woolam.scm",
+    "filename": "woolam.scm",
+    "protocol_names": [
+      "woolam"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp",
+      "serv"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "ltk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Classic Woo-Lam symmetric-key authentication protocol between initiator, responder, and authentication server."
+  },
+  {
+    "example_id": "03_examples_scm/yahalom-6.3.6.scm",
+    "filename": "yahalom-6.3.6.scm",
+    "protocol_names": [
+      "yahalom"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"A Survey of Authentication Protocol Literature:\" \"Version 1.0, John Clark and Jeremy Jacob,\" \"Yahalom Protocol, Section 6.3.6, Page 49\")",
+      "(url \"http://www.eecs.umich.edu/acal/swerve/docs/49-1.pdf\")",
+      "(bound 15)"
+    ],
+    "roles": [
+      "init",
+      "resp",
+      "serv"
+    ],
+    "sorts_used": [
+      "mesg",
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "ltk"
+    ],
+    "keywords_used": [
+      "bound",
+      "comment",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "url",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Clark & Jacob Section 6.3.6 Yahalom protocol using an opaque mesg variable (blob) for ticket forwarding."
+  },
+  {
+    "example_id": "03_examples_scm/yahalom-forward.scm",
+    "filename": "yahalom-forward.scm",
+    "protocol_names": [
+      "yahalom"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 15)"
+    ],
+    "roles": [
+      "init",
+      "resp",
+      "serv"
+    ],
+    "sorts_used": [
+      "mesg",
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "ltk"
+    ],
+    "keywords_used": [
+      "bound",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Yahalom protocol variant where the responder forwards the server's encrypted package (rest of sort mesg) to the initiator."
+  },
+  {
+    "example_id": "03_examples_scm/yahalom.scm",
+    "filename": "yahalom.scm",
+    "protocol_names": [
+      "yahalom"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 10)"
+    ],
+    "roles": [
+      "init",
+      "resp",
+      "serv"
+    ],
+    "sorts_used": [
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "ltk"
+    ],
+    "keywords_used": [
+      "bound",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Simplified Yahalom protocol with ticket forwarding removed so the server sends encrypted tickets directly to initiator and responder."
+  },
+  {
+    "example_id": "03_examples_scm/yes-or-no.scm",
+    "filename": "yes-or-no.scm",
+    "protocol_names": [
+      "yes-or-no"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init-positive",
+      "init-negative",
+      "resp-positive",
+      "resp-negative"
+    ],
+    "sorts_used": [
+      "akey",
+      "data",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Branching query-response protocol modeling yes/no answers via separate positive and negative initiator/responder roles and encrypted capability tokens."
+  }
+]

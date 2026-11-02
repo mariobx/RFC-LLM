@@ -1,0 +1,175 @@
+[
+  {
+    "example_id": "03_examples_scm/chan-mesg.scm",
+    "filename": "chan-mesg.scm",
+    "protocol_names": [
+      "yahalom"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 15)",
+      "(comment \"Testing channels as arbitrary messages.\")"
+    ],
+    "roles": [
+      "init",
+      "resp",
+      "serv"
+    ],
+    "sorts_used": [
+      "chan",
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "auth",
+      "bound",
+      "comment",
+      "conf",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Yahalom protocol without forwarding demonstrating CPSA 4.4.9 compound message terms (cat x y) as directional channels with auth and conf assumptions."
+  },
+  {
+    "example_id": "03_examples_scm/dev-subatomic-open-closed.scm",
+    "filename": "dev-subatomic-open-closed.scm",
+    "protocol_names": [
+      "subatomic-open-closed"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"Version that uses (dev const) pairs for locations\")"
+    ],
+    "roles": [
+      "dev-up",
+      "owner-power-dev",
+      "owner-open",
+      "owner-close",
+      "dev-open",
+      "dev-close",
+      "dev-pass",
+      "user-pass"
+    ],
+    "sorts_used": [
+      "chan",
+      "dev",
+      "mesg",
+      "name",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "=",
+      "and",
+      "auth",
+      "comment",
+      "conf",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "facts",
+      "forall",
+      "gen-st",
+      "herald",
+      "implies",
+      "load",
+      "p",
+      "recv",
+      "send",
+      "stor",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Stateful device open/closed protocol using CPSA 4.4.9 sort dev and compound (cat d \"lk\") / (cat d \"ls\") location terms in load and stor events."
+  },
+  {
+    "example_id": "03_examples_scm/devlocn.scm",
+    "filename": "devlocn.scm",
+    "protocol_names": [
+      "devlocn"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(comment \"This tests the feature that allows loads and stors to have any message in their location position.\")"
+    ],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "data",
+      "dev",
+      "locn",
+      "mesg",
+      "skey"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "comment",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "facts",
+      "gen-st",
+      "herald",
+      "load",
+      "neq",
+      "non-orig",
+      "recv",
+      "send",
+      "stor",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Three-part test suite for CPSA 4.4.9 generalized location terms in load and stor, covering (cat d l) pairs, dev/locn inequality facts, and acquired mesg location variables."
+  }
+]

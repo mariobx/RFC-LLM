@@ -34,6 +34,7 @@
     "output/**",
     "all_RFCs/**",
     "**/all_RFCs/**",
+    "refrences/legacy_rag_archive/**",
     "notebook_context/**",
     "*.log",
     "**/*.log"
@@ -86,72 +87,49 @@
     },
     {
       "name": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "title": "Operational RAG Scripts, Evaluation Harnesses & Test Suites",
-      "description": "Tier 3 — Operational RAG chunking/embedding/enrichment pipeline scripts (`refrences/scripts/`), shell pipeline runner (`refrences/run_rag_pipeline.sh`), retrieval evaluation and clustering scripts (`refrences/reports/`), LaTeX report source, and the complete pytest unit and integration test suite (`tests/`).",
-      "tier": "Tier 3 — Operational Scripts, Pipelines & Test Suites",
+      "title": "CPSA Knowledge Base TOC & Pytest Verification Suites",
+      "description": "Tier 3 — Master CPSA 4.4.9 Knowledge Base Table of Contents (`refrences/cpsa_kb/TOC.md`) with `rebuild_toc` YAML flag, and the complete pytest unit and integration test suite (`tests/`).",
+      "tier": "Tier 3 — Knowledge Base Index & Test Suites",
       "is_master_index": false,
       "include_globs": [
         "tests/**/*.py",
-        "refrences/scripts/**/*.py",
-        "refrences/scripts/**/*.sh",
-        "refrences/*.sh",
-        "refrences/reports/*.py",
-        "refrences/reports/*.tex"
+        "refrences/cpsa_kb/TOC.md"
       ],
       "explicit_files": [
-        "refrences/run_rag_pipeline.sh"
+        "refrences/cpsa_kb/TOC.md"
       ]
     },
     {
       "name": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
-      "title": "CPSA 4.4.9 Domain Modeling References, Manuals & Guides",
-      "description": "Tier 1/3 Domain Reference — Curated CPSA 4.4.9 protocol modeling skill definitions, complete official MITRE User Manual and Specification, grammar and roletran references, Dolev-Yao theoretical guides, and transcribed CPSA documentation.",
+      "title": "CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals",
+      "description": "Tier 1/3 Domain Reference — Zero-hallucination CPSA 4.4.9 core operational rules (`refrences/cpsa_kb/01_core_rules/`), JSON AST to Scheme S-expression mapping, exhaustive compiler/solver diagnostic catalog, and the 5 consolidated official MITRE manuals (`refrences/cpsa_kb/02_manuals/`).",
       "tier": "Tier 1/3 — Domain Reference Documentation & Modeling Guides",
       "is_master_index": false,
       "include_globs": [
-        "refrences/cpsa-protocol-modeling/SKILL.md",
-        "refrences/cpsa-protocol-modeling/references/**/*.md",
-        "refrences/cpsa-protocol-modeling/templates/**/*",
-        "refrences/cpsa-protocol-modeling/pdf_manual/**/*.md",
-        "refrences/cpsa-protocol-modeling/manuals/*.md",
-        "refrences/internet/guides_markdown/*.md",
-        "refrences/internet/guides_markdown/*.txt"
+        "refrences/cpsa_kb/01_core_rules/*.md",
+        "refrences/cpsa_kb/02_manuals/*.md"
       ],
       "explicit_files": []
     },
     {
       "name": "04_CPSA_SCM_EXAMPLES_CORPUS.md",
-      "title": "Official MITRE CPSA Scheme (.scm) Protocol Examples Corpus",
-      "description": "Tier 3 Reference Corpus — Complete collection of 148 official MITRE CPSA `.scm` protocol specifications, heralds, macros, defroles, and security goals used for few-shot RAG grounding and grammar verification.",
+      "title": "Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files)",
+      "description": "Tier 3 Reference Corpus — Complete collection of all 151 official MITRE CPSA 4.4.9 `.scm` protocol specifications (`refrences/cpsa_kb/03_examples_scm/`) and their structured A-to-Z concept catalogs (`refrences/cpsa_kb/04_examples_catalog/*.md`).",
       "tier": "Tier 3 — Domain Reference Code Corpus (.scm)",
       "is_master_index": false,
       "include_globs": [
-        "refrences/internet/examples_scm/**/*.scm"
+        "refrences/cpsa_kb/04_examples_catalog/*.md",
+        "refrences/cpsa_kb/03_examples_scm/*.scm"
       ],
       "explicit_files": []
     }
   ],
   "summarized_assets": {
-    "description": "Tier 4 — Heavy, binary, compiled or duplicated artifacts excluded from raw text dumping and summarized with metadata, line/record counts, and lightweight schema previews.",
+    "description": "Tier 4 — Heavy, binary, compiled or JSON index artifacts excluded from raw text dumping and summarized with metadata, line/record counts, and lightweight schema previews.",
     "patterns": [
       "logs/*.csv",
-      "refrences/chunks/*.npy",
-      "refrences/chunks/*.json",
-      "refrences/chunks/*.jsonl",
-      "refrences/chunks/*.md",
-      "refrences/internet/manifest.json",
-      "refrences/internet/papers_pdf/*.pdf",
-      "refrences/internet/guides_markdown/cpsa4manual.txt",
-      "refrences/internet/guides_markdown/cpsaspec.txt",
-      "refrences/manual/*.pdf",
-      "refrences/manual/*.txt",
-      "refrences/manual/*.md",
-      "refrences/reports/*.json",
-      "refrences/reports/*.jsonl",
-      "refrences/reports/*.html",
-      "refrences/reports/*.pdf",
-      "refrences/reports/figures/*.png",
-      "refrences/reports/figures_golden_benchmark_2/*.png"
+      "refrences/cpsa_kb/kb_index.json",
+      "refrences/cpsa_kb/04_examples_catalog/*.json"
     ]
   }
 }

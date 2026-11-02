@@ -2,15 +2,18 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-10-29 19:24:55 UTC · Git: `main` @ `9fe6be87c355` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,855*
+*Generated: 2026-11-02 20:54:06 UTC · Git: `main` @ `2902ce399eca` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,863*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `9fe6be87c355` — Add project roadmap to README.md and .env.example template
-- **First sync** — no previous manifest state; full baseline established.
+- **Git commit:** `2902ce399eca` — feat(kb): transition to CPSA 4.4.9 Knowledge Base, TOC rebuild flag, Agentic Searcher, and Two-Speed Repair
+- No file changes detected since the previous sync.
+- **Added (0):** none
+- **Modified (0):** none
+- **Deleted (0):** none
 
 ---
 
@@ -34,19 +37,19 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 
 | Bundle | Title | Files | Size | Estimated Tokens | Tier |
 |---|---|---|---|---|---|
-| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 116.9 KB | ~29,855 | Tier 1 — Architecture, Documentation & Project Configs |
-| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 46 | 622.4 KB | ~159,282 | Tier 2 — Core Source Code & CLI Entrypoints |
-| `02_RAG_SCRIPTS_AND_TESTS.md` | Operational RAG Scripts, Evaluation Harnesses & Test Suites | 18 | 238.5 KB | ~61,031 | Tier 3 — Operational Scripts, Pipelines & Test Suites |
-| `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Domain Modeling References, Manuals & Guides | 40 | 1714.7 KB | ~432,327 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
-| `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples Corpus | 148 | 345.0 KB | ~88,246 | Tier 3 — Domain Reference Code Corpus (.scm) |
+| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 116.9 KB | ~29,863 | Tier 1 — Architecture, Documentation & Project Configs |
+| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 46 | 675.8 KB | ~172,942 | Tier 2 — Core Source Code & CLI Entrypoints |
+| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 146.3 KB | ~37,218 | Tier 3 — Knowledge Base Index & Test Suites |
+| `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 693.4 KB | ~175,802 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
+| `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files) | 155 | 915.3 KB | ~234,169 | Tier 3 — Domain Reference Code Corpus (.scm) |
 
-**Total Ingested Context Payload:** ~770,741 tokens across all bundles (77.1% of Gemini 1M context window)
+**Total Ingested Context Payload:** ~649,994 tokens across all bundles (65.0% of Gemini 1M context window)
 
 ---
 
 ## Symbol & Script Registry (automated AST introspection)
 
-50 Python modules introspected with the stdlib `ast` module.
+44 Python modules introspected with the stdlib `ast` module.
 
 | Module | Docstring | Classes | Top-level Functions | CLI Arguments |
 |---|---|---|---|---|
@@ -59,7 +62,7 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/document_ingestion/protocol_applicability_gate.py` | Protocol Applicability Gate (Tier 1 Gatekeeper). | `ProtocolApplicabilityReport` | `evaluate_protocol_applicability` | — |
 | `src/document_ingestion/rfc_header_filter.py` | RFC Header and Frontmatter Metadata Filter (Tier 0 Filter). | `HeaderFilterResult` | `filter_rfc_header` | — |
 | `src/document_ingestion/rfc_toc_parser.py` | RFC Table of Contents (TOC) Parser. | `TOCSectionEntry` | `parse_table_of_contents` | — |
-| `src/document_ingestion/verbatim_section_slicer.py` | Verbatim RFC Section Boundary Slicer. | — | `_is_rfc_page_break`, `_find_section_start`, `slice_verbatim_sections` | — |
+| `src/document_ingestion/verbatim_section_slicer.py` | Verbatim RFC Section Boundary Slicer. | — | `_is_rfc_page_break`, `_find_section_start`, `_find_section_end`, `slice_verbatim_sections` | — |
 | `src/generate_think/__init__.py` | Phase 3 Hindsight Reasoning (<think>) Synthesizer Package. | — | — | — |
 | `src/generate_think/cli.py` | Command-line interface for Phase 3 Hindsight Reasoning (<thi | — | `main` | `--model`, `-m`, `--mode`, `--min-tier`, `--no-jsonl` |
 | `src/generate_think/dspy_think_synthesizer.py` | Phase 3 Agentic DSPy Hindsight Reasoning (<think>) Synthesiz | `CPSAHindsightReasoningSignature`, `CPSAHindsightThinkModule` | `_format_sexpr`, `_extract_compiler_backtracking_summary`, `compile_deterministic_reasoning_steps`, `_sanitize_hindsight_leakage`, `_compose_comprehensive_monologue`, `synthesize_reasoning_steps_via_dspy_or_llm` … | — |
@@ -73,7 +76,7 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/pipeline.py` | Command-line interface for RFC-LLM synthesis pipeline suppor | — | `natural_rfc_sort_key`, `get_completed_rfc_ids`, `main` | `--view`, `--output-dir`, `-o`, `--model`, `-m`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, `--no-visualize` … |
 | `src/pipeline_events.py` | Bounded event bus, sequential tab registry, and disk telemet | `PipelineEvent`, `PipelineEventBus` | `_strip_bulky_event_fields` | — |
 | `src/prompt_loader.py` | Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LL | `PromptSpec` | `parse_prompt_frontmatter`, `load_prompt_spec`, `resolve_prompt_model`, `load_prompt`, `build_schema_system_prompt` | — |
-| `src/rag_retriever_client.py` | Shared RAG Retriever Client for MITRE CPSA 4.4.9 Reference G | — | `get_cpsa_manual_retriever`, `retrieve_cpsa_manual_guidance` | — |
+| `src/rag_retriever_client.py` | CPSA 4.4.9 Knowledge Base Indexer, `TOC.md` Flag Manager, an | `CPSAKnowledgeBase` | `tokenize_cpsa_dsl`, `_slugify_heading`, `parse_toc_rebuild_flag`, `_split_markdown_file_into_sections`, `_extract_scm_metadata_from_source`, `build_cpsa_kb_index` … | — |
 | `src/semantic_extraction/__init__.py` | Semantic Extraction package for Stage 2 constrained CPSA pro | — | — | — |
 | `src/semantic_extraction/constrained_protocol_extractor.py` | Constrained Protocol Semantic Extractor with RAG Grounding. | — | `extract_protocol_specification`, `ensure_three_point_of_view_skeletons` | — |
 | `src/system_config.py` | Global environment, binary paths, execution limits, and prov | `SystemEnvironmentConfig` | — | — |
@@ -84,15 +87,9 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/verification_engine/trajectory_metadata_exporter.py` | Programmatic Trajectory & Formal Verification Metadata Expor | — | `split_top_level_sexprs`, `_extract_int_clause`, `_has_flag_clause`, `_extract_clause_block`, `_extract_root_deflistener`, `_extract_defstrands` … | — |
 | `src/visualizer/__init__.py` | RFC-LLM Live Visualization and Interactive Dashboard Module. | — | — | — |
 | `src/visualizer/server.py` | Asynchronous web server for live and offline multi-RFC synth | `VisualizerServer` | `_get_manual_chunk_lookup`, `_resolve_chunks_by_ids`, `hydrate_tab_payload`, `_synthesize_events_from_trajectory`, `run_visualizer_in_background` | — |
-| `refrences/reports/evaluate_rag.py` | evaluate_rag.py | — | `compute_ndcg`, `evaluate_retriever`, `generate_figures` | `--benchmark`, `-b`, `--output`, `-o`, `--fig-dir`, `-f`, `--no-figs` |
-| `refrences/reports/plot_clusters.py` | plot_clusters.py | — | `assign_functional_category`, `main` | — |
-| `refrences/scripts/01_extract_chunks.py` | 01_extract_chunks.py | `SemanticBoundary`, `SemanticBlockSplitter`, `ChunkStreamManager` | `clean_page_text`, `partition_into_paragraph_blocks`, `clip_block_by_anchors`, `ensure_minimum_chunk_floor`, `run_splitter_with_backoff`, `process_document_text` … | `--dir`, `-d`, `--file`, `-f`, `--no-llm`, `--semantic-split`, `-m`, `--model`, `--api-key`, `--api-base` … |
-| `refrences/scripts/02_extract_code_examples.py` | 02_extract_code_examples.py | `SCMExampleSummarizer`, `CodeExampleStreamManager` | `strip_scheme_comments`, `parse_cpsa_scm`, `run_summarizer_with_backoff`, `process_scm_file`, `main` | `--file`, `-f`, `--no-llm`, `-m`, `--model`, `--api-key`, `--api-base`, `--delay`, `--reprocess-all` |
-| `refrences/scripts/03_query_rag.py` | 03_query_rag.py | `CPSASemanticRetriever` | `tokenize`, `main` | `--top-k`, `-k`, `--mode`, `-m`, `--source`, `-s`, `--type`, `-t` |
-| `refrences/scripts/04_build_embeddings.py` | 04_build_embeddings.py | — | `prepare_chunk_text`, `compute_embedding_batch`, `build_embeddings`, `main` | `--chunks`, `--out-matrix`, `--out-meta`, `--provider`, `-p`, `--model`, `-m`, `--batch-size`, `-b`, `--api-key` … |
-| `refrences/scripts/05_enrich_doc_chunks.py` | Contextual Enrichment Engine for CPSA Technical Documentatio | — | `extract_ast_features`, `build_ast_summary`, `generate_header_with_retry`, `main` | — |
 | `tests/conftest.py` | Global pytest fixtures ensuring hermetic test execution with | — | `_hermetic_logs_directory` | — |
 | `tests/test_code_generation_and_verification.py` | Unit and Integration Tests for Code Generation and Verificat | — | `valid_unilateral_spec`, `unexecutable_spec`, `test_scheme_emitter_generates_valid_scm`, `test_roletran_gate_accepts_valid_protocol`, `test_roletran_gate_rejects_unexecutable_protocol`, `test_mitre_build_orchestrator_compiles_artifacts` … | — |
+| `tests/test_cpsa_kb_and_agentic_searcher.py` | Unit & Integration Tests for the CPSA 4.4.9 Knowledge Base,  | — | `_make_sample_spec`, `test_production_cpsa_kb_completeness_and_toc_flag`, `test_toc_rebuild_flag_lifecycle_in_isolated_kb`, `test_cpsa_kb_four_tools_precision`, `test_agentic_searcher_multi_tool_loop`, `test_two_speed_repair_trigger_skips_searcher_on_fast_attempt_and_escalates` | — |
 | `tests/test_cpsa_scoping_and_prompts.py` | Unit Tests for MITRE CPSA 4.4.9 Keyword/Sort Scoping and Ext | — | `test_externalized_prompts_load_frontmatter_strip_yaml_and_fallback`, `test_prompt_frontmatter_live_hot_reload_and_strata_routing`, `test_logic_only_sorts_forbidden_in_role_and_skeleton_vars`, `test_diffie_hellman_sorts_forbidden_under_basic_algebra`, `test_structural_keywords_forbidden_inside_message_terms`, `test_role_and_skeleton_keyword_scoping_separation` … | — |
 | `tests/test_document_ingestion.py` | Unit & Integration Tests for Document Ingestion Subsystem (S | — | `tls_rfc_text`, `kerberos_rfc_text`, `mib_rfc_text`, `test_header_filter_accepts_tls`, `test_header_filter_accepts_kerberos`, `test_header_filter_rejects_mib` … | — |
 | `tests/test_generate_think.py` | Unit and integration tests for Phase 3 Hindsight Reasoning ( | — | `_sample_trajectory_dict`, `test_deterministic_reasoning_compiler_and_hindsight_sanitizer`, `test_process_run_directory_creates_think_json_and_updates_metadata_index` | — |
@@ -105,334 +102,57 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 
 ## Excluded & Heavy Assets Inventory (Tier 4)
 
-44 assets (20.2 MB total) were **excluded from raw text dumping** and summarized below with metadata and lightweight schema previews, so the downstream LLM is aware of every dataset, embedding matrix, manual, figure and log in the repository without ingesting their bulk.
+6 assets (1.8 MB total) were **excluded from raw text dumping** and summarized below with metadata and lightweight schema previews, so the downstream LLM is aware of every dataset, embedding matrix, manual, figure and log in the repository without ingesting their bulk.
 
 ### `logs/pipeline_runs.csv`
 
-*15.5 KB · excluded because: declared Tier 4 summarized asset*
+*26.5 KB · excluded because: declared Tier 4 summarized asset*
 
 - Header (13 cols): `timestamp, rfc_id, is_eligible, protocol_name, selected_sections, sliced_lines_count, role_count, preskeleton_count, roletran_passed, solver_passed, shapes_count, duration_seconds, error_message`
 - Sample row: `2026-09-23 14:46:04, RFC 5246, True, TLS 1.2, 7.3;7.4, 196, 2, 1, True, True, 1, 3.42, `
 - Sample row: `2026-09-23 16:47:29, RFC1, False, Information is transmitted from HOST ..., , 0, 0, 0, , , 0, 16.143, Ineligible: Heuristic determination: ...`
 - Sample row: `2026-09-23 16:48:15, RFC2, False, 2b1 Primary links are established by ..., , 0, 0, 0, , , 0, 45.675, Ineligible: Heuristic determination: ...`
-- Total rows (incl. header): 61
+- Total rows (incl. header): 83
 
-### `refrences/chunks/all_references_clean.md`
+### `refrences/cpsa_kb/04_examples_catalog/batch1_meta.json`
 
-*1322.5 KB · 29183 lines · excluded because: exceeds max_file_size_kb (1322.5 KB > 600 KB)*
+*53.4 KB · 2508 lines · excluded because: declared Tier 4 summarized asset*
 
-- Plain-text document: 29183 lines.
-- First line: `# Complete CPSA Reference Corpus (Clean Markdown)`
-- Outline (first headings):
-  - # Complete CPSA Reference Corpus (Clean Markdown)
-  - ### Manual Title and Author Information
-  - ### Table of Contents
-  - ### Cpsa4Manual (Part 2)
-  - ### Cpsa4Manual (Part 3)
-  - ### List of Figures
-  - ### Goal statements
-  - ### Responder first guarantee
-  - ### Device-open role causing door to open
-  - ### Critical section generated rules
-  - ### List of Tables
-  - ### Introduction to CPSA
-  - ### Execution Analysis and Adversary Model
-  - ### Definition of Protocol Shapes
-  - ### Dolev-Yao Threat Model and Scope
+- Top-level array with 50 records.
+- Record keys: `example_id, filename, protocol_names, algebra, herald_flags, roles, sorts_used, operators_used, keywords_used, uses_channels, uses_state_locn, uses_goals, uses_rules_or_lemmas, uses_macros, has_roletran_declarations, summary`
 
-### `refrences/chunks/code_examples.jsonl`
+### `refrences/cpsa_kb/04_examples_catalog/batch2_meta.json`
 
-*593.9 KB · 148 lines · excluded because: declared Tier 4 summarized asset*
+*71.6 KB · 2425 lines · excluded because: declared Tier 4 summarized asset*
 
-- JSONL stream: 148 records.
-- Record keys: `chunk_id, chunk_type, source_file, breadcrumb, title, word_count, scenario_summary, tags, formal_metadata, text`
+- Top-level array with 50 records.
+- Record keys: `example_id, filename, protocol_names, algebra, herald_flags, roles, sorts_used, operators_used, keywords_used, uses_channels, uses_state_locn, uses_goals, uses_rules_or_lemmas, uses_macros, has_roletran_declarations, summary`
 
-### `refrences/chunks/embeddings.npy`
+### `refrences/cpsa_kb/04_examples_catalog/batch3_meta.json`
 
-*4278.1 KB · excluded because: binary file (raw bytes unsafe for text context)*
+*50.3 KB · 2424 lines · excluded because: declared Tier 4 summarized asset*
 
-- NumPy array header: `{'descr': '<f4', 'fortran_order': False, 'shape': (1426, 768), }`
+- Top-level array with 48 records.
+- Record keys: `example_id, filename, protocol_names, algebra, herald_flags, roles, sorts_used, operators_used, keywords_used, uses_channels, uses_state_locn, uses_goals, uses_rules_or_lemmas, uses_macros, has_roletran_declarations, summary`
 
-### `refrences/chunks/embeddings_meta.json`
+### `refrences/cpsa_kb/04_examples_catalog/batch4_meta.json`
 
-*347.5 KB · 11417 lines · excluded because: declared Tier 4 summarized asset*
+*3.7 KB · 175 lines · excluded because: declared Tier 4 summarized asset*
 
-- Top-level object with 6 keys: `model, provider, dimensions, total_chunks, created_at, chunks`
-  - `model`: ollama/nomic-embed-text
-  - `provider`: ollama
-  - `dimensions`: 768
-  - `total_chunks`: 1426
-  - `created_at`: 2026-09-18 20:01:40
-  - `chunks`: list[1426] item keys: `matrix_index, chunk_id, chunk_type, title, source_file, word_count`
+- Top-level array with 3 records.
+- Record keys: `example_id, filename, protocol_names, algebra, herald_flags, roles, sorts_used, operators_used, keywords_used, uses_channels, uses_state_locn, uses_goals, uses_rules_or_lemmas, uses_macros, has_roletran_declarations, summary`
 
-### `refrences/chunks/manual_chunks.jsonl`
+### `refrences/cpsa_kb/kb_index.json`
 
-*2436.8 KB · 1426 lines · excluded because: exceeds max_file_size_kb (2436.8 KB > 600 KB)*
+*1656.1 KB · 11126 lines · excluded because: exceeds max_file_size_kb (1656.1 KB > 600 KB)*
 
-- JSONL stream: 1426 records.
-- Record keys: `chunk_id, chunk_type, source_file, breadcrumb, title, word_count, text, context_header, ast_features`
-
-### `refrences/internet/guides_markdown/cpsa4manual.txt`
-
-*240.0 KB · 4511 lines · excluded because: declared Tier 4 summarized asset*
-
-- Plain-text document: 4511 lines.
-- First line: `The Cryptographic Protocol Shapes Analyzer:`
-
-### `refrences/internet/guides_markdown/cpsaspec.txt`
-
-*103.8 KB · 2167 lines · excluded because: declared Tier 4 summarized asset*
-
-- Plain-text document: 2167 lines.
-- First line: `The CPSA Specification:`
-
-### `refrences/internet/manifest.json`
-
-*43.1 KB · 1310 lines · excluded because: declared Tier 4 summarized asset*
-
-- Top-level object with 3 keys: `collection, description, categories`
-  - `collection`: CPSA Comprehensive Knowledge Corpus
-  - `description`: Exhaustive collection of official MITRE manuals, foundational research papers...
-  - `categories`: dict with keys `papers_pdf, guides_markdown, docs_html, examples_scm`
-
-### `refrences/internet/papers_pdf/caves_attestation_protocol_cpsa.pdf`
-
-*296.9 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/cpsa4manual.pdf`
-
-*1335.9 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/cpsa_cribsheet.pdf`
-
-*123.7 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/cpsadesign.pdf`
-
-*278.8 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/cpsafoundation.pdf`
-
-*215.5 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/cpsagoals.pdf`
-
-*226.2 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/cpsaintroslides.pdf`
-
-*98.8 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/cpsaprimer.pdf`
-
-*293.0 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/cpsaspec.pdf`
-
-*429.4 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/doghmi_guttman_thayer_searching_for_shapes.pdf`
-
-*359.1 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/formal_support_standardizing_protocols_state.pdf`
-
-*303.7 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/guttman_protocol_composition_auth_tests.pdf`
-
-*299.6 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/hybrid_analysis_protocols_with_state_cpsa.pdf`
-
-*223.4 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/ramsdell_deducing_security_goals_cpsa.pdf`
-
-*187.2 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/roletran.pdf`
-
-*455.6 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/internet/papers_pdf/security_theorems_via_model_theory.pdf`
-
-*164.2 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/manual/cpsa4manual.pdf`
-
-*1336.2 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
-
-### `refrences/manual/cpsa4manual.txt`
-
-*218.3 KB · 4795 lines · excluded because: declared Tier 4 summarized asset*
-
-- Plain-text document: 4795 lines.
-- First line: `The Cryptographic Protocol Shapes Analyzer:`
-
-### `refrences/manual/cpsa4manual_clean.md`
-
-*256.7 KB · 5219 lines · excluded because: declared Tier 4 summarized asset*
-
-- Plain-text document: 5219 lines.
-- First line: `# CPSA 4 Manual (Extracted Reference)`
-- Outline (first headings):
-  - # CPSA 4 Manual (Extracted Reference)
-  - ## Introduction
-  - ### Recommended reading
-  - ### Tool components
-  - ### Setup and Installation
-  - ### Basic Protocol Modeling and Analysis with CPSA
-  - ### Algebra Features of CPSA
-  - ### The CPSA Search Algorithm
-  - ### Constraining CPSA's search
-  - ### Logical Security Goals and Rules
-  - ### Channels and State - Channel Security Guarantees
-  - ### Channels and State - Channels and Long-Term State
-  - ### Troubleshooting
-  - ### CPSA Program
-  - ### CPSA Tools - CPSA Tools Overview
-
-### `refrences/reports/benchmark_results.json`
-
-*9.0 KB · 344 lines · excluded because: declared Tier 4 summarized asset*
-
-- Top-level object with 4 keys: `benchmark_meta, summary, category_breakdown, complementarity`
-  - `benchmark_meta`: dict with keys `num_queries, corpus_chunks, categories`
-  - `summary`: dict with keys `bm25, dense, hybrid_rrf20, convex_ast, two_stage_rerank`
-  - `category_breakdown`: dict with keys `bm25, dense, hybrid_rrf20, convex_ast, two_stage_rerank`
-  - `complementarity`: dict with keys `both_top3, dense_only_top3, bm25_only_top3, rerank_rescued_top3, all_missed_top3, total_queries`
-
-### `refrences/reports/benchmark_results_golden_benchmark_2.json`
-
-*8.9 KB · 344 lines · excluded because: declared Tier 4 summarized asset*
-
-- Top-level object with 4 keys: `benchmark_meta, summary, category_breakdown, complementarity`
-  - `benchmark_meta`: dict with keys `num_queries, corpus_chunks, categories`
-  - `summary`: dict with keys `bm25, dense, hybrid_rrf20, convex_ast, two_stage_rerank`
-  - `category_breakdown`: dict with keys `bm25, dense, hybrid_rrf20, convex_ast, two_stage_rerank`
-  - `complementarity`: dict with keys `both_top3, dense_only_top3, bm25_only_top3, rerank_rescued_top3, all_missed_top3, total_queries`
-
-### `refrences/reports/embedding_clusters.html`
-
-*1605.3 KB · 733 lines · excluded because: exceeds max_file_size_kb (1605.3 KB > 600 KB)*
-
-- Rendered/generated HTML artifact: 733 lines.
-- <title>: CPSA Corpus Embedding Topology & Real-Time RAG Search
-
-### `refrences/reports/figures/fig1_recall_progression.png`
-
-*209.6 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PNG image — raw bytes excluded from text context.
-
-### `refrences/reports/figures/fig2_category_mrr.png`
-
-*136.4 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PNG image — raw bytes excluded from text context.
-
-### `refrences/reports/figures/fig3_latency_pareto.png`
-
-*215.3 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PNG image — raw bytes excluded from text context.
-
-### `refrences/reports/figures/fig4_rank_distribution.png`
-
-*122.6 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PNG image — raw bytes excluded from text context.
-
-### `refrences/reports/figures/fig5_complementarity.png`
-
-*115.8 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PNG image — raw bytes excluded from text context.
-
-### `refrences/reports/figures_golden_benchmark_2/fig1_recall_progression.png`
-
-*226.7 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PNG image — raw bytes excluded from text context.
-
-### `refrences/reports/figures_golden_benchmark_2/fig2_category_mrr.png`
-
-*137.7 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PNG image — raw bytes excluded from text context.
-
-### `refrences/reports/figures_golden_benchmark_2/fig3_latency_pareto.png`
-
-*190.5 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PNG image — raw bytes excluded from text context.
-
-### `refrences/reports/figures_golden_benchmark_2/fig4_rank_distribution.png`
-
-*123.8 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PNG image — raw bytes excluded from text context.
-
-### `refrences/reports/figures_golden_benchmark_2/fig5_complementarity.png`
-
-*124.1 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PNG image — raw bytes excluded from text context.
-
-### `refrences/reports/golden_benchmark.jsonl`
-
-*68.2 KB · 300 lines · excluded because: declared Tier 4 summarized asset*
-
-- JSONL stream: 300 records.
-- Record keys: `query_id, category, query, target_chunk_ids, description`
-
-### `refrences/reports/golden_benchmark_2.json`
-
-*77.7 KB · 300 lines · excluded because: declared Tier 4 summarized asset*
-
-- JSONL stream: 300 records.
-- Record keys: `query_id, category, query, target_chunk_ids, description`
-
-### `refrences/reports/rag_evaluation_report.pdf`
-
-*856.6 KB · excluded because: binary file (raw bytes unsafe for text context)*
-
-- Binary file: PDF document — raw bytes excluded from text context.
+- Top-level object with 6 keys: `schema_version, built_at, total_sections, total_scm_examples, sections, scm_examples`
+  - `schema_version`: 2.0.0
+  - `built_at`: 2026-11-02T18:25:27Z
+  - `total_sections`: 449
+  - `total_scm_examples`: 151
+  - `sections`: list[449] item keys: `section_id, category, source_file, doc_title, title, content`
+  - `scm_examples`: list[151] item keys: `example_id, filename, protocol_names, algebra, herald_flags, roles, sorts_used, operators_used, keywords_used, uses_channels, uses_state_locn, uses_goals`
 
 ---
 
@@ -498,7 +218,7 @@ STRATA_API_BASE=http://localhost:11435/v1
 
 ### `.gitignore`
 
-*sha256:`7e8cb1f31e97` · 251 lines · 5.2 KB (~1,333 tokens) · lang:`text`*
+*sha256:`af8bbf7c24b1` · 252 lines · 5.2 KB (~1,341 tokens) · lang:`text`*
 
 ```text
 # Byte-compiled / optimized / DLL files
@@ -724,6 +444,7 @@ __marimo__/
 # RFC text archives & Pipeline artifacts
 all_RFCs/
 **/all_RFCs/
+refrences/legacy_rag_archive/
 *.log
 
 # Pipeline runtime checkpoints and ephemeral state

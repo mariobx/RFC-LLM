@@ -12,6 +12,7 @@ from pydantic_settings import BaseSettings
 # Suppress third-party LiteLLM verbosity, debug info, and deprecation warnings
 litellm.suppress_debug_info = True
 litellm.set_verbose = False
+litellm.drop_params = True
 for _logger_name in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router"):
     logging.getLogger(_logger_name).setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=".*litellm.*")
@@ -31,7 +32,8 @@ class SystemEnvironmentConfig(BaseSettings):
     PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
     PROMPTS_DIR: Path = PROJECT_ROOT / "prompts"
     RFCS_DIR: Path = PROJECT_ROOT / "refrences" / "all_RFCs"
-    CHUNKS_DIR: Path = PROJECT_ROOT / "refrences" / "chunks"
+    CPSA_KB_DIR: Path = PROJECT_ROOT / "refrences" / "cpsa_kb"
+    CHUNKS_DIR: Path = PROJECT_ROOT / "refrences" / "legacy_rag_archive" / "chunks"
     LOGS_DIR: Path = PROJECT_ROOT / "logs"
     DEFAULT_OUTPUT_DIR: Path = PROJECT_ROOT / "output"
 
@@ -124,14 +126,9 @@ class SystemEnvironmentConfig(BaseSettings):
             if self.ANTHROPIC_API_KEY:
                 kwargs["api_key"] = self.ANTHROPIC_API_KEY
 
-        # Handle temperature cleanly: Gemini 3+ models deprecate temp < 1.0 and perform best without it
-        if temperature is not None:
-            if model_name.startswith("gemini/"):
-                if temperature > 0.0:
-                    kwargs["temperature"] = temperature
-            else:
-                kwargs["temperature"] = temperature
-
+        # Omit `temperature` from outbound API requests: modern reasoning & frontier models
+        # (gpt-5/6, gemini-3/4, claude, glm-5, deepseek) either reject temperature != 1.0
+        # when reasoning is active or perform best at their provider-native default.
         return kwargs
 
 

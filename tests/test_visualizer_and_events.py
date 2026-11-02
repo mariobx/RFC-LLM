@@ -86,7 +86,7 @@ def test_compiler_repair_cycle_detection_triggers_warning_and_jitter(monkeypatch
     )
 
     assert repaired is not None
-    assert captured_kwargs.get("temperature") == 0.4
+    assert "temperature" not in captured_kwargs
     prompt_content = captured_kwargs["messages"][1]["content"]
     assert "CRITICAL WARNING: An oscillation/cycle was detected" in prompt_content
 

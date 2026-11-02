@@ -1,0 +1,2425 @@
+[
+  {
+    "example_id": "03_examples_scm/hashtest-key-hash.scm",
+    "filename": "hashtest-key-hash.scm",
+    "protocol_names": [
+      "hashtest"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "data"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Tests whether keyed hashing modeled via symmetric/asymmetric encryption `(enc \"h\" n)` using a nonce `n` of sort `data` as an encryption key works properly in CPSA's `basic` algebra. The initiator sends `(enc n k)` under asymmetric key `k` (with `(invk k)` non-originating and `n` uniquely originating) and expects `(enc \"h\" n)` in return from the responder. Reference this example when comparing ad-hoc hash modeling via `(enc \"h\" n)` (which allows anyone who learns `n` to both construct and invert/decrypt the term if `n` is a symmetric key or data term) against native `(hash n)` in the `basic` algebra."
+  },
+  {
+    "example_id": "03_examples_scm/hashtest.scm",
+    "filename": "hashtest.scm",
+    "protocol_names": [
+      "hashtest"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "data"
+    ],
+    "operators_used": [
+      "enc",
+      "hash",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Tests CPSA's built-in one-way `(hash ...)` operator in the `basic` algebra. The initiator sends `(enc n k)` where `n` is fresh (`uniq-orig`) and `(invk k)` is uncompromised (`non-orig`), and receives `(hash n)` from the responder. Reference this example for the minimal canonical syntax of the built-in `(hash ...)` operator in CPSA's `basic` algebra and how CPSA derives authentication when a secret nonce `n` is returned inside a one-way hash."
+  },
+  {
+    "example_id": "03_examples_scm/incompleteness_example.scm",
+    "filename": "incompleteness_example.scm",
+    "protocol_names": [
+      "incompleteness-example"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates an intentional incompleteness edge case in CPSA's search algorithm (`\"Shows a shape not found by CPSA\"`). In `incompleteness-example`, `init` sends `(enc n k)` and receives `n`, while `resp` receives `(enc n1 k)` and sends an independent variable `n2` without linking `n1` and `n2` in the role definition. The second skeleton explicitly exhibits a valid shape where `n1 = n` and `n2 = n` with causal ordering `(precedes ((0 0) (1 0)) ((1 1) (0 1)))`, which CPSA does not discover from the first skeleton because `resp` does not originate or transform `n`. Reference this example when debugging missing shapes or non-termination caused by roles whose `send` terms contain unconstrained variables (like `n2`) that are not bound to received variables (`n1`), violating CPSA's strand transformation expectations."
+  },
+  {
+    "example_id": "03_examples_scm/isoreject-corrected.scm",
+    "filename": "isoreject-corrected.scm",
+    "protocol_names": [
+      "isofix"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models a corrected three-message challenge-response signature protocol (`isofix`, based on ISO/IEC 9798-3 mutual authentication) using explicit message-type tags `\"first\"` and `\"second\"` inside signatures `(enc \"first\" nb na a (privk b))` and `(enc \"second\" nc nb b (privk a))` to prevent reflection/type-confusion attacks between message 2 and message 3. Reference this example when fixing reflection or message-confusion vulnerabilities in multi-message signed challenge-response protocols by adding distinct string literal tags (`\"first\"`, `\"second\"`) inside `(enc ... (privk ...))`."
+  },
+  {
+    "example_id": "03_examples_scm/isoreject.scm",
+    "filename": "isoreject.scm",
+    "protocol_names": [
+      "isoreject"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the untagged three-message ISO challenge-response signature protocol (`isoreject`) without string tags in the signed messages `(enc nb na a (privk b))` and `(enc nc nb b (privk a))`. Because the two signed messages have identical term structure `(enc <text> <text> <name> (privk <name>))`, a responder's first signature can be reflected or confused with an initiator's second signature. Reference this example alongside `isoreject-corrected.scm` to see how structurally identical signed messages in challenge-response protocols enable reflection attacks when domain-separation tags are omitted."
+  },
+  {
+    "example_id": "03_examples_scm/kelly1.scm",
+    "filename": "kelly1.scm",
+    "protocol_names": [
+      "kelly1"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "client",
+      "appraiser",
+      "server"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models a three-party remote attestation protocol (`kelly1`) involving a `client`, an `appraiser`, and a `server`. The client requests content from the server (receiving `(enc (cat response Ns) (privk S))`), and asks a trusted appraiser `A` (`(non-orig (privk A))`) to verify the server's public key `(pubk S)` and nonce `Ns`. The appraiser challenges the server with fresh nonce `N`, receives a TPM-style quote signed by `(privk AIK)` binding `(cat Quote measurements N Ns (pubk S))`, and issues a signed policy decision `(enc (cat policy (pubk S) Ns) (privk A))` to the client. Reference this example when modeling remote attestation, RATS (RFC 9334), or TPM quote verification protocols where an appraiser/verifier mediates trust between a relying party (client) and an attester (server) using an Attestation Identity Key (`AIK`)."
+  },
+  {
+    "example_id": "03_examples_scm/kerberos.scm",
+    "filename": "kerberos.scm",
+    "protocol_names": [
+      "kerberos"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp",
+      "keyserver"
+    ],
+    "sorts_used": [
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "ltk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models a simplified three-party Kerberos authentication exchange (`kerberos`) among `init` (client `a`), `resp` (service `b`), and `keyserver` (`ks`) using shared long-term keys `(ltk a ks)` and `(ltk b ks)`. As noted in the file's comments, because the keyserver's response `(cat (enc (cat t l k b) (ltk a ks)) (enc (cat t l k a) (ltk b ks)))` is symmetric in `a` and `b`, CPSA finds two shapes corresponding to reversing `a` and `b`. Reference this example when modeling Kerberos or KDC-based symmetric ticket distribution protocols using `(ltk a ks)` and understanding why symmetric ticket structures produce multiple shapes unless directional tags distinguish client and server tickets."
+  },
+  {
+    "example_id": "03_examples_scm/lemmas.scm",
+    "filename": "lemmas.scm",
+    "protocol_names": [
+      "ns"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "and",
+      "defgoal",
+      "deflemma",
+      "defprotocol",
+      "defrole",
+      "exists",
+      "forall",
+      "herald",
+      "implies",
+      "non",
+      "prec",
+      "recv",
+      "send",
+      "strand",
+      "trace",
+      "uniq",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": true,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates CPSA's `(deflemma ...)` and `(defgoal ...)` security goal declarations on the Needham-Schroeder Public-Key protocol (`ns`, from Section 10 of the CPSA Primer). Illustrates the three `deflemma` modes: `(deflemma rule lemma1 ns ...)` (used only as a rewrite rule), `(deflemma both lemma2 ns ...)` (both proved as a goal and used as a rule), and `(deflemma goal lemma3 ns ...)` (proved as a goal only), alongside `(defgoal ns ...)` using role-variable predicate syntax `(strand init z0 3 (n1 n1) (b b))`. Reference this example when writing `(deflemma <mode> <name> <prot> ...)` or `(defgoal <prot> ...)` formulas using the high-level `(strand <role> <strd> <height> (<var> <val>)...)`, `(non ...)`, `(uniq ...)`, and `(prec ...)` predicates."
+  },
+  {
+    "example_id": "03_examples_scm/locn_envelope.scm",
+    "filename": "locn_envelope.scm",
+    "protocol_names": [
+      "envelope",
+      "envelope-plus",
+      "envelope-plus-2"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 30)",
+      "(limit 1200)"
+    ],
+    "roles": [
+      "tpm-power-on",
+      "tpm-extend-enc",
+      "tpm-quote",
+      "tpm-create-key",
+      "tpm-decrypt",
+      "alice"
+    ],
+    "sorts_used": [
+      "akey",
+      "chan",
+      "data",
+      "locn",
+      "mesg",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "=",
+      "cat",
+      "enc",
+      "hash",
+      "invk"
+    ],
+    "keywords_used": [
+      "and",
+      "auth",
+      "bound",
+      "conf",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "forall",
+      "gen-st",
+      "herald",
+      "implies",
+      "limit",
+      "load",
+      "neq",
+      "non-orig",
+      "or",
+      "p",
+      "prec",
+      "recv",
+      "send",
+      "stor",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Comprehensive model of the TPM Envelope Protocol using stateful locations (`locn`), channels (`chan` with `auth` and `conf`), macros (`defmacro`), and state-generation/ordering rules (`defrule` with `gen-st`). Defines three protocol variants (`envelope`, `envelope-plus`, `envelope-plus-2`) to test three scenarios: listening for the secret `v`, listening for the refusal token `(refuse pcr-id n v k aik)`, and listening for both simultaneously (which should be impossible once PCR state splitting and multi-TPM ambiguity are ruled out by `ordered-extends` and `pcr-id-identifies-pcr`). Reference this example when modeling stateful hardware security modules or TPM PCR `load`/`stor` transitions over authenticated/confidential channels, or when writing `gen-st` and location-equality rules (`defrule`) to prevent state splitting."
+  },
+  {
+    "example_id": "03_examples_scm/missing_contraction.scm",
+    "filename": "missing_contraction.scm",
+    "protocol_names": [
+      "missing-contraction"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "sender",
+      "receiver"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Regression and diagnostic test case (`missing-contraction`) illustrating a subtlety in CPSA's cohort generation where solving a test node requires displacement/augmentation rather than ordinary contraction because `(enc a n (pubk b))` is not in the escape set of `(enc a m (pubk a))`. Reference this example to understand how CPSA handles multiple encrypted transmissions from the same strand when a nonce `m` originates in one encryption `(enc a m (pubk a))` and is expected in another `(enc a m (pubk b))`."
+  },
+  {
+    "example_id": "03_examples_scm/neq_test.scm",
+    "filename": "neq_test.scm",
+    "protocol_names": [
+      "neq-test"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init"
+    ],
+    "sorts_used": [
+      "mesg",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "fact",
+      "facts",
+      "false",
+      "forall",
+      "herald",
+      "implies",
+      "neq",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates how to enforce an inequality constraint (`n1 != n2`) in CPSA using a custom `(facts (neq n1 n2))` declaration in `defskeleton` paired with a protocol rule `(defrule neq (forall ((a mesg)) (implies (fact neq a a) (false))))`. In the first skeleton (without the inequality fact), CPSA finds a shape by unifying `n1 = n2`; in the second skeleton (with `(facts (neq n1 n2))`), the unification `n1 = n2` triggers `(fact neq a a) -> (false)` and kills the branch, yielding a dead skeleton (no shapes). Reference this example whenever you need to assert that two terms or variables are distinct (`x != y`) in a CPSA skeleton using `(facts (neq x y))` and the standard `neq` falsification rule."
+  },
+  {
+    "example_id": "03_examples_scm/neuman-stubblebine.scm",
+    "filename": "neuman-stubblebine.scm",
+    "protocol_names": [
+      "neuman-stubblebine"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp",
+      "keyserver"
+    ],
+    "sorts_used": [
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "ltk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the initial exchange of the Neuman-Stubblebine authentication and key distribution protocol (`neuman-stubblebine`) with three roles (`init`, `resp`, `keyserver`) using symmetric long-term keys `(ltk a ks)` and `(ltk b ks)` and fresh session key `k`. Reference this example when modeling three-party symmetric key distribution protocols with timestamps/lifetimes (`tb`) and dual nonces (`ra`, `rb`) where the responder forwards the initiator's challenge to the key server."
+  },
+  {
+    "example_id": "03_examples_scm/no_contraction.scm",
+    "filename": "no_contraction.scm",
+    "protocol_names": [
+      "no-contraction"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Minimal test case (`no-contraction`) where `init` sends a nested signed-then-encrypted term `(enc (enc n (privk a)) (pubk b))` without `b`'s private key being non-originating, while `resp` receives the inner signed term `(enc n (privk a))`. Reference this example as a minimal template for nested sign-then-encrypt (`(enc (enc n (privk a)) (pubk b))`) where the outer encryption key `(pubk b)` is unconstrained so the penetrator can strip the outer layer."
+  },
+  {
+    "example_id": "03_examples_scm/non_transforming.scm",
+    "filename": "non_transforming.scm",
+    "protocol_names": [
+      "non_transforming"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "sender",
+      "recv",
+      "breaker"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Regression test (`non_transforming`) illustrating a corner case in CPSA's augmentation step: augmenting a skeleton containing `recv` and two `sender` strands with `(breaker 3)` causes unification (`a = b`) such that the 3rd node of `breaker` sends the exact same term `(enc a (pubk B))` as the 2nd node and is therefore no longer a transforming node. Reference this example when studying how CPSA's augmentation and unification interact when a helper/breaker role decomposes a pair `(enc a b (pubk B))` into separate components `(enc a (pubk B))` and `(enc b (pubk B))`."
+  },
+  {
+    "example_id": "03_examples_scm/nonaug-prune.scm",
+    "filename": "nonaug-prune.scm",
+    "protocol_names": [
+      "nonaug-prune"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "orig",
+      "trans1",
+      "trans2"
+    ],
+    "sorts_used": [
+      "akey",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Regression test (`nonaug-prune`) demonstrating that CPSA can prune two existing strands (`trans2`) of a parent skeleton after augmenting with a new strand when variable unifications (`A = B`) make one strand redundant. Reference this example when analyzing strand pruning and generalization behavior in preskeletons with multiple instances of the same role (`trans2`) bound to different role parameters."
+  },
+  {
+    "example_id": "03_examples_scm/ns-l.scm",
+    "filename": "ns-l.scm",
+    "protocol_names": [
+      "ns"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the Needham-Schroeder-Lowe Public-Key Protocol (`ns`, with Lowe's fix including responder identity `b` in message 2: `(enc b n1 n2 (pubk a))`) and includes `(deflistener n1)` and `(deflistener n2)` in the initiator and responder skeletons to verify nonce secrecy alongside authentication. Reference this example for the canonical Needham-Schroeder-Lowe public-key protocol model and the standard pattern for testing nonce confidentiality using `(deflistener <nonce>)` inside `(defskeleton ...)`."
+  },
+  {
+    "example_id": "03_examples_scm/ns-rebinding.scm",
+    "filename": "ns-rebinding.scm",
+    "protocol_names": [
+      "ns"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "comment",
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "exists",
+      "fact",
+      "facts",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Tests variable rebinding and existential quantification in the conclusion of a rule (`rebind-x`: `(forall ((x y text)) (implies (fact rel1 x y) (exists ((x name)) (fact rel2 x y))))`, where `x` is rebound from sort `text` to sort `name`), alongside role-level `(facts (rel1 n1 n2) (rel2 n1 n2))` and double-initiator skeletons on the Needham-Schroeder-Lowe protocol. Reference this example when attaching custom `(facts ...)` directly inside a `(defrole ...)` definition or when testing variable shadowing/rebinding in `(defrule ...)` existential conclusions."
+  },
+  {
+    "example_id": "03_examples_scm/ns.scm",
+    "filename": "ns.scm",
+    "protocol_names": [
+      "ns"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "The classic original Needham-Schroeder Public-Key Protocol (`ns`) from the CPSA Primer, where message 2 is `(enc n1 n2 (pubk a))` (omitting `b`'s identity), which exhibits Gavin Lowe's famous man-in-the-middle attack when analyzed from the responder's point of view. Reference this example as the canonical baseline for public-key challenge-response modeling in CPSA and to see why responder point-of-view analysis fails when the responder's identity `b` is omitted from `(enc n1 n2 (pubk a))`."
+  },
+  {
+    "example_id": "03_examples_scm/nsl3.scm",
+    "filename": "nsl3.scm",
+    "protocol_names": [
+      "nsl3"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "mid",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models a Three-Party Needham-Schroeder-Lowe Protocol (`nsl3`) with roles `init` (`a`), `mid` (`b`), and `resp` (`c`), where each participant originates two fresh nonces (`na0 na1`, `nb0 nb1`, `nc0 nc1`) and forwards nested public-key encrypted tickets to establish mutual authentication across all three parties. Reference this example when modeling multi-party (3+ participant) public-key authentication protocols with nested encrypted forwarding tickets (`(enc ... (enc ... (pubk c)) (pubk b))`)."
+  },
+  {
+    "example_id": "03_examples_scm/nslsk.scm",
+    "filename": "nslsk.scm",
+    "protocol_names": [
+      "nslsk",
+      "nslsk-tag-term"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the Needham-Schroeder-Lowe protocol used to distribute a fresh symmetric session key `(k skey)` (`nslsk`) followed by a confirmation message `(enc t k)`, along with a second protocol variant (`nslsk-tag-term`) where the confirmation payload is a constant string literal tag `(enc \"t\" k)`. Reference this example when modeling hybrid public-key / symmetric-key handshakes (where an asymmetric exchange establishes a symmetric `skey` `k` used to encrypt subsequent traffic or a constant confirmation tag `\"t\"`)."
+  },
+  {
+    "example_id": "03_examples_scm/open-closed-multiloc.scm",
+    "filename": "open-closed-multiloc.scm",
+    "protocol_names": [
+      "open-closed"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 44)"
+    ],
+    "roles": [
+      "dev-up",
+      "owner-power-dev",
+      "owner-open",
+      "owner-close",
+      "dev-open",
+      "dev-close",
+      "dev-pass",
+      "user-pass"
+    ],
+    "sorts_used": [
+      "chan",
+      "locn",
+      "mesg",
+      "name",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "=",
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "and",
+      "auth",
+      "bound",
+      "comment",
+      "conf",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "forall",
+      "gen-st",
+      "herald",
+      "implies",
+      "load",
+      "p",
+      "recv",
+      "send",
+      "stor",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models a stateful device access-control protocol (`open-closed`) using two distinct state locations (`lk` for key state and `ls` for open/closed status), an authenticated/confidential power-up channel (`start-ch` of sort `chan`), macros (`defmacro`) encoding state terms (`(opened o)` as `(cat o o)`, `(closed o)` as `o`), and rules (`gen-state-close`, `gen-state-pass`, `power-deliver-once`) using `(gen-st ...)`. Reference this example when modeling hardware or protocol state machines with multiple `locn` registers (`lk`, `ls`), channel assumptions (`(auth start-ch)`, `(conf start-ch)`), and `(gen-st ...)` rules."
+  },
+  {
+    "example_id": "03_examples_scm/open-closed-tag.scm",
+    "filename": "open-closed-tag.scm",
+    "protocol_names": [
+      "open-closed"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 44)"
+    ],
+    "roles": [
+      "dev-up",
+      "owner-power-dev",
+      "owner-open",
+      "owner-close",
+      "dev-open",
+      "dev-close",
+      "dev-pass",
+      "user-pass"
+    ],
+    "sorts_used": [
+      "chan",
+      "locn",
+      "mesg",
+      "name",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "=",
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "and",
+      "auth",
+      "bound",
+      "conf",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "forall",
+      "gen-st",
+      "herald",
+      "implies",
+      "load",
+      "p",
+      "precedes",
+      "recv",
+      "send",
+      "stor",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Variant of the stateful `open-closed` device protocol where the `opened` and `closed` state macros use string literal tags (`\"opened\"` and `\"closed\"`) instead of name-based encodings, and includes an explicit realized 5-strand skeleton showing how `dev-open` and `dev-up` interact across multiple locations (`lk`, `lk-0`, `ls`, `ls-0`). Reference this example when using string literal tags (`\"opened\"`, `\"closed\"`) inside `locn` state macros (`load`/`stor`) and inspecting multi-strand state transition skeletons."
+  },
+  {
+    "example_id": "03_examples_scm/open-closed.scm",
+    "filename": "open-closed.scm",
+    "protocol_names": [
+      "open-closed"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 44)"
+    ],
+    "roles": [
+      "dev-up",
+      "owner-power-dev",
+      "owner-open",
+      "owner-close",
+      "dev-open",
+      "dev-close",
+      "dev-pass",
+      "user-pass"
+    ],
+    "sorts_used": [
+      "chan",
+      "indx",
+      "locn",
+      "mesg",
+      "name",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "=",
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "and",
+      "auth",
+      "bound",
+      "comment",
+      "conf",
+      "deflistener",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "fact",
+      "forall",
+      "gen-st",
+      "herald",
+      "implies",
+      "leads-to",
+      "load",
+      "p",
+      "recv",
+      "same-locn",
+      "send",
+      "stor",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": true,
+    "uses_state_locn": true,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Full version of the stateful `open-closed` device protocol that extends `open-closed-multiloc.scm` with two additional rules demonstrating built-in location/state predicates: `(same-locn z1 i1 z2 i2)` (recording `(fact ha z1 i1 z2 i2)`) and `(leads-to z1 i1 z2 i2)` (recording `(fact la z1 i1 z2 i2)`), along with rule-level `(comment ...)` clauses. Reference this example to learn the exact syntax of the built-in stateful predicates `(same-locn z1 i1 z2 i2)` and `(leads-to z1 i1 z2 i2)` over strand (`strd`) and node index (`indx`) variables in `(defrule ...)`."
+  },
+  {
+    "example_id": "03_examples_scm/or.scm",
+    "filename": "or.scm",
+    "protocol_names": [
+      "or"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp",
+      "serv"
+    ],
+    "sorts_used": [
+      "mesg",
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "ltk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Standard version of the Otway-Rees symmetric key distribution protocol (`or`) with roles `init`, `resp`, and `serv`, demonstrating the use of sort `mesg` variables (`x` and `y`) in `resp` to forward opaque encrypted tickets (`x` from `init` to `serv`, and `y` from `serv` to `init`) that `resp` cannot decrypt. Reference this example whenever an intermediate or responder role must receive and forward an opaque ciphertext or token it cannot decrypt, using variables of sort `mesg` (`(vars ... (x y mesg))`)."
+  },
+  {
+    "example_id": "03_examples_scm/ordered.scm",
+    "filename": "ordered.scm",
+    "protocol_names": [
+      "ordered"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "dec"
+    ],
+    "sorts_used": [
+      "akey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "=",
+      "enc"
+    ],
+    "keywords_used": [
+      "and",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "facts",
+      "forall",
+      "herald",
+      "implies",
+      "label",
+      "maps",
+      "neq",
+      "or",
+      "origs",
+      "p",
+      "parent",
+      "prec",
+      "recv",
+      "rule",
+      "send",
+      "shape",
+      "trace",
+      "traces",
+      "unrealized",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates a linear ordering rule (`order`) over decryption strands (`dec`) using the low-level role predicate syntax `(p \"dec\" y 2)` and `(p \"dec\" z 2)`, concluding `(or (prec y 1 z 0) (prec z 1 y 0) (= y z))`. Also illustrates how CPSA records rule-application output annotations (`(rule order)`, `(traces ...)`, `(label 3)`, `(parent 0)`, `(unrealized)`, `(shape)`, `(maps ...)`, `(origs)`) in an output skeleton. Reference this example when writing a rule (`defrule`) that forces all instances of a role to execute sequentially (linear ordering via `(or (prec y 1 z 0) (prec z 1 y 0) (= y z))`) using the `(p \"<role>\" <strd> <height>)` predicate syntax."
+  },
+  {
+    "example_id": "03_examples_scm/orderedvar.scm",
+    "filename": "orderedvar.scm",
+    "protocol_names": [
+      "ordered"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "dec"
+    ],
+    "sorts_used": [
+      "akey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "=",
+      "enc"
+    ],
+    "keywords_used": [
+      "and",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "facts",
+      "forall",
+      "herald",
+      "implies",
+      "label",
+      "maps",
+      "neq",
+      "or",
+      "origs",
+      "parent",
+      "prec",
+      "recv",
+      "rule",
+      "send",
+      "shape",
+      "strand",
+      "trace",
+      "traces",
+      "unrealized",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Identical to `ordered.scm` except that the `order` rule is written using CPSA's role-variable predicate syntax `(strand dec y 2)` and `(strand dec z 2)` instead of string-quoted `(p \"dec\" y 2)`. Reference this example to compare the cleaner `(strand <role> <strd> <height>)` syntax against `(p \"<role>\" <strd> <height>)` inside `(defrule ...)`."
+  },
+  {
+    "example_id": "03_examples_scm/pca.scm",
+    "filename": "pca.scm",
+    "protocol_names": [
+      "pca"
+    ],
+    "algebra": "basic",
+    "herald_flags": [
+      "(bound 15)"
+    ],
+    "roles": [
+      "tpm",
+      "pca",
+      "appr"
+    ],
+    "sorts_used": [
+      "akey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "bound",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models a simplified Privacy Certificate Authority (`pca`) protocol for generating a TPM Attestation Identity Certificate (AIC), with roles `tpm`, `pca`, and `appr` (appraiser) and herald flag `(bound 15)`. The TPM sends a self-signed identity key `(enc ki a (invk ki))` and manufacturer-certified endorsement key `(enc t ke (invk km))` to the PCA, receives the signed AIC `(enc ki a t (invk kp))` encrypted under `ke`, and forwards the AIC to the appraiser. Reference this example when modeling PKI certificate issuance or TPM Attestation Identity Certificate (AIC) enrollment where a CA wraps a newly signed certificate `(enc ki a t (invk kp))` inside an encryption key `ke`."
+  },
+  {
+    "example_id": "03_examples_scm/pen-non-orig-test.scm",
+    "filename": "pen-non-orig-test.scm",
+    "protocol_names": [
+      "pennonorigtest"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "client",
+      "server"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "cat"
+    ],
+    "keywords_used": [
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "pen-non-orig",
+      "recv",
+      "send",
+      "trace",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Minimal test case (`pennonorigtest`) illustrating the exact semantics of `(pen-non-orig pwd)`. Because `pwd` is declared `(pen-non-orig pwd)` in `server`, the penetrator does not know `pwd` initially (so `server` receiving `(cat userid pwd)` in cleartext must still be explained by a legitimate `client` strand), even though the penetrator learns `pwd` once `client` transmits it in the clear (so the second skeleton with `(deflistener pwd)` is also realized). Reference this example to understand the difference between `(non-orig x)` (never sent in the clear or learned by the penetrator) and `(pen-non-orig x)` (not initially known to or originated by the penetrator, even if later exposed on the network, such as passwords or pre-shared session keys)."
+  },
+  {
+    "example_id": "03_examples_scm/pfs-via-pubkey.scm",
+    "filename": "pfs-via-pubkey.scm",
+    "protocol_names": [
+      "pfs-easy"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "data",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk",
+      "privk"
+    ],
+    "keywords_used": [
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates how to model Perfect Forward Secrecy (PFS) in CPSA (`pfs-easy`) by having `init` generate an ephemeral asymmetric key `new-akey`, sign it with long-term signing key `(privk \"sgn\" a)`, receive a secret `s` encrypted under `new-akey`, and then explicitly transmit the long-term private key `(send (privk \"sgn\" a))` at the end of the trace to model subsequent key compromise (requiring `(uniq-orig (privk \"sgn\" a))` instead of `(non-orig (privk \"sgn\" a))`). Reference this example whenever you need to model Perfect Forward Secrecy (PFS) or post-compromise security by transmitting a long-term key `(send (privk ...))` at the end of a role and declaring it `uniq-orig` rather than `non-orig`."
+  },
+  {
+    "example_id": "03_examples_scm/pkinit.scm",
+    "filename": "pkinit.scm",
+    "protocol_names": [
+      "pkinit"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "client",
+      "auth"
+    ],
+    "sorts_used": [
+      "data",
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models the Kerberos PKINIT (Public Key Cryptography for Initial Authentication in Kerberos, RFC 4556) exchange (`pkinit`) between `client` (`c`) and authentication server `auth` (`as`), combining public-key signatures/encryption (`(privk c)`, `(privk as)`, `(pubk c)`) with symmetric session keys (`k`, `ak` of sort `skey`). Reference this example when modeling RFC 4556 (Kerberos PKINIT) or protocols that bootstrap symmetric Kerberos tickets (`tgt`) and session keys (`k`, `ak`) from an initial public-key signed request."
+  },
+  {
+    "example_id": "03_examples_scm/preprocess.scm",
+    "filename": "preprocess.scm",
+    "protocol_names": [
+      "ns"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Tests CPSA's preskeleton preprocessing on a modified Needham-Schroeder protocol (`ns`) where the responder originates two nonces (`n2`, `n3`) and the initial skeleton entangles one initiator strand (`(n2 n2) (n3 n3)`) with two responder strands (`(n2 n2) (n3 n3p)` and `(n2 n2p) (n3 n3)`). Reference this example when constructing multi-strand preskeletons that test whether entangled responder sessions must collapse into a single session due to `uniq-orig` constraints."
+  },
+  {
+    "example_id": "03_examples_scm/print.scm",
+    "filename": "print.scm",
+    "protocol_names": [
+      "print-test"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "role"
+    ],
+    "sorts_used": [
+      "akey",
+      "data",
+      "skey"
+    ],
+    "operators_used": [
+      "cat"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "recv",
+      "trace",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Minimal test (`print-test`) verifying the canonical order in which CPSA prints variables of different sorts (`akey`, `skey`, `data`) in `vars` declarations and strand mappings. Reference this example as a minimal 13-line syntax check for grouping multiple variables per sort `(vars (a b akey) (f g skey) (x y data))` in `defrole` and `defskeleton`."
+  },
+  {
+    "example_id": "03_examples_scm/prottrans.scm",
+    "filename": "prottrans.scm",
+    "protocol_names": [
+      "ns",
+      "unilateral",
+      "ns-with-rule"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "and",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "exists",
+      "forall",
+      "herald",
+      "implies",
+      "non",
+      "non-orig",
+      "p",
+      "prec",
+      "recv",
+      "send",
+      "trace",
+      "uniq",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates protocol transformations with rules (`Protocol Transformations With Rules`). Defines three protocols: standard `ns` (with `akey` principals), a 2-message `unilateral` challenge-response protocol (with its Shape Analysis Sentence shown as a commented `defgoal`), and `ns-with-rule`, which embeds the image of the `unilateral` shape analysis sentence as a `(defrule unilateral ...)` inside Needham-Schroeder. Reference this example when translating a proved shape analysis sentence (`defgoal`) from a sub-protocol (`unilateral`) into a lemma/rule (`defrule`) inside a larger protocol (`ns-with-rule`)."
+  },
+  {
+    "example_id": "03_examples_scm/pruning1.scm",
+    "filename": "pruning1.scm",
+    "protocol_names": [
+      "prune"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "trans"
+    ],
+    "sorts_used": [
+      "akey",
+      "name",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Regression test (`prune`) demonstrating a subtle case of strand pruning where `init` sends `(enc n (pubk a))` and expects both `(enc n (pubk b) (pubk a))` and `(enc n (privk b) (pubk a))`, requiring two separate instances of the transformer role `trans` (one with `k = (pubk b)` and one with `k = (privk b)`). Reference this example when a protocol role (`trans`) takes a generic key variable `(k akey)` that must be instantiated with both `(pubk b)` and `(privk b)` across distinct strands in the same shape."
+  },
+  {
+    "example_id": "03_examples_scm/puzzle_example.scm",
+    "filename": "puzzle_example.scm",
+    "protocol_names": [
+      "puzzle"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "enc",
+      "ltk"
+    ],
+    "keywords_used": [
+      "deflistener",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models a symmetric-key challenge-response and payload encryption protocol (`puzzle`) using `(ltk a b)` and fresh session key `(s skey)`, followed by 7 different `(defskeleton ...)` queries exploring initiator POV, responder POV, and confidentiality of `s` and `payload` with `(deflistener ...)` and explicit `(precedes ...)` constraints. Reference this example for a complete set of `defskeleton` patterns testing initiator POV, responder POV, session-key secrecy (`(deflistener s)`), and payload secrecy (`(deflistener payload)`) on a single protocol."
+  },
+  {
+    "example_id": "03_examples_scm/reflect.scm",
+    "filename": "reflect.scm",
+    "protocol_names": [
+      "reflect"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models a 2-message asymmetric signature protocol (`reflect`) where `init` sends `(enc b (invk a))` and receives `(enc a (invk b))`. Also demonstrates passing an inverted key `(b (invk b))` as a role parameter in the third skeleton and declaring `(non-orig (invk a) b)`. Reference this example when testing reflection attacks on two-message signature protocols or when instantiating an `akey` role parameter with an inverse key `(invk b)` in `defstrand`."
+  },
+  {
+    "example_id": "03_examples_scm/renamings.scm",
+    "filename": "renamings.scm",
+    "protocol_names": [
+      "blanchet"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "data",
+      "name",
+      "skey"
+    ],
+    "operators_used": [
+      "enc",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrand",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Models Bruno Blanchet's simple sign-then-encrypt protocol (`blanchet`) using intentionally permuted variable names across `init` (`a b name`, `s skey`, `d data`), `resp` (`d a name`, `b skey`, `s data`), and the `defskeleton` declarations (`(defstrand resp 2 (d s) (a d) (b a) (s b))`) to test CPSA's key-value variable renaming and binding logic. Reference this example to understand how `(defstrand <role> <height> (<role-var> <skel-var>)...)` maps role-local variable names (left) to skeleton-level variable names (right) even when their identifiers overlap."
+  },
+  {
+    "example_id": "03_examples_scm/role_uniq.scm",
+    "filename": "role_uniq.scm",
+    "protocol_names": [
+      "blanchet"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "resp"
+    ],
+    "sorts_used": [
+      "akey",
+      "data",
+      "skey",
+      "strd"
+    ],
+    "operators_used": [
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "forall",
+      "herald",
+      "implies",
+      "non-orig",
+      "p",
+      "recv",
+      "send",
+      "trace",
+      "uniq",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Demonstrates that a role-level `(uniq-orig s)` assumption in `init` of Blanchet's protocol (`blanchet`) is equivalent to omitting `(uniq-orig s)` from the role and instead adding a protocol rule `(defrule role-uniq (forall ((z strd) (s skey)) (implies (p \"init\" \"s\" z s) (uniq s))))`. Reference this example to see how role-level `(uniq-orig ...)` declarations work and how they can be expressed equivalently as logical rules (`(defrule ... (implies (p \"init\" \"s\" z s) (uniq s)))`)."
+  },
+  {
+    "example_id": "03_examples_scm/rule-node.scm",
+    "filename": "rule-node.scm",
+    "protocol_names": [
+      "rule-order",
+      "rule-order-prec"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init"
+    ],
+    "sorts_used": [
+      "indx",
+      "mesg",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "=",
+      "cat",
+      "idx"
+    ],
+    "keywords_used": [
+      "and",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "fact",
+      "facts",
+      "false",
+      "forall",
+      "herald",
+      "implies",
+      "le",
+      "neq",
+      "or",
+      "prec",
+      "precedes",
+      "recv",
+      "send",
+      "trace",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Tests rules and facts over strand (`strd`) and node index (`indx`) variables in two protocols (`rule-order` and `rule-order-prec`), demonstrating the `(idx 0)` and `(idx 1)` index literal constructors inside skeleton `(facts (le 0 (idx 0) 0 (idx 1)))` as well as `(prec z1 i1 z2 i2)` and `(neq (s t))`. Reference this example whenever you need to write rules or skeleton `facts` that reference specific strand node indices (`indx` sort and `(idx <int>)` literals) alongside `(prec z1 i1 z2 i2)`."
+  },
+  {
+    "example_id": "03_examples_scm/rule-order.scm",
+    "filename": "rule-order.scm",
+    "protocol_names": [
+      "rule-order"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init"
+    ],
+    "sorts_used": [
+      "text"
+    ],
+    "operators_used": [
+      "=",
+      "cat"
+    ],
+    "keywords_used": [
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "fact",
+      "facts",
+      "forall",
+      "herald",
+      "implies",
+      "le",
+      "or",
+      "send",
+      "trace",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Minimal test (`rule-order`) of a disjunctive rule (`ge`: `(forall ((x y text)) (implies (fact le x y) (or (= x y) (fact lt x y))))`) triggered by `(facts (le s t))` in a skeleton, splitting the search into two branches (`s = t` and `(fact lt s t)`). Reference this example for a minimal template of a disjunctive `(defrule ...)` using `(or (= x y) (fact lt x y))` to split CPSA's analysis into equality and strict-inequality cases."
+  },
+  {
+    "example_id": "03_examples_scm/rules.scm",
+    "filename": "rules.scm",
+    "protocol_names": [
+      "neq-test",
+      "doorsep"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "init",
+      "person",
+      "door"
+    ],
+    "sorts_used": [
+      "akey",
+      "mesg",
+      "skey",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "invk"
+    ],
+    "keywords_used": [
+      "and",
+      "defprotocol",
+      "defrole",
+      "defrule",
+      "defskeleton",
+      "defstrand",
+      "fact",
+      "facts",
+      "false",
+      "forall",
+      "herald",
+      "implies",
+      "neq",
+      "non",
+      "non-orig",
+      "p",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": true,
+    "uses_macros": false,
+    "has_roletran_declarations": false,
+    "summary": "Contains two complete rule-based protocol examples in one file (each with its own `herald`): `neq-test` (enforcing `n1 != n2` via `(facts (neq n1 n2))` and `(defrule neq ...)`) and `doorsep` (the Door Simple Example Protocol, using `(defrule trust ...)` to express that if an uncompromised person `(non (invk p))` initiates a session with door `d`, then the door's private key is also uncompromised `(non (invk d))`). Reference this example for the canonical `trust` rule pattern (`(implies (and (p \"person\" z 1) ... (non (invk p))) (non (invk d)))`), which dynamically derives `(non (invk d))` for whatever peer `d` an honest principal `p` chooses to trust."
+  },
+  {
+    "example_id": "03_examples_scm/scep-tls-dh-broken.scm",
+    "filename": "scep-tls-dh-broken.scm",
+    "protocol_names": [
+      "dh"
+    ],
+    "algebra": "diffie-hellman",
+    "herald_flags": [
+      "(algebra diffie-hellman)"
+    ],
+    "roles": [
+      "client",
+      "server"
+    ],
+    "sorts_used": [
+      "name",
+      "rndx",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "exp",
+      "gen",
+      "hash",
+      "mul",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "algebra",
+      "and",
+      "comment",
+      "defgoal",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "false",
+      "forall",
+      "herald",
+      "implies",
+      "non",
+      "p",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": true,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models a combined TLS + SCEP (Simple Certificate Enrollment Protocol) handshake (`dh`) in the `diffie-hellman` algebra using extensive `(defmacro ...)` definitions (`PMS`, `S_write`, `W_write`, `Tok`, `SCEP-Token`, `Cert_W`, `W_KE`, `S_FMESG`, `SFIN`, `WFIN`) and a confidentiality `(defgoal dh ...)` testing whether an adversary listener `eve` (`(p \"\" eve 1) (p \"\" \"x\" eve (SCEP-Token S M rS))`) can learn the client's SCEP token when `rSp` is sent in the clear. Reference this example when modeling complex layered protocols (like SCEP over TLS with Diffie-Hellman ephemeral key exchange `(exp (gen) (mul dh_es dh_ew))`) using modular `(defmacro ...)` definitions and low-level `(p ...)` confidentiality goals."
+  },
+  {
+    "example_id": "03_examples_scm/scep-tls-dh-fixed.scm",
+    "filename": "scep-tls-dh-fixed.scm",
+    "protocol_names": [
+      "dh"
+    ],
+    "algebra": "diffie-hellman",
+    "herald_flags": [
+      "(algebra diffie-hellman)"
+    ],
+    "roles": [
+      "client",
+      "server"
+    ],
+    "sorts_used": [
+      "name",
+      "rndx",
+      "strd",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "exp",
+      "gen",
+      "hash",
+      "mul",
+      "privk",
+      "pubk"
+    ],
+    "keywords_used": [
+      "algebra",
+      "and",
+      "comment",
+      "defgoal",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "false",
+      "forall",
+      "herald",
+      "implies",
+      "non",
+      "p",
+      "pen-non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": true,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Fixed version of `scep-tls-dh-broken.scm` in the `diffie-hellman` algebra where the client encrypts its initial nonce `(send (enc rSp (pubk W)))` under the server's public key, alongside both a confidentiality `(defgoal dh ...)` and two active `(defskeleton dh ...)` declarations using `(defstrandmax client ...)` and `(defstrandmax server ...)` with `(pen-non-orig (privk S) (privk W) (privk CA))`. Reference this example for combining `diffie-hellman` algebra macros, a confidentiality `(defgoal ...)`, and `(defstrandmax <role> ...)` skeletons in a full TLS + application-layer protocol model."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-auth-enc-full-payload.scm",
+    "filename": "sdls-auth-enc-full-payload.scm",
+    "protocol_names": [
+      "sdls-ep-chain-auth-enc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "gvcid",
+      "keyid",
+      "name",
+      "seq_n",
+      "skey",
+      "spi",
+      "tc",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "keyid_of",
+      "successor"
+    ],
+    "keywords_used": [
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "facts",
+      "herald",
+      "lang",
+      "neq",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Full 6-step Space Data Link Security Extended Procedures (CCSDS SDLS-EP, 355.0-B-2 / 355.1-B-1) rekeying chain (`sdls-ep-chain-auth-enc`) in Authenticated Encryption mode between `ground` and `satellite`. Models (1) OTAR key upload under `keymaster`, (2) Key Activation, (3) Rekey SA, (4) Start SA, (5) Key Verification challenge/reply, and (6) Frame Data traffic under the new session keys (`sessionkey1`, `sessionkey2`) and reset sequence number `(successor new_arsn)`, using custom language sorts and hash constructors `(lang (seq_n atom) (tc atom) (successor hash) (keyid atom) (keyid_of hash) (spi atom) (gvcid atom))`. Reference this example when modeling multi-step key management and rekeying protocols (such as CCSDS SDLS-EP, IPsec/IKEv2 SA rekeying, or counter/sequence-number progression) using custom `(lang (<sort> atom) (<op> hash))` declarations."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-auth-enc-logic.scm",
+    "filename": "sdls-auth-enc-logic.scm",
+    "protocol_names": [
+      "sdls-auth-enc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "name",
+      "seq_n",
+      "skey",
+      "tc",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "successor"
+    ],
+    "keywords_used": [
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Core framing logic of CCSDS Space Data Link Security Protocol (`sdls-auth-enc`) in Authenticated Encryption mode (encrypt-then-MAC), where `ground` and `satellite` exchange frames containing `(cat (sdl_header ...) header old_arsn (enc frame_data assumed_enc_key) (hash ... assumed_auth_key))` and advance the anti-replay sequence number via `(successor old_arsn)`. Reference this example for a clean, minimal pattern of Encrypt-then-MAC framing with monotonic sequence numbers `(successor old_arsn)` declared via `(lang (seq_n atom) (tc atom) (successor hash))`."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-auth-full-payload.scm",
+    "filename": "sdls-auth-full-payload.scm",
+    "protocol_names": [
+      "sdls-ep-chain-auth"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "gvcid",
+      "keyid",
+      "name",
+      "seq_n",
+      "skey",
+      "spi",
+      "tc",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "keyid_of",
+      "successor"
+    ],
+    "keywords_used": [
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "facts",
+      "herald",
+      "lang",
+      "neq",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Full 6-step CCSDS SDLS-EP rekeying sequence (`sdls-ep-chain-auth`) in Authentication-Only (AES-CMAC) baseline mode, where PDUs and frame payloads are sent in cleartext accompanied by keyed MACs `(hash ... assumed_auth_key)` (except OTAR key upload encrypted under `keymaster` and the Key Verification challenge encryption `(enc chal sessionkey1)`). Reference this example when modeling authenticated-only (MAC/CMAC/HMAC) protocol framing and key rollovers where control headers and payloads are integrity-protected via `(hash ... auth_key)` while key transport remains encrypted."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-auth-logic.scm",
+    "filename": "sdls-auth-logic.scm",
+    "protocol_names": [
+      "sdls-tc-auth"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "name",
+      "seq_n",
+      "skey",
+      "strd",
+      "tc",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "hash",
+      "successor"
+    ],
+    "keywords_used": [
+      "and",
+      "defgoal",
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "false",
+      "forall",
+      "herald",
+      "implies",
+      "lang",
+      "listener",
+      "pen-non-orig",
+      "pnon",
+      "recv",
+      "send",
+      "strand",
+      "trace",
+      "ugen",
+      "uniq",
+      "uniq-gen",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": true,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models CCSDS SDLS Telecommand Baseline Authentication-Only mode (`sdls-tc-auth`) and includes a confidentiality `(defgoal sdls-tc-auth ...)` demonstrating the high-level goal predicates `(strand ground z1 2 ...)`, `(pnon assumed_auth_key)`, `(ugen old_arsn)`, `(uniq frame_data)`, and `(listener eve frame_data)`. Reference this example to see the exact syntax of high-level security goal predicates (`strand`, `pnon`, `ugen`, `uniq`, `listener`) inside `(defgoal ...)` when testing whether an authentication-only protocol leaks `frame_data`."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-enc-logic.scm",
+    "filename": "sdls-enc-logic.scm",
+    "protocol_names": [
+      "sdls-enc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "name",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc"
+    ],
+    "keywords_used": [
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models CCSDS SDLS Encryption-Only mode (`sdls-enc`) where `ground` and `satellite` exchange `(cat (sdl_header ...) (enc frame_data assumed_enc_key))` without a MAC or sequence number, using `(defstrandmax ground ...)` and `(defstrandmax satellite ...)` in the skeletons (with commented-out `defgoal` examples at the bottom). Reference this example when modeling basic symmetric payload encryption framing with header macros (`(defmacro (sdl_header dest) ...)`) and `(defstrandmax ...)` skeletons."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-challenge-auth.scm",
+    "filename": "sdls-ep-challenge-auth.scm",
+    "protocol_names": [
+      "sdls-ep-key-verification-auth"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid",
+      "name",
+      "seq_n",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "successor"
+    ],
+    "keywords_used": [
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "non-orig",
+      "pen-non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-gen",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models the standalone CCSDS SDLS-EP Key Verification challenge-response procedure in Authentication-Only mode (`sdls-ep-key-verification-auth`), where `ground` sends a signed/MACed challenge `(keyver_cmd keyid1 chal)` at `(successor old_arsn)` and `satellite` replies with `(keyver_reply keyid1 chal sessionkey1)` (containing `(enc chal sessionkey1)`) at `(successor (successor old_arsn))`. Reference this example when modeling key-confirmation / challenge-response sub-protocols with sequence-number increments `(successor old_arsn)` and `(pen-non-orig sessionkey1)`."
+  },
+  {
+    "example_id": "03_examples_scm/sdls-ep-challenge-authenc.scm",
+    "filename": "sdls-ep-challenge-authenc.scm",
+    "protocol_names": [
+      "sdls-ep-key-verification-auth-enc"
+    ],
+    "algebra": "basic",
+    "herald_flags": [],
+    "roles": [
+      "ground",
+      "satellite"
+    ],
+    "sorts_used": [
+      "keyid",
+      "name",
+      "seq_n",
+      "skey",
+      "text"
+    ],
+    "operators_used": [
+      "cat",
+      "enc",
+      "hash",
+      "successor"
+    ],
+    "keywords_used": [
+      "defmacro",
+      "defprotocol",
+      "defrole",
+      "defskeleton",
+      "defstrandmax",
+      "herald",
+      "lang",
+      "non-orig",
+      "pen-non-orig",
+      "recv",
+      "send",
+      "trace",
+      "uniq-orig",
+      "vars"
+    ],
+    "uses_channels": false,
+    "uses_state_locn": false,
+    "uses_goals": false,
+    "uses_rules_or_lemmas": false,
+    "uses_macros": true,
+    "has_roletran_declarations": false,
+    "summary": "Models the standalone CCSDS SDLS-EP Key Verification challenge-response procedure in Authenticated Encryption mode (`sdls-ep-key-verification-auth-enc`), where the key verification command and reply PDUs are both encrypted under `assumed_enc_key` and MACed under `assumed_auth_key`. Reference this example when modeling nested key confirmation inside an already-established authenticated encryption tunnel (`assumed_enc_key` + `assumed_auth_key`)."
+  }
+]

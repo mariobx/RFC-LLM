@@ -221,6 +221,7 @@ __marimo__/
 # RFC text archives & Pipeline artifacts
 all_RFCs/
 **/all_RFCs/
+refrences/legacy_rag_archive/
 *.log
 
 # Pipeline runtime checkpoints and ephemeral state
