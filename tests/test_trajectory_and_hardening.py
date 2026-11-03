@@ -583,3 +583,133 @@ def test_prune_keep_ineligible_only(tmp_path: Path):
     assert all(r["is_eligible"] == "False" for r in remaining_rows)
 
 
+def test_seed_from_source_and_67_column_security_findings_csv(tmp_path: Path):
+    """Verify `seed_from_source` copies rows from an older run without mutating the source CSV,
+    and `log_run` records all 17 CPSA 4.4.9 `security_findings` columns plus `Eligible: <rationale>`.
+    """
+    from src.logging_config import PipelineMetricsCSVLogger
+
+    assert len(PipelineMetricsCSVLogger.CSV_HEADER) == 67
+
+    old_run_dir = tmp_path / "run_old"
+    old_run_dir.mkdir(parents=True)
+    old_csv = old_run_dir / "pipeline_runs.csv"
+    old_logger = PipelineMetricsCSVLogger(csv_path=old_csv)
+    old_logger.log_run(
+        rfc_id="RFC1111",
+        is_eligible=False,
+        status="INELIGIBLE",
+        rejection_gate="Tier 0 Header Filter",
+        error_message="Ineligible: Informational document",
+    )
+    old_logger.log_run(
+        rfc_id="RFC5246",
+        is_eligible=True,
+        status="VERIFIED",
+        quality_tier="GOLD",
+        solver_passed=True,
+        error_message="Eligible: Defines the TLS 1.2 handshake with explicit key exchange.",
+        security_findings={
+            "role_executability": "ALL_ROLES_EXECUTABLE",
+            "dead_roles_count": 0,
+            "dead_roles": [],
+            "authentication_profile": "MUTUAL_MULTI_STRAND",
+            "multi_strand_pov_roles": ["Client", "Server"],
+            "single_strand_pov_roles": [],
+            "unrealized_pov_roles": [],
+            "parameter_agreement_status": "FULL_PARAMETER_AGREEMENT",
+            "disagreed_parameters_count": 0,
+            "role_reflection_status": "NO_REFLECTION",
+            "secrecy_status": "SECRECY_PROVED",
+            "protected_secrets": ["pre_master_secret"],
+            "leaked_secrets": [],
+            "defgoal_satisfaction_status": "NO_EXPLICIT_DEFGOALS",
+            "shape_analysis_sentences_count": 2,
+            "anomalies_count": 0,
+            "vulnerabilities_and_anomalies": [],
+        },
+    )
+
+    # New run seeds from old_run_dir and prunes keep-ineligible without touching old_csv
+    new_csv = tmp_path / "run_new" / "pipeline_runs.csv"
+    new_logger = PipelineMetricsCSVLogger(csv_path=new_csv)
+    seeded_count = new_logger.seed_from_source(old_run_dir)
+    assert seeded_count == 2
+
+    removed, kept = new_logger.prune_keep_ineligible_only()
+    assert removed == 1
+    assert kept == 1
+
+    # Source CSV in old_run_dir must remain completely untouched (still 2 rows)
+    old_rows = old_logger._read_existing_rows()
+    assert len(old_rows) == 2
+    rfc5246_row = [r for r in old_rows if r["rfc_id"] == "RFC5246"][0]
+    assert rfc5246_row["authentication_profile"] == "MUTUAL_MULTI_STRAND"
+    assert rfc5246_row["parameter_agreement_status"] == "FULL_PARAMETER_AGREEMENT"
+    assert rfc5246_row["secrecy_status"] == "SECRECY_PROVED"
+    assert rfc5246_row["protected_secrets"] == "pre_master_secret"
+    assert rfc5246_row["shape_analysis_sentences_count"] == "2"
+    assert rfc5246_row["error_message"].startswith("Eligible: ")
+
+
+def test_cli_rejects_csv_prune_or_skip_flags_without_csv_source(monkeypatch):
+    """Verify `--keep-ineligible`, `--skip-completed`, and `--retry-failed` fail fast if `--csv` is omitted."""
+    import sys
+    from src.pipeline import main
+
+    for flag in ("--keep-ineligible", "--skip-completed", "--retry-failed"):
+        monkeypatch.setattr(sys, "argv", ["rfc-llm", "refrences/all_RFCs/", flag])
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 2
+
+
+def test_compact_diagnostic_headline_strips_snowball_autopsy_and_csv_api_works(tmp_path: Path):
+    """Verify `_compact_diagnostic_headline` strips the multi-line Snowball Autopsy block and `/api/csv` serves 67-column analytics."""
+    from src.logging_config import PipelineMetricsCSVLogger
+    from src.main_pipeline_orchestrator import _compact_diagnostic_headline
+    from src.visualizer.server import VisualizerServer, hydrate_tab_payload
+
+    full_diag = (
+        "MITRE CPSA compilation timed out after 15 seconds (state-space explosion).\n"
+        "Tier 1 Search-Order Portfolio also failed to terminate.\n\n"
+        "=== CPSA 4.4.9 SNOWBALL STATE AUTOPSY REPORT (Tier 2 Trace Analysis) ===\n"
+        "Exploding Query: POV Skeleton #1\n"
+        "Derivation Stats: 20 skeletons inspected\n"
+    )
+    compact = _compact_diagnostic_headline(full_diag)
+    assert "=== CPSA 4.4.9 SNOWBALL STATE AUTOPSY REPORT" not in compact
+    assert "MITRE CPSA compilation timed out after 15 seconds" in compact
+
+    run_dir = tmp_path / "run_csv_api"
+    run_dir.mkdir(parents=True)
+    csv_path = run_dir / "pipeline_runs.csv"
+    csv_logger = PipelineMetricsCSVLogger(csv_path=csv_path)
+    csv_logger.log_run(
+        rfc_id="RFC2952",
+        is_eligible=True,
+        status="VERIFIED",
+        quality_tier="GOLD",
+        protocol_name="telnet_des",
+        solver_passed=True,
+        error_message="Eligible: Defines Telnet DES_CFB64 authentication handshake.",
+    )
+
+    GLOBAL_EVENT_BUS.clear()
+    GLOBAL_EVENT_BUS.set_run_directory(run_dir, is_live=True, csv_path=csv_path)
+
+    async def _check_csv_endpoint():
+        server = VisualizerServer(host="127.0.0.1", port=8095)
+        req = MagicMock(spec=web.Request)
+        resp = await server.handle_csv(req)
+        assert resp.status == 200
+        payload = json.loads(resp.text)
+        assert payload["row_count"] == 1
+        assert len(payload["headers"]) == 67
+        assert payload["rows"][0]["rfc_id"] == "RFC2952"
+        assert payload["rows"][0]["error_message"].startswith("Eligible:")
+
+    asyncio.run(_check_csv_endpoint())
+
+
+

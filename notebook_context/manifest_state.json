@@ -4,7 +4,12 @@
     "added": [],
     "deleted": [],
     "modified": [
-      "README.md"
+      "logs/pipeline_runs.csv",
+      "src/logging_config.py",
+      "src/pipeline.py",
+      "src/system_config.py",
+      "src/verification_engine/trajectory_metadata_exporter.py",
+      "tests/test_trajectory_and_hardening.py"
     ]
   },
   "files": {
@@ -88,8 +93,8 @@
     },
     "logs/pipeline_runs.csv": {
       "bundle": "(tier4)",
-      "sha256": "0083913ee4cde317e3e5e3b61371cc35ac5283fc3a9115d748f8845ac8e9aa36",
-      "size_bytes": 132854,
+      "sha256": "2faf5eec55b01871e838b5d537b6b88cd6423324c2ea4411aed6976f3bd63093",
+      "size_bytes": 69328,
       "status": "summarized"
     },
     "prompts/01_applicability_gate.md": {
@@ -1330,8 +1335,8 @@
     },
     "src/logging_config.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "6900598060e727481b332fd6b6b98892d39f9d91ca0cb04021f035cd7b5d5a24",
-      "size_bytes": 16814,
+      "sha256": "065d3dfdcac1759e7331f3553176dca674efe70071a8c45d2ecb38050c12889d",
+      "size_bytes": 18065,
       "status": "included"
     },
     "src/main_pipeline_orchestrator.py": {
@@ -1342,8 +1347,8 @@
     },
     "src/pipeline.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "1a944efeed50fc55449142940a73a89bedc00ca218bf6200c4e8753426e44261",
-      "size_bytes": 19749,
+      "sha256": "cca12ee185e24c8bcd90a34747873913fac384c400616238d3b19bcc1b98e7e3",
+      "size_bytes": 20582,
       "status": "included"
     },
     "src/pipeline_events.py": {
@@ -1378,8 +1383,8 @@
     },
     "src/system_config.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "c2339cde84cca4088338c26c0c9f044e2f27a80f84da494ab9ebdfa4aab35084",
-      "size_bytes": 6913,
+      "sha256": "ab00a4a08cd76a7c389f1277b4f808f7a6c89f4deea0654a889ba4bb01d32b30",
+      "size_bytes": 7025,
       "status": "included"
     },
     "src/verification_engine/__init__.py": {
@@ -1414,8 +1419,8 @@
     },
     "src/verification_engine/trajectory_metadata_exporter.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "a65465490ca89bf9fbb229ec4c328693dfdf10df20f31351a2c50f03bd0fd5a1",
-      "size_bytes": 26610,
+      "sha256": "de57f6150b7d0ad72a4fb019d4968598e8d5ed2451549aed0588b75c630b9128",
+      "size_bytes": 44044,
       "status": "included"
     },
     "src/visualizer/__init__.py": {
@@ -1480,8 +1485,8 @@
     },
     "tests/test_trajectory_and_hardening.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "94e5047da8088025080ff0b7413adcd45410b8b8198d8f1ae5b849923ef9fd7c",
-      "size_bytes": 22834,
+      "sha256": "bf24fcce7b4d1d464698bb6f80b5eb0ade9fab6f6d748415e2107cd5a47bf92c",
+      "size_bytes": 26526,
       "status": "included"
     },
     "tests/test_visualizer_and_events.py": {
@@ -1497,15 +1502,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-03 19:45:16 UTC",
+  "generated_at": "2026-11-03 20:21:34 UTC",
   "git": {
     "branch": "main",
-    "commit": "101b107977b3568a2dbb7bb08a5a7c39a4f8a58c",
-    "subject": "Simplify README: remove roadmap and important callout, add concise top-level overview"
+    "commit": "039fdf29d2b09ee77b82228c13b6322cc6cbe64f",
+    "subject": "feat: decouple quality_tier from CPSA 4.4.9 security_findings and add --keep-ineligible CLI flag"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "287dc3c6153beb0d6ad30643c1e62374ee65a417",
-    "subject": "Harden Stage 1/2 false-positive gates, TOC/router unwrapping, searcher cache, and shape grading"
+    "commit": "0230f58419121be3fbc2e9433a46432701898451",
+    "subject": "Simplify README: remove roadmap and important callout, add concise top-level overview"
   }
 }

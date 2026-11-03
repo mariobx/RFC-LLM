@@ -55,6 +55,7 @@ class PipelineEventBus:
 
         # Run-level compact registries (~150 bytes per entry -> <1 MB for 5,000 RFCs)
         self._run_root_dir: Optional[Path] = None
+        self._csv_path: Optional[Path] = None
         self._is_live: bool = True
         self._next_tab_index: int = 0
         self._accepted_tabs: Dict[int, Dict[str, Any]] = {}
@@ -74,11 +75,27 @@ class PipelineEventBus:
             if callback in self._listeners:
                 self._listeners.remove(callback)
 
-    def set_run_directory(self, run_root_dir: Path, is_live: bool = True) -> None:
-        """Binds the current run root directory."""
+    def set_run_directory(
+        self,
+        run_root_dir: Path,
+        is_live: bool = True,
+        csv_path: Optional[Path] = None,
+    ) -> None:
+        """Binds the current run root directory and active CSV ledger path."""
         with self._lock:
             self._run_root_dir = run_root_dir.resolve()
+            self._csv_path = (csv_path or (self._run_root_dir / "pipeline_runs.csv")).resolve()
             self._is_live = is_live
+
+    def get_csv_path(self) -> Optional[Path]:
+        """Returns the bound CSV path for the active or replayed run."""
+        with self._lock:
+            return self._csv_path
+
+    def get_run_root_dir(self) -> Optional[Path]:
+        """Returns the bound run root directory."""
+        with self._lock:
+            return self._run_root_dir
 
     def start_rfc(self, rfc_id: str, rfc_file: Optional[str] = None) -> None:
         """Evicts the completed RFC's in-memory event buffer and prepares for the next RFC."""
@@ -95,6 +112,7 @@ class PipelineEventBus:
         protocol_name: str,
         rfc_dir: Path,
         rfc_title: Optional[str] = None,
+        intake_rationale: Optional[str] = None,
     ) -> int:
         """Allocates the next sequential 1-based tab number (#1, #2, ...) for an accepted RFC,
         binds its per-RFC events.jsonl sink, and flushes buffered Stage 1 events to disk.
@@ -129,6 +147,8 @@ class PipelineEventBus:
                 "trajectory_path": None,
                 "shapes_xhtml": None,
                 "error_message": None,
+                "intake_rationale": intake_rationale,
+                "security_findings": {},
             }
             self._accepted_tabs[tab_idx] = tab_summary
             self._tab_order.append(tab_idx)
@@ -260,6 +280,7 @@ class PipelineEventBus:
             return {
                 "is_live": self._is_live,
                 "run_directory": str(self._run_root_dir) if self._run_root_dir else None,
+                "csv_path": str(self._csv_path) if self._csv_path else None,
                 "active_rfc_id": self._current_rfc_id,
                 "active_tab_index": self._current_tab_index,
                 "accepted_tabs": tabs,
@@ -304,6 +325,7 @@ class PipelineEventBus:
             self._current_tab_index = None
             self._current_events_jsonl = None
             self._run_root_dir = None
+            self._csv_path = None
             self._is_live = True
             self._next_tab_index = 0
             self._accepted_tabs.clear()
@@ -327,9 +349,15 @@ class PipelineEventBus:
                 if resolved.name == "metadata_index.json":
                     index_file = resolved
                     run_dir = resolved.parent
+                elif resolved.suffix.lower() == ".csv":
+                    self._csv_path = resolved
+                    run_dir = resolved.parent
+                    if (run_dir / "metadata_index.json").exists():
+                        index_file = run_dir / "metadata_index.json"
                 elif resolved.name.endswith("_trajectory.json"):
                     run_dir = resolved.parent.parent
                     self._run_root_dir = run_dir
+                    self._csv_path = (run_dir / "pipeline_runs.csv").resolve()
                     self._ingest_trajectory_as_tab(resolved, explicit_index=1)
                     return self.get_tabs_overview()
             elif resolved.is_dir():
@@ -341,11 +369,14 @@ class PipelineEventBus:
                     trajs = sorted(resolved.glob("*_trajectory.json"))
                     if trajs:
                         self._run_root_dir = resolved.parent
+                        self._csv_path = (resolved.parent / "pipeline_runs.csv").resolve()
                         for t_path in trajs:
                             self._ingest_trajectory_as_tab(t_path)
                         return self.get_tabs_overview()
 
             self._run_root_dir = run_dir
+            if self._csv_path is None:
+                self._csv_path = (run_dir / "pipeline_runs.csv").resolve()
 
             if index_file and index_file.exists():
                 try:
@@ -494,6 +525,14 @@ class PipelineEventBus:
         if not self._batch_cost_telemetry and cost_tel:
             self._batch_cost_telemetry = cost_tel
 
+        sec_findings = (
+            traj.get("security_findings")
+            or qa.get("security_findings")
+            or fallback_entry.get("security_findings")
+            or {}
+        )
+        intake_rationale = meta.get("intake_rationale") or fallback_entry.get("intake_rationale")
+
         tab_summary = {
             "tab_index": tab_idx,
             "rfc_id": rfc_id,
@@ -513,6 +552,8 @@ class PipelineEventBus:
             "trajectory_path": str(traj_path.resolve()),
             "shapes_xhtml": shapes_xhtml,
             "error_message": fallback_entry.get("error_message"),
+            "intake_rationale": intake_rationale,
+            "security_findings": sec_findings,
         }
         self._accepted_tabs[tab_idx] = tab_summary
         self._tab_order.append(tab_idx)
@@ -556,6 +597,8 @@ class PipelineEventBus:
             "trajectory_path": None,
             "shapes_xhtml": str(shapes_candidates[0]) if shapes_candidates else None,
             "error_message": fallback_entry.get("error_message") or "Interrupted before trajectory export",
+            "intake_rationale": fallback_entry.get("intake_rationale"),
+            "security_findings": fallback_entry.get("security_findings") or {},
         }
         self._accepted_tabs[tab_idx] = tab_summary
         self._tab_order.append(tab_idx)

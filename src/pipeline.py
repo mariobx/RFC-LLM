@@ -10,7 +10,7 @@ import sys
 import time
 import webbrowser
 from pathlib import Path
-from typing import List, Set
+from typing import List, Optional, Set
 
 from src.cost_tracker import GLOBAL_COST_TRACKER
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
@@ -52,15 +52,15 @@ def natural_rfc_sort_key(file_path: Path):
     return (1, file_path.name)
 
 
-def get_completed_rfc_ids() -> Set[str]:
-    """Reads logs/pipeline_runs.csv to retrieve RFC IDs that were already evaluated."""
-    csv_path = SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv"
-    if not csv_path.exists():
+def get_completed_rfc_ids(csv_path: Optional[Path] = None) -> Set[str]:
+    """Reads a pipeline_runs.csv ledger to retrieve RFC IDs that were already evaluated."""
+    target_csv = csv_path or (SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv")
+    if not target_csv.exists():
         return set()
 
     completed = set()
     try:
-        with open(csv_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(target_csv, "r", encoding="utf-8", errors="ignore") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 rfc_val = row.get("rfc_id", "").strip()
@@ -73,15 +73,15 @@ def get_completed_rfc_ids() -> Set[str]:
     return completed
 
 
-def get_failed_rfc_ids() -> Set[str]:
-    """Reads logs/pipeline_runs.csv to retrieve RFC IDs whose latest status is FAILED or PARTIAL."""
-    csv_path = SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv"
-    if not csv_path.exists():
+def get_failed_rfc_ids(csv_path: Optional[Path] = None) -> Set[str]:
+    """Reads a pipeline_runs.csv ledger to retrieve RFC IDs whose latest status is FAILED or PARTIAL."""
+    target_csv = csv_path or (SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv")
+    if not target_csv.exists():
         return set()
 
     failed = set()
     try:
-        with open(csv_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(target_csv, "r", encoding="utf-8", errors="ignore") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 rfc_val = row.get("rfc_id", "").strip()
@@ -212,25 +212,20 @@ def main():
         help="Pre-filter directory candidates using deterministic Tier 0 frontmatter check before applying --limit",
     )
     parser.add_argument(
+        "--csv",
+        type=str,
+        default=None,
+        help="Path to an existing pipeline_runs.csv or older run directory to copy/seed into this new run's pipeline_runs.csv (source CSV is never modified)",
+    )
+    parser.add_argument(
         "--keep-ineligible",
         "--reset-eligible",
         dest="keep_ineligible",
         action="store_true",
-        help="Prune logs/pipeline_runs.csv by deleting all rows EXCEPT ineligible RFCs (is_eligible=False), and skip those ineligible RFCs when starting a new batch run",
+        help="Prune the active run's pipeline_runs.csv by deleting all rows EXCEPT ineligible RFCs (is_eligible=False), and skip those ineligible RFCs when starting a new batch run",
     )
 
     args = parser.parse_args()
-
-    if args.keep_ineligible:
-        csv_logger = PipelineMetricsCSVLogger()
-        removed_cnt, kept_cnt = csv_logger.prune_keep_ineligible_only()
-        print(
-            f"[CSV PRUNE] Updated {csv_logger.csv_path}: removed {removed_cnt} eligible row(s), "
-            f"retained {kept_cnt} INELIGIBLE row(s) (is_eligible=False)."
-        )
-        args.skip_completed = True
-        if not args.target_path and not args.view:
-            sys.exit(0)
 
     # Offline Replay Mode (--view <run_dir>)
     if args.view:
@@ -240,12 +235,23 @@ def main():
             sys.exit(1)
 
         overview = GLOBAL_EVENT_BUS.load_run_from_disk(view_path)
+        if args.csv:
+            src_csv = Path(args.csv)
+            if src_csv.is_dir():
+                src_csv = src_csv / "pipeline_runs.csv"
+            if src_csv.exists():
+                GLOBAL_EVENT_BUS.set_run_directory(
+                    Path(overview.get("run_directory") or view_path),
+                    is_live=False,
+                    csv_path=src_csv,
+                )
         server = run_visualizer_in_background(port=args.port)
         monitor_url = f"http://127.0.0.1:{server.port}"
 
         print(f"\n{'='*70}")
         print(f" [OFFLINE REPLAY MONITOR] Active at: {monitor_url}")
         print(f" - Run Directory   : {overview.get('run_directory')}")
+        print(f" - Run Metrics CSV : {GLOBAL_EVENT_BUS.get_csv_path()}")
         print(f" - Accepted Tabs   : {len(overview.get('accepted_tabs', []))}")
         print(f" - Filtered / Skips: {overview.get('filtered_total', 0)}")
         print(f"{'='*70}\n")
@@ -267,6 +273,38 @@ def main():
             time.sleep(wait_sec)
         sys.exit(0)
 
+    # Require --csv whenever --keep-ineligible, --skip-completed, or --retry-failed is used
+    if (args.keep_ineligible or args.skip_completed or args.retry_failed) and not args.csv:
+        active_flags = [
+            flag
+            for flag, enabled in (
+                ("--keep-ineligible", args.keep_ineligible),
+                ("--skip-completed", args.skip_completed),
+                ("--retry-failed", args.retry_failed),
+            )
+            if enabled
+        ]
+        parser.error(
+            f"{', '.join(active_flags)} requires --csv <path_to_existing_csv_or_run_dir>. "
+            "Pass --csv pointing to the existing CSV ledger (or run directory) these flags should apply to, "
+            "or remove those flags to start a fresh run."
+        )
+
+    # Standalone --keep-ineligible --csv <path> prune mode (no target_path passed)
+    if args.keep_ineligible and not args.target_path:
+        cand = Path(args.csv)
+        if not cand.exists():
+            print(f"Error: Source --csv path does not exist: {cand}", file=sys.stderr)
+            sys.exit(1)
+        standalone_csv_path = (cand / "pipeline_runs.csv") if cand.is_dir() else cand
+        csv_logger = PipelineMetricsCSVLogger(csv_path=standalone_csv_path)
+        removed_cnt, kept_cnt = csv_logger.prune_keep_ineligible_only()
+        print(
+            f"[CSV PRUNE] Updated {csv_logger.csv_path}: removed {removed_cnt} eligible row(s), "
+            f"retained {kept_cnt} INELIGIBLE row(s) (is_eligible=False)."
+        )
+        sys.exit(0)
+
     if not args.target_path:
         parser.error("the following arguments are required: target_path (or pass --view <run_dir>)")
 
@@ -276,7 +314,41 @@ def main():
             print(f"Error: Target path does not exist: {t}", file=sys.stderr)
             sys.exit(1)
 
-    # 1. Resolve Target Files (Single File, Multiple Files, or Directory Batch)
+    if args.csv and not Path(args.csv).exists():
+        print(f"Error: Source --csv path does not exist: {args.csv}", file=sys.stderr)
+        sys.exit(1)
+
+    # 1. Create Unique Timestamped Run Directory & Per-Run CSV Ledger
+    run_timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    base_dir = Path(args.output_dir) if args.output_dir else SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR
+    if base_dir.name.startswith("run_"):
+        run_root_dir = base_dir
+    else:
+        run_root_dir = base_dir / f"run_{run_timestamp}"
+    run_root_dir.mkdir(parents=True, exist_ok=True)
+    run_csv_path = run_root_dir / "pipeline_runs.csv"
+    csv_logger = PipelineMetricsCSVLogger(csv_path=run_csv_path)
+
+    # Seed new run's CSV from --csv <source> (source CSV is never mutated)
+    if args.csv:
+        src_csv_path = Path(args.csv)
+        seeded_count = csv_logger.seed_from_source(src_csv_path)
+        print(
+            f"[CSV SEED] Copied {seeded_count} row(s) from {src_csv_path} -> {run_csv_path} "
+            f"(source left untouched)."
+        )
+
+    if args.keep_ineligible:
+        removed_cnt, kept_cnt = csv_logger.prune_keep_ineligible_only()
+        print(
+            f"[CSV PRUNE] Pruned {run_csv_path}: removed {removed_cnt} eligible row(s), "
+            f"retained {kept_cnt} INELIGIBLE row(s) (is_eligible=False)."
+        )
+        args.skip_completed = True
+
+    GLOBAL_EVENT_BUS.set_run_directory(run_root_dir, is_live=True, csv_path=run_csv_path)
+
+    # 2. Resolve Target Files (Single File, Multiple Files, or Directory Batch)
     if len(targets) > 1 or targets[0].is_file():
         rfc_files = [t for t in targets if t.is_file()]
     elif targets[0].is_dir():
@@ -296,14 +368,14 @@ def main():
             sys.exit(1)
 
         if args.retry_failed:
-            failed_ids = get_failed_rfc_ids()
+            failed_ids = get_failed_rfc_ids(csv_path=run_csv_path)
             rfc_files = [
                 f for f in rfc_files
                 if f.stem.upper().replace(" ", "").replace("_", "") in failed_ids
             ]
-            print(f"[BATCH] Filtered to {len(rfc_files)} previously FAILED/PARTIAL RFCs from logs/pipeline_runs.csv")
+            print(f"[BATCH] Filtered to {len(rfc_files)} previously FAILED/PARTIAL RFCs from {run_csv_path}")
         elif args.skip_completed:
-            completed_ids = get_completed_rfc_ids()
+            completed_ids = get_completed_rfc_ids(csv_path=run_csv_path)
             initial_count = len(rfc_files)
             rfc_files = [
                 f for f in rfc_files
@@ -330,7 +402,7 @@ def main():
         print(f"Error: Invalid target path: {targets[0]}", file=sys.stderr)
         sys.exit(1)
 
-    # 2. Launch Visualizer (Default Enabled)
+    # 3. Launch Visualizer (Default Enabled)
     enable_visualizer = not args.no_visualize
     monitor_url = None
     if enable_visualizer:
@@ -347,15 +419,6 @@ def main():
         except Exception as e:
             print(f"[WARN] Could not launch live monitor: {e}")
 
-    # 3. Create Unique Timestamped Run Directory (Seconds Resolution)
-    run_timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_dir = Path(args.output_dir) if args.output_dir else SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR
-    if base_dir.name.startswith("run_"):
-        run_root_dir = base_dir
-    else:
-        run_root_dir = base_dir / f"run_{run_timestamp}"
-    run_root_dir.mkdir(parents=True, exist_ok=True)
-
     master_index_path = run_root_dir / "metadata_index.json"
     if not master_index_path.exists():
         now_utc = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -364,6 +427,7 @@ def main():
                 {
                     "schema_version": "1.0.0",
                     "run_directory": str(run_root_dir.resolve()),
+                    "csv_file": str(run_csv_path.resolve()),
                     "created_at_utc": now_utc,
                     "updated_at_utc": now_utc,
                     "total_rfcs_processed": 0,
@@ -381,6 +445,7 @@ def main():
 
     print(f"[RUN] Created timestamped run directory: {run_root_dir}")
     print(f"[RUN] Master Metadata Index           : {master_index_path}")
+    print(f"[RUN] Run CSV Ledger                  : {run_csv_path}")
 
     # 4. Execution Loop (Models resolve dynamically from prompts/*.md unless CLI overrides are passed)
     results: List[PipelineExecutionSummary] = []
@@ -406,6 +471,7 @@ def main():
                 repair_model=cli_repair_model,
                 query_model=cli_query_model,
                 run_root_dir=run_root_dir,
+                csv_path=run_csv_path,
             )
         except Exception as exc:
             print(f"[ERROR] Unhandled exception on {rfc_file.name}: {exc}", file=sys.stderr)
@@ -431,8 +497,19 @@ def main():
                 print("\n[SUCCESS] Synthesis & Formal Verification Completed!")
                 print(f"Protocol             : {summary.protocol_name}")
                 print(f"Quality Tier         : {summary.quality_tier}")
+                if summary.intake_rationale:
+                    print(f"Intake Rationale     : Eligible: {summary.intake_rationale}")
+                if summary.security_findings:
+                    sf = summary.security_findings
+                    print(
+                        f"Security Findings    : Auth={sf.get('authentication_profile', 'N/A')} | "
+                        f"Agreement={sf.get('parameter_agreement_status', 'N/A')} | "
+                        f"Secrecy={sf.get('secrecy_status', 'N/A')} | "
+                        f"Anomalies={sf.get('anomalies_count', 0)}"
+                    )
                 print(f"Run Directory        : {run_root_dir}")
                 print(f"Master Metadata Index: {master_index_path}")
+                print(f"Run Metrics Logged   : {run_csv_path}")
                 print(f"RFC Directory        : {rfc_output_dir}")
                 print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
                 print(f"Verified Shapes XHTML: {summary.build_artifacts.shapes_graph_xhtml_path}")
@@ -440,11 +517,13 @@ def main():
                 print(f"\n[PARTIAL] Roletran passed, but MITRE build failed: {summary.error_message}")
                 print(f"Run Directory        : {run_root_dir}")
                 print(f"Master Metadata Index: {master_index_path}")
+                print(f"Run Metrics Logged   : {run_csv_path}")
                 print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
             else:
                 print(f"\n[HALTED] Pipeline stopped: {summary.error_message}")
                 print(f"Run Directory        : {run_root_dir}")
                 print(f"Master Metadata Index: {master_index_path}")
+                print(f"Run Metrics Logged   : {run_csv_path}")
                 if summary.trajectory_json_path:
                     print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
 
@@ -483,7 +562,7 @@ def main():
         print(f"- Solver Failed        : {solver_failed}")
     print(f"- Run Directory        : {run_root_dir}")
     print(f"- Master Metadata Index: {master_index_path}")
-    print(f"- Run Metrics Logged   : {SYSTEM_CONFIG.LOGS_DIR / 'pipeline_runs.csv'}")
+    print(f"- Run Metrics Logged   : {run_csv_path}")
     _print_cost_breakdown(GLOBAL_COST_TRACKER.get_batch_summary(), "BATCH COST & TOKEN TELEMETRY BY MODEL ROLE")
     print(f"{'='*70}\n")
 

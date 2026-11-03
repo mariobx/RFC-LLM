@@ -799,9 +799,236 @@
       word-break: break-word;
       line-height: 1.4;
     }
+
+    /* Floating ~300ms Hover Tooltip Popover */
+    .rating-tooltip {
+      position: fixed;
+      z-index: 99999;
+      max-width: 390px;
+      background: #0d1117f2;
+      border: 1px solid #58a6ff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+      padding: 9px 11px;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+      color: var(--text-main);
+      pointer-events: none;
+      display: none;
+    }
+    .rating-tooltip-title {
+      font-weight: 700;
+      font-size: 11.5px;
+      color: var(--color-blue);
+      margin-bottom: 4px;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 3px;
+    }
+    .rating-tooltip-desc {
+      color: #c9d1d9;
+      white-space: pre-wrap;
+    }
+
+    /* Always-Visible Compact Security Verdict Strip */
+    .security-verdict-strip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 12px;
+      background: #0e131a;
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      flex-shrink: 0;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .sec-strip-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-muted);
+    }
+    .sec-pill {
+      display: inline-block;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      border: 1px solid var(--border-color);
+      background: #21262d;
+      color: var(--text-muted);
+      cursor: help;
+    }
+    .sec-pill.ok { color: #3fb950; border-color: #238636; background: #0e442955; }
+    .sec-pill.info { color: #58a6ff; border-color: #1f6feb; background: #0c2d6b55; }
+    .sec-pill.warn { color: #d29922; border-color: #9e6a03; background: #3b230066; }
+    .sec-pill.bad { color: #f85149; border-color: #da3633; background: #49020266; }
+
+    /* Collapsible Snowball Autopsy Details */
+    details.snowball-details {
+      margin-top: 5px;
+      background: #0b0e14;
+      border: 1px solid #30363d;
+      padding: 4px 8px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+    }
+    details.snowball-details summary {
+      cursor: pointer;
+      color: var(--color-purple);
+      font-weight: 600;
+      user-select: none;
+    }
+    details.snowball-details pre {
+      margin-top: 6px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #8b949e;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    /* Security Findings (CPSA) Sub-Tab */
+    .sec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .sec-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sec-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .sec-card-body {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #c9d1d9;
+      line-height: 1.45;
+    }
+    .sec-banner-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--color-blue);
+      padding: 9px 12px;
+      margin-bottom: 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .sec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 11px;
+      margin-top: 6px;
+    }
+    .sec-table th {
+      background: #161b22;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .sec-table td {
+      padding: 6px 8px;
+      border: 1px solid #21262d;
+      color: #c9d1d9;
+      vertical-align: top;
+    }
+
+    /* CSV Analytics (Live) Sub-Tab */
+    .analytics-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .kpi-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 8px 10px;
+      font-family: var(--mono);
+    }
+    .kpi-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .kpi-val {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .kpi-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .chart-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 235px;
+    }
+    .chart-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+      border-bottom: 1px solid #21262d;
+      padding-bottom: 5px;
+    }
+    .chart-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+    .chart-svg-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 180px;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
+  <!-- Floating ~300ms Hover Tooltip Popover -->
+  <div id="rating-tooltip" class="rating-tooltip">
+    <div id="rating-tooltip-title" class="rating-tooltip-title"></div>
+    <div id="rating-tooltip-desc" class="rating-tooltip-desc"></div>
+  </div>
 
   <!-- Top Utility Bar -->
   <header>
@@ -871,6 +1098,9 @@
       />
       <select id="tab-status-filter" class="ctrl-select" onchange="onTabFilterChange()">
         <option value="ALL">ALL TABS (0)</option>
+        <option value="GOLD">GOLD</option>
+        <option value="SILVER">SILVER</option>
+        <option value="BRONZE">BRONZE</option>
         <option value="VERIFIED">VERIFIED</option>
         <option value="PARTIAL">PARTIAL</option>
         <option value="FAILED">FAILED</option>
@@ -978,6 +1208,17 @@
         <button class="tab" data-subtab="slice" onclick="switchTab('slice')">RFC Sliced Text</button>
         <button class="tab" data-subtab="rag" id="tab-btn-rag" onclick="switchTab('rag')">RAG Knowledge</button>
         <button class="tab" data-subtab="graph" onclick="switchTab('graph')">Verified Shapes (SVG)</button>
+        <button class="tab" data-subtab="security" id="tab-btn-security" onclick="switchTab('security')">Security Findings (CPSA)</button>
+        <button class="tab" data-subtab="analytics" id="tab-btn-analytics" onclick="switchTab('analytics')">CSV Analytics (Live)</button>
+      </div>
+
+      <!-- Always-Visible Compact Security & Quality Verdict Strip -->
+      <div class="security-verdict-strip" id="security-verdict-strip">
+        <span class="sec-strip-item">Quality: <span class="sec-pill" id="strip-quality" data-tooltip-key="PENDING">PENDING</span></span>
+        <span class="sec-strip-item">Auth Profile: <span class="sec-pill" id="strip-auth" data-tooltip-key="PENDING">PENDING</span></span>
+        <span class="sec-strip-item">Param Agreement: <span class="sec-pill" id="strip-agreement" data-tooltip-key="PENDING">PENDING</span></span>
+        <span class="sec-strip-item">Secrecy: <span class="sec-pill" id="strip-secrecy" data-tooltip-key="PENDING">PENDING</span></span>
+        <span class="sec-strip-item">Anomalies: <span class="sec-pill" id="strip-anomalies" style="cursor:pointer;" onclick="switchTab('security')">--</span></span>
       </div>
 
       <!-- Per-Attempt Time-Travel Stepper -->
@@ -1020,6 +1261,26 @@
       <div class="tab-viewport" id="tab-graph" style="display:none; padding:0; height:100%;">
         <div id="graph-container" style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-family:var(--mono); font-size:11px;">
           MITRE CPSA shapes graph will render here upon successful verification.
+        </div>
+      </div>
+      <div class="tab-viewport" id="tab-security" style="display:none; padding:12px; overflow-y:auto;">
+        <div id="security-findings-container" style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
+          Formal CPSA 4.4.9 security findings, Stage 1 intake rationale, parameter agreement maplets, and shape analysis sentences (`cpsa4sas`) will appear here upon protocol verification.
+        </div>
+      </div>
+      <div class="tab-viewport" id="tab-analytics" style="display:none; padding:12px; overflow-y:auto;">
+        <div id="analytics-container">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-family:var(--mono); font-size:11px;">
+            <div>
+              <strong style="color:var(--text-main);">LIVE CSV ANALYTICS &amp; GRAPH SUITE (OFF-MAIN-THREAD WEB WORKER)</strong>
+              <span id="analytics-csv-label" style="color:var(--text-muted); margin-left:8px;">Loading CSV...</span>
+            </div>
+            <button class="ctrl-btn" onclick="refreshCsvAnalytics(true)">Refresh CSV Graphs</button>
+          </div>
+          <div id="analytics-kpis" class="analytics-kpi-grid"></div>
+          <div id="analytics-charts" class="charts-grid"></div>
+          <div id="analytics-custom-explorer" style="margin-bottom:14px;"></div>
+          <div id="analytics-table-section"></div>
         </div>
       </div>
     </div>
@@ -1136,7 +1397,13 @@
       if (allOption) allOption.innerText = `ALL TABS (${acceptedTabs.length})`;
 
       visibleFilteredTabs = acceptedTabs.filter(t => {
-        if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
+        if (statusFilter !== 'ALL') {
+          if (['GOLD', 'SILVER', 'BRONZE'].includes(statusFilter)) {
+            if ((t.quality_tier || '') !== statusFilter) return false;
+          } else if (t.status !== statusFilter) {
+            return false;
+          }
+        }
         if (!q) return true;
         const numMatch = `#${t.tab_index}` === q || `${t.tab_index}` === q;
         return (
@@ -1209,6 +1476,7 @@
 
         const tierSpan = document.createElement('span');
         tierSpan.className = `rfc-vtab-tier ${badgeClass}`;
+        tierSpan.setAttribute('data-tooltip-key', badgeClass);
         tierSpan.innerText = badgeText;
 
         topDiv.appendChild(idSpan);
@@ -1330,6 +1598,9 @@
       document.getElementById('code-slice').innerText = 'Verbatim RFC section slice will appear here...';
       document.getElementById('graph-container').innerHTML =
         'MITRE CPSA shapes graph will render here upon successful verification.';
+      document.getElementById('security-findings-container').innerHTML =
+        '<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">Formal CPSA 4.4.9 security findings, Stage 1 intake rationale, parameter agreement maplets, and shape analysis sentences (`cpsa4sas`) will appear here upon protocol verification.</div>';
+      renderSecurityVerdictStrip('PENDING', null);
       document.getElementById('attempt-banner').classList.remove('visible');
       document.getElementById('attempt-stepper').innerHTML =
         '<span class="attempt-stepper-label">Attempts:</span><span style="color:var(--text-muted); font-family:var(--mono); font-size:10px;">Live synthesis...</span>';
@@ -1410,18 +1681,22 @@
       if (tab.status === 'VERIFIED') {
         pill.className = 'status-badge success';
         pill.innerText = `${tab.quality_tier || 'VERIFIED'}`;
+        pill.setAttribute('data-tooltip-key', tab.quality_tier || 'VERIFIED');
         setDiagnosisBadge(`Verified (${tab.shapes_count || 0} Realized Shapes)`, 'normal');
       } else if (tab.status === 'PARTIAL') {
         pill.className = 'status-badge partial';
         pill.innerText = 'PARTIAL';
+        pill.setAttribute('data-tooltip-key', 'PARTIAL');
         setDiagnosisBadge('Roletran Passed | CPSA Failed', 'syntax');
       } else if (tab.status === 'RUNNING') {
         pill.className = 'status-badge running';
         pill.innerText = 'RUNNING';
+        pill.setAttribute('data-tooltip-key', 'RUNNING');
         setDiagnosisBadge('Active Synthesis...', 'normal');
       } else {
         pill.className = 'status-badge failed';
         pill.innerText = tab.status || 'FAILED';
+        pill.setAttribute('data-tooltip-key', tab.quality_tier || tab.status || 'FAILED');
         setDiagnosisBadge(tab.error_message ? 'Failed (See Attempt Banner)' : 'Halted', 'syntax');
       }
 
@@ -1441,6 +1716,11 @@
         document.getElementById('graph-container').innerHTML =
           `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(payload.shapes_xhtml)}"></iframe>`;
       }
+
+      const secFindings = payload.security_findings || (payload.quality_assessment || {}).security_findings || tab.security_findings || {};
+      const qTier = (payload.quality_assessment || {}).quality_tier || tab.quality_tier || tab.status || 'REJECTED';
+      renderSecurityVerdictStrip(qTier, secFindings);
+      renderSecurityFindingsTab(payload);
 
       currentAttemptsList = Array.isArray(payload.attempts) ? payload.attempts : [];
       renderAttemptStepper();
@@ -1482,6 +1762,18 @@
       bar.appendChild(frag);
     }
 
+    function splitSnowballDiagnostic(diagStr) {
+      if (!diagStr) return { headline: '', autopsy: null };
+      const marker = '=== CPSA 4.4.9 SNOWBALL STATE AUTOPSY REPORT';
+      const idx = diagStr.indexOf(marker);
+      if (idx >= 0) {
+        const head = diagStr.slice(0, idx).trim();
+        const autopsy = diagStr.slice(idx).trim();
+        return { headline: head || 'CPSA state-space snowball timeout', autopsy };
+      }
+      return { headline: diagStr, autopsy: null };
+    }
+
     function selectAttemptSnapshot(idx) {
       if (idx < 0 || idx >= currentAttemptsList.length) return;
       selectedAttemptIdx = idx;
@@ -1520,10 +1812,19 @@
         toggleBtn.style.display = 'none';
       }
 
-      diagEl.innerText = att.diagnostic
-        ? `Diagnostic: ${att.diagnostic}`
-        : 'No compiler errors on this snapshot.';
-      diagEl.style.color = att.diagnostic ? '#f0883e' : '#3fb950';
+      if (att.diagnostic) {
+        const sp = splitSnowballDiagnostic(att.diagnostic);
+        diagEl.style.color = '#f0883e';
+        if (sp.autopsy) {
+          diagEl.innerHTML = `<div>Diagnostic: ${escapeHtml(sp.headline)}</div>` +
+            `<details class="snowball-details"><summary>▸ Show CPSA 4.4.9 Snowball State Autopsy Report</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
+        } else {
+          diagEl.innerText = `Diagnostic: ${att.diagnostic}`;
+        }
+      } else {
+        diagEl.style.color = '#3fb950';
+        diagEl.innerText = 'No compiler errors on this snapshot.';
+      }
 
       if (att.rag_query || (att.retrieved_chunks && att.retrieved_chunks.length) || att.searcher_diagnosis) {
         const cids = (att.retrieved_chunks || []).map(c => `${c.chunk_id}`).join(', ');
@@ -1665,6 +1966,9 @@
       document.querySelectorAll('.tab-viewport').forEach(v => v.style.display = 'none');
       const targetView = document.getElementById(`tab-${tabId}`);
       if (targetView) targetView.style.display = 'block';
+      if (tabId === 'analytics') {
+        refreshCsvAnalytics(false);
+      }
     }
 
     function setStepState(stageNum, state, label) {
@@ -1684,6 +1988,11 @@
     function handleIncomingBusEvent(evt) {
       if (!evt || !evt.event_type) return;
 
+      if (evt.event_type === 'csv_updated') {
+        scheduleCsvAnalyticsRefresh();
+        return;
+      }
+
       // Global tab & filtered registry updates ALWAYS apply regardless of whether viewing [LIVE] or Tab #k
       if (evt.event_type === 'tab_accepted' && evt.data && evt.data.tab) {
         liveActiveTabIndex = evt.data.tab.tab_index;
@@ -1702,6 +2011,7 @@
         if (document.getElementById('filtered-drawer').classList.contains('open')) {
           fetchFilteredPage();
         }
+        scheduleCsvAnalyticsRefresh();
         return;
       }
       if (evt.event_type === 'cost_updated' && evt.data) {
@@ -1734,6 +2044,7 @@
       if (evt.event_type === 'pipeline_completed' || evt.event_type === 'pipeline_failed') {
         pipelineRunning = false;
         updateLivePinButton();
+        scheduleCsvAnalyticsRefresh();
       }
 
       // Only mutate the shared DOM viewport if following [LIVE]
@@ -1742,12 +2053,38 @@
       }
     }
 
+    function renderSnowballAutopsyCard(timestamp, attemptNum, autopsyText) {
+      if (!autopsyText) return;
+      const feed = document.getElementById('rag-feed');
+      if (!feed) return;
+      if (ragFirstEvent) {
+        feed.innerHTML = '';
+        ragFirstEvent = false;
+      }
+      const timeStr = new Date((timestamp || (Date.now() / 1000)) * 1000).toLocaleTimeString([], { hour12: false });
+      const card = document.createElement('div');
+      card.className = 'rag-card';
+      card.style.borderLeft = '3px solid var(--color-red)';
+      card.innerHTML = `
+        <div class="rag-card-header">
+          <span class="rag-purpose" style="color:var(--color-red); border-color:var(--color-red);">CPSA 4.4.9 SNOWBALL AUTOPSY (REPAIR #${escapeHtml(String(attemptNum || 1))})</span>
+          <span>${escapeHtml(timeStr)}</span>
+        </div>
+        <details class="snowball-details" open>
+          <summary>▸ Snowball State-Space Unification Autopsy Report</summary>
+          <pre>${escapeHtml(autopsyText)}</pre>
+        </details>
+      `;
+      feed.prepend(card);
+    }
+
     function renderEventIntoViewport(evt, fetchLiveArtifacts) {
       if (
         evt.event_type === 'tab_accepted' ||
         evt.event_type === 'tab_updated' ||
         evt.event_type === 'rfc_filtered' ||
-        evt.event_type === 'cost_updated'
+        evt.event_type === 'cost_updated' ||
+        evt.event_type === 'csv_updated'
       ) {
         if (evt.event_type === 'cost_updated' && evt.data && evt.data.rfc_cost) {
           renderCostTelemetry(evt.data.rfc_cost, evt.data.batch_cost || latestBatchCostTelemetry);
@@ -1780,6 +2117,7 @@
       const safeData = Object.assign({}, evt.data || {});
       delete safeData.ast;
       let bodyText = Object.keys(safeData).length ? JSON.stringify(safeData) : '';
+      let extraAutopsyHtml = '';
 
       const stageDefaultModels = {
         1: document.getElementById('step-1-model')?.innerText || defaultModelCfg.router_model,
@@ -1815,6 +2153,7 @@
           const pill = document.getElementById('pipeline-status');
           pill.className = 'status-badge running';
           pill.innerText = 'RUNNING';
+          pill.setAttribute('data-tooltip-key', 'RUNNING');
         }
         if (evt.data.router_model) document.getElementById('step-1-model').innerText = evt.data.router_model;
         if (evt.data.extraction_model) document.getElementById('step-2-model').innerText = evt.data.extraction_model;
@@ -1894,19 +2233,29 @@
         currentStageNum = evt.stage || 5;
         currentRepairAttempt = evt.data.attempt || 1;
         activeAttemptEpoch = evt.timestamp;
-        const diagStr = (evt.data.diagnostic || '').toLowerCase();
+        const rawDiag = evt.data.diagnostic || '';
+        const sp = splitSnowballDiagnostic(rawDiag);
+        const diagStr = rawDiag.toLowerCase();
         const isTimeout = diagStr.includes('timed out') || diagStr.includes('step limit');
         currentActivityMode = isTimeout ? 'repair_timeout' : 'repair_syntax';
         const failureTag = isTimeout ? '[60s TIMEOUT / STATE-SPACE SNOWBALL]' : '[FAST SYNTAX / ROLETRAN ERROR]';
         const repMod = evt.data.model || defaultModelCfg.repair_model;
         const qMod = evt.data.query_model || defaultModelCfg.query_model;
         updateActiveModel(`${repMod} (RAG: ${qMod.split('/').pop()})`, evt.stage || 5);
-        bodyText = `${failureTag}\nRepair Model: ${repMod} | Query Model: ${qMod}\nDiagnostic: ${evt.data.diagnostic}\nCycle Detected: ${evt.data.cycle_detected ? 'YES (Perturbation active)' : 'NO'}`;
+        bodyText = `${failureTag}\nRepair Model: ${repMod} | Query Model: ${qMod}\nDiagnostic: ${sp.headline}\nCycle Detected: ${evt.data.cycle_detected ? 'YES (Perturbation active)' : 'NO'}`;
+        if (sp.autopsy) {
+          renderSnowballAutopsyCard(evt.timestamp, evt.data.attempt, sp.autopsy);
+          extraAutopsyHtml = `<details class="snowball-details"><summary>▸ View Snowball State Autopsy Report (also in RAG Knowledge tab)</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
+        }
         setStepState(evt.stage || 5, 'active', `Attempt ${evt.data.attempt}/${evt.data.max_attempts || 50}`);
       } else if (evt.event_type === 'stage_failed') {
         item.classList.add('error');
         typeLabel = `STAGE_${evt.stage}_FAIL`;
-        bodyText = evt.data.error_message || evt.data.reason || 'Stage failed';
+        const sp = splitSnowballDiagnostic(evt.data.error_message || evt.data.reason || 'Stage failed');
+        bodyText = sp.headline;
+        if (sp.autopsy) {
+          extraAutopsyHtml = `<details class="snowball-details"><summary>▸ View Snowball State Autopsy Report</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
+        }
         setStepState(evt.stage, 'failed', 'Failed');
       } else if (evt.event_type === 'pipeline_completed') {
         item.classList.add('success');
@@ -1916,9 +2265,19 @@
           const pill = document.getElementById('pipeline-status');
           pill.className = 'status-badge success';
           pill.innerText = evt.data.quality_tier || 'VERIFIED';
+          pill.setAttribute('data-tooltip-key', evt.data.quality_tier || 'VERIFIED');
           if (evt.data.shapes_xhtml) {
             document.getElementById('graph-container').innerHTML =
               `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
+          }
+          if (evt.data.security_findings) {
+            renderSecurityVerdictStrip(evt.data.quality_tier || 'VERIFIED', evt.data.security_findings);
+            renderSecurityFindingsTab({
+              tab: { rfc_id: evt.rfc_id, protocol_name: evt.data.protocol_name, quality_tier: evt.data.quality_tier, status: 'VERIFIED', shapes_count: evt.data.shapes_count },
+              intake_rationale: evt.data.intake_rationale,
+              security_findings: evt.data.security_findings,
+              quality_assessment: { quality_tier: evt.data.quality_tier, security_findings: evt.data.security_findings }
+            });
           }
         }
         typeLabel = 'SYNTHESIS_VERIFIED';
@@ -1932,9 +2291,14 @@
           const pill = document.getElementById('pipeline-status');
           pill.className = 'status-badge failed';
           pill.innerText = 'FAILED';
+          pill.setAttribute('data-tooltip-key', 'REJECTED');
         }
         typeLabel = 'PIPELINE_HALTED';
-        bodyText = evt.data.error_message || evt.data.reason || 'Pipeline halted';
+        const sp = splitSnowballDiagnostic(evt.data.error_message || evt.data.reason || 'Pipeline halted');
+        bodyText = sp.headline;
+        if (sp.autopsy) {
+          extraAutopsyHtml = `<details class="snowball-details"><summary>▸ View Snowball State Autopsy Report</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
+        }
       }
 
       item.innerHTML = `
@@ -1943,6 +2307,7 @@
           <span>${escapeHtml(timeStr)}</span>
         </div>
         <div class="log-data">${escapeHtml(bodyText)}</div>
+        ${extraAutopsyHtml}
       `;
 
       feed.appendChild(item);
@@ -2048,6 +2413,1130 @@
     }
 
     // =========================================================================
+    // Plain-English Hover Tooltips (~300ms Delay) for Quality Tiers & CPSA Verdicts
+    // =========================================================================
+    const RATING_TOOLTIPS = {
+      GOLD: {
+        title: 'GOLD — Full Multi-Party Interaction (Structural Quality)',
+        desc: 'Every participant role in the protocol compiled in CPSA, realized at least one valid execution shape, and interacted with at least one peer strand (>=2 strands in every point-of-view shape). Graded purely on structural fidelity — independent of whether the RFC protocol has security weaknesses.'
+      },
+      SILVER: {
+        title: 'SILVER — Partial Interaction / Local Execution',
+        desc: 'CPSA compiled the model and realized >=1 execution shape, and all defined roles are executable, but at least one point-of-view skeleton completed locally (single-strand) without requiring a peer response.'
+      },
+      BRONZE: {
+        title: 'BRONZE — Vacuous or Dead-Role Model',
+        desc: 'CPSA exited 0, but either 0 shapes were realized (contradictory assumptions), or the model contains dead/unused roles that were never instantiated in any skeleton.'
+      },
+      REJECTED: {
+        title: 'REJECTED — Uncompilable Model',
+        desc: 'The model failed CPSA syntax/executability checks or exhausted the 60s solver budget without compiling.'
+      },
+      PARTIAL: {
+        title: 'PARTIAL — Pre-Flight Passed, Solver Failed',
+        desc: 'Static role executability (cpsa4roletran / cpsa4 -l 1) succeeded, but full CPSA4 shape search failed or timed out.'
+      },
+      VERIFIED: {
+        title: 'VERIFIED — Formally Analyzed by CPSA4',
+        desc: 'MITRE CPSA4 completed shape analysis and generated formal execution shapes.'
+      },
+      FAILED: {
+        title: 'FAILED — Pipeline Halted',
+        desc: 'Synthesis or formal verification halted before producing a compiled CPSA shape graph.'
+      },
+      RUNNING: {
+        title: 'RUNNING — Live Synthesis in Progress',
+        desc: 'Currently executing synthesis and formal verification stages for this RFC.'
+      },
+      PENDING: {
+        title: 'PENDING — Awaiting CPSA Verification',
+        desc: 'Formal verification results have not been finalized yet.'
+      },
+      ALL_ROLES_EXECUTABLE: {
+        title: 'ALL_ROLES_EXECUTABLE (CPSA Role Executability)',
+        desc: 'Every defined role passed cpsa4roletran / cpsa4 -l 1 static executability and is instantiated in at least one preskeleton.'
+      },
+      PARTIAL_DEAD_ROLES: {
+        title: 'PARTIAL_DEAD_ROLES (CPSA Role Executability)',
+        desc: 'One or more defined roles were never instantiated in any preskeleton or realized shape.'
+      },
+      DEAD_ROLES_PRESENT: {
+        title: 'DEAD_ROLES_PRESENT (CPSA Role Executability)',
+        desc: 'One or more defined roles were never instantiated in any preskeleton or realized shape.'
+      },
+      NO_ROLES_EXECUTABLE: {
+        title: 'NO_ROLES_EXECUTABLE (CPSA Role Executability)',
+        desc: 'No participant roles realized an executable shape or static roletran failed.'
+      },
+      ROLETRAN_FAILED: {
+        title: 'ROLETRAN_FAILED (CPSA Role Executability)',
+        desc: 'At least one role failed static executability (e.g. sends a variable before receiving or originating it).'
+      },
+      MUTUAL_MULTI_STRAND: {
+        title: 'MUTUAL_MULTI_STRAND (CPSA Authentication Profile)',
+        desc: 'Every participant point-of-view skeleton realized >=1 shape and every realized shape required >=2 interacting strands (mutual peer authentication).'
+      },
+      MUTUAL_PEER_INTERACTION: {
+        title: 'MUTUAL_PEER_INTERACTION (CPSA Authentication Profile)',
+        desc: 'Every participant point-of-view skeleton realized >=1 shape and every realized shape required >=2 interacting strands (peer authentication).'
+      },
+      UNILATERAL_AUTHENTICATED: {
+        title: 'UNILATERAL_AUTHENTICATED (CPSA Authentication Profile)',
+        desc: 'At least one participant POV strictly required peer interaction (>=2 strands), while another POV completed locally (e.g. unilateral server-authenticated key exchange).'
+      },
+      UNILATERAL_PARTIAL: {
+        title: 'UNILATERAL_PARTIAL (CPSA Authentication Profile)',
+        desc: 'Some participant POVs required peer interaction (>=2 strands), while at least one POV completed locally (single-strand).'
+      },
+      CONDITIONAL_BRANCHED_AUTHENTICATION: {
+        title: 'CONDITIONAL_BRANCHED_AUTHENTICATION (Branched 1-Strand / 2-Strand Shapes)',
+        desc: 'A participant POV split into both a 2-strand peer-authenticated shape and a 1-strand self-communication/unauthenticated shape (e.g. missing principal inequality fact).'
+      },
+      UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE: {
+        title: 'UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE (Single-Strand Execution Only)',
+        desc: 'All realized shapes contained only a single strand — the POV role completed without CPSA proving any peer strand participated.'
+      },
+      LOCAL_ONLY: {
+        title: 'LOCAL_ONLY (CPSA Authentication Profile)',
+        desc: 'All realized shapes contained only a single strand (the POV role completed without proving any peer strand existed).'
+      },
+      NON_EXECUTABLE: {
+        title: 'NON_EXECUTABLE (0 Realized Shapes)',
+        desc: 'CPSA realized 0 shapes (preskeleton assumptions were contradictory or solver failed).'
+      },
+      NO_REALIZED_SHAPES: {
+        title: 'NO_REALIZED_SHAPES (CPSA Authentication Profile)',
+        desc: 'CPSA realized 0 shapes (preskeleton assumptions were contradictory or solver failed).'
+      },
+      FULL_PARAMETER_AGREEMENT: {
+        title: 'FULL_PARAMETER_AGREEMENT (Injective Parameter Agreement)',
+        desc: 'In every realized multi-strand shape, peer strands mapped identical values onto all shared protocol parameters (no MITM principal mismatch or parameter substitution).'
+      },
+      FULL_AGREEMENT: {
+        title: 'FULL_AGREEMENT (Injective Parameter Agreement)',
+        desc: 'In every realized shape, peer strands mapped identical values onto all shared protocol parameters (no parameter substitution or MITM mismatch).'
+      },
+      PRINCIPAL_DISAGREEMENT_MITM_OR_UKS: {
+        title: 'PRINCIPAL_DISAGREEMENT_MITM_OR_UKS (Lowe MITM / Unknown Key-Share)',
+        desc: 'CPSA realized a shape where the POV strand and a peer strand disagreed on a principal identity parameter (e.g. b vs b-0 in Needham-Schroeder Lowe MITM).'
+      },
+      PARAMETER_DISAGREEMENT_DETECTED: {
+        title: 'PARAMETER_DISAGREEMENT_DETECTED (Data/Key Parameter Substitution)',
+        desc: 'CPSA realized a shape where the POV strand and a peer strand bound different values (e.g. x vs x-0) to a shared non-principal parameter.'
+      },
+      DISAGREEMENT_DETECTED: {
+        title: 'DISAGREEMENT_DETECTED (Parameter Substitution / Mismatch)',
+        desc: 'CPSA realized a shape where the POV strand and a peer strand bound different values (e.g. n != n-0) to the same role parameter.'
+      },
+      NOT_APPLICABLE_SINGLE_STRAND: {
+        title: 'NOT_APPLICABLE_SINGLE_STRAND (Parameter Agreement)',
+        desc: 'No multi-strand shapes were realized, so cross-strand parameter agreement could not be evaluated.'
+      },
+      NO_PEER_STRANDS: {
+        title: 'NO_PEER_STRANDS (Parameter Agreement)',
+        desc: 'No multi-strand shapes were realized, so cross-strand parameter agreement could not be established.'
+      },
+      NO_REFLECTION: {
+        title: 'NO_REFLECTION (Role Reflection Check)',
+        desc: 'Principals and roles are properly separated; no POV shape instantiated multiple strands of the same role or collapsed distinct principals.'
+      },
+      DISTINCT_PEERS: {
+        title: 'DISTINCT_PEERS (Role Reflection Check)',
+        desc: 'Principals are properly separated; no peer strand collapsed its own sender/receiver principal variables onto the same identity.'
+      },
+      SAME_ROLE_REFLECTION_DETECTED: {
+        title: 'SAME_ROLE_REFLECTION_DETECTED (Same-Role / Symmetric Reflection)',
+        desc: 'CPSA satisfied a POV query by instantiating multiple strands of the same role (symmetric reflection attack where an initiator talks to another initiator).'
+      },
+      ROLE_REFLECTION_POSSIBLE: {
+        title: 'ROLE_REFLECTION_POSSIBLE (Self-Communication / Reflection)',
+        desc: 'A realized shape unified two distinct principal variables inside a strand onto the same identity (A = B reflection attack).'
+      },
+      SECRECY_PROVED: {
+        title: 'SECRECY_PROVED (Listener Secrecy Analysis)',
+        desc: 'Every (deflistener secret) query realized 0 shapes (dead tree), proving the Dolev-Yao adversary cannot derive any protected secret.'
+      },
+      ALL_SECRETS_PROTECTED: {
+        title: 'ALL_SECRETS_PROTECTED (Listener Secrecy Analysis)',
+        desc: 'Every (deflistener secret) query realized 0 shapes (dead tree), proving the Dolev-Yao adversary cannot derive the protected secret.'
+      },
+      PARTIAL_SECRECY: {
+        title: 'PARTIAL_SECRECY (Mixed Secrecy Verdict)',
+        desc: 'Some (deflistener ...) queries realized 0 shapes (secret protected), while at least one listener realized >=1 shape (secret leaked).'
+      },
+      SECRECY_LEAK_DETECTED: {
+        title: 'SECRECY_LEAK_DETECTED (Secrecy Breach)',
+        desc: 'A (deflistener secret) query realized >=1 shape, meaning the adversary learned the secret in a valid protocol execution.'
+      },
+      NOT_APPLICABLE_NO_LISTENER: {
+        title: 'NOT_APPLICABLE_NO_LISTENER (Secrecy Analysis)',
+        desc: 'The protocol model did not include any (deflistener ...) secrecy queries (e.g. pure authentication or integrity protocol).'
+      },
+      NO_SECRECY_CLAIMS_TESTED: {
+        title: 'NO_SECRECY_CLAIMS_TESTED (Secrecy Analysis)',
+        desc: 'The protocol model did not include any (deflistener ...) secrecy queries (e.g. pure authentication or integrity protocol).'
+      },
+      ALL_SATISFIED: {
+        title: 'ALL_SATISFIED (CPSA Security Goals)',
+        desc: 'All declared (defgoal ...) security sentences were satisfied with 0 counterexamples.'
+      },
+      ALL_DEFGOALS_SATISFIED: {
+        title: 'ALL_DEFGOALS_SATISFIED (CPSA Security Goals)',
+        desc: 'All (defgoal ...) security sentences were satisfied with 0 counterexamples.'
+      },
+      COUNTEREXAMPLE_FOUND: {
+        title: 'COUNTEREXAMPLE_FOUND (CPSA Security Goals)',
+        desc: 'CPSA found at least one shape violating a declared (defgoal ...) security sentence.'
+      },
+      NO_EXPLICIT_DEFGOALS: {
+        title: 'NO_EXPLICIT_DEFGOALS (Standard defskeleton Exploration)',
+        desc: 'Model used standard (defskeleton ...) point-of-view queries; cpsa4sas extracted the strongest satisfied (defgoal ...) shape analysis sentences automatically.'
+      },
+      NO_DEFGOALS: {
+        title: 'NO_DEFGOALS (Standard defskeleton Exploration)',
+        desc: 'Model used standard (defskeleton ...) point-of-view queries; cpsa4sas extracted the strongest satisfied (defgoal ...) shape analysis sentences automatically.'
+      }
+    };
+
+    let tooltipTimer = null;
+    let activeTooltipTarget = null;
+
+    function initHoverTooltips() {
+      const tipEl = document.getElementById('rating-tooltip');
+      const titleEl = document.getElementById('rating-tooltip-title');
+      const descEl = document.getElementById('rating-tooltip-desc');
+      if (!tipEl) return;
+
+      function positionTooltip(clientX, clientY) {
+        const pad = 14;
+        const rect = tipEl.getBoundingClientRect();
+        let left = clientX + pad;
+        let top = clientY + pad;
+        if (left + rect.width > window.innerWidth - 10) {
+          left = Math.max(8, clientX - rect.width - pad);
+        }
+        if (top + rect.height > window.innerHeight - 10) {
+          top = Math.max(8, clientY - rect.height - pad);
+        }
+        tipEl.style.left = `${left}px`;
+        tipEl.style.top = `${top}px`;
+      }
+
+      document.addEventListener('mouseover', (e) => {
+        const target = e.target.closest('[data-tooltip-key]');
+        if (!target) return;
+        const key = target.getAttribute('data-tooltip-key');
+        const info = RATING_TOOLTIPS[key];
+        if (!info) return;
+        activeTooltipTarget = target;
+        const startX = e.clientX;
+        const startY = e.clientY;
+        clearTimeout(tooltipTimer);
+        tooltipTimer = setTimeout(() => {
+          if (activeTooltipTarget !== target) return;
+          titleEl.innerText = info.title;
+          descEl.innerText = info.desc;
+          tipEl.style.display = 'block';
+          positionTooltip(startX, startY);
+        }, 280);
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (tipEl.style.display === 'block') {
+          positionTooltip(e.clientX, e.clientY);
+        }
+      });
+
+      document.addEventListener('mouseout', (e) => {
+        const target = e.target.closest('[data-tooltip-key]');
+        if (target && target === activeTooltipTarget) {
+          const related = e.relatedTarget ? e.relatedTarget.closest('[data-tooltip-key]') : null;
+          if (related !== target) {
+            clearTimeout(tooltipTimer);
+            activeTooltipTarget = null;
+            tipEl.style.display = 'none';
+          }
+        }
+      });
+    }
+    initHoverTooltips();
+
+    // =========================================================================
+    // Part C: Compact Security Verdict Strip & Security Findings (CPSA) Sub-Tab
+    // =========================================================================
+    function verdictPillClass(val) {
+      const v = String(val || '').toUpperCase();
+      if ([
+        'GOLD', 'VERIFIED', 'ALL_ROLES_EXECUTABLE', 'MUTUAL_MULTI_STRAND', 'MUTUAL_PEER_INTERACTION',
+        'FULL_PARAMETER_AGREEMENT', 'FULL_AGREEMENT', 'NO_REFLECTION', 'DISTINCT_PEERS',
+        'SECRECY_PROVED', 'ALL_SECRETS_PROTECTED', 'ALL_SATISFIED', 'ALL_DEFGOALS_SATISFIED'
+      ].includes(v)) {
+        return 'ok';
+      }
+      if ([
+        'SILVER', 'UNILATERAL_AUTHENTICATED', 'NOT_APPLICABLE_NO_LISTENER', 'NO_SECRECY_CLAIMS_TESTED',
+        'NO_EXPLICIT_DEFGOALS', 'NO_DEFGOALS'
+      ].includes(v)) {
+        return 'info';
+      }
+      if ([
+        'BRONZE', 'PARTIAL', 'UNILATERAL_PARTIAL', 'CONDITIONAL_BRANCHED_AUTHENTICATION',
+        'UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE', 'LOCAL_ONLY', 'NOT_APPLICABLE_SINGLE_STRAND',
+        'NO_PEER_STRANDS', 'PARTIAL_DEAD_ROLES', 'DEAD_ROLES_PRESENT', 'PARTIAL_SECRECY'
+      ].includes(v)) {
+        return 'warn';
+      }
+      if ([
+        'REJECTED', 'FAILED', 'NO_ROLES_EXECUTABLE', 'ROLETRAN_FAILED', 'NON_EXECUTABLE',
+        'NO_REALIZED_SHAPES', 'PRINCIPAL_DISAGREEMENT_MITM_OR_UKS', 'PARAMETER_DISAGREEMENT_DETECTED',
+        'DISAGREEMENT_DETECTED', 'SAME_ROLE_REFLECTION_DETECTED', 'ROLE_REFLECTION_POSSIBLE',
+        'SECRECY_LEAK_DETECTED', 'COUNTEREXAMPLE_FOUND'
+      ].includes(v)) {
+        return 'bad';
+      }
+      return '';
+    }
+
+    function setStripPill(elId, val) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      const text = val || 'PENDING';
+      el.innerText = text;
+      el.className = `sec-pill ${verdictPillClass(text)}`;
+      el.setAttribute('data-tooltip-key', text);
+    }
+
+    function renderSecurityVerdictStrip(qualityTier, secFindings) {
+      const sf = secFindings || {};
+      setStripPill('strip-quality', qualityTier || 'PENDING');
+      setStripPill('strip-auth', sf.authentication_profile || 'PENDING');
+      setStripPill('strip-agreement', sf.parameter_agreement_status || 'PENDING');
+      setStripPill('strip-secrecy', sf.secrecy_status || 'PENDING');
+
+      const anomEl = document.getElementById('strip-anomalies');
+      if (anomEl) {
+        if (!secFindings || Object.keys(sf).length === 0) {
+          anomEl.innerText = '--';
+          anomEl.className = 'sec-pill';
+        } else {
+          const cnt = Number(sf.anomalies_count ?? (sf.vulnerabilities_and_anomalies || []).length ?? 0);
+          anomEl.innerText = `${cnt} Anomal${cnt === 1 ? 'y' : 'ies'}`;
+          anomEl.className = `sec-pill ${cnt === 0 ? 'ok' : 'warn'}`;
+        }
+      }
+    }
+
+    function renderSecurityFindingsTab(payload) {
+      const container = document.getElementById('security-findings-container');
+      if (!container) return;
+      const tab = payload.tab || {};
+      const meta = payload.rfc_metadata || {};
+      const qa = payload.quality_assessment || {};
+      const sf = payload.security_findings || qa.security_findings || tab.security_findings || {};
+      const shapesAnalysis = payload.shapes_analysis || {};
+      const expTel = payload.exploration_telemetry || {};
+      const rationale = payload.intake_rationale || meta.intake_rationale || tab.intake_rationale || '';
+      const qTier = qa.quality_tier || tab.quality_tier || tab.status || 'PENDING';
+
+      if (!sf || Object.keys(sf).length === 0) {
+        container.innerHTML = `
+          ${rationale ? `<div class="sec-banner-box"><strong style="color:var(--color-green);">Stage 1 Intake Rationale:</strong> Eligible: ${escapeHtml(rationale)}</div>` : ''}
+          <div style="color:var(--text-muted);">No formal CPSA security findings recorded for this tab yet.</div>
+        `;
+        return;
+      }
+
+      const deadRoles = (sf.dead_roles || []).join(', ') || 'None';
+      const multiPovs = (sf.multi_strand_pov_roles || []).join(', ') || 'None';
+      const singlePovs = (sf.single_strand_pov_roles || []).join(', ') || 'None';
+      const zeroPovs = (sf.unrealized_pov_roles || []).join(', ') || 'None';
+      const protSecrets = (sf.protected_secrets || []).join(', ') || 'None';
+      const leakSecrets = (sf.leaked_secrets || []).join(', ') || 'None';
+      const anomalies = sf.vulnerabilities_and_anomalies || [];
+      const disagreements = sf.disagreed_parameters || sf.parameter_disagreements || [];
+      const reflections = sf.role_reflections || [];
+      const authTests = sf.authentication_tests_summary || {};
+      const sasList = sf.shape_analysis_sentences || sf.shape_analysis_sentences_defgoals || [];
+      const perSkel = shapesAnalysis.per_preskeleton_outcomes || shapesAnalysis.per_preskeleton || [];
+
+      const anomaliesHtml = anomalies.length === 0
+        ? `<div class="sec-banner-box" style="border-left-color:var(--color-green);"><strong style="color:var(--color-green);">0 Formal Anomalies Detected:</strong> All POV roles interacted with distinct peer strands in full parameter agreement with no secrecy leaks.</div>`
+        : `<div class="sec-banner-box" style="border-left-color:var(--color-yellow);">
+             <strong style="color:var(--color-yellow);">Detected Protocol Vulnerabilities &amp; CPSA Anomalies (${anomalies.length}):</strong>
+             <ul style="margin-top:5px; padding-left:18px; color:#e6edf3;">
+               ${anomalies.map(a => `<li>${escapeHtml(a)}</li>`).join('')}
+             </ul>
+           </div>`;
+
+      const skelRowsHtml = perSkel.length === 0
+        ? `<tr><td colspan="7" style="color:var(--text-muted);">No per-preskeleton shape breakdown available.</td></tr>`
+        : perSkel.map(sk => {
+            const rawDis = sk.disagreed_parameters || sk.parameter_disagreements || [];
+            const disList = rawDis.map(d =>
+              `${d.pov_role || ''}->${d.peer_role || ''}:${d.param || d.parameter || ''}(${d.pov_val || d.pov_value || ''}!=${d.peer_val || d.peer_value || ''})`
+            ).join('; ') || 'Full Agreement';
+            const isSecList = Boolean(sk.is_secrecy_listener || sk.query_type === 'SECRECY_LISTENER' || (sk.listener_vars || sk.listener_terms || []).length > 0);
+            const listVars = sk.listener_vars || sk.listener_terms || [];
+            const realCount = sk.shapes_realized ?? sk.realized_shapes_count ?? 0;
+            const hasMulti = Boolean(sk.has_multi_strand_shape || (sk.max_strands_in_any_shape || 0) >= 2);
+            const hasSingle = Boolean(sk.has_single_strand_shape || (realCount > 0 && !hasMulti));
+            const hasRefl = Boolean(sk.has_same_role_reflection || sk.has_self_reflection_split || (sk.role_reflections || []).length > 0);
+            const refList = hasRefl
+              ? (sk.has_same_role_reflection ? 'Same-Role Reflection' : 'Branched 1-Strand Split')
+              : 'Distinct Peers';
+            return `
+              <tr>
+                <td>#${escapeHtml(String(sk.root_label ?? sk.skeleton_label ?? ''))}</td>
+                <td style="font-weight:700; color:var(--color-blue);">${escapeHtml(sk.pov_role || (isSecList ? 'Secrecy Listener' : 'POV'))}</td>
+                <td>${isSecList ? `Listener (${escapeHtml(listVars.join(', '))})` : 'Participant POV'}</td>
+                <td>${escapeHtml(String(realCount))}</td>
+                <td>${hasMulti ? '<span style="color:var(--color-green);">YES (>=2 strands)</span>' : (hasSingle ? '<span style="color:var(--color-yellow);">Single-Strand Only</span>' : '<span style="color:var(--text-muted);">0 Shapes</span>')}</td>
+                <td style="color:${rawDis.length ? 'var(--color-red)' : 'var(--color-green)'};">${escapeHtml(disList)}</td>
+                <td style="color:${hasRefl ? 'var(--color-yellow)' : 'var(--color-green)'};">${escapeHtml(refList)}</td>
+              </tr>
+            `;
+          }).join('');
+
+      const sasBlockHtml = sasList.length > 0
+        ? `<details class="snowball-details" style="margin-top:10px;" open>
+             <summary>▸ CPSA4SAS Extracted Shape Analysis Sentences — (defgoal ...) (${sasList.length})</summary>
+             <pre>${escapeHtml(sasList.join('\n\n'))}</pre>
+           </details>`
+        : '';
+
+      container.innerHTML = `
+        <div class="sec-banner-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <strong>${escapeHtml(tab.rfc_id || meta.rfc_id || '')} — ${escapeHtml(tab.protocol_name || meta.protocol_name || '')}</strong>
+            <span class="sec-pill ${verdictPillClass(qTier)}" data-tooltip-key="${escapeHtml(qTier)}">Structural Quality: ${escapeHtml(qTier)}</span>
+          </div>
+          ${rationale ? `<div><strong style="color:var(--color-green);">Stage 1 Intake Rationale:</strong> Eligible: ${escapeHtml(rationale)}</div>` : ''}
+          ${qa.tier_rationale ? `<div style="margin-top:3px; color:var(--text-muted);"><strong>Quality Tier Rationale:</strong> ${escapeHtml(qa.tier_rationale)}</div>` : ''}
+        </div>
+
+        ${anomaliesHtml}
+
+        <div class="sec-grid">
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>1. Role Executability</span>
+              <span class="sec-pill ${verdictPillClass(sf.role_executability)}" data-tooltip-key="${escapeHtml(sf.role_executability || '')}">${escapeHtml(sf.role_executability || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Dead / Uninstantiated Roles (${escapeHtml(String(sf.dead_roles_count ?? 0))}): <span style="color:var(--text-main);">${escapeHtml(deadRoles)}</span></div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>2. Authentication Profile</span>
+              <span class="sec-pill ${verdictPillClass(sf.authentication_profile)}" data-tooltip-key="${escapeHtml(sf.authentication_profile || '')}">${escapeHtml(sf.authentication_profile || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Multi-Strand POVs: <span style="color:var(--color-green);">${escapeHtml(multiPovs)}</span></div>
+              <div>Single-Strand POVs: <span style="color:var(--color-yellow);">${escapeHtml(singlePovs)}</span></div>
+              <div>Unrealized POVs: <span style="color:var(--text-muted);">${escapeHtml(zeroPovs)}</span></div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>3. Parameter Agreement</span>
+              <span class="sec-pill ${verdictPillClass(sf.parameter_agreement_status)}" data-tooltip-key="${escapeHtml(sf.parameter_agreement_status || '')}">${escapeHtml(sf.parameter_agreement_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Disagreed Parameters: <span style="color:${disagreements.length ? 'var(--color-red)' : 'var(--color-green)'};">${disagreements.length}</span></div>
+              <div style="font-size:10px; color:var(--text-muted);">Hover badge for CPSA maplet agreement definition.</div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>4. Role Reflection Check</span>
+              <span class="sec-pill ${verdictPillClass(sf.role_reflection_status)}" data-tooltip-key="${escapeHtml(sf.role_reflection_status || '')}">${escapeHtml(sf.role_reflection_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Self-Communication Instances: <span style="color:${reflections.length ? 'var(--color-yellow)' : 'var(--color-green)'};">${reflections.length}</span></div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>5. Secrecy &amp; Listeners</span>
+              <span class="sec-pill ${verdictPillClass(sf.secrecy_status)}" data-tooltip-key="${escapeHtml(sf.secrecy_status || '')}">${escapeHtml(sf.secrecy_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Protected Secrets: <span style="color:var(--color-green);">${escapeHtml(protSecrets)}</span></div>
+              <div>Leaked Secrets: <span style="color:${(sf.leaked_secrets || []).length ? 'var(--color-red)' : 'var(--text-muted)'};">${escapeHtml(leakSecrets)}</span></div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>6. Security Goals &amp; SAS</span>
+              <span class="sec-pill ${verdictPillClass(sf.defgoal_satisfaction_status)}" data-tooltip-key="${escapeHtml(sf.defgoal_satisfaction_status || '')}">${escapeHtml(sf.defgoal_satisfaction_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Extracted cpsa4sas defgoals: <span style="color:var(--color-blue); font-weight:700;">${escapeHtml(String(sf.shape_analysis_sentences_count ?? sasList.length))}</span></div>
+              <div>Cohort Tests: enc=${escapeHtml(String(authTests.encryption_tests ?? 0))} | nonce=${escapeHtml(String(authTests.nonce_tests ?? 0))} | chan=${escapeHtml(String(authTests.channel_tests ?? 0))}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-family:var(--mono); font-size:11px; font-weight:700; color:var(--text-main); margin-top:6px;">
+          PER-PRESKELETON SHAPE &amp; AGREEMENT BREAKDOWN (FROM *_shapes.txt)
+        </div>
+        <table class="sec-table">
+          <thead>
+            <tr>
+              <th>Skeleton</th>
+              <th>POV Role</th>
+              <th>Query Type</th>
+              <th>Realized Shapes</th>
+              <th>Peer Interaction</th>
+              <th>Parameter Agreement</th>
+              <th>Role Reflection</th>
+            </tr>
+          </thead>
+          <tbody>${skelRowsHtml}</tbody>
+        </table>
+        ${sasBlockHtml}
+      `;
+    }
+
+    // =========================================================================
+    // Part D: Off-Main-Thread CSV Analytics (Live) via Inline Web Worker
+    // =========================================================================
+    let analyticsWorker = null;
+    let latestCsvRows = [];
+    let latestCsvHeaders = [];
+    let latestCsvPath = '';
+    let csvRefreshTimer = null;
+
+    const WORKER_SOURCE = `
+      function toNum(v) {
+        const n = parseFloat(v);
+        return isNaN(n) ? 0 : n;
+      }
+      function isTrue(v) {
+        return String(v || '').trim().toLowerCase() === 'true';
+      }
+      self.onmessage = function(e) {
+        const rows = (e.data && e.data.rows) || [];
+        const totalRows = rows.length;
+        const eligibleRows = rows.filter(r => isTrue(r.is_eligible));
+        const ineligibleRows = rows.filter(r => !isTrue(r.is_eligible));
+        const verifiedRows = eligibleRows.filter(r => (r.status || '').toUpperCase() === 'VERIFIED');
+        const partialRows = eligibleRows.filter(r => (r.status || '').toUpperCase() === 'PARTIAL');
+        const failedRows = eligibleRows.filter(r => (r.status || '').toUpperCase() === 'FAILED');
+        const zeroShotRows = verifiedRows.filter(r => isTrue(r.zero_shot_passed));
+
+        // Tier counts
+        const tierCounts = { GOLD: 0, SILVER: 0, BRONZE: 0, REJECTED: 0 };
+        eligibleRows.forEach(r => {
+          const t = (r.quality_tier || 'REJECTED').toUpperCase();
+          if (tierCounts[t] !== undefined) tierCounts[t]++;
+          else tierCounts.REJECTED++;
+        });
+
+        // Intake Funnel
+        const gateCounts = {
+          'Tier 0 Header Filter': 0,
+          'Stage 1c Applicability Gate': 0,
+          'Stage 2 Verbatim Slice Gate': 0,
+          'Eligible -> FAILED': failedRows.length,
+          'Eligible -> PARTIAL': partialRows.length,
+          'Eligible -> VERIFIED': verifiedRows.length
+        };
+        ineligibleRows.forEach(r => {
+          const g = r.rejection_gate || 'Stage 1c Applicability Gate';
+          if (gateCounts[g] !== undefined) gateCounts[g]++;
+          else gateCounts['Stage 1c Applicability Gate']++;
+        });
+
+        // Security Findings counts on Verified/Eligible
+        const authCounts = { MUTUAL_PEER_INTERACTION: 0, UNILATERAL_PARTIAL: 0, LOCAL_ONLY: 0, NO_REALIZED_SHAPES: 0 };
+        const agreeCounts = { FULL_AGREEMENT: 0, DISAGREEMENT_DETECTED: 0, NO_PEER_STRANDS: 0 };
+        const secCounts = { ALL_SECRETS_PROTECTED: 0, SECRECY_LEAK_DETECTED: 0, NO_SECRECY_CLAIMS_TESTED: 0 };
+        const reflCounts = { DISTINCT_PEERS: 0, ROLE_REFLECTION_POSSIBLE: 0 };
+        let anomalyProtocols = 0;
+
+        eligibleRows.forEach(r => {
+          const ap = (r.authentication_profile || '').toUpperCase();
+          if (ap === 'MUTUAL_MULTI_STRAND' || ap === 'MUTUAL_PEER_INTERACTION') authCounts.MUTUAL_PEER_INTERACTION++;
+          else if (ap === 'UNILATERAL_AUTHENTICATED' || ap === 'UNILATERAL_PARTIAL' || ap === 'CONDITIONAL_BRANCHED_AUTHENTICATION') authCounts.UNILATERAL_PARTIAL++;
+          else if (ap === 'UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE' || ap === 'LOCAL_ONLY') authCounts.LOCAL_ONLY++;
+          else if (ap === 'NON_EXECUTABLE' || ap === 'NO_REALIZED_SHAPES') authCounts.NO_REALIZED_SHAPES++;
+
+          const ag = (r.parameter_agreement_status || '').toUpperCase();
+          if (ag === 'FULL_PARAMETER_AGREEMENT' || ag === 'FULL_AGREEMENT') agreeCounts.FULL_AGREEMENT++;
+          else if (ag === 'PRINCIPAL_DISAGREEMENT_MITM_OR_UKS' || ag === 'PARAMETER_DISAGREEMENT_DETECTED' || ag === 'DISAGREEMENT_DETECTED') agreeCounts.DISAGREEMENT_DETECTED++;
+          else if (ag === 'NOT_APPLICABLE_SINGLE_STRAND' || ag === 'NO_PEER_STRANDS') agreeCounts.NO_PEER_STRANDS++;
+
+          const sc = (r.secrecy_status || '').toUpperCase();
+          if (sc === 'SECRECY_PROVED' || sc === 'ALL_SECRETS_PROTECTED') secCounts.ALL_SECRETS_PROTECTED++;
+          else if (sc === 'SECRECY_LEAK_DETECTED' || sc === 'PARTIAL_SECRECY') secCounts.SECRECY_LEAK_DETECTED++;
+          else if (sc === 'NOT_APPLICABLE_NO_LISTENER' || sc === 'NO_SECRECY_CLAIMS_TESTED') secCounts.NO_SECRECY_CLAIMS_TESTED++;
+
+          const rf = (r.role_reflection_status || '').toUpperCase();
+          if (rf === 'NO_REFLECTION' || rf === 'DISTINCT_PEERS') reflCounts.DISTINCT_PEERS++;
+          else if (rf === 'SAME_ROLE_REFLECTION_DETECTED' || rf === 'ROLE_REFLECTION_POSSIBLE') reflCounts.ROLE_REFLECTION_POSSIBLE++;
+
+          if (toNum(r.anomalies_count) > 0) anomalyProtocols++;
+        });
+
+        // Completion steps histogram
+        const stepBins = { '1 (Zero-Shot)': 0, '2-3 Steps': 0, '4-6 Steps': 0, '7-10 Steps': 0, '11+ Steps': 0, 'Unverified': 0 };
+        eligibleRows.forEach(r => {
+          if ((r.status || '').toUpperCase() !== 'VERIFIED') {
+            stepBins['Unverified']++;
+            return;
+          }
+          const st = toNum(r.total_completion_steps);
+          if (st <= 1) stepBins['1 (Zero-Shot)']++;
+          else if (st <= 3) stepBins['2-3 Steps']++;
+          else if (st <= 6) stepBins['4-6 Steps']++;
+          else if (st <= 10) stepBins['7-10 Steps']++;
+          else stepBins['11+ Steps']++;
+        });
+
+        // Per-eligible protocol repair breakdown & cohort tests & scale
+        const repairSeries = eligibleRows.slice(-25).map(r => ({
+          label: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          schema: toNum(r.schema_repairs),
+          roletran: toNum(r.roletran_repairs),
+          solver: toNum(r.solver_repairs),
+          searcher: toNum(r.searcher_invocations)
+        }));
+
+        const cohortSeries = eligibleRows.slice(-25).map(r => ({
+          label: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          enc: toNum(r.encryption_tests_count),
+          nonce: toNum(r.nonce_tests_count),
+          chan: toNum(r.channel_tests_count)
+        }));
+
+        const scaleSeries = eligibleRows.slice(-25).map(r => ({
+          label: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          roles: toNum(r.role_count),
+          skeletons: toNum(r.preskeleton_count),
+          anomalies: toNum(r.anomalies_count),
+          sas: toNum(r.shape_analysis_sentences_count)
+        }));
+
+        // State-space scatter
+        const stateScatter = eligibleRows.map(r => ({
+          rfc_id: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          x: toNum(r.explored_skeletons_count),
+          y: toNum(r.shapes_count),
+          size: Math.max(4, Math.min(11, 3 + toNum(r.preskeleton_count) * 1.5)),
+          tier: (r.quality_tier || 'REJECTED').toUpperCase()
+        }));
+
+        // Duration vs Slice Lines scatter
+        const durationScatter = eligibleRows.map(r => ({
+          rfc_id: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          x: toNum(r.sliced_lines_count),
+          y: toNum(r.duration_seconds),
+          tier: (r.quality_tier || 'REJECTED').toUpperCase()
+        }));
+
+        // Cost & Token breakdown by role
+        const roleTotals = {
+          Router: { cost: 0, tokens: 0 },
+          Extraction: { cost: 0, tokens: 0 },
+          Searcher: { cost: 0, tokens: 0 },
+          Repair: { cost: 0, tokens: 0 }
+        };
+        let totalCostUsd = 0;
+        let totalTokens = 0;
+        rows.forEach(r => {
+          roleTotals.Router.cost += toNum(r.router_cost_usd);
+          roleTotals.Router.tokens += toNum(r.router_total_tokens);
+          roleTotals.Extraction.cost += toNum(r.extraction_cost_usd);
+          roleTotals.Extraction.tokens += toNum(r.extraction_total_tokens);
+          roleTotals.Searcher.cost += toNum(r.query_cost_usd);
+          roleTotals.Searcher.tokens += toNum(r.query_total_tokens);
+          roleTotals.Repair.cost += toNum(r.repair_cost_usd);
+          roleTotals.Repair.tokens += toNum(r.repair_total_tokens);
+          totalCostUsd += toNum(r.total_cost_usd);
+          totalTokens += toNum(r.total_tokens);
+        });
+
+        // Cumulative timeline over rows
+        let cumVerified = 0;
+        let cumGold = 0;
+        let cumCost = 0;
+        const timeline = rows.map((r, idx) => {
+          if ((r.status || '').toUpperCase() === 'VERIFIED') cumVerified++;
+          if ((r.quality_tier || '').toUpperCase() === 'GOLD') cumGold++;
+          cumCost += toNum(r.total_cost_usd);
+          return {
+            index: idx + 1,
+            rfc_id: r.rfc_id,
+            verified: cumVerified,
+            gold: cumGold,
+            cost: cumCost
+          };
+        });
+
+        const avgSteps = eligibleRows.length
+          ? (eligibleRows.reduce((a, r) => a + toNum(r.total_completion_steps), 0) / eligibleRows.length)
+          : 0;
+        const avgRepairs = eligibleRows.length
+          ? (eligibleRows.reduce((a, r) => a + toNum(r.total_repairs), 0) / eligibleRows.length)
+          : 0;
+        const avgEligDur = eligibleRows.length
+          ? (eligibleRows.reduce((a, r) => a + toNum(r.duration_seconds), 0) / eligibleRows.length)
+          : 0;
+        const avgIneligDur = ineligibleRows.length
+          ? (ineligibleRows.reduce((a, r) => a + toNum(r.duration_seconds), 0) / ineligibleRows.length)
+          : 0;
+
+        self.postMessage({
+          kpis: {
+            totalRows,
+            eligibleCount: eligibleRows.length,
+            ineligibleCount: ineligibleRows.length,
+            verifiedCount: verifiedRows.length,
+            zeroShotCount: zeroShotRows.length,
+            passRate: eligibleRows.length ? ((verifiedRows.length / eligibleRows.length) * 100).toFixed(1) : '0.0',
+            zeroShotRate: eligibleRows.length ? ((zeroShotRows.length / eligibleRows.length) * 100).toFixed(1) : '0.0',
+            tierCounts,
+            fullAgreeCount: agreeCounts.FULL_AGREEMENT,
+            secretsProtectedCount: secCounts.ALL_SECRETS_PROTECTED,
+            anomalyProtocols,
+            avgSteps: avgSteps.toFixed(2),
+            avgRepairs: avgRepairs.toFixed(2),
+            totalCostUsd: totalCostUsd.toFixed(4),
+            avgVerifiedCost: verifiedRows.length ? (totalCostUsd / verifiedRows.length).toFixed(4) : '0.0000',
+            totalTokens,
+            avgEligDur: avgEligDur.toFixed(1),
+            avgIneligDur: avgIneligDur.toFixed(2)
+          },
+          gateCounts,
+          tierCounts,
+          securityMatrix: { authCounts, agreeCounts, secCounts, reflCounts },
+          stepBins,
+          repairSeries,
+          cohortSeries,
+          scaleSeries,
+          stateScatter,
+          durationScatter,
+          roleTotals,
+          timeline
+        });
+      };
+    `;
+
+    function initAnalyticsWorker() {
+      if (analyticsWorker) return;
+      try {
+        const blob = new Blob([WORKER_SOURCE], { type: 'application/javascript' });
+        analyticsWorker = new Worker(URL.createObjectURL(blob));
+        analyticsWorker.onmessage = (e) => {
+          renderCsvAnalyticsResult(e.data);
+        };
+      } catch (err) {
+        analyticsWorker = null;
+      }
+    }
+    initAnalyticsWorker();
+
+    function scheduleCsvAnalyticsRefresh() {
+      clearTimeout(csvRefreshTimer);
+      csvRefreshTimer = setTimeout(() => {
+        const analyticsTab = document.getElementById('tab-analytics');
+        if (analyticsTab && analyticsTab.style.display !== 'none') {
+          refreshCsvAnalytics(false);
+        }
+      }, 280);
+    }
+
+    function refreshCsvAnalytics(force) {
+      fetch('/api/csv')
+        .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+        .then(data => {
+          latestCsvRows = data.rows || [];
+          latestCsvHeaders = data.headers || [];
+          latestCsvPath = data.csv_path || '';
+          const lbl = document.getElementById('analytics-csv-label');
+          if (lbl) {
+            const shortPath = latestCsvPath ? latestCsvPath.split('/').slice(-2).join('/') : 'pipeline_runs.csv';
+            lbl.innerText = `${shortPath} (${latestCsvRows.length} rows, ${latestCsvHeaders.length} columns)`;
+            lbl.title = latestCsvPath;
+          }
+          if (analyticsWorker) {
+            analyticsWorker.postMessage({ rows: latestCsvRows });
+          }
+          renderCustomExplorerUI();
+          renderCsvTableUI();
+        })
+        .catch(() => {});
+    }
+
+    function svgHorizontalBars(entries, colors) {
+      const vals = entries.map(e => e[1]);
+      const maxVal = Math.max(1, ...vals);
+      const w = 360;
+      const rowH = 24;
+      const h = Math.max(150, entries.length * rowH + 16);
+      let rowsSvg = '';
+      entries.forEach(([label, count], i) => {
+        const y = 10 + i * rowH;
+        const barW = Math.round((count / maxVal) * 165);
+        const col = (colors && colors[i % colors.length]) || '#58a6ff';
+        rowsSvg += `
+          <text x="4" y="${y + 13}" fill="#c9d1d9" font-family="monospace" font-size="10">${escapeHtml(String(label).slice(0, 24))}</text>
+          <rect x="158" y="${y + 3}" width="${Math.max(2, barW)}" height="13" fill="${col}" rx="2" />
+          <text x="${164 + Math.max(2, barW)}" y="${y + 13}" fill="#8b949e" font-family="monospace" font-size="10">${count}</text>
+        `;
+      });
+      return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${rowsSvg}</svg>`;
+    }
+
+    function svgStackedVerticalBars(items, keys, colors, legendLabels) {
+      if (!items || !items.length) {
+        return `<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">Waiting for eligible RFC runs...</div>`;
+      }
+      const w = 380;
+      const h = 185;
+      const plotH = 130;
+      const baseY = 145;
+      const totals = items.map(it => keys.reduce((s, k) => s + (Number(it[k]) || 0), 0));
+      const maxTot = Math.max(1, ...totals);
+      const slotW = Math.max(10, Math.min(34, Math.floor((w - 40) / items.length)));
+
+      let barsSvg = `<line x1="28" y1="${baseY}" x2="${w - 8}" y2="${baseY}" stroke="#30363d" />`;
+      items.forEach((it, idx) => {
+        const x = 32 + idx * slotW;
+        let curY = baseY;
+        keys.forEach((k, kIdx) => {
+          const v = Number(it[k]) || 0;
+          if (v <= 0) return;
+          const bh = Math.max(2, Math.round((v / maxTot) * plotH));
+          curY -= bh;
+          barsSvg += `<rect x="${x}" y="${curY}" width="${Math.max(6, slotW - 4)}" height="${bh}" fill="${colors[kIdx]}"><title>${escapeHtml(it.label)} (${escapeHtml(it.protocol || '')}) - ${legendLabels[kIdx]}: ${v}</title></rect>`;
+        });
+        barsSvg += `<text x="${x + 3}" y="${baseY + 11}" fill="#8b949e" font-family="monospace" font-size="8.5" transform="rotate(28 ${x + 3} ${baseY + 11})">${escapeHtml(String(it.label).replace('RFC', ''))}</text>`;
+      });
+
+      let legSvg = '';
+      legendLabels.forEach((lbl, i) => {
+        const lx = 8 + i * 92;
+        legSvg += `<rect x="${lx}" y="4" width="8" height="8" fill="${colors[i]}" /><text x="${lx + 11}" y="11" fill="#8b949e" font-family="monospace" font-size="9">${escapeHtml(lbl)}</text>`;
+      });
+      return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${legSvg}${barsSvg}</svg>`;
+    }
+
+    function svgScatterPlot(points, xLabel, yLabel) {
+      if (!points || !points.length) {
+        return `<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">Waiting for eligible RFC runs...</div>`;
+      }
+      const w = 380;
+      const h = 185;
+      const padL = 38, padR = 14, padT = 14, padB = 28;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+      const maxX = Math.max(1, ...points.map(p => Number(p.x) || 0));
+      const maxY = Math.max(1, ...points.map(p => Number(p.y) || 0));
+      const tierCol = { GOLD: '#3fb950', SILVER: '#58a6ff', BRONZE: '#d29922', REJECTED: '#f85149', VERIFIED: '#3fb950', PARTIAL: '#d29922', FAILED: '#f85149' };
+
+      let dots = `
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#30363d" />
+        <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#30363d" />
+        <text x="${padL + plotW / 2}" y="${h - 4}" fill="#8b949e" font-family="monospace" font-size="9.5" text-anchor="middle">${escapeHtml(xLabel)} (max ${maxX.toFixed(0)})</text>
+        <text x="10" y="${padT + plotH / 2}" fill="#8b949e" font-family="monospace" font-size="9.5" text-anchor="middle" transform="rotate(-90 10 ${padT + plotH / 2})">${escapeHtml(yLabel)}</text>
+      `;
+      points.forEach(p => {
+        const cx = padL + ((Number(p.x) || 0) / maxX) * plotW;
+        const cy = padT + plotH - ((Number(p.y) || 0) / maxY) * plotH;
+        const r = p.size || 5;
+        const c = tierCol[p.tier] || '#58a6ff';
+        dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${c}" fill-opacity="0.82" stroke="#0d1117" stroke-width="1"><title>${escapeHtml(p.rfc_id)} (${escapeHtml(p.protocol || '')})\n${xLabel}: ${p.x} | ${yLabel}: ${p.y} | Tier: ${p.tier}</title></circle>`;
+      });
+      return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${dots}</svg>`;
+    }
+
+    function svgTimelineChart(timeline) {
+      if (!timeline || !timeline.length) {
+        return `<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">No CSV rows recorded yet.</div>`;
+      }
+      const w = 380, h = 185, padL = 34, padR = 14, padT = 18, padB = 24;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+      const n = Math.max(1, timeline.length - 1);
+      const maxV = Math.max(1, timeline[timeline.length - 1].verified, timeline[timeline.length - 1].gold);
+
+      const verPts = timeline.map((pt, i) => {
+        const x = padL + (i / n) * plotW;
+        const y = padT + plotH - (pt.verified / maxV) * plotH;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+      const goldPts = timeline.map((pt, i) => {
+        const x = padL + (i / n) * plotW;
+        const y = padT + plotH - (pt.gold / maxV) * plotH;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+
+      return `
+        <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">
+          <rect x="8" y="3" width="8" height="8" fill="#58a6ff" /><text x="20" y="10" fill="#8b949e" font-family="monospace" font-size="9">Cumulative Verified (${timeline[timeline.length - 1].verified})</text>
+          <rect x="180" y="3" width="8" height="8" fill="#3fb950" /><text x="192" y="10" fill="#8b949e" font-family="monospace" font-size="9">Cumulative GOLD (${timeline[timeline.length - 1].gold})</text>
+          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#30363d" />
+          <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#30363d" />
+          <polyline fill="none" stroke="#58a6ff" stroke-width="2" points="${verPts}" />
+          <polyline fill="none" stroke="#3fb950" stroke-width="2" points="${goldPts}" />
+          <text x="${padL + plotW / 2}" y="${h - 4}" fill="#8b949e" font-family="monospace" font-size="9.5" text-anchor="middle">RFC Run Sequence (1 .. ${timeline.length})</text>
+        </svg>
+      `;
+    }
+
+    function renderCsvAnalyticsResult(d) {
+      if (!d || !d.kpis) return;
+      const k = d.kpis;
+      const kpiEl = document.getElementById('analytics-kpis');
+      if (kpiEl) {
+        kpiEl.innerHTML = `
+          <div class="kpi-card">
+            <div class="kpi-label">Total RFCs in CSV</div>
+            <div class="kpi-val">${k.totalRows}</div>
+            <div class="kpi-sub"><span style="color:var(--color-green);">${k.eligibleCount} Eligible</span> | ${k.ineligibleCount} Filtered</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Verification Pass Rate</div>
+            <div class="kpi-val" style="color:var(--color-green);">${k.passRate}%</div>
+            <div class="kpi-sub">${k.verifiedCount}/${k.eligibleCount} Verified | ${k.zeroShotRate}% Zero-Shot</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Quality Tiers (Structural)</div>
+            <div class="kpi-val"><span style="color:#3fb950;" data-tooltip-key="GOLD">${k.tierCounts.GOLD}G</span> / <span style="color:#58a6ff;" data-tooltip-key="SILVER">${k.tierCounts.SILVER}S</span> / <span style="color:#d29922;" data-tooltip-key="BRONZE">${k.tierCounts.BRONZE}B</span></div>
+            <div class="kpi-sub">${k.tierCounts.REJECTED} Rejected</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">CPSA Security Verdicts</div>
+            <div class="kpi-val" style="color:var(--color-blue);">${k.fullAgreeCount} Agree</div>
+            <div class="kpi-sub">${k.secretsProtectedCount} Secrecy OK | ${k.anomalyProtocols} w/ Anomalies</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Avg Steps / Repairs</div>
+            <div class="kpi-val">${k.avgSteps} steps</div>
+            <div class="kpi-sub">Avg ${k.avgRepairs} repairs per eligible RFC</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Cumulative CSV Cost</div>
+            <div class="kpi-val" style="color:var(--color-green);">$${k.totalCostUsd}</div>
+            <div class="kpi-sub">$${k.avgVerifiedCost} / verified protocol</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total Tokens Consumed</div>
+            <div class="kpi-val">${Number(k.totalTokens || 0).toLocaleString()}</div>
+            <div class="kpi-sub">Across Router, Extraction, Searcher, Repair</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Avg Synthesis Time</div>
+            <div class="kpi-val">${k.avgEligDur}s</div>
+            <div class="kpi-sub">Eligible avg (${k.avgIneligDur}s Ineligible avg)</div>
+          </div>
+        `;
+      }
+
+      const chartsEl = document.getElementById('analytics-charts');
+      if (!chartsEl) return;
+
+      const sm = d.securityMatrix;
+      const secEntries = [
+        ['Auth: Mutual Peer', sm.authCounts.MUTUAL_PEER_INTERACTION],
+        ['Auth: Unilateral/Local', sm.authCounts.UNILATERAL_PARTIAL + sm.authCounts.LOCAL_ONLY],
+        ['Agree: Full Agreement', sm.agreeCounts.FULL_AGREEMENT],
+        ['Agree: Disagreement', sm.agreeCounts.DISAGREEMENT_DETECTED],
+        ['Secrecy: Protected', sm.secCounts.ALL_SECRETS_PROTECTED],
+        ['Secrecy: Leak Found', sm.secCounts.SECRECY_LEAK_DETECTED],
+        ['Peers: Distinct', sm.reflCounts.DISTINCT_PEERS],
+        ['Peers: Reflection', sm.reflCounts.ROLE_REFLECTION_POSSIBLE]
+      ];
+
+      const roleCostEntries = Object.entries(d.roleTotals || {}).map(([role, obj]) => [
+        `${role} ($${obj.cost.toFixed(4)})`,
+        Math.round(obj.tokens / 1000)
+      ]);
+
+      chartsEl.innerHTML = `
+        <div class="chart-card">
+          <div class="chart-title"><span>1. Intake Funnel &amp; Gate Breakdown</span><span class="chart-sub">All CSV Rows</span></div>
+          <div class="chart-svg-wrap">${svgHorizontalBars(Object.entries(d.gateCounts), ['#8b949e', '#d29922', '#bc8cff', '#f85149', '#d29922', '#3fb950'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>2. Structural Quality Tier Distribution</span><span class="chart-sub">Decoupled from Flaws</span></div>
+          <div class="chart-svg-wrap">${svgHorizontalBars(Object.entries(d.tierCounts), ['#3fb950', '#58a6ff', '#d29922', '#f85149'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>3. CPSA 4.4.9 Formal Security Verdicts</span><span class="chart-sub">Agreement / Secrecy / Reflection</span></div>
+          <div class="chart-svg-wrap">${svgHorizontalBars(secEntries, ['#3fb950', '#d29922', '#3fb950', '#f85149', '#3fb950', '#f85149', '#58a6ff', '#d29922'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>4. Self-Healing Convergence Steps</span><span class="chart-sub">total_completion_steps</span></div>
+          <div class="chart-svg-wrap">${svgHorizontalBars(Object.entries(d.stepBins), ['#3fb950', '#58a6ff', '#bc8cff', '#d29922', '#f0883e', '#f85149'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>5. Repair Effort by Stage (Per Protocol)</span><span class="chart-sub">Schema / Roletran / Solver / RAG</span></div>
+          <div class="chart-svg-wrap">${svgStackedVerticalBars(d.repairSeries, ['schema', 'roletran', 'solver', 'searcher'], ['#bc8cff', '#d29922', '#f85149', '#58a6ff'], ['Schema', 'Roletran', 'Solver', 'RAG'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>6. State-Space Complexity Scatter</span><span class="chart-sub">Explored Skeletons vs Shapes</span></div>
+          <div class="chart-svg-wrap">${svgScatterPlot(d.stateScatter, 'Explored Skeletons', 'Realized Shapes')}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>7. CPSA Cohort Authentication Tests</span><span class="chart-sub">enc-test / nonce-test / chan-test</span></div>
+          <div class="chart-svg-wrap">${svgStackedVerticalBars(d.cohortSeries, ['enc', 'nonce', 'chan'], ['#58a6ff', '#3fb950', '#bc8cff'], ['enc-test', 'nonce-test', 'chan-test'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>8. LLM Role Cost &amp; Token Share (kTok)</span><span class="chart-sub">Router / Extract / Search / Repair</span></div>
+          <div class="chart-svg-wrap">${svgHorizontalBars(roleCostEntries, ['#bc8cff', '#58a6ff', '#d29922', '#3fb950'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>9. Synthesis Duration vs RFC Slice Lines</span><span class="chart-sub">Sliced Lines vs Seconds</span></div>
+          <div class="chart-svg-wrap">${svgScatterPlot(d.durationScatter, 'Sliced Lines', 'Duration (s)')}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>10. Live Cumulative Verification Timeline</span><span class="chart-sub">Verified &amp; GOLD Growth</span></div>
+          <div class="chart-svg-wrap">${svgTimelineChart(d.timeline)}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>11. Protocol Scale &amp; Extracted SAS Goals</span><span class="chart-sub">Roles / Skeletons / SAS / Anomalies</span></div>
+          <div class="chart-svg-wrap">${svgStackedVerticalBars(d.scaleSeries, ['roles', 'skeletons', 'sas', 'anomalies'], ['#58a6ff', '#3fb950', '#bc8cff', '#f85149'], ['Roles', 'Skeletons', 'SAS Goals', 'Anomalies'])}</div>
+        </div>
+      `;
+    }
+
+    const NUMERIC_CSV_COLS = [
+      'sliced_lines_count', 'role_count', 'preskeleton_count', 'scm_lines_count',
+      'shapes_count', 'explored_skeletons_count', 'total_completion_steps', 'total_repairs',
+      'roletran_repairs', 'solver_repairs', 'searcher_invocations', 'encryption_tests_count',
+      'nonce_tests_count', 'channel_tests_count', 'shape_analysis_sentences_count',
+      'anomalies_count', 'disagreed_parameters_count', 'duration_seconds', 'total_cost_usd', 'total_tokens'
+    ];
+
+    function renderCustomExplorerUI() {
+      const wrap = document.getElementById('analytics-custom-explorer');
+      if (!wrap) return;
+      const xSel = document.getElementById('custom-x-col')?.value || 'scm_lines_count';
+      const ySel = document.getElementById('custom-y-col')?.value || 'duration_seconds';
+      const eligOnly = document.getElementById('custom-elig-only') ? document.getElementById('custom-elig-only').checked : true;
+
+      const sourceRows = eligOnly
+        ? latestCsvRows.filter(r => String(r.is_eligible || '').toLowerCase() === 'true')
+        : latestCsvRows;
+
+      const pts = sourceRows.map(r => ({
+        rfc_id: r.rfc_id,
+        protocol: r.protocol_name || r.rfc_id,
+        x: parseFloat(r[xSel] || 0) || 0,
+        y: parseFloat(r[ySel] || 0) || 0,
+        tier: (r.quality_tier || r.status || 'REJECTED').toUpperCase()
+      }));
+
+      wrap.innerHTML = `
+        <div class="chart-card">
+          <div class="chart-title">
+            <span>12. Custom 67-Column X/Y Scatter Explorer</span>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <span class="chart-sub">X:</span>
+              <select id="custom-x-col" class="ctrl-select" onchange="renderCustomExplorerUI()">
+                ${NUMERIC_CSV_COLS.map(c => `<option value="${c}" ${c === xSel ? 'selected' : ''}>${c}</option>`).join('')}
+              </select>
+              <span class="chart-sub">Y:</span>
+              <select id="custom-y-col" class="ctrl-select" onchange="renderCustomExplorerUI()">
+                ${NUMERIC_CSV_COLS.map(c => `<option value="${c}" ${c === ySel ? 'selected' : ''}>${c}</option>`).join('')}
+              </select>
+              <label style="font-size:10px; color:var(--text-muted); display:inline-flex; align-items:center; gap:3px;">
+                <input type="checkbox" id="custom-elig-only" ${eligOnly ? 'checked' : ''} onchange="renderCustomExplorerUI()" /> Eligible Only
+              </label>
+            </div>
+          </div>
+          <div class="chart-svg-wrap">${svgScatterPlot(pts, xSel, ySel)}</div>
+        </div>
+      `;
+    }
+
+    function renderCsvTableUI() {
+      const sec = document.getElementById('analytics-table-section');
+      if (!sec) return;
+      const q = (document.getElementById('csv-table-search')?.value || '').trim().toLowerCase();
+      const filtered = latestCsvRows.filter(r => {
+        if (!q) return true;
+        return (
+          (r.rfc_id || '').toLowerCase().includes(q) ||
+          (r.protocol_name || '').toLowerCase().includes(q) ||
+          (r.quality_tier || '').toLowerCase().includes(q) ||
+          (r.status || '').toLowerCase().includes(q) ||
+          (r.authentication_profile || '').toLowerCase().includes(q) ||
+          (r.parameter_agreement_status || '').toLowerCase().includes(q) ||
+          (r.secrecy_status || '').toLowerCase().includes(q) ||
+          (r.error_message || '').toLowerCase().includes(q)
+        );
+      });
+
+      const keyCols = [
+        'rfc_id', 'is_eligible', 'status', 'quality_tier', 'protocol_name',
+        'total_completion_steps', 'shapes_count', 'authentication_profile',
+        'parameter_agreement_status', 'secrecy_status', 'anomalies_count',
+        'duration_seconds', 'total_cost_usd', 'error_message'
+      ];
+
+      const bodyHtml = filtered.slice(0, 200).map(r => `
+        <tr>
+          <td style="font-weight:700; color:var(--color-blue);">${escapeHtml(r.rfc_id || '')}</td>
+          <td>${escapeHtml(r.is_eligible || '')}</td>
+          <td>${escapeHtml(r.status || '')}</td>
+          <td><span class="sec-pill ${verdictPillClass(r.quality_tier)}" data-tooltip-key="${escapeHtml(r.quality_tier || '')}">${escapeHtml(r.quality_tier || '')}</span></td>
+          <td>${escapeHtml(r.protocol_name || '')}</td>
+          <td>${escapeHtml(r.total_completion_steps || '')}</td>
+          <td>${escapeHtml(r.shapes_count || '')}</td>
+          <td><span class="sec-pill ${verdictPillClass(r.authentication_profile)}" data-tooltip-key="${escapeHtml(r.authentication_profile || '')}">${escapeHtml(r.authentication_profile || '-')}</span></td>
+          <td><span class="sec-pill ${verdictPillClass(r.parameter_agreement_status)}" data-tooltip-key="${escapeHtml(r.parameter_agreement_status || '')}">${escapeHtml(r.parameter_agreement_status || '-')}</span></td>
+          <td><span class="sec-pill ${verdictPillClass(r.secrecy_status)}" data-tooltip-key="${escapeHtml(r.secrecy_status || '')}">${escapeHtml(r.secrecy_status || '-')}</span></td>
+          <td>${escapeHtml(r.anomalies_count || '0')}</td>
+          <td>${escapeHtml(r.duration_seconds || '')}s</td>
+          <td>$${escapeHtml(r.total_cost_usd || '0')}</td>
+          <td style="max-width:340px; white-space:normal; word-break:break-word; color:var(--text-muted);">${escapeHtml(r.error_message || '')}</td>
+        </tr>
+      `).join('');
+
+      sec.innerHTML = `
+        <div class="chart-card">
+          <div class="chart-title">
+            <span>LIVE CSV LEDGER EXPLORER (${filtered.length} matching / ${latestCsvRows.length} total rows)</span>
+            <input type="text" id="csv-table-search" class="ctrl-input" style="width:240px;" placeholder="Filter CSV rows (RFC, tier, verdict, rationale)..." value="${escapeHtml(q)}" oninput="renderCsvTableUI()" />
+          </div>
+          <div style="overflow-x:auto; max-height:340px;">
+            <table class="sec-table">
+              <thead>
+                <tr>${keyCols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr>
+              </thead>
+              <tbody>${bodyHtml || '<tr><td colspan="14" style="color:var(--text-muted);">No matching CSV rows.</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
     // Initial Bootstrap & Named-Event SSE Subscription (Zero Polling Spam!)
     // =========================================================================
     fetch('/api/models')
@@ -2097,6 +3586,7 @@
           recomputeVisibleTabs();
           updateLivePinButton();
 
+          refreshCsvAnalytics(false);
           if (!isServerLive) {
             if (acceptedTabs.length > 0) {
               selectNumberedTab(acceptedTabs[0].tab_index);
@@ -2143,6 +3633,7 @@
       'tab_updated',
       'rfc_filtered',
       'cost_updated',
+      'csv_updated',
       'message'
     ];
     SSE_EVENT_TYPES.forEach(evtName => {

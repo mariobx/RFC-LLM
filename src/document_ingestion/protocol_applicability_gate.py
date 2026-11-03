@@ -110,10 +110,11 @@ def evaluate_protocol_applicability(
 
         if report.is_cryptographic_protocol:
             logger.info(
-                "Tier 1 ACCEPT: %s is eligible (Protocol: '%s', Principals: %s)",
+                "Tier 1 ACCEPT: %s is eligible (Protocol: '%s', Principals: %s). Reason: %s",
                 rfc_id,
                 report.protocol_name,
                 report.participating_principals,
+                report.rationale,
             )
         else:
             logger.info("Tier 1 REJECT: %s is ineligible. Reason: %s", rfc_id, report.rationale)

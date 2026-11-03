@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-03 19:45:16 UTC · Git: `main` @ `101b107977b3` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~200,508*
+*Generated: 2026-11-03 20:21:34 UTC · Git: `main` @ `039fdf29d2b0` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~205,415*
 
 ## Table of Contents
 
@@ -8956,7 +8956,7 @@ class CPSAProtocolSpecification(BaseModel):
 
 ### `src/logging_config.py`
 
-*sha256:`6900598060e7` · 392 lines · 16.4 KB (~4,203 tokens) · lang:`python`*
+*sha256:`065d3dfdcac1` · 419 lines · 17.6 KB (~4,516 tokens) · lang:`python`*
 
 ```python
 """Comprehensive Structured Logging Subsystem for RFC-LLM Pipeline."""
@@ -8966,7 +8966,7 @@ import datetime
 import logging
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from src.system_config import SYSTEM_CONFIG
 
@@ -9181,6 +9181,33 @@ class PipelineMetricsCSVLogger:
                 self._write_all_rows(list(deduped.values()))
         except Exception:
             pass
+
+    def prune_keep_ineligible_only(self) -> Tuple[int, int]:
+        """Deletes all rows in `logs/pipeline_runs.csv` EXCEPT ineligible RFCs (`is_eligible=False`).
+
+        Allows starting a fresh synthesis run over eligible protocols while preserving cached
+        Tier 0 / Stage 1 / Stage 2 ineligibility decisions so non-protocol RFCs are skipped in 0ms.
+
+        Returns:
+            Tuple of `(removed_eligible_rows_count, kept_ineligible_rows_count)`.
+        """
+        existing_rows = self._read_existing_rows()
+        kept_rows: List[dict] = []
+        removed_count = 0
+        seen_ids = set()
+        for row in existing_rows:
+            is_elig_str = (row.get("is_eligible") or "").strip().lower()
+            status_str = (row.get("status") or "").strip().upper()
+            if is_elig_str == "false" or status_str == "INELIGIBLE":
+                norm_id = self.normalize_rfc_id(row.get("rfc_id", ""))
+                if norm_id and norm_id not in seen_ids:
+                    seen_ids.add(norm_id)
+                    row["rfc_id"] = norm_id
+                    kept_rows.append(row)
+            else:
+                removed_count += 1
+        self._write_all_rows(kept_rows)
+        return removed_count, len(kept_rows)
 
     def log_run(
         self,
@@ -10554,7 +10581,7 @@ def run_rfc_translation_pipeline(
 
 ### `src/pipeline.py`
 
-*sha256:`1a944efeed50` · 484 lines · 19.3 KB (~4,937 tokens) · lang:`python`*
+*sha256:`cca12ee185e2` · 503 lines · 20.1 KB (~5,145 tokens) · lang:`python`*
 
 ```python
 """Command-line interface for RFC-LLM synthesis pipeline supporting single RFCs and directory batching."""
@@ -10573,6 +10600,7 @@ from typing import List, Set
 
 from src.cost_tracker import GLOBAL_COST_TRACKER
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
+from src.logging_config import PipelineMetricsCSVLogger
 from src.main_pipeline_orchestrator import PipelineExecutionSummary, run_rfc_translation_pipeline
 from src.pipeline_events import GLOBAL_EVENT_BUS
 from src.system_config import SYSTEM_CONFIG
@@ -10769,8 +10797,26 @@ def main():
         action="store_true",
         help="Pre-filter directory candidates using deterministic Tier 0 frontmatter check before applying --limit",
     )
+    parser.add_argument(
+        "--keep-ineligible",
+        "--reset-eligible",
+        dest="keep_ineligible",
+        action="store_true",
+        help="Prune logs/pipeline_runs.csv by deleting all rows EXCEPT ineligible RFCs (is_eligible=False), and skip those ineligible RFCs when starting a new batch run",
+    )
 
     args = parser.parse_args()
+
+    if args.keep_ineligible:
+        csv_logger = PipelineMetricsCSVLogger()
+        removed_cnt, kept_cnt = csv_logger.prune_keep_ineligible_only()
+        print(
+            f"[CSV PRUNE] Updated {csv_logger.csv_path}: removed {removed_cnt} eligible row(s), "
+            f"retained {kept_cnt} INELIGIBLE row(s) (is_eligible=False)."
+        )
+        args.skip_completed = True
+        if not args.target_path and not args.view:
+            sys.exit(0)
 
     # Offline Replay Mode (--view <run_dir>)
     if args.view:
@@ -13513,7 +13559,7 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
 
 ### `src/system_config.py`
 
-*sha256:`c2339cde84cc` · 152 lines · 6.8 KB (~1,728 tokens) · lang:`python`*
+*sha256:`ab00a4a08cd7` · 154 lines · 6.9 KB (~1,756 tokens) · lang:`python`*
 
 ```python
 """Global environment, binary paths, execution limits, and provider configuration."""
@@ -13565,6 +13611,8 @@ class SystemEnvironmentConfig(BaseSettings):
     CPSA4SHAPES_BIN: Path = CABAL_BIN_DIR / "cpsa4shapes"
     CPSA4GRAPH_BIN: Path = CABAL_BIN_DIR / "cpsa4graph"
     CPSA4PROT_BIN: Path = CABAL_BIN_DIR / "cpsa4prot"
+    CPSA4SAS_BIN: Path = CABAL_BIN_DIR / "cpsa4sas"
+    CPSA4GOALSAT_BIN: Path = CABAL_BIN_DIR / "cpsa4goalsat"
 
     # API Keys & Base Endpoints (Loaded from .env)
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
@@ -14945,7 +14993,7 @@ def generate_snowball_autopsy_report(
 
 ### `src/verification_engine/trajectory_metadata_exporter.py`
 
-*sha256:`a65465490ca8` · 657 lines · 26.0 KB (~6,652 tokens) · lang:`python`*
+*sha256:`de57f6150b7d` · 1060 lines · 43.0 KB (~11,010 tokens) · lang:`python`*
 
 ```python
 """Programmatic Trajectory & Formal Verification Metadata Exporter.
@@ -14959,11 +15007,13 @@ the separated `<stem>_trajectory.json` artifact for ROCm Megatron-LM post-traini
 import datetime as dt
 import json
 import re
+import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from src.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
 from src.logging_config import get_pipeline_logger
+from src.system_config import SYSTEM_CONFIG
 
 logger = get_pipeline_logger("trajectory_exporter")
 
@@ -15044,17 +15094,160 @@ def _extract_root_deflistener(sexpr: str) -> Optional[str]:
     return inner
 
 
+def _extract_skeleton_vars_sorts(sexpr: str) -> Dict[str, str]:
+    """Extracts a mapping from skeleton variable name to CPSA sort from `(vars ...)`."""
+    vb = _extract_clause_block(sexpr, "vars")
+    if not vb:
+        return {}
+    s = vb.strip()
+    inner = re.sub(r"^\(\s*vars\b", "", s[:-1]).strip()
+    sorts: Dict[str, str] = {}
+    for decl in split_top_level_sexprs(inner):
+        toks = decl[1:-1].split()
+        if len(toks) >= 2:
+            sort_name = toks[-1]
+            for v in toks[:-1]:
+                sorts[v] = sort_name
+    return sorts
+
+
 def _extract_defstrands(sexpr: str) -> List[Dict[str, Any]]:
-    """Extracts all `(defstrand <role> <height> ...)` instances from a skeleton block."""
+    """Extracts all `(defstrand <role> <height> (<role_var> <skel_term>)*)` instances from a skeleton block."""
     # Exclude any `(defstrand ...)` inside `(operation ...)`
     op_block = _extract_clause_block(sexpr, "operation")
     cleaned = sexpr.replace(op_block, "") if op_block else sexpr
+    stripped = cleaned.strip()
+    inner_body = (
+        stripped[1:-1]
+        if (stripped.startswith("(") and stripped.endswith(")"))
+        else stripped
+    )
     strands: List[Dict[str, Any]] = []
-    for match in re.finditer(r"\(\s*defstrand(?:max)?\s+([^\s\(\)]+)(?:\s+(\d+))?", cleaned):
+    for sub in split_top_level_sexprs(inner_body):
+        match = re.match(r"^\(\s*defstrand(?:max)?\s+([^\s\(\)]+)(?:\s+(\d+))?(.*)\)$", sub, flags=re.DOTALL)
+        if not match:
+            continue
         role_name = match.group(1)
         height = int(match.group(2)) if match.group(2) else None
-        strands.append({"role": role_name, "height": height})
+        tail = match.group(3) or ""
+        maplets: Dict[str, str] = {}
+        for mp in split_top_level_sexprs(tail):
+            inner = mp[1:-1].strip()
+            parts = inner.split(None, 1)
+            if len(parts) == 2:
+                maplets[parts[0].strip()] = " ".join(parts[1].split())
+        strand_entry: Dict[str, Any] = {"role": role_name, "height": height}
+        if maplets:
+            strand_entry["maplets"] = maplets
+        strands.append(strand_entry)
     return strands
+
+
+def _analyze_shape_agreement_and_reflection(
+    strands: List[Dict[str, Any]],
+    shape_label: Optional[int],
+    vars_sorts: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    """Inspects multi-strand realized shapes for CPSA parameter agreement/disagreement
+    (Lowe MITM / Unknown Key Share, CPSA Goals Manual §4.1) and role self-reflection.
+    """
+    if len(strands) < 2:
+        return {
+            "same_role_reflection": False,
+            "disagreed_parameters": [],
+            "agreed_parameters": [],
+        }
+
+    sorts_lookup = vars_sorts or {}
+    pov_strand = strands[0]
+    pov_role = pov_strand.get("role")
+    pov_maplets: Dict[str, str] = pov_strand.get("maplets") or {}
+    pov_values = set(pov_maplets.values())
+
+    peer_strands = strands[1:]
+    peer_roles = [s.get("role") for s in peer_strands if s.get("role")]
+    same_role_reflection = bool(peer_roles and all(r == pov_role for r in peer_roles))
+
+    disagreed: List[Dict[str, Any]] = []
+    agreed: List[str] = []
+
+    for ps in peer_strands:
+        p_role = ps.get("role")
+        # Compare parameter agreement across distinct counterparty roles (unless all strands share pov_role)
+        if p_role == pov_role and not same_role_reflection:
+            continue
+        p_maplets: Dict[str, str] = ps.get("maplets") or {}
+        for param, p_val in p_maplets.items():
+            if param in pov_maplets:
+                pov_val = pov_maplets[param]
+                var_sort = sorts_lookup.get(pov_val) or sorts_lookup.get(p_val) or "unknown"
+                if var_sort == "chan":
+                    continue
+                if p_val == pov_val:
+                    if param not in agreed:
+                        agreed.append(param)
+                else:
+                    disagreed.append({
+                        "shape_label": shape_label,
+                        "pov_role": pov_role,
+                        "peer_role": p_role,
+                        "parameter": param,
+                        "sort": var_sort,
+                        "pov_value": pov_val,
+                        "peer_value": p_val,
+                    })
+            else:
+                m = re.match(r"^([a-zA-Z0-9_]+)-\d+$", p_val)
+                if m and m.group(1) in pov_values:
+                    base_val = m.group(1)
+                    var_sort = sorts_lookup.get(base_val) or sorts_lookup.get(p_val) or "unknown"
+                    if var_sort == "chan":
+                        continue
+                    disagreed.append({
+                        "shape_label": shape_label,
+                        "pov_role": pov_role,
+                        "peer_role": p_role,
+                        "parameter": param,
+                        "sort": var_sort,
+                        "pov_value": base_val,
+                        "peer_value": p_val,
+                    })
+
+    return {
+        "same_role_reflection": same_role_reflection,
+        "disagreed_parameters": disagreed,
+        "agreed_parameters": agreed,
+    }
+
+
+def extract_shape_analysis_sentences(txt_path: Optional[Path]) -> List[str]:
+    """Runs `cpsa4sas` on `<stem>.txt` (CPSA Primer §17, Spec Appendix C) to extract
+    first-order coherent logic `(defgoal ...)` Shape Analysis Sentences for each POV.
+    """
+    if not txt_path or not txt_path.exists():
+        return []
+    sas_bin = getattr(SYSTEM_CONFIG, "CPSA4SAS_BIN", None)
+    if not sas_bin or not Path(sas_bin).exists():
+        return []
+    try:
+        raw_txt = txt_path.read_text(encoding="utf-8", errors="replace")
+        proc = subprocess.run(
+            [str(sas_bin)],
+            input=raw_txt,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        if proc.returncode != 0 or not proc.stdout:
+            return []
+        goals: List[str] = []
+        for block in split_top_level_sexprs(proc.stdout):
+            if block.startswith("(defgoal"):
+                goals.append(block)
+        return goals
+    except Exception:
+        return []
 
 
 def _extract_comment_string(sexpr: str) -> Optional[str]:
@@ -15081,7 +15274,18 @@ def analyze_exploration_txt(
     txt_path: Optional[Path],
     dead_root_labels: Optional[List[int]] = None,
 ) -> Dict[str, Any]:
-    """Extracts compact search telemetry and dead-branch diagnostics from `<stem>.txt`."""
+    """Extracts compact search telemetry, cohort operation counts, and dead-branch diagnostics from `<stem>.txt`."""
+    empty_ops = {
+        "encryption_tests": 0,
+        "nonce_tests": 0,
+        "channel_tests": 0,
+        "generalizations": 0,
+        "collapsed_shapes": 0,
+        "added_strands": 0,
+        "contractions": 0,
+        "displacements": 0,
+        "added_listeners": 0,
+    }
     if not txt_path or not txt_path.exists():
         return {
             "source_file": txt_path.name if txt_path else None,
@@ -15090,6 +15294,7 @@ def analyze_exploration_txt(
             "dead_branch_nodes_count": 0,
             "step_limit_or_bound_hit": False,
             "state_explosion_detected": False,
+            "authentication_tests_summary": empty_ops,
             "dead_preskeleton_diagnostics": [],
         }
 
@@ -15108,41 +15313,64 @@ def analyze_exploration_txt(
         )
     )
 
-    dead_diagnostics: List[Dict[str, Any]] = []
-    if dead_root_labels:
-        target_roots = set(dead_root_labels)
-        blocks = split_top_level_sexprs(content)
-        parent_to_root: Dict[int, int] = {}
-        deepest_dead_per_root: Dict[int, Dict[str, Any]] = {}
+    ops_summary = dict(empty_ops)
+    blocks = split_top_level_sexprs(content)
+    target_roots = set(dead_root_labels) if dead_root_labels else set()
+    parent_to_root: Dict[int, int] = {}
+    deepest_dead_per_root: Dict[int, Dict[str, Any]] = {}
 
-        for block in blocks:
-            if not block.startswith("(defskeleton"):
-                continue
-            lbl = _extract_int_clause(block, "label")
-            if lbl is None:
-                continue
-            parent = _extract_int_clause(block, "parent")
-            if parent is None:
-                parent_to_root[lbl] = lbl
-                root_lbl = lbl
-            else:
-                root_lbl = parent_to_root.get(parent, parent)
-                parent_to_root[lbl] = root_lbl
+    for block in blocks:
+        if not block.startswith("(defskeleton"):
+            continue
+        op_block = _extract_clause_block(block, "operation")
+        if op_block:
+            flat_op = " ".join(op_block.split())
+            if "encryption-test" in flat_op:
+                ops_summary["encryption_tests"] += 1
+            elif "nonce-test" in flat_op:
+                ops_summary["nonce_tests"] += 1
+            elif "channel-test" in flat_op:
+                ops_summary["channel_tests"] += 1
+            elif "generalization" in flat_op:
+                ops_summary["generalizations"] += 1
+            elif "collapsed" in flat_op:
+                ops_summary["collapsed_shapes"] += 1
 
-            if root_lbl in target_roots:
-                unrealized = _extract_clause_block(block, "unrealized")
-                op_block = _extract_clause_block(block, "operation")
-                is_dead_node = _has_flag_clause(block, "dead") or "empty cohort" in block
-                if is_dead_node or lbl == root_lbl:
-                    deepest_dead_per_root[root_lbl] = {
-                        "root_label": root_lbl,
-                        "deepest_dead_label": lbl,
-                        "parent_label": parent,
-                        "last_operation": " ".join(op_block.split()) if op_block else None,
-                        "stuck_unrealized_nodes": " ".join(unrealized.split()) if unrealized else None,
-                    }
+            if "(added-strand" in flat_op:
+                ops_summary["added_strands"] += 1
+            elif "(contracted" in flat_op:
+                ops_summary["contractions"] += 1
+            elif "(displaced" in flat_op:
+                ops_summary["displacements"] += 1
+            elif "(added-listener" in flat_op:
+                ops_summary["added_listeners"] += 1
 
-        dead_diagnostics = list(deepest_dead_per_root.values())
+        if not target_roots:
+            continue
+        lbl = _extract_int_clause(block, "label")
+        if lbl is None:
+            continue
+        parent = _extract_int_clause(block, "parent")
+        if parent is None:
+            parent_to_root[lbl] = lbl
+            root_lbl = lbl
+        else:
+            root_lbl = parent_to_root.get(parent, parent)
+            parent_to_root[lbl] = root_lbl
+
+        if root_lbl in target_roots:
+            unrealized = _extract_clause_block(block, "unrealized")
+            is_dead_node = _has_flag_clause(block, "dead") or "empty cohort" in block
+            if is_dead_node or lbl == root_lbl:
+                deepest_dead_per_root[root_lbl] = {
+                    "root_label": root_lbl,
+                    "deepest_dead_label": lbl,
+                    "parent_label": parent,
+                    "last_operation": " ".join(op_block.split()) if op_block else None,
+                    "stuck_unrealized_nodes": " ".join(unrealized.split()) if unrealized else None,
+                }
+
+    dead_diagnostics = list(deepest_dead_per_root.values())
 
     return {
         "source_file": txt_path.name,
@@ -15151,6 +15379,7 @@ def analyze_exploration_txt(
         "dead_branch_nodes_count": dead_count,
         "step_limit_or_bound_hit": limit_hit,
         "state_explosion_detected": total_explored > 500,
+        "authentication_tests_summary": ops_summary,
         "dead_preskeleton_diagnostics": dead_diagnostics,
     }
 
@@ -15203,16 +15432,24 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
                 "instantiated_roles_in_shape": [],
                 "is_trivial_single_strand_shape": False,
                 "has_self_reflection_split": False,
+                "has_same_role_reflection": False,
+                "disagreed_parameters": [],
+                "agreed_parameters": [],
                 "goal_satisfied": _extract_goal_satisfaction(block),
                 "verdict": "UNREALIZED",
             }
             if is_shape:
                 strands = _extract_defstrands(block)
+                vars_sorts = _extract_skeleton_vars_sorts(block)
+                ag = _analyze_shape_agreement_and_reflection(strands, lbl, vars_sorts)
                 group["realized_shape_labels"].append(lbl)
                 group["realized_shapes_count"] = 1
                 group["min_strands_in_realized_shape"] = len(strands)
                 group["max_strands_in_realized_shape"] = len(strands)
                 group["instantiated_roles_in_shape"] = strands
+                group["has_same_role_reflection"] = bool(ag["same_role_reflection"])
+                group["disagreed_parameters"].extend(ag["disagreed_parameters"])
+                group["agreed_parameters"] = list(ag["agreed_parameters"])
             preskeleton_groups.append(group)
         else:
             group_idx = label_to_group_idx.get(parent, len(preskeleton_groups) - 1)
@@ -15221,6 +15458,8 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
             if is_shape and 0 <= group_idx < len(preskeleton_groups):
                 group = preskeleton_groups[group_idx]
                 strands = _extract_defstrands(block)
+                vars_sorts = _extract_skeleton_vars_sorts(block)
+                ag = _analyze_shape_agreement_and_reflection(strands, lbl, vars_sorts)
                 group["realized_shape_labels"].append(lbl)
                 group["realized_shapes_count"] += 1
                 if group["min_strands_in_realized_shape"] == 0 or len(strands) < group["min_strands_in_realized_shape"]:
@@ -15228,6 +15467,14 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
                 if len(strands) >= group["max_strands_in_realized_shape"]:
                     group["max_strands_in_realized_shape"] = len(strands)
                     group["instantiated_roles_in_shape"] = strands
+                if ag["same_role_reflection"]:
+                    group["has_same_role_reflection"] = True
+                for dp in ag["disagreed_parameters"]:
+                    if dp not in group["disagreed_parameters"]:
+                        group["disagreed_parameters"].append(dp)
+                for ap in ag["agreed_parameters"]:
+                    if ap not in group["agreed_parameters"]:
+                        group["agreed_parameters"].append(ap)
                 sat = _extract_goal_satisfaction(block)
                 if sat is not None:
                     group["goal_satisfied"] = sat
@@ -15269,16 +15516,203 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
     }
 
 
+def compute_security_findings(
+    shapes_analysis: Dict[str, Any],
+    exploration_telemetry: Optional[Dict[str, Any]] = None,
+    sas_formulas: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Produces an exhaustive, CPSA-4.4.9-manual-grounded formal security verdict report
+    orthogonal to `quality_tier` (which grades translation & compilation fidelity).
+
+    Covers all 7 formal dimensions from MITRE's CPSA Primer and Goals & Security Manual:
+    1. Role Executability (`ALL_ROLES_EXECUTABLE`, `PARTIAL_DEAD_ROLES`, `NO_ROLES_EXECUTABLE`)
+    2. Authentication Profile (`MUTUAL_MULTI_STRAND`, `UNILATERAL_AUTHENTICATED`,
+       `CONDITIONAL_BRANCHED_AUTHENTICATION`, `UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE`, `NON_EXECUTABLE`)
+    3. Parameter Agreement / Lowe MITM (`FULL_PARAMETER_AGREEMENT`, `PRINCIPAL_DISAGREEMENT_MITM_OR_UKS`,
+       `PARAMETER_DISAGREEMENT_DETECTED`, `NOT_APPLICABLE_SINGLE_STRAND`)
+    4. Role Self-Reflection (`SAME_ROLE_REFLECTION_DETECTED`, `NO_REFLECTION`)
+    5. Secrecy Analysis (`SECRECY_PROVED`, `SECRECY_LEAK_DETECTED`, `PARTIAL_SECRECY`, `NOT_APPLICABLE_NO_LISTENER`)
+    6. Explicit `defgoal` Satisfaction (`ALL_SATISFIED`, `COUNTEREXAMPLE_FOUND`, `NO_EXPLICIT_DEFGOALS`)
+    7. Coherent-Logic Shape Analysis Sentences (`cpsa4sas`) & Authentication Test Telemetry (`encryption-test`, `nonce-test`, `channel-test`).
+    """
+    outcomes = shapes_analysis.get("per_preskeleton_outcomes", [])
+    participant_povs = [o for o in outcomes if o.get("skeleton_type") == "participant_pov"]
+    listener_povs = [o for o in outcomes if o.get("skeleton_type") == "secrecy_listener_pov"]
+
+    # 1. Role Executability
+    realized_povs = [o for o in participant_povs if o.get("realized_shapes_count", 0) > 0]
+    dead_povs = [o for o in participant_povs if o.get("realized_shapes_count", 0) == 0]
+    if not participant_povs or not realized_povs:
+        role_executability = "NO_ROLES_EXECUTABLE"
+    elif dead_povs:
+        role_executability = "PARTIAL_DEAD_ROLES"
+    else:
+        role_executability = "ALL_ROLES_EXECUTABLE"
+
+    # 2. Authentication Profile
+    def _is_strictly_multi_strand(pov: Dict[str, Any]) -> bool:
+        max_s = pov.get("max_strands_in_realized_shape", 0)
+        min_s = pov.get("min_strands_in_realized_shape", max_s)
+        init_s = pov.get("initial_strand_count", 1)
+        return bool(pov.get("realized_shapes_count", 0) > 0 and min_s >= 2 and max_s > init_s)
+
+    strictly_multi_count = sum(1 for o in participant_povs if _is_strictly_multi_strand(o))
+    any_branched_split = any(
+        bool(o.get("has_self_reflection_split"))
+        or (
+            o.get("min_strands_in_realized_shape", o.get("max_strands_in_realized_shape", 0)) == 1
+            and o.get("max_strands_in_realized_shape", 0) >= 2
+        )
+        for o in participant_povs
+    )
+    any_multi_shape = any(
+        o.get("max_strands_in_realized_shape", 0) >= 2
+        and o.get("max_strands_in_realized_shape", 0) > o.get("initial_strand_count", 1)
+        for o in participant_povs
+    )
+
+    if role_executability == "NO_ROLES_EXECUTABLE":
+        auth_profile = "NON_EXECUTABLE"
+    elif any_branched_split:
+        auth_profile = "CONDITIONAL_BRANCHED_AUTHENTICATION"
+    elif participant_povs and strictly_multi_count == len(participant_povs):
+        auth_profile = "MUTUAL_MULTI_STRAND"
+    elif strictly_multi_count >= 1:
+        auth_profile = "UNILATERAL_AUTHENTICATED"
+    else:
+        auth_profile = "UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE"
+
+    # 3. Parameter Agreement / Lowe MITM / Malleable Parameter Detection
+    all_disagreements: List[Dict[str, Any]] = []
+    for o in participant_povs:
+        for dp in o.get("disagreed_parameters") or []:
+            if dp not in all_disagreements:
+                all_disagreements.append(dp)
+
+    if not any_multi_shape:
+        param_agreement_status = "NOT_APPLICABLE_SINGLE_STRAND"
+    elif not all_disagreements:
+        param_agreement_status = "FULL_PARAMETER_AGREEMENT"
+    elif any(d.get("sort") in ("name", "akey") for d in all_disagreements):
+        param_agreement_status = "PRINCIPAL_DISAGREEMENT_MITM_OR_UKS"
+    else:
+        param_agreement_status = "PARAMETER_DISAGREEMENT_DETECTED"
+
+    # 4. Same-Role Reflection
+    any_same_role_refl = any(bool(o.get("has_same_role_reflection")) for o in participant_povs)
+    reflection_status = "SAME_ROLE_REFLECTION_DETECTED" if any_same_role_refl else "NO_REFLECTION"
+
+    # 5. Secrecy Analysis
+    protected_secrets: List[str] = []
+    leaked_secrets: List[str] = []
+    for l_pov in listener_povs:
+        term = l_pov.get("listener_term") or f"listener_label_{l_pov.get('root_label')}"
+        if l_pov.get("realized_shapes_count", 0) == 0:
+            if term not in protected_secrets:
+                protected_secrets.append(term)
+        else:
+            if term not in leaked_secrets:
+                leaked_secrets.append(term)
+
+    if not listener_povs:
+        secrecy_status = "NOT_APPLICABLE_NO_LISTENER"
+    elif protected_secrets and not leaked_secrets:
+        secrecy_status = "SECRECY_PROVED"
+    elif leaked_secrets and not protected_secrets:
+        secrecy_status = "SECRECY_LEAK_DETECTED"
+    else:
+        secrecy_status = "PARTIAL_SECRECY"
+
+    # 6. Explicit `defgoal` Satisfaction
+    goal_verdicts = [o.get("goal_satisfied") for o in outcomes if o.get("goal_satisfied") is not None]
+    if not goal_verdicts:
+        defgoal_status = "NO_EXPLICIT_DEFGOALS"
+    elif all(v == "yes" for v in goal_verdicts):
+        defgoal_status = "ALL_SATISFIED"
+    else:
+        defgoal_status = "COUNTEREXAMPLE_FOUND"
+
+    # 7. Vulnerabilities & Anomalies Summary
+    anomalies: List[str] = []
+    if leaked_secrets:
+        anomalies.append(
+            f"SECRECY_LEAK: Listener skeleton(s) realized shape(s) exposing {leaked_secrets}."
+        )
+    if param_agreement_status == "PRINCIPAL_DISAGREEMENT_MITM_OR_UKS":
+        params_str = ", ".join(
+            sorted({f"{d['parameter']} ({d['pov_value']} vs {d['peer_value']})" for d in all_disagreements if d.get("sort") in ("name", "akey")})
+        )
+        anomalies.append(
+            f"PRINCIPAL_DISAGREEMENT_MITM: Counterparty strand disagrees on principal/key parameter(s): {params_str}."
+        )
+    elif param_agreement_status == "PARAMETER_DISAGREEMENT_DETECTED":
+        params_str = ", ".join(
+            sorted({f"{d['parameter']} ({d['pov_value']} vs {d['peer_value']})" for d in all_disagreements})
+        )
+        anomalies.append(
+            f"PARAMETER_DISAGREEMENT: Counterparty strand disagrees on session/header parameter(s): {params_str}."
+        )
+    if any_same_role_refl:
+        anomalies.append(
+            "SAME_ROLE_REFLECTION: At least one realized shape satisfies a role's reception edges using another instance of the same role."
+        )
+    if any_branched_split:
+        anomalies.append(
+            "CONDITIONAL_BRANCHED_SHAPES: At least one POV admits both a 1-strand unauthenticated shape and a >=2-strand authenticated shape."
+        )
+
+    auth_tests = (exploration_telemetry or {}).get("authentication_tests_summary") or {
+        "encryption_tests": 0,
+        "nonce_tests": 0,
+        "channel_tests": 0,
+        "generalizations": 0,
+        "collapsed_shapes": 0,
+        "added_strands": 0,
+        "contractions": 0,
+        "displacements": 0,
+        "added_listeners": 0,
+    }
+    sas_list = sas_formulas or []
+
+    return {
+        "role_executability": role_executability,
+        "dead_roles_count": len(dead_povs),
+        "authentication_profile": auth_profile,
+        "parameter_agreement_status": param_agreement_status,
+        "parameter_disagreements": all_disagreements,
+        "role_reflection_status": reflection_status,
+        "secrecy_status": secrecy_status,
+        "protected_secrets": protected_secrets,
+        "leaked_secrets": leaked_secrets,
+        "defgoal_satisfaction_status": defgoal_status,
+        "authentication_tests_summary": auth_tests,
+        "shape_analysis_sentences_count": len(sas_list),
+        "shape_analysis_sentences": sas_list,
+        "vulnerabilities_and_anomalies": anomalies,
+    }
+
+
 def compute_quality_assessment(
     solver_passed: bool,
     shapes_analysis: Dict[str, Any],
     stage5_attempts_count: int,
     stage6_attempts_count: int,
+    roletran_passed: bool = True,
+    has_cryptographic_primitives: bool = True,
+    security_findings: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Computes the deterministic 4-tier quality grade (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`)."""
+    """Computes the deterministic 4-tier translation & modeling quality grade (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`).
+
+    Crucially decoupled from protocol security properties: a faithful, executable CPSA specification
+    of an RFC protocol is NEVER penalized in `quality_tier` if the RFC protocol itself is unilateral,
+    authentication-only (no `deflistener`), or has a formal vulnerability (secrecy leak, reflection,
+    or parameter disagreement) discovered by CPSA. Formal security properties are reported in
+    `security_findings`.
+    """
     outcomes = shapes_analysis.get("per_preskeleton_outcomes", [])
     participant_povs = [o for o in outcomes if o.get("skeleton_type") == "participant_pov"]
     listener_povs = [o for o in outcomes if o.get("skeleton_type") == "secrecy_listener_pov"]
+    sec_report = security_findings or compute_security_findings(shapes_analysis)
 
     if not solver_passed or not outcomes:
         return {
@@ -15286,6 +15720,7 @@ def compute_quality_assessment(
             "all_participant_povs_realized": False,
             "all_participant_povs_multi_strand": False,
             "all_secrecy_listeners_unrealized": False,
+            "security_findings": sec_report,
             "post_training_routing": {
                 "eligible_for_sft_positive": False,
                 "dpo_contrastive_pairs_available": 0,
@@ -15296,40 +15731,36 @@ def compute_quality_assessment(
     all_povs_realized = bool(participant_povs) and all(
         o.get("realized_shapes_count", 0) > 0 for o in participant_povs
     )
-    def _is_pov_authenticated(pov: Dict[str, Any]) -> bool:
-        if pov.get("verdict") == "AUTHENTICATED_MULTI_STRAND":
-            return True
-        max_s = pov.get("max_strands_in_realized_shape", 0)
-        min_s = pov.get("min_strands_in_realized_shape", max_s)
-        init_s = pov.get("initial_strand_count", 1)
-        return bool(pov.get("realized_shapes_count", 0) > 0 and min_s >= 2 and max_s > init_s)
 
-    authenticated_pov_count = sum(1 for o in participant_povs if _is_pov_authenticated(o))
-    any_self_reflection_split = any(
-        bool(o.get("has_self_reflection_split"))
-        or (
-            o.get("min_strands_in_realized_shape", o.get("max_strands_in_realized_shape", 0)) == 1
-            and o.get("max_strands_in_realized_shape", 0) >= 2
-        )
+    # Detect malformed pre-seeded multi-strand root skeletons where CPSA added 0 partner strands
+    any_preseeded_no_progress = any(
+        o.get("initial_strand_count", 1) >= 2
+        and o.get("max_strands_in_realized_shape", 0) <= o.get("initial_strand_count", 1)
         for o in participant_povs
     )
-    all_povs_multi_strand = all_povs_realized and (authenticated_pov_count == len(participant_povs))
-    # Support both mutual-auth protocols (all POVs multi-strand) and unilateral server-auth / 3-party KDC
-    # protocols where all relying-party POVs (>= N-1 and >= 1) are strictly multi-strand without any
-    # 1-strand self-reflection split.
-    sufficient_povs_authenticated = (
-        all_povs_realized
-        and not any_self_reflection_split
-        and authenticated_pov_count >= 1
-        and authenticated_pov_count >= max(1, len(participant_povs) - 1)
+
+    def _has_causal_partner_strand(pov: Dict[str, Any]) -> bool:
+        max_s = pov.get("max_strands_in_realized_shape", 0)
+        init_s = pov.get("initial_strand_count", 1)
+        return bool(pov.get("realized_shapes_count", 0) > 0 and max_s >= 2 and max_s > init_s)
+
+    causal_multi_pov_count = sum(1 for o in participant_povs if _has_causal_partner_strand(o))
+    all_povs_multi_strand = all_povs_realized and (
+        sum(
+            1
+            for o in participant_povs
+            if o.get("min_strands_in_realized_shape", 0) >= 2
+            and o.get("max_strands_in_realized_shape", 0) > o.get("initial_strand_count", 1)
+        )
+        == len(participant_povs)
     )
     all_listeners_unrealized = bool(listener_povs) and all(
         o.get("realized_shapes_count", 0) == 0 for o in listener_povs
     )
 
-    if not all_povs_realized or authenticated_pov_count == 0:
+    if not all_povs_realized or not has_cryptographic_primitives or any_preseeded_no_progress:
         tier = "BRONZE"
-    elif sufficient_povs_authenticated and all_listeners_unrealized:
+    elif roletran_passed and causal_multi_pov_count >= 1:
         tier = "GOLD"
     else:
         tier = "SILVER"
@@ -15340,8 +15771,9 @@ def compute_quality_assessment(
         "all_participant_povs_realized": all_povs_realized,
         "all_participant_povs_multi_strand": all_povs_multi_strand,
         "all_secrecy_listeners_unrealized": all_listeners_unrealized,
+        "security_findings": sec_report,
         "post_training_routing": {
-            "eligible_for_sft_positive": tier == "GOLD",
+            "eligible_for_sft_positive": tier in ("GOLD", "SILVER"),
             "dpo_contrastive_pairs_available": total_repairs if tier in ("GOLD", "SILVER") else 0,
             "compiler_repair_trajectories_available": total_repairs,
         },
@@ -15357,18 +15789,21 @@ def build_scm_metadata_header(
     quality_tier: str,
     realized_shapes: int,
     secrecy_proved: bool,
+    auth_profile: Optional[str] = None,
+    secrecy_status: Optional[str] = None,
 ) -> str:
     """Formats the structured Scheme comment header for MoE router conditioning."""
     sections_str = ", ".join(selected_sections) if selected_sections else "all"
     roles_str = ", ".join(roles) if roles else "none"
-    secrecy_str = "PROVED" if secrecy_proved else "UNVERIFIED"
+    effective_secrecy = secrecy_status or ("PROVED" if secrecy_proved else "UNVERIFIED")
+    auth_suffix = f" | AUTH-PROFILE: {auth_profile}" if auth_profile else ""
     lines = [
         f";;; [RFC-ID: {rfc_id}]",
         f";;; [PROTOCOL: {protocol_name}]",
         f";;; [SECTIONS: {sections_str}]",
         f";;; [ALGEBRA: {algebra}]",
         f";;; [ROLES: {roles_str}]",
-        f";;; [QUALITY-TIER: {quality_tier} | REALIZED-SHAPES: {realized_shapes} | SECRECY: {secrecy_str}]",
+        f";;; [QUALITY-TIER: {quality_tier} | REALIZED-SHAPES: {realized_shapes} | SECRECY: {effective_secrecy}{auth_suffix}]",
         "",
     ]
     return "\n".join(lines)
@@ -15408,14 +15843,25 @@ def write_trajectory_metadata_bundle(
         and o.get("root_label") is not None
     ]
     exploration_telemetry = analyze_exploration_txt(trace_txt_path, dead_root_labels=dead_root_labels)
+    sas_formulas = extract_shape_analysis_sentences(trace_txt_path) if solver_passed else []
+    security_findings = compute_security_findings(
+        shapes_analysis=shapes_analysis,
+        exploration_telemetry=exploration_telemetry,
+        sas_formulas=sas_formulas,
+    )
 
     stage5_attempts = stage5_record.get("repair_attempts", [])
     stage6_attempts = stage6_record.get("repair_attempts", [])
+    roletran_passed = bool(stage5_record.get("final_passed", True))
+    has_crypto = final_spec.has_cryptographic_primitives() if final_spec else True
     quality_assessment = compute_quality_assessment(
         solver_passed=solver_passed,
         shapes_analysis=shapes_analysis,
         stage5_attempts_count=len(stage5_attempts),
         stage6_attempts_count=len(stage6_attempts),
+        roletran_passed=roletran_passed,
+        has_cryptographic_primitives=has_crypto,
+        security_findings=security_findings,
     )
 
     stage6_full = {
@@ -15444,6 +15890,8 @@ def write_trajectory_metadata_bundle(
             quality_tier=quality_assessment["quality_tier"],
             realized_shapes=shapes_analysis["total_realized_shapes"],
             secrecy_proved=quality_assessment["all_secrecy_listeners_unrealized"],
+            auth_profile=security_findings.get("authentication_profile"),
+            secrecy_status=security_findings.get("secrecy_status"),
         )
         final_scm_with_header = header + clean_scm_body
         final_scm_path.write_text(final_scm_with_header, encoding="utf-8")
@@ -15464,7 +15912,7 @@ def write_trajectory_metadata_bundle(
     rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
 
     payload: Dict[str, Any] = {
-        "schema_version": "1.0.0",
+        "schema_version": "1.1.0",
         "run_id": f"{rfc_id.lower()}_{compact_ts}",
         "timestamp_utc": now_utc,
         "duration_seconds": round(duration_seconds, 2),
@@ -15483,6 +15931,7 @@ def write_trajectory_metadata_bundle(
         "stage5_preflight_gate": stage5_record,
         "stage6_cpsa4_solver": stage6_full,
         "quality_assessment": quality_assessment,
+        "security_findings": security_findings,
         "final_verified_output": {
             "final_ast": final_spec.model_dump() if final_spec else None,
             "final_scm_with_header": final_scm_with_header or None,
@@ -15494,8 +15943,10 @@ def write_trajectory_metadata_bundle(
         json.dump(payload, handle, indent=2)
 
     logger.info(
-        "Wrote trajectory metadata (%s, shapes=%d) to %s",
+        "Wrote trajectory metadata (%s, auth=%s, secrecy=%s, shapes=%d) to %s",
         quality_assessment["quality_tier"],
+        security_findings["authentication_profile"],
+        security_findings["secrecy_status"],
         shapes_analysis["total_realized_shapes"],
         trajectory_path,
     )

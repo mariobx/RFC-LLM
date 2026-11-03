@@ -503,7 +503,7 @@ def test_csv_logger_upsert_overwrites_by_rfc_id_and_logs_all_model_columns(tmp_p
 
     csv_file = tmp_path / "pipeline_runs.csv"
     logger_csv = PipelineMetricsCSVLogger(csv_path=csv_file)
-    assert len(PipelineMetricsCSVLogger.CSV_HEADER) == 50
+    assert len(PipelineMetricsCSVLogger.CSV_HEADER) == 67
 
     scm_file = tmp_path / "mobile_ipv6.scm"
     scm_file.write_text("(herald test)\n(defprotocol p basic)\n", encoding="utf-8")

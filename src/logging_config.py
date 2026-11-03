@@ -2,10 +2,11 @@
 
 import csv
 import datetime
+import json
 import logging
 import sys
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from src.system_config import SYSTEM_CONFIG
 
@@ -121,7 +122,7 @@ class PipelineMetricsCSVLogger:
         "total_repairs",
         "rejection_gate",
         "protocol_name",
-        # Group B: Protocol & Solver Complexity Telemetry
+        # Group B: Protocol, Solver Complexity & Formal CPSA Security Findings Telemetry
         "message_algebra",
         "selected_sections",
         "sliced_lines_count",
@@ -132,6 +133,23 @@ class PipelineMetricsCSVLogger:
         "explored_skeletons_count",
         "all_povs_multi_strand",
         "secrecy_proved",
+        "role_executability",
+        "dead_roles_count",
+        "authentication_profile",
+        "parameter_agreement_status",
+        "disagreed_parameters_count",
+        "disagreed_parameters_summary",
+        "role_reflection_status",
+        "secrecy_status",
+        "protected_secrets",
+        "leaked_secrets",
+        "defgoal_satisfaction_status",
+        "shape_analysis_sentences_count",
+        "encryption_tests_count",
+        "nonce_tests_count",
+        "channel_tests_count",
+        "anomalies_count",
+        "vulnerabilities_and_anomalies",
         # Group C: Self-Healing Searcher & Snowball Telemetry
         "searcher_invocations",
         "herald_options",
@@ -221,8 +239,139 @@ class PipelineMetricsCSVLogger:
         except Exception:
             pass
 
+    def seed_from_source(self, source_path: Path) -> int:
+        """Copies rows from an existing CSV file or prior run directory into `self.csv_path`
+        without modifying `source_path` (ensuring strict run-to-run isolation).
+
+        Supports:
+        1. Direct `.csv` file path (e.g., `output/run_.../pipeline_runs.csv` or `logs/pipeline_runs.csv`)
+        2. Run directory containing `pipeline_runs.csv`
+        3. Legacy run directory containing `metadata_index.json` (reconstructs rows from `filtered_rfcs` and `runs`)
+        """
+        resolved = source_path.resolve()
+        if not resolved.exists():
+            raise FileNotFoundError(f"Seed CSV or run directory does not exist: {source_path}")
+
+        csv_file: Optional[Path] = None
+        index_file: Optional[Path] = None
+        if resolved.is_file():
+            if resolved.name == "metadata_index.json":
+                index_file = resolved
+            else:
+                csv_file = resolved
+        elif resolved.is_dir():
+            cand_csv = resolved / "pipeline_runs.csv"
+            cand_idx = resolved / "metadata_index.json"
+            if cand_csv.exists() and cand_csv.stat().st_size > 0:
+                csv_file = cand_csv
+            elif cand_idx.exists():
+                index_file = cand_idx
+            else:
+                raise FileNotFoundError(
+                    f"Directory {source_path} contains neither pipeline_runs.csv nor metadata_index.json"
+                )
+
+        if csv_file is not None:
+            if csv_file.resolve() == self.csv_path.resolve():
+                return len(self._read_existing_rows())
+            seeded_rows: Dict[str, dict] = {}
+            with open(csv_file, mode="r", newline="", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    norm_id = self.normalize_rfc_id(row.get("rfc_id", ""))
+                    if norm_id:
+                        row_copy = dict(row)
+                        row_copy["rfc_id"] = norm_id
+                        seeded_rows[norm_id] = row_copy
+            rows_list = list(seeded_rows.values())
+            self._write_all_rows(rows_list)
+            return len(rows_list)
+
+        if index_file is not None:
+            idx_data = json.loads(index_file.read_text(encoding="utf-8", errors="ignore"))
+            created_ts = (idx_data.get("created_at_utc") or "").replace("T", " ").replace("Z", "")
+            for filt in idx_data.get("filtered_rfcs", []):
+                rid = self.normalize_rfc_id(filt.get("rfc_id", ""))
+                if not rid:
+                    continue
+                reason = filt.get("reason") or "Ineligible"
+                if not reason.lower().startswith("ineligible"):
+                    reason = f"Ineligible: {reason}"
+                self.log_run(
+                    rfc_id=rid,
+                    is_eligible=False,
+                    status="INELIGIBLE",
+                    quality_tier="INELIGIBLE",
+                    rejection_gate=filt.get("gate") or "Intake Gate",
+                    protocol_name=filt.get("title") or rid,
+                    duration_seconds=float(filt.get("duration_seconds") or 0.0),
+                    error_message=reason,
+                )
+            for run_entry in idx_data.get("runs", []):
+                rid = self.normalize_rfc_id(run_entry.get("rfc_id", ""))
+                if not rid:
+                    continue
+                is_elig = bool(run_entry.get("is_eligible", True))
+                traj_str = run_entry.get("metadata_json_file")
+                traj_path = Path(traj_str) if traj_str else None
+                traj_obj: Dict[str, Any] = {}
+                if traj_path and traj_path.exists():
+                    try:
+                        traj_obj = json.loads(traj_path.read_text(encoding="utf-8", errors="ignore"))
+                    except Exception:
+                        traj_obj = {}
+                meta = traj_obj.get("rfc_metadata", {})
+                s2 = traj_obj.get("stage2_initial_extraction", {})
+                s5 = traj_obj.get("stage5_preflight_gate", {})
+                s6 = traj_obj.get("stage6_cpsa4_solver", {})
+                qa = traj_obj.get("quality_assessment", {})
+                sec_f = traj_obj.get("security_findings") or qa.get("security_findings")
+                ast_obj = (traj_obj.get("final_verified_output") or {}).get("final_ast") or {}
+                scm_file_str = run_entry.get("scm_file")
+                scm_p = Path(scm_file_str) if scm_file_str else None
+                xhtml_p: Optional[Path] = None
+                if scm_p and scm_p.parent.exists():
+                    xhtmls = sorted(scm_p.parent.glob("*_shapes.xhtml"))
+                    if xhtmls:
+                        xhtml_p = xhtmls[0]
+                self.log_run(
+                    rfc_id=rid,
+                    is_eligible=is_elig,
+                    quality_tier=qa.get("quality_tier") or run_entry.get("quality_tier"),
+                    protocol_name=meta.get("protocol_name") or run_entry.get("protocol_name"),
+                    message_algebra=meta.get("algebra") or ast_obj.get("message_algebra"),
+                    selected_sections=meta.get("selected_sections"),
+                    sliced_lines_count=int(meta.get("sliced_lines_count") or 0),
+                    role_count=len(ast_obj.get("roles") or []),
+                    preskeleton_count=len(ast_obj.get("skeletons") or []),
+                    roletran_passed=bool(s5.get("final_passed", run_entry.get("build_successful"))),
+                    solver_passed=bool(s6.get("final_passed", run_entry.get("build_successful"))),
+                    shapes_count=int(
+                        (s6.get("shapes_analysis_from_shapes_txt") or {}).get("total_realized_shapes", 0)
+                    ),
+                    explored_skeletons_count=int(
+                        (s6.get("exploration_telemetry_from_txt") or {}).get("total_explored_labels", 0)
+                    ),
+                    all_povs_multi_strand=qa.get("all_participant_povs_multi_strand"),
+                    secrecy_proved=qa.get("all_secrecy_listeners_unrealized"),
+                    schema_repairs=1 if s2.get("schema_self_correction_triggered") else 0,
+                    roletran_repairs=int(s5.get("total_attempts") or 0),
+                    solver_repairs=int(s6.get("total_attempts") or 0),
+                    herald_options=ast_obj.get("herald_options"),
+                    duration_seconds=float(traj_obj.get("duration_seconds") or 0.0),
+                    cost_telemetry=traj_obj.get("cost_telemetry") or run_entry.get("cost_telemetry"),
+                    scm_path=scm_p,
+                    shapes_xhtml_path=xhtml_p,
+                    trajectory_json_path=traj_path,
+                    error_message=run_entry.get("error_message"),
+                    security_findings=sec_f,
+                )
+            return len(self._read_existing_rows())
+
+        return 0
+
     def prune_keep_ineligible_only(self) -> Tuple[int, int]:
-        """Deletes all rows in `logs/pipeline_runs.csv` EXCEPT ineligible RFCs (`is_eligible=False`).
+        """Deletes all rows in `self.csv_path` EXCEPT ineligible RFCs (`is_eligible=False`).
 
         Allows starting a fresh synthesis run over eligible protocols while preserving cached
         Tier 0 / Stage 1 / Stage 2 ineligibility decisions so non-protocol RFCs are skipped in 0ms.
@@ -286,6 +435,7 @@ class PipelineMetricsCSVLogger:
         shapes_xhtml_path: Optional[Path] = None,
         trajectory_json_path: Optional[Path] = None,
         error_message: Optional[str] = None,
+        security_findings: Optional[Dict[str, Any]] = None,
     ) -> None:
         now_iso = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         norm_rfc_id = self.normalize_rfc_id(rfc_id)
@@ -331,6 +481,39 @@ class PipelineMetricsCSVLogger:
             except Exception:
                 effective_scm_lines = 0
 
+        # Auto-hydrate security_findings from trajectory_json_path if not explicitly passed
+        eff_sec = security_findings
+        if not eff_sec and trajectory_json_path and Path(trajectory_json_path).exists():
+            try:
+                t_data = json.loads(Path(trajectory_json_path).read_text(encoding="utf-8", errors="ignore"))
+                eff_sec = t_data.get("security_findings") or (t_data.get("quality_assessment") or {}).get("security_findings")
+                if not eff_sec:
+                    from src.verification_engine.trajectory_metadata_exporter import compute_security_findings
+                    s6_t = t_data.get("stage6_cpsa4_solver") or {}
+                    fin_t = t_data.get("final_verified_output") or {}
+                    eff_sec = compute_security_findings(
+                        shapes_analysis=s6_t.get("shapes_analysis_from_shapes_txt") or {},
+                        exploration_telemetry=s6_t.get("exploration_telemetry_from_txt") or {},
+                        sas_formulas=fin_t.get("shape_analysis_sentences") or [],
+                    )
+            except Exception:
+                eff_sec = None
+        eff_sec = eff_sec or {}
+
+        disagreed_list = eff_sec.get("parameter_disagreements") or []
+        disagreed_summary_parts = []
+        for dp in disagreed_list:
+            if isinstance(dp, dict):
+                disagreed_summary_parts.append(
+                    f"{dp.get('pov_role', '?')}->{dp.get('peer_role', '?')}:{dp.get('parameter', '?')}({dp.get('pov_value', '?')}!={dp.get('peer_value', '?')})"
+                )
+        disagreed_summary_str = ";".join(disagreed_summary_parts)
+        protected_str = ";".join(str(x) for x in (eff_sec.get("protected_secrets") or []))
+        leaked_str = ";".join(str(x) for x in (eff_sec.get("leaked_secrets") or []))
+        anomalies_list = eff_sec.get("vulnerabilities_and_anomalies") or []
+        anomalies_str = " | ".join(str(x) for x in anomalies_list)
+        auth_tests = eff_sec.get("authentication_tests_summary") or {}
+
         # Extract per-role model telemetry from cost_telemetry (or GLOBAL_COST_TRACKER)
         roles_data = (cost_telemetry or {}).get("roles", {})
         r_info = roles_data.get("router", {})
@@ -367,6 +550,23 @@ class PipelineMetricsCSVLogger:
             "explored_skeletons_count": str(explored_skeletons_count) if is_eligible else "0",
             "all_povs_multi_strand": "" if all_povs_multi_strand is None else str(bool(all_povs_multi_strand)),
             "secrecy_proved": "" if secrecy_proved is None else str(bool(secrecy_proved)),
+            "role_executability": str(eff_sec.get("role_executability") or "") if is_eligible else "",
+            "dead_roles_count": str(int(eff_sec.get("dead_roles_count", 0))) if (is_eligible and eff_sec) else ("0" if is_eligible else ""),
+            "authentication_profile": str(eff_sec.get("authentication_profile") or "") if is_eligible else "",
+            "parameter_agreement_status": str(eff_sec.get("parameter_agreement_status") or "") if is_eligible else "",
+            "disagreed_parameters_count": str(len(disagreed_list)) if is_eligible else "0",
+            "disagreed_parameters_summary": disagreed_summary_str if is_eligible else "",
+            "role_reflection_status": str(eff_sec.get("role_reflection_status") or "") if is_eligible else "",
+            "secrecy_status": str(eff_sec.get("secrecy_status") or "") if is_eligible else "",
+            "protected_secrets": protected_str if is_eligible else "",
+            "leaked_secrets": leaked_str if is_eligible else "",
+            "defgoal_satisfaction_status": str(eff_sec.get("defgoal_satisfaction_status") or "") if is_eligible else "",
+            "shape_analysis_sentences_count": str(int(eff_sec.get("shape_analysis_sentences_count", 0))) if is_eligible else "0",
+            "encryption_tests_count": str(int(auth_tests.get("encryption_tests", 0))) if is_eligible else "0",
+            "nonce_tests_count": str(int(auth_tests.get("nonce_tests", 0))) if is_eligible else "0",
+            "channel_tests_count": str(int(auth_tests.get("channel_tests", 0))) if is_eligible else "0",
+            "anomalies_count": str(len(anomalies_list)) if is_eligible else "0",
+            "vulnerabilities_and_anomalies": anomalies_str if is_eligible else "",
             "searcher_invocations": str(searcher_invocations) if is_eligible else "0",
             "herald_options": herald_str,
             "duration_seconds": str(round(duration_seconds, 3)),
@@ -417,3 +617,15 @@ class PipelineMetricsCSVLogger:
             updated_rows.append(new_row)
 
         self._write_all_rows(updated_rows)
+        try:
+            from src.pipeline_events import GLOBAL_EVENT_BUS
+            GLOBAL_EVENT_BUS.emit(
+                "csv_updated",
+                csv_path=str(self.csv_path),
+                rfc_id=norm_rfc_id,
+                status=resolved_status,
+                quality_tier=resolved_tier,
+                total_rows=len(updated_rows),
+            )
+        except Exception:
+            pass

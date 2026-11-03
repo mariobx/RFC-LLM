@@ -690,6 +690,7 @@ def compute_security_findings(
         "authentication_tests_summary": auth_tests,
         "shape_analysis_sentences_count": len(sas_list),
         "shape_analysis_sentences": sas_list,
+        "anomalies_count": len(anomalies),
         "vulnerabilities_and_anomalies": anomalies,
     }
 
@@ -828,6 +829,7 @@ def write_trajectory_metadata_bundle(
     trace_txt_path: Optional[Path],
     shapes_txt_path: Optional[Path],
     solver_passed: bool,
+    intake_rationale: Optional[str] = None,
 ) -> Path:
     """Computes programmatic CPSA verification metrics, prepends `.scm` metadata headers,
     and writes `<protocol_stem>_trajectory.json` into `output_dir`.
@@ -928,6 +930,7 @@ def write_trajectory_metadata_bundle(
             "selected_sections": selected_sections,
             "sliced_lines_count": len(verbatim_slice.splitlines()),
             "verbatim_rfc_slice": verbatim_slice,
+            "intake_rationale": intake_rationale,
         },
         "stage2_initial_extraction": stage2_record,
         "stage5_preflight_gate": stage5_record,
@@ -969,6 +972,8 @@ def update_run_metadata_index(
     tab_index: Optional[int] = None,
     rejection_gate: Optional[str] = None,
     duration_seconds: float = 0.0,
+    security_findings: Optional[Dict[str, Any]] = None,
+    intake_rationale: Optional[str] = None,
 ) -> Path:
     """Updates the master `metadata_index.json` in the timestamped run directory
     with the locations of all generated RFC directories and JSON metadata files.
@@ -1049,6 +1054,8 @@ def update_run_metadata_index(
         "scm_file": scm_str,
         "metadata_json_file": traj_str,
         "error_message": error_message,
+        "intake_rationale": intake_rationale,
+        "security_findings": security_findings,
         "cost_usd": round(float(rfc_cost.get("total_cost_usd", 0.0)), 6),
         "cost_telemetry": rfc_cost,
     })

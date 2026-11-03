@@ -1,6 +1,7 @@
 """Asynchronous web server for live and offline multi-RFC synthesis visualization."""
 
 import asyncio
+import csv
 import json
 import logging
 import socket
@@ -10,8 +11,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 from aiohttp import web
 
-from src.system_config import SYSTEM_CONFIG
+from src.logging_config import PipelineMetricsCSVLogger
 from src.pipeline_events import GLOBAL_EVENT_BUS, PipelineEvent
+from src.system_config import SYSTEM_CONFIG
+from src.verification_engine.trajectory_metadata_exporter import compute_security_findings
 
 logger = logging.getLogger("rfc_llm.visualizer")
 
@@ -326,10 +329,45 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
                     cost_telemetry = rc
                     break
 
+    sec_findings = (
+        traj.get("security_findings")
+        or qa.get("security_findings")
+        or tab_summary.get("security_findings")
+        or {}
+    )
+    if not sec_findings and traj:
+        try:
+            sec_findings = compute_security_findings(
+                shapes_analysis=s6.get("shapes_analysis_from_shapes_txt") or {},
+                exploration_telemetry=s6.get("exploration_telemetry_from_txt") or {},
+                sas_formulas=final_out.get("shape_analysis_sentences") or [],
+            )
+        except Exception:
+            sec_findings = {}
+
+    intake_rationale = (
+        meta.get("intake_rationale")
+        or tab_summary.get("intake_rationale")
+        or None
+    )
+    if not intake_rationale:
+        err_msg = tab_summary.get("error_message") or ""
+        if "Eligible:" in err_msg:
+            intake_rationale = err_msg.split("Eligible:", 1)[1].strip()
+
     return {
-        "tab": {**tab_summary, "shapes_xhtml": shapes_xhtml},
+        "tab": {
+            **tab_summary,
+            "shapes_xhtml": shapes_xhtml,
+            "security_findings": sec_findings,
+            "intake_rationale": intake_rationale,
+        },
         "rfc_metadata": meta,
+        "intake_rationale": intake_rationale,
         "quality_assessment": qa,
+        "security_findings": sec_findings,
+        "shapes_analysis": s6.get("shapes_analysis_from_shapes_txt") or {},
+        "exploration_telemetry": s6.get("exploration_telemetry_from_txt") or {},
         "cost_telemetry": cost_telemetry,
         "verbatim_slice": verbatim_slice,
         "shapes_xhtml": shapes_xhtml,
@@ -428,6 +466,56 @@ def _synthesize_events_from_trajectory(
     return evts
 
 
+def _load_csv_analytics_payload() -> Dict[str, Any]:
+    """Reads and normalizes the active run's 67-column pipeline_runs.csv off the main thread.
+    If viewing a legacy run directory that only has metadata_index.json (no pipeline_runs.csv yet),
+    reconstructs the 67-column rows from metadata_index.json + trajectory JSONs.
+    """
+    headers = list(PipelineMetricsCSVLogger.CSV_HEADER)
+    csv_path = GLOBAL_EVENT_BUS.get_csv_path()
+    run_dir = GLOBAL_EVENT_BUS.get_run_root_dir()
+
+    target_csv: Optional[Path] = None
+    if csv_path and csv_path.exists() and csv_path.stat().st_size > 0:
+        target_csv = csv_path
+    elif run_dir and (run_dir / "pipeline_runs.csv").exists() and (run_dir / "pipeline_runs.csv").stat().st_size > 0:
+        target_csv = run_dir / "pipeline_runs.csv"
+
+    rows: List[Dict[str, str]] = []
+    if target_csv and target_csv.exists():
+        try:
+            with open(target_csv, mode="r", newline="", encoding="utf-8", errors="ignore") as handle:
+                reader = csv.DictReader(handle)
+                for raw_row in reader:
+                    normalized = {col: str(raw_row.get(col) or "") for col in headers}
+                    rows.append(normalized)
+        except Exception:
+            rows = []
+
+    # If CSV has 0 rows (e.g., offline --view on a legacy run folder with metadata_index.json),
+    # reconstruct rows from metadata_index.json into run_dir/pipeline_runs.csv
+    if not rows and run_dir and (run_dir / "metadata_index.json").exists():
+        try:
+            generated_csv = run_dir / "pipeline_runs.csv"
+            temp_logger = PipelineMetricsCSVLogger(csv_path=generated_csv)
+            temp_logger.seed_from_source(run_dir / "metadata_index.json")
+            target_csv = generated_csv
+            with open(generated_csv, mode="r", newline="", encoding="utf-8", errors="ignore") as handle:
+                reader = csv.DictReader(handle)
+                for raw_row in reader:
+                    normalized = {col: str(raw_row.get(col) or "") for col in headers}
+                    rows.append(normalized)
+        except Exception:
+            rows = []
+
+    return {
+        "csv_path": str(target_csv or csv_path or ""),
+        "headers": headers,
+        "row_count": len(rows),
+        "rows": rows,
+    }
+
+
 class VisualizerServer:
     """Manages SSE streaming, lazy per-tab hydration, and dashboard state."""
 
@@ -449,10 +537,16 @@ class VisualizerServer:
         self.app.router.add_get("/api/active", self.handle_active)
         self.app.router.add_get("/api/tab/{tab_index}", self.handle_tab_detail)
         self.app.router.add_get("/api/filtered", self.handle_filtered)
+        self.app.router.add_get("/api/csv", self.handle_csv)
         self.app.router.add_get("/api/models", self.handle_models)
         self.app.router.add_get("/api/artifact", self.handle_artifact)
         if SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR.exists():
             self.app.router.add_static("/output", SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR, show_index=True)
+
+    async def handle_csv(self, request: web.Request) -> web.Response:
+        """Reads and parses the active run's 67-column CSV ledger in a worker thread off the main event loop."""
+        payload = await asyncio.to_thread(_load_csv_analytics_payload)
+        return web.json_response(payload)
 
     async def handle_models(self, request: web.Request) -> web.Response:
         """Returns the live stage-specific models resolved from prompts/*.md frontmatter."""
