@@ -2,7 +2,8 @@
 # Stage 2 (Retry): 1-Shot Schema & Grammar Self-Correction
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: nous/google/gemini-4-argon
-timeout: 360
+timeout: 1500
+max_tokens: 16384
 temperature: 0.0
 ---
 Your previous JSON output failed MITRE CPSA 4.4.9 schema and scoping validation with the following errors:

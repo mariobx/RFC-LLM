@@ -40,13 +40,13 @@ GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"
 
 # Built-in fallback models & timeouts when a `prompts/*.md` file omits frontmatter or is missing
 _FALLBACK_METADATA: Dict[str, Dict[str, Any]] = {
-    PROMPT_APPLICABILITY_GATE: {"model": "nous/z-ai/glm-5.3", "timeout": 360, "temperature": 0.0},
-    PROMPT_SECTION_ROUTER: {"model": "nous/z-ai/glm-5.3", "timeout": 360, "temperature": 0.0},
-    PROMPT_PROTOCOL_EXTRACTION: {"model": "nous/google/gemini-4-argon", "timeout": 360, "temperature": 0.0},
-    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "nous/google/gemini-4-argon", "timeout": 360, "temperature": 0.0},
-    PROMPT_RAG_QUERY_FORMULATION: {"model": "nous/anthropic/claude-haiku-5.5", "timeout": 360, "temperature": 0.0},
-    PROMPT_COMPILER_REPAIR: {"model": "nous/google/gemini-3.8-flash", "timeout": 360, "temperature": 0.0},
-    PROMPT_THINK_SYNTHESIZER: {"model": "gemini/gemini-3.5-flash-lite", "timeout": 360, "temperature": 0.2},
+    PROMPT_APPLICABILITY_GATE: {"model": "nous/z-ai/glm-5.3", "timeout": 1500, "max_tokens": 4096, "temperature": 0.0},
+    PROMPT_SECTION_ROUTER: {"model": "nous/z-ai/glm-5.3", "timeout": 1500, "max_tokens": 4096, "temperature": 0.0},
+    PROMPT_PROTOCOL_EXTRACTION: {"model": "nous/google/gemini-4-argon", "timeout": 1500, "max_tokens": 16384, "temperature": 0.0},
+    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "nous/google/gemini-4-argon", "timeout": 1500, "max_tokens": 16384, "temperature": 0.0},
+    PROMPT_RAG_QUERY_FORMULATION: {"model": "nous/anthropic/claude-haiku-5.5", "timeout": 1500, "max_tokens": 4096, "temperature": 0.0},
+    PROMPT_COMPILER_REPAIR: {"model": "nous/google/gemini-3.8-flash", "timeout": 1500, "max_tokens": 16384, "temperature": 0.0},
+    PROMPT_THINK_SYNTHESIZER: {"model": "gemini/gemini-3.5-flash-lite", "timeout": 1500, "max_tokens": 16384, "temperature": 0.2},
 }
 
 # Built-in fallback prompt bodies if a file in prompts/ is missing or empty
@@ -102,7 +102,8 @@ class PromptSpec(BaseModel):
     filename: str
     body: str
     model: str
-    timeout: int = 180
+    timeout: int = 1500
+    max_tokens: int = 16384
     temperature: Optional[float] = None
 
 
@@ -131,6 +132,7 @@ def load_prompt_spec(prompt_filename: str, prompts_dir: Optional[Path] = None) -
     defaults = _FALLBACK_METADATA.get(prompt_filename, {})
     default_model = str(defaults.get("model") or GLOBAL_FALLBACK_MODEL)
     default_timeout = int(defaults.get("timeout") or SYSTEM_CONFIG.LLM_TIMEOUT_SECONDS)
+    default_max_tokens = int(defaults.get("max_tokens") or 16384)
     default_temp = defaults.get("temperature")
 
     meta: Dict[str, Any] = {}
@@ -162,6 +164,12 @@ def load_prompt_spec(prompt_filename: str, prompts_dir: Optional[Path] = None) -
     except (TypeError, ValueError):
         resolved_timeout = default_timeout
 
+    raw_max_tokens = meta.get("max_tokens")
+    try:
+        resolved_max_tokens = int(raw_max_tokens) if raw_max_tokens is not None else default_max_tokens
+    except (TypeError, ValueError):
+        resolved_max_tokens = default_max_tokens
+
     raw_temp = meta.get("temperature", default_temp)
     try:
         resolved_temp = float(raw_temp) if raw_temp is not None else None
@@ -173,6 +181,7 @@ def load_prompt_spec(prompt_filename: str, prompts_dir: Optional[Path] = None) -
         body=body,
         model=resolved_model,
         timeout=resolved_timeout,
+        max_tokens=resolved_max_tokens,
         temperature=resolved_temp,
     )
 

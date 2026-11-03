@@ -71,7 +71,11 @@ def extract_protocol_specification(
         CPSAProtocolSpecification,
     )
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
+    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+        model_name,
+        temperature=sampling_temp,
+        max_tokens=extraction_spec.max_tokens,
+    )
     response = None
     for retry_idx in range(3):
         try:
@@ -129,7 +133,11 @@ def extract_protocol_specification(
 
         corr_model = model or corr_spec.model
         corr_temp = corr_spec.temperature if corr_spec.temperature is not None else 0.0
-        corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(corr_model, temperature=corr_temp)
+        corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            corr_model,
+            temperature=corr_temp,
+            max_tokens=corr_spec.max_tokens,
+        )
 
         try:
             correction_response = litellm.completion(

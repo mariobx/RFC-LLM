@@ -2,26 +2,17 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-03 06:57:28 UTC · Git: `main` @ `29514aa88600` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
+*Generated: 2026-11-03 06:57:28 UTC · Git: `main` @ `39f9da039f05` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `29514aa88600` — Surface total_completion_steps and per-stage repair step counts in Group A of pipeline_runs.csv
+- **Git commit:** `39f9da039f05` — Set MAX_REPAIR_ATTEMPTS=10, bump LLM timeouts to 360s, and support OLLAMA_HOST for remote Ollama
+- No file changes detected since the previous sync.
 - **Added (0):** none
-- **Modified (10):**
-  - `prompts/01_applicability_gate.md`
-  - `prompts/02_section_router.md`
-  - `prompts/03_protocol_extraction.md`
-  - `prompts/04_schema_self_correction.md`
-  - `prompts/05_rag_query_formulation.md`
-  - `prompts/06_compiler_repair.md`
-  - `prompts/07_think_token_synthesizer.md`
-  - `src/prompt_loader.py`
-  - `src/system_config.py`
-  - `tests/test_trajectory_and_hardening.py`
+- **Modified (0):** none
 - **Deleted (0):** none
 
 ---

@@ -833,7 +833,11 @@ def run_agentic_cpsa_searcher(
     ]
 
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(searcher_model, temperature=sampling_temp)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            searcher_model,
+            temperature=sampling_temp,
+            max_tokens=searcher_spec.max_tokens,
+        )
         for turn_idx in range(2):
             resp = litellm.completion(
                 **llm_kwargs,

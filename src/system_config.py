@@ -13,6 +13,7 @@ from pydantic_settings import BaseSettings
 litellm.suppress_debug_info = True
 litellm.set_verbose = False
 litellm.drop_params = True
+litellm.request_timeout = 1500
 for _logger_name in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router"):
     logging.getLogger(_logger_name).setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=".*litellm.*")
@@ -58,7 +59,7 @@ class SystemEnvironmentConfig(BaseSettings):
     STRATA_API_KEY: str = os.getenv("STRATA_API_KEY", "local-strata")
 
     # Compiler & Harness Execution Limits
-    LLM_TIMEOUT_SECONDS: int = 360
+    LLM_TIMEOUT_SECONDS: int = 1500
     CPSA_TIMEOUT_SECONDS: int = 15
     ROLETRAN_TIMEOUT_SECONDS: int = 15
     MAX_REPAIR_ATTEMPTS: int = 10
@@ -101,9 +102,16 @@ class SystemEnvironmentConfig(BaseSettings):
         from src.prompt_loader import PROMPT_THINK_SYNTHESIZER, resolve_prompt_model
         return resolve_prompt_model(PROMPT_THINK_SYNTHESIZER)
 
-    def get_llm_kwargs(self, model_name: str, temperature: Optional[float] = None) -> Dict[str, Any]:
+    def get_llm_kwargs(
+        self,
+        model_name: str,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """Returns provider-specific arguments (API keys, base URLs, sampling) for LiteLLM."""
         kwargs: Dict[str, Any] = {"model": model_name}
+        if max_tokens is not None and max_tokens > 0:
+            kwargs["max_tokens"] = int(max_tokens)
         if model_name.startswith("nous/") or model_name.startswith("nousresearch/"):
             target_model = model_name.split("/", 1)[1]
             kwargs["model"] = f"openai/{target_model}"

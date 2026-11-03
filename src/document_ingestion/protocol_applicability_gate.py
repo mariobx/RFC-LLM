@@ -73,7 +73,11 @@ def evaluate_protocol_applicability(
     )
 
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            model_name,
+            temperature=sampling_temp,
+            max_tokens=prompt_spec.max_tokens,
+        )
         response = litellm.completion(
             **llm_kwargs,
             messages=[

@@ -3,18 +3,7 @@
   "delta_of_this_sync": {
     "added": [],
     "deleted": [],
-    "modified": [
-      "prompts/01_applicability_gate.md",
-      "prompts/02_section_router.md",
-      "prompts/03_protocol_extraction.md",
-      "prompts/04_schema_self_correction.md",
-      "prompts/05_rag_query_formulation.md",
-      "prompts/06_compiler_repair.md",
-      "prompts/07_think_token_synthesizer.md",
-      "src/prompt_loader.py",
-      "src/system_config.py",
-      "tests/test_trajectory_and_hardening.py"
-    ]
+    "modified": []
   },
   "files": {
     ".env.example": {
@@ -1509,8 +1498,8 @@
   "generated_at": "2026-11-03 06:57:28 UTC",
   "git": {
     "branch": "main",
-    "commit": "29514aa88600a70710d21e01ce59b6c858421a29",
-    "subject": "Surface total_completion_steps and per-stage repair step counts in Group A of pipeline_runs.csv"
+    "commit": "39f9da039f05f225b1cfa95c8fa7698c40f99508",
+    "subject": "Set MAX_REPAIR_ATTEMPTS=10, bump LLM timeouts to 360s, and support OLLAMA_HOST for remote Ollama"
   },
   "previous_git": {
     "branch": "main",

@@ -213,7 +213,11 @@ def repair_protocol_specification(
         CPSAProtocolSpecification,
     )
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temperature)
+    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+        model_name,
+        temperature=sampling_temperature,
+        max_tokens=repair_spec.max_tokens,
+    )
     response = None
     for retry_idx in range(4):
         try:
