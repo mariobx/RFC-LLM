@@ -2,17 +2,30 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-03 06:57:28 UTC · Git: `main` @ `39f9da039f05` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
+*Generated: 2026-11-03 15:36:27 UTC · Git: `main` @ `59dd1b43aaa5` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `39f9da039f05` — Set MAX_REPAIR_ATTEMPTS=10, bump LLM timeouts to 360s, and support OLLAMA_HOST for remote Ollama
-- No file changes detected since the previous sync.
+- **Git commit:** `59dd1b43aaa5` — Increase LLM timeout to 1500s and add per-stage max_tokens bounds for local models
 - **Added (0):** none
-- **Modified (0):** none
+- **Modified (14):**
+  - `prompts/01_applicability_gate.md`
+  - `prompts/02_section_router.md`
+  - `prompts/03_protocol_extraction.md`
+  - `prompts/04_schema_self_correction.md`
+  - `prompts/05_rag_query_formulation.md`
+  - `prompts/06_compiler_repair.md`
+  - `prompts/07_think_token_synthesizer.md`
+  - `src/document_ingestion/handshake_section_router.py`
+  - `src/document_ingestion/protocol_applicability_gate.py`
+  - `src/generate_think/dspy_think_synthesizer.py`
+  - `src/prompt_loader.py`
+  - `src/semantic_extraction/constrained_protocol_extractor.py`
+  - `src/system_config.py`
+  - `src/verification_engine/compiler_diagnostic_repair.py`
 - **Deleted (0):** none
 
 ---
@@ -38,12 +51,12 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | Bundle | Title | Files | Size | Estimated Tokens | Tier |
 |---|---|---|---|---|---|
 | `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 119.7 KB | ~30,592 | Tier 1 — Architecture, Documentation & Project Configs |
-| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 750.8 KB | ~192,163 | Tier 2 — Core Source Code & CLI Entrypoints |
+| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 754.4 KB | ~193,064 | Tier 2 — Core Source Code & CLI Entrypoints |
 | `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 161.5 KB | ~41,104 | Tier 3 — Knowledge Base Index & Test Suites |
 | `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 693.4 KB | ~175,802 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
 | `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files) | 155 | 915.3 KB | ~234,169 | Tier 3 — Domain Reference Code Corpus (.scm) |
 
-**Total Ingested Context Payload:** ~673,830 tokens across all bundles (67.4% of Gemini 1M context window)
+**Total Ingested Context Payload:** ~674,731 tokens across all bundles (67.5% of Gemini 1M context window)
 
 ---
 
@@ -76,7 +89,7 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/main_pipeline_orchestrator.py` | Main Pipeline Orchestrator for RFC-to-CPSA Synthesis. | `PipelineExecutionSummary` | `_extract_rfc_abstract`, `_read_scm_safe`, `_run_roletran_self_healing_loop`, `_run_mitre_solver_self_healing_loop`, `run_rfc_translation_pipeline` | — |
 | `src/pipeline.py` | Command-line interface for RFC-LLM synthesis pipeline suppor | — | `_print_cost_breakdown`, `natural_rfc_sort_key`, `get_completed_rfc_ids`, `get_failed_rfc_ids`, `main` | `--view`, `--output-dir`, `-o`, `--model`, `-m`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, `--no-visualize` … |
 | `src/pipeline_events.py` | Bounded event bus, sequential tab registry, and disk telemet | `PipelineEvent`, `PipelineEventBus` | `_strip_bulky_event_fields` | — |
-| `src/prompt_loader.py` | Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LL | `PromptSpec` | `parse_prompt_frontmatter`, `load_prompt_spec`, `resolve_prompt_model`, `load_prompt`, `build_schema_system_prompt` | — |
+| `src/prompt_loader.py` | Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LL | `PromptSpec` | `parse_prompt_frontmatter`, `load_prompt_spec`, `resolve_prompt_model`, `load_prompt`, `build_schema_system_prompt`, `parse_llm_json` | — |
 | `src/rag_retriever_client.py` | CPSA 4.4.9 Knowledge Base Indexer, `TOC.md` Flag Manager, an | `CPSAKnowledgeBase` | `tokenize_cpsa_dsl`, `_slugify_heading`, `parse_toc_rebuild_flag`, `_split_markdown_file_into_sections`, `_extract_scm_metadata_from_source`, `build_cpsa_kb_index` … | — |
 | `src/semantic_extraction/__init__.py` | Semantic Extraction package for Stage 2 constrained CPSA pro | — | — | — |
 | `src/semantic_extraction/constrained_protocol_extractor.py` | Constrained Protocol Semantic Extractor with RAG Grounding. | — | `extract_protocol_specification`, `ensure_three_point_of_view_skeletons` | — |

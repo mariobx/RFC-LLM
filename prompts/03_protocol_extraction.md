@@ -1,9 +1,9 @@
 ---
 # Stage 2: JSON CPSA Generation (Constrained Protocol Semantic Extraction)
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
-model: nous/google/gemini-4-argon
+model: strata/unsloth-iq4_xs
 timeout: 1500
-max_tokens: 16384
+max_tokens: 65536
 temperature: 0.0
 ---
 You are a formal methods expert in cryptographic protocol specification for MITRE CPSA 4.4.9.

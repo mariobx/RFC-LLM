@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-03 06:57:28 UTC · Git: `main` @ `39f9da039f05` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~192,163*
+*Generated: 2026-11-03 15:36:27 UTC · Git: `main` @ `59dd1b43aaa5` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~193,064*
 
 ## Table of Contents
 
@@ -59,14 +59,15 @@
 
 ### `prompts/01_applicability_gate.md`
 
-*sha256:`a4061fe6a3c2` · 29 lines · 1.3 KB (~335 tokens) · lang:`markdown`*
+*sha256:`fd35ffbd8a04` · 30 lines · 1.3 KB (~341 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 1c: Protocol Applicability Gatekeeper
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
-model: nous/z-ai/glm-5.3
-timeout: 360
+model: strata/unsloth-iq4_xs
+timeout: 1500
+max_tokens: 65536
 temperature: 0.0
 ---
 You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.
@@ -97,14 +98,15 @@ Example output format:
 
 ### `prompts/02_section_router.md`
 
-*sha256:`5e455b03e6c8` · 15 lines · 0.8 KB (~209 tokens) · lang:`markdown`*
+*sha256:`e41822700a3a` · 16 lines · 0.8 KB (~215 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 1d: Handshake & Exchange TOC Section Router
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
-model: nous/z-ai/glm-5.3
-timeout: 360
+model: strata/unsloth-iq4_xs
+timeout: 1500
+max_tokens: 65536
 temperature: 0.0
 ---
 You are a protocol analyst reading an RFC's Table of Contents.
@@ -121,14 +123,15 @@ Guidelines:
 
 ### `prompts/03_protocol_extraction.md`
 
-*sha256:`6093d47e410c` · 94 lines · 8.7 KB (~2,224 tokens) · lang:`markdown`*
+*sha256:`64c8ff063b20` · 95 lines · 8.7 KB (~2,227 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 2: JSON CPSA Generation (Constrained Protocol Semantic Extraction)
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
-model: nous/google/gemini-4-argon
-timeout: 360
+model: strata/unsloth-iq4_xs
+timeout: 1500
+max_tokens: 65536
 temperature: 0.0
 ---
 You are a formal methods expert in cryptographic protocol specification for MITRE CPSA 4.4.9.
@@ -224,14 +227,15 @@ Return ONLY a valid JSON object matching the requested CPSAProtocolSpecification
 
 ### `prompts/04_schema_self_correction.md`
 
-*sha256:`660f1567f925` · 20 lines · 1.6 KB (~408 tokens) · lang:`markdown`*
+*sha256:`074f705a8930` · 21 lines · 1.6 KB (~412 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 2 (Retry): 1-Shot Schema & Grammar Self-Correction
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
-model: nous/google/gemini-4-argon
-timeout: 360
+model: strata/unsloth-iq4_xs
+timeout: 1500
+max_tokens: 65536
 temperature: 0.0
 ---
 Your previous JSON output failed MITRE CPSA 4.4.9 schema and scoping validation with the following errors:
@@ -253,14 +257,15 @@ Return ONLY the corrected, fully valid JSON object.
 
 ### `prompts/05_rag_query_formulation.md`
 
-*sha256:`6dde05810656` · 36 lines · 2.8 KB (~707 tokens) · lang:`markdown`*
+*sha256:`7d116cf8f4f1` · 37 lines · 2.8 KB (~710 tokens) · lang:`markdown`*
 
 ````markdown
 ---
 # Stage 5 & 6: Agentic CPSA Knowledge Base Investigator & Diagnostic Searcher
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
-model: nous/anthropic/claude-haiku-5.5
-timeout: 360
+model: strata/unsloth-iq4_xs
+timeout: 1500
+max_tokens: 65536
 temperature: 0.0
 ---
 You are the Agentic CPSA 4.4.9 Knowledge Base Investigator for RFC-LLM.
@@ -298,14 +303,15 @@ If you are only given a single compiler diagnostic without a TOC map (legacy sin
 
 ### `prompts/06_compiler_repair.md`
 
-*sha256:`72ed77ae5846` · 59 lines · 6.8 KB (~1,747 tokens) · lang:`markdown`*
+*sha256:`8ebae5ef6331` · 60 lines · 6.8 KB (~1,750 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 5 & 6: RAG-Guided Compiler Self-Healing Repair
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
-model: nous/google/gemini-3.8-flash
-timeout: 360
+model: strata/unsloth-iq4_xs
+timeout: 1500
+max_tokens: 65536
 temperature: 0.0
 ---
 You are a formal methods expert in debugging and repairing MITRE CPSA 4.4.9 protocol specifications.
@@ -366,14 +372,15 @@ Return ONLY the repaired, valid CPSAProtocolSpecification matching the requested
 
 ### `prompts/07_think_token_synthesizer.md`
 
-*sha256:`df9a95d66d5b` · 35 lines · 3.7 KB (~954 tokens) · lang:`markdown`*
+*sha256:`bc39caba79f4` · 36 lines · 3.7 KB (~957 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Phase 3: Hindsight Reasoning (<think>) Synthesizer
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
-model: gemini/gemini-3.5-flash-lite
-timeout: 360
+model: strata/unsloth-iq4_xs
+timeout: 1500
+max_tokens: 65536
 temperature: 0.2
 ---
 You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.
@@ -5687,7 +5694,7 @@ __all__ = [
 
 ### `src/document_ingestion/handshake_section_router.py`
 
-*sha256:`8d54821acc2b` · 134 lines · 5.0 KB (~1,280 tokens) · lang:`python`*
+*sha256:`f9a4e4089786` · 136 lines · 5.0 KB (~1,275 tokens) · lang:`python`*
 
 ```python
 """Handshake Section Router for Navigating RFC Table of Contents.
@@ -5708,6 +5715,7 @@ from src.prompt_loader import (
     PROMPT_SECTION_ROUTER,
     build_schema_system_prompt,
     load_prompt_spec,
+    parse_llm_json,
 )
 from src.system_config import SYSTEM_CONFIG
 
@@ -5751,24 +5759,25 @@ def route_handshake_sections(
     )
 
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            model_name,
+            temperature=sampling_temp,
+            max_tokens=prompt_spec.max_tokens,
+            json_mode=True,
+        )
         response = litellm.completion(
             **llm_kwargs,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            response_format={"type": "json_object"},
             timeout=prompt_spec.timeout,
         )
         from src.cost_tracker import GLOBAL_COST_TRACKER
         GLOBAL_COST_TRACKER.record_llm_call(response, role="router", model_name=model_name, stage=1)
 
         raw_content = response.choices[0].message.content
-        try:
-            decision_data = json.loads(raw_content)
-        except Exception:
-            decision_data = json_repair.loads(raw_content)
+        decision_data = parse_llm_json(raw_content)
 
         decision = SectionRoutingDecision.model_validate(decision_data)
 
@@ -5830,7 +5839,7 @@ def _heuristic_section_router(toc_entries: List[TOCSectionEntry]) -> List[str]:
 
 ### `src/document_ingestion/protocol_applicability_gate.py`
 
-*sha256:`29f61aad9992` · 127 lines · 4.8 KB (~1,234 tokens) · lang:`python`*
+*sha256:`8a265756ad20` · 129 lines · 4.8 KB (~1,229 tokens) · lang:`python`*
 
 ```python
 """Protocol Applicability Gate (Tier 1 Gatekeeper).
@@ -5852,6 +5861,7 @@ from src.prompt_loader import (
     PROMPT_APPLICABILITY_GATE,
     build_schema_system_prompt,
     load_prompt_spec,
+    parse_llm_json,
 )
 from src.system_config import SYSTEM_CONFIG
 
@@ -5908,24 +5918,25 @@ def evaluate_protocol_applicability(
     )
 
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            model_name,
+            temperature=sampling_temp,
+            max_tokens=prompt_spec.max_tokens,
+            json_mode=True,
+        )
         response = litellm.completion(
             **llm_kwargs,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            response_format={"type": "json_object"},
             timeout=prompt_spec.timeout,
         )
         from src.cost_tracker import GLOBAL_COST_TRACKER
         GLOBAL_COST_TRACKER.record_llm_call(response, role="router", model_name=model_name, stage=1)
 
         raw_content = response.choices[0].message.content
-        try:
-            report_data = json.loads(raw_content)
-        except Exception:
-            report_data = json_repair.loads(raw_content)
+        report_data = parse_llm_json(raw_content)
 
         report = ProtocolApplicabilityReport.model_validate(report_data)
 
@@ -6544,7 +6555,7 @@ if __name__ == "__main__":
 
 ### `src/generate_think/dspy_think_synthesizer.py`
 
-*sha256:`f991042e37e0` · 751 lines · 35.2 KB (~9,003 tokens) · lang:`python`*
+*sha256:`3c6700ca4133` · 758 lines · 35.3 KB (~9,039 tokens) · lang:`python`*
 
 ```python
 """Phase 3 Agentic DSPy Hindsight Reasoning (<think>) Synthesizer.
@@ -6575,6 +6586,7 @@ from src.prompt_loader import (
     build_schema_system_prompt,
     load_prompt,
     load_prompt_spec,
+    parse_llm_json,
 )
 from src.system_config import SYSTEM_CONFIG
 
@@ -6951,7 +6963,11 @@ def synthesize_reasoning_steps_via_dspy_or_llm(
     )
     backtracking_history = _extract_compiler_backtracking_summary(trajectory_data)
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
+    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+        model_name,
+        temperature=sampling_temp,
+        max_tokens=think_spec.max_tokens,
+    )
 
     # First attempt: DSPy CPSAHindsightThinkModule configured with provider-agnostic LM
     try:
@@ -6999,20 +7015,22 @@ def synthesize_reasoning_steps_via_dspy_or_llm(
             f"Target Ground-Truth Scaffold (Arrive at these exact identifiers/terms via first-principles deduction "
             f"without ever mentioning they were provided):\n{verified_scaffold}"
         )
+        direct_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            model_name,
+            temperature=sampling_temp,
+            max_tokens=think_spec.max_tokens,
+            json_mode=True,
+        )
         response = litellm.completion(
-            **llm_kwargs,
+            **direct_kwargs,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            response_format={"type": "json_object"},
             timeout=think_spec.timeout,
         )
         raw_content = response.choices[0].message.content
-        try:
-            parsed = json.loads(raw_content)
-        except Exception:
-            parsed = json_repair.loads(raw_content)
+        parsed = parse_llm_json(raw_content)
 
         steps = SynthesizedReasoningSteps.model_validate(parsed)
         steps.step1_protocol_and_algebra = _sanitize_hindsight_leakage(steps.step1_protocol_and_algebra)
@@ -11341,9 +11359,9 @@ GLOBAL_EVENT_BUS = PipelineEventBus()
 
 ### `src/prompt_loader.py`
 
-*sha256:`e5fb6b6edae3` · 204 lines · 9.0 KB (~2,312 tokens) · lang:`python`*
+*sha256:`1808263b70a5` · 255 lines · 11.1 KB (~2,840 tokens) · lang:`python`*
 
-```python
+````python
 """Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LLM (prompts/ directory).
 
 Each `prompts/*.md` file begins with an optional YAML frontmatter block configuring
@@ -11386,13 +11404,13 @@ GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"
 
 # Built-in fallback models & timeouts when a `prompts/*.md` file omits frontmatter or is missing
 _FALLBACK_METADATA: Dict[str, Dict[str, Any]] = {
-    PROMPT_APPLICABILITY_GATE: {"model": "nous/z-ai/glm-5.3", "timeout": 360, "temperature": 0.0},
-    PROMPT_SECTION_ROUTER: {"model": "nous/z-ai/glm-5.3", "timeout": 360, "temperature": 0.0},
-    PROMPT_PROTOCOL_EXTRACTION: {"model": "nous/google/gemini-4-argon", "timeout": 360, "temperature": 0.0},
-    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "nous/google/gemini-4-argon", "timeout": 360, "temperature": 0.0},
-    PROMPT_RAG_QUERY_FORMULATION: {"model": "nous/anthropic/claude-haiku-5.5", "timeout": 360, "temperature": 0.0},
-    PROMPT_COMPILER_REPAIR: {"model": "nous/google/gemini-3.8-flash", "timeout": 360, "temperature": 0.0},
-    PROMPT_THINK_SYNTHESIZER: {"model": "gemini/gemini-3.5-flash-lite", "timeout": 360, "temperature": 0.2},
+    PROMPT_APPLICABILITY_GATE: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_SECTION_ROUTER: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_PROTOCOL_EXTRACTION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_RAG_QUERY_FORMULATION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_COMPILER_REPAIR: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_THINK_SYNTHESIZER: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.2},
 }
 
 # Built-in fallback prompt bodies if a file in prompts/ is missing or empty
@@ -11448,7 +11466,8 @@ class PromptSpec(BaseModel):
     filename: str
     body: str
     model: str
-    timeout: int = 180
+    timeout: int = 1500
+    max_tokens: int = 65536
     temperature: Optional[float] = None
 
 
@@ -11477,6 +11496,7 @@ def load_prompt_spec(prompt_filename: str, prompts_dir: Optional[Path] = None) -
     defaults = _FALLBACK_METADATA.get(prompt_filename, {})
     default_model = str(defaults.get("model") or GLOBAL_FALLBACK_MODEL)
     default_timeout = int(defaults.get("timeout") or SYSTEM_CONFIG.LLM_TIMEOUT_SECONDS)
+    default_max_tokens = int(defaults.get("max_tokens") or 65536)
     default_temp = defaults.get("temperature")
 
     meta: Dict[str, Any] = {}
@@ -11508,6 +11528,12 @@ def load_prompt_spec(prompt_filename: str, prompts_dir: Optional[Path] = None) -
     except (TypeError, ValueError):
         resolved_timeout = default_timeout
 
+    raw_max_tokens = meta.get("max_tokens")
+    try:
+        resolved_max_tokens = int(raw_max_tokens) if raw_max_tokens is not None else default_max_tokens
+    except (TypeError, ValueError):
+        resolved_max_tokens = default_max_tokens
+
     raw_temp = meta.get("temperature", default_temp)
     try:
         resolved_temp = float(raw_temp) if raw_temp is not None else None
@@ -11519,6 +11545,7 @@ def load_prompt_spec(prompt_filename: str, prompts_dir: Optional[Path] = None) -
         body=body,
         model=resolved_model,
         timeout=resolved_timeout,
+        max_tokens=resolved_max_tokens,
         temperature=resolved_temp,
     )
 
@@ -11548,13 +11575,55 @@ def build_schema_system_prompt(
     base_prompt = load_prompt(prompt_filename, prompts_dir=prompts_dir)
     schema_json = json.dumps(schema_model.model_json_schema(), indent=2)
     return f"{base_prompt}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_json}"
-```
+
+
+_THINK_TAG_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
+def parse_llm_json(raw_content: Optional[str]) -> Any:
+    """Strips `<think>...</think>` reasoning blocks and markdown fences, then parses or repairs JSON."""
+    import json_repair
+
+    text = (raw_content or "").strip()
+    if not text:
+        return {}
+
+    # 1. Strip complete <think>...</think> blocks
+    cleaned = _THINK_TAG_RE.sub("", text).strip()
+    # If an unclosed <think> tag preceded a JSON block, jump to the last `</think>` or first `{` after it
+    if "</think>" in cleaned.lower():
+        idx = cleaned.lower().rfind("</think>")
+        cleaned = cleaned[idx + len("</think>") :].strip()
+    elif cleaned.lower().startswith("<think>"):
+        brace_idx = cleaned.find("{")
+        if brace_idx != -1:
+            cleaned = cleaned[brace_idx:].strip()
+
+    # 2. Strip markdown ```json ... ``` fences if present
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned).strip()
+
+    try:
+        return json.loads(cleaned)
+    except Exception:
+        # Extract from first '{' to last '}' if surrounded by prose
+        first_brace = cleaned.find("{")
+        last_brace = cleaned.rfind("}")
+        if first_brace != -1 and last_brace > first_brace:
+            candidate = cleaned[first_brace : last_brace + 1]
+            try:
+                return json.loads(candidate)
+            except Exception:
+                return json_repair.loads(candidate)
+        return json_repair.loads(cleaned)
+````
 
 ---
 
 ### `src/rag_retriever_client.py`
 
-*sha256:`fc697842cb3e` · 1093 lines · 47.7 KB (~12,219 tokens) · lang:`python`*
+*sha256:`ef8c9bcfb011` · 1097 lines · 47.8 KB (~12,240 tokens) · lang:`python`*
 
 ```python
 """CPSA 4.4.9 Knowledge Base Indexer, `TOC.md` Flag Manager, and Agentic Searcher Client.
@@ -12392,7 +12461,11 @@ def run_agentic_cpsa_searcher(
     ]
 
     try:
-        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(searcher_model, temperature=sampling_temp)
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            searcher_model,
+            temperature=sampling_temp,
+            max_tokens=searcher_spec.max_tokens,
+        )
         for turn_idx in range(2):
             resp = litellm.completion(
                 **llm_kwargs,
@@ -12676,7 +12749,7 @@ __all__ = [
 
 ### `src/semantic_extraction/constrained_protocol_extractor.py`
 
-*sha256:`01ab689ca53b` · 295 lines · 12.3 KB (~3,150 tokens) · lang:`python`*
+*sha256:`1771fa06b566` · 312 lines · 12.6 KB (~3,224 tokens) · lang:`python`*
 
 ```python
 """Constrained Protocol Semantic Extractor with RAG Grounding.
@@ -12706,6 +12779,7 @@ from src.prompt_loader import (
     PROMPT_SCHEMA_SELF_CORRECTION,
     build_schema_system_prompt,
     load_prompt_spec,
+    parse_llm_json,
 )
 from src.system_config import SYSTEM_CONFIG
 
@@ -12752,7 +12826,12 @@ def extract_protocol_specification(
         CPSAProtocolSpecification,
     )
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
+    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+        model_name,
+        temperature=sampling_temp,
+        max_tokens=extraction_spec.max_tokens,
+        json_mode=True,
+    )
     response = None
     for retry_idx in range(3):
         try:
@@ -12762,7 +12841,6 @@ def extract_protocol_specification(
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                response_format={"type": "json_object"},
                 timeout=extraction_spec.timeout,
                 num_retries=0,
             )
@@ -12772,7 +12850,21 @@ def extract_protocol_specification(
         except Exception as exc:
             err_msg = str(exc)
             if (
-                any(token in err_msg for token in ("Timeout", "timed out", "429", "RateLimit"))
+                any(
+                    token in err_msg
+                    for token in (
+                        "Timeout",
+                        "timed out",
+                        "429",
+                        "RateLimit",
+                        "BadGateway",
+                        "502",
+                        "503",
+                        "504",
+                        "incomplete",
+                        "output budget",
+                    )
+                )
                 and retry_idx < 2
             ):
                 wait_seconds = 10 * (retry_idx + 1)
@@ -12787,10 +12879,7 @@ def extract_protocol_specification(
                 raise
 
     raw_content = response.choices[0].message.content
-    try:
-        parsed_data = json.loads(raw_content)
-    except Exception:
-        parsed_data = json_repair.loads(raw_content)
+    parsed_data = parse_llm_json(raw_content)
 
     try:
         specification = CPSAProtocolSpecification.model_validate(parsed_data)
@@ -12810,7 +12899,12 @@ def extract_protocol_specification(
 
         corr_model = model or corr_spec.model
         corr_temp = corr_spec.temperature if corr_spec.temperature is not None else 0.0
-        corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(corr_model, temperature=corr_temp)
+        corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            corr_model,
+            temperature=corr_temp,
+            max_tokens=corr_spec.max_tokens,
+            json_mode=True,
+        )
 
         try:
             correction_response = litellm.completion(
@@ -12821,17 +12915,13 @@ def extract_protocol_specification(
                     {"role": "assistant", "content": raw_content},
                     {"role": "user", "content": correction_prompt},
                 ],
-                response_format={"type": "json_object"},
                 timeout=corr_spec.timeout,
                 num_retries=0,
             )
             from src.cost_tracker import GLOBAL_COST_TRACKER
             GLOBAL_COST_TRACKER.record_llm_call(correction_response, role="extraction", model_name=corr_model, stage=2)
             corrected_content = correction_response.choices[0].message.content
-            try:
-                corrected_data = json.loads(corrected_content)
-            except Exception:
-                corrected_data = json_repair.loads(corrected_content)
+            corrected_data = parse_llm_json(corrected_content)
             specification = CPSAProtocolSpecification.model_validate(corrected_data)
             logger.info("Stage 2 self-healing correction SUCCEEDED")
         except Exception as retry_error:
@@ -12980,7 +13070,7 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
 
 ### `src/system_config.py`
 
-*sha256:`02b5f06d71a1` · 139 lines · 6.3 KB (~1,602 tokens) · lang:`python`*
+*sha256:`c2339cde84cc` · 152 lines · 6.8 KB (~1,728 tokens) · lang:`python`*
 
 ```python
 """Global environment, binary paths, execution limits, and provider configuration."""
@@ -12998,6 +13088,7 @@ from pydantic_settings import BaseSettings
 litellm.suppress_debug_info = True
 litellm.set_verbose = False
 litellm.drop_params = True
+litellm.request_timeout = 1500
 for _logger_name in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router"):
     logging.getLogger(_logger_name).setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=".*litellm.*")
@@ -13043,7 +13134,7 @@ class SystemEnvironmentConfig(BaseSettings):
     STRATA_API_KEY: str = os.getenv("STRATA_API_KEY", "local-strata")
 
     # Compiler & Harness Execution Limits
-    LLM_TIMEOUT_SECONDS: int = 360
+    LLM_TIMEOUT_SECONDS: int = 1500
     CPSA_TIMEOUT_SECONDS: int = 15
     ROLETRAN_TIMEOUT_SECONDS: int = 15
     MAX_REPAIR_ATTEMPTS: int = 10
@@ -13086,9 +13177,21 @@ class SystemEnvironmentConfig(BaseSettings):
         from src.prompt_loader import PROMPT_THINK_SYNTHESIZER, resolve_prompt_model
         return resolve_prompt_model(PROMPT_THINK_SYNTHESIZER)
 
-    def get_llm_kwargs(self, model_name: str, temperature: Optional[float] = None) -> Dict[str, Any]:
+    def get_llm_kwargs(
+        self,
+        model_name: str,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        json_mode: bool = False,
+    ) -> Dict[str, Any]:
         """Returns provider-specific arguments (API keys, base URLs, sampling) for LiteLLM."""
         kwargs: Dict[str, Any] = {"model": model_name}
+        effective_max_tokens = int(max_tokens) if (max_tokens is not None and max_tokens > 0) else 65536
+        kwargs["max_tokens"] = effective_max_tokens
+
+        is_local_provider = model_name.startswith("strata/") or model_name.startswith("ollama/")
+        if json_mode and not is_local_provider:
+            kwargs["response_format"] = {"type": "json_object"}
         if model_name.startswith("nous/") or model_name.startswith("nousresearch/"):
             target_model = model_name.split("/", 1)[1]
             kwargs["model"] = f"openai/{target_model}"
@@ -13176,7 +13279,7 @@ __all__ = [
 
 ### `src/verification_engine/compiler_diagnostic_repair.py`
 
-*sha256:`601ca8a7683e` · 264 lines · 11.7 KB (~2,996 tokens) · lang:`python`*
+*sha256:`b65cb479ecc1` · 281 lines · 12.1 KB (~3,094 tokens) · lang:`python`*
 
 ```python
 """Compiler Diagnostic Repair Engine with RAG-Guided Self-Healing.
@@ -13202,6 +13305,7 @@ from src.prompt_loader import (
     PROMPT_RAG_QUERY_FORMULATION,
     build_schema_system_prompt,
     load_prompt_spec,
+    parse_llm_json,
 )
 from src.rag_retriever_client import (
     get_cpsa_manual_retriever,
@@ -13394,7 +13498,12 @@ def repair_protocol_specification(
         CPSAProtocolSpecification,
     )
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temperature)
+    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+        model_name,
+        temperature=sampling_temperature,
+        max_tokens=repair_spec.max_tokens,
+        json_mode=True,
+    )
     response = None
     for retry_idx in range(4):
         try:
@@ -13404,7 +13513,6 @@ def repair_protocol_specification(
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                response_format={"type": "json_object"},
                 timeout=repair_spec.timeout,
                 num_retries=0,
             )
@@ -13419,12 +13527,27 @@ def repair_protocol_specification(
         except Exception as exc:
             err_msg = str(exc)
             if (
-                any(token in err_msg for token in ("429", "Quota exceeded", "RateLimitError"))
+                any(
+                    token in err_msg
+                    for token in (
+                        "429",
+                        "Quota exceeded",
+                        "RateLimitError",
+                        "Timeout",
+                        "timed out",
+                        "BadGateway",
+                        "502",
+                        "503",
+                        "504",
+                        "incomplete",
+                        "output budget",
+                    )
+                )
                 and retry_idx < 3
             ):
-                wait_seconds = 30 * (retry_idx + 1)
+                wait_seconds = 15 * (retry_idx + 1)
                 logger.warning(
-                    "Quota rate limit reached during repair pass. Waiting %ds before retry: %s",
+                    "Transient error during repair pass. Waiting %ds before retry: %s",
                     wait_seconds,
                     exc,
                 )
@@ -13433,10 +13556,7 @@ def repair_protocol_specification(
                 raise
 
     raw_content = response.choices[0].message.content
-    try:
-        parsed_data = json.loads(raw_content)
-    except Exception:
-        parsed_data = json_repair.loads(raw_content)
+    parsed_data = parse_llm_json(raw_content)
 
     repaired_spec = CPSAProtocolSpecification.model_validate(parsed_data)
     repaired_spec = ensure_three_point_of_view_skeletons(repaired_spec)

@@ -40,13 +40,13 @@ GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"
 
 # Built-in fallback models & timeouts when a `prompts/*.md` file omits frontmatter or is missing
 _FALLBACK_METADATA: Dict[str, Dict[str, Any]] = {
-    PROMPT_APPLICABILITY_GATE: {"model": "nous/z-ai/glm-5.3", "timeout": 1500, "max_tokens": 4096, "temperature": 0.0},
-    PROMPT_SECTION_ROUTER: {"model": "nous/z-ai/glm-5.3", "timeout": 1500, "max_tokens": 4096, "temperature": 0.0},
-    PROMPT_PROTOCOL_EXTRACTION: {"model": "nous/google/gemini-4-argon", "timeout": 1500, "max_tokens": 16384, "temperature": 0.0},
-    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "nous/google/gemini-4-argon", "timeout": 1500, "max_tokens": 16384, "temperature": 0.0},
-    PROMPT_RAG_QUERY_FORMULATION: {"model": "nous/anthropic/claude-haiku-5.5", "timeout": 1500, "max_tokens": 4096, "temperature": 0.0},
-    PROMPT_COMPILER_REPAIR: {"model": "nous/google/gemini-3.8-flash", "timeout": 1500, "max_tokens": 16384, "temperature": 0.0},
-    PROMPT_THINK_SYNTHESIZER: {"model": "gemini/gemini-3.5-flash-lite", "timeout": 1500, "max_tokens": 16384, "temperature": 0.2},
+    PROMPT_APPLICABILITY_GATE: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_SECTION_ROUTER: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_PROTOCOL_EXTRACTION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_RAG_QUERY_FORMULATION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_COMPILER_REPAIR: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
+    PROMPT_THINK_SYNTHESIZER: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.2},
 }
 
 # Built-in fallback prompt bodies if a file in prompts/ is missing or empty
@@ -103,7 +103,7 @@ class PromptSpec(BaseModel):
     body: str
     model: str
     timeout: int = 1500
-    max_tokens: int = 16384
+    max_tokens: int = 65536
     temperature: Optional[float] = None
 
 
@@ -132,7 +132,7 @@ def load_prompt_spec(prompt_filename: str, prompts_dir: Optional[Path] = None) -
     defaults = _FALLBACK_METADATA.get(prompt_filename, {})
     default_model = str(defaults.get("model") or GLOBAL_FALLBACK_MODEL)
     default_timeout = int(defaults.get("timeout") or SYSTEM_CONFIG.LLM_TIMEOUT_SECONDS)
-    default_max_tokens = int(defaults.get("max_tokens") or 16384)
+    default_max_tokens = int(defaults.get("max_tokens") or 65536)
     default_temp = defaults.get("temperature")
 
     meta: Dict[str, Any] = {}
@@ -211,3 +211,45 @@ def build_schema_system_prompt(
     base_prompt = load_prompt(prompt_filename, prompts_dir=prompts_dir)
     schema_json = json.dumps(schema_model.model_json_schema(), indent=2)
     return f"{base_prompt}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_json}"
+
+
+_THINK_TAG_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
+def parse_llm_json(raw_content: Optional[str]) -> Any:
+    """Strips `<think>...</think>` reasoning blocks and markdown fences, then parses or repairs JSON."""
+    import json_repair
+
+    text = (raw_content or "").strip()
+    if not text:
+        return {}
+
+    # 1. Strip complete <think>...</think> blocks
+    cleaned = _THINK_TAG_RE.sub("", text).strip()
+    # If an unclosed <think> tag preceded a JSON block, jump to the last `</think>` or first `{` after it
+    if "</think>" in cleaned.lower():
+        idx = cleaned.lower().rfind("</think>")
+        cleaned = cleaned[idx + len("</think>") :].strip()
+    elif cleaned.lower().startswith("<think>"):
+        brace_idx = cleaned.find("{")
+        if brace_idx != -1:
+            cleaned = cleaned[brace_idx:].strip()
+
+    # 2. Strip markdown ```json ... ``` fences if present
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned).strip()
+
+    try:
+        return json.loads(cleaned)
+    except Exception:
+        # Extract from first '{' to last '}' if surrounded by prose
+        first_brace = cleaned.find("{")
+        last_brace = cleaned.rfind("}")
+        if first_brace != -1 and last_brace > first_brace:
+            candidate = cleaned[first_brace : last_brace + 1]
+            try:
+                return json.loads(candidate)
+            except Exception:
+                return json_repair.loads(candidate)
+        return json_repair.loads(cleaned)

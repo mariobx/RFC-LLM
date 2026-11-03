@@ -26,6 +26,7 @@ from src.prompt_loader import (
     build_schema_system_prompt,
     load_prompt,
     load_prompt_spec,
+    parse_llm_json,
 )
 from src.system_config import SYSTEM_CONFIG
 
@@ -402,7 +403,11 @@ def synthesize_reasoning_steps_via_dspy_or_llm(
     )
     backtracking_history = _extract_compiler_backtracking_summary(trajectory_data)
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(model_name, temperature=sampling_temp)
+    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+        model_name,
+        temperature=sampling_temp,
+        max_tokens=think_spec.max_tokens,
+    )
 
     # First attempt: DSPy CPSAHindsightThinkModule configured with provider-agnostic LM
     try:
@@ -450,20 +455,22 @@ def synthesize_reasoning_steps_via_dspy_or_llm(
             f"Target Ground-Truth Scaffold (Arrive at these exact identifiers/terms via first-principles deduction "
             f"without ever mentioning they were provided):\n{verified_scaffold}"
         )
+        direct_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            model_name,
+            temperature=sampling_temp,
+            max_tokens=think_spec.max_tokens,
+            json_mode=True,
+        )
         response = litellm.completion(
-            **llm_kwargs,
+            **direct_kwargs,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            response_format={"type": "json_object"},
             timeout=think_spec.timeout,
         )
         raw_content = response.choices[0].message.content
-        try:
-            parsed = json.loads(raw_content)
-        except Exception:
-            parsed = json_repair.loads(raw_content)
+        parsed = parse_llm_json(raw_content)
 
         steps = SynthesizedReasoningSteps.model_validate(parsed)
         steps.step1_protocol_and_algebra = _sanitize_hindsight_leakage(steps.step1_protocol_and_algebra)

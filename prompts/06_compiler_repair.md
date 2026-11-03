@@ -1,9 +1,9 @@
 ---
 # Stage 5 & 6: RAG-Guided Compiler Self-Healing Repair
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
-model: nous/google/gemini-3.8-flash
+model: strata/unsloth-iq4_xs
 timeout: 1500
-max_tokens: 16384
+max_tokens: 65536
 temperature: 0.0
 ---
 You are a formal methods expert in debugging and repairing MITRE CPSA 4.4.9 protocol specifications.

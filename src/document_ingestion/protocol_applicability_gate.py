@@ -17,6 +17,7 @@ from src.prompt_loader import (
     PROMPT_APPLICABILITY_GATE,
     build_schema_system_prompt,
     load_prompt_spec,
+    parse_llm_json,
 )
 from src.system_config import SYSTEM_CONFIG
 
@@ -77,6 +78,7 @@ def evaluate_protocol_applicability(
             model_name,
             temperature=sampling_temp,
             max_tokens=prompt_spec.max_tokens,
+            json_mode=True,
         )
         response = litellm.completion(
             **llm_kwargs,
@@ -84,17 +86,13 @@ def evaluate_protocol_applicability(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            response_format={"type": "json_object"},
             timeout=prompt_spec.timeout,
         )
         from src.cost_tracker import GLOBAL_COST_TRACKER
         GLOBAL_COST_TRACKER.record_llm_call(response, role="router", model_name=model_name, stage=1)
 
         raw_content = response.choices[0].message.content
-        try:
-            report_data = json.loads(raw_content)
-        except Exception:
-            report_data = json_repair.loads(raw_content)
+        report_data = parse_llm_json(raw_content)
 
         report = ProtocolApplicabilityReport.model_validate(report_data)
 

@@ -25,6 +25,7 @@ from src.prompt_loader import (
     PROMPT_SCHEMA_SELF_CORRECTION,
     build_schema_system_prompt,
     load_prompt_spec,
+    parse_llm_json,
 )
 from src.system_config import SYSTEM_CONFIG
 
@@ -75,6 +76,7 @@ def extract_protocol_specification(
         model_name,
         temperature=sampling_temp,
         max_tokens=extraction_spec.max_tokens,
+        json_mode=True,
     )
     response = None
     for retry_idx in range(3):
@@ -85,7 +87,6 @@ def extract_protocol_specification(
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                response_format={"type": "json_object"},
                 timeout=extraction_spec.timeout,
                 num_retries=0,
             )
@@ -95,7 +96,21 @@ def extract_protocol_specification(
         except Exception as exc:
             err_msg = str(exc)
             if (
-                any(token in err_msg for token in ("Timeout", "timed out", "429", "RateLimit"))
+                any(
+                    token in err_msg
+                    for token in (
+                        "Timeout",
+                        "timed out",
+                        "429",
+                        "RateLimit",
+                        "BadGateway",
+                        "502",
+                        "503",
+                        "504",
+                        "incomplete",
+                        "output budget",
+                    )
+                )
                 and retry_idx < 2
             ):
                 wait_seconds = 10 * (retry_idx + 1)
@@ -110,10 +125,7 @@ def extract_protocol_specification(
                 raise
 
     raw_content = response.choices[0].message.content
-    try:
-        parsed_data = json.loads(raw_content)
-    except Exception:
-        parsed_data = json_repair.loads(raw_content)
+    parsed_data = parse_llm_json(raw_content)
 
     try:
         specification = CPSAProtocolSpecification.model_validate(parsed_data)
@@ -137,6 +149,7 @@ def extract_protocol_specification(
             corr_model,
             temperature=corr_temp,
             max_tokens=corr_spec.max_tokens,
+            json_mode=True,
         )
 
         try:
@@ -148,17 +161,13 @@ def extract_protocol_specification(
                     {"role": "assistant", "content": raw_content},
                     {"role": "user", "content": correction_prompt},
                 ],
-                response_format={"type": "json_object"},
                 timeout=corr_spec.timeout,
                 num_retries=0,
             )
             from src.cost_tracker import GLOBAL_COST_TRACKER
             GLOBAL_COST_TRACKER.record_llm_call(correction_response, role="extraction", model_name=corr_model, stage=2)
             corrected_content = correction_response.choices[0].message.content
-            try:
-                corrected_data = json.loads(corrected_content)
-            except Exception:
-                corrected_data = json_repair.loads(corrected_content)
+            corrected_data = parse_llm_json(corrected_content)
             specification = CPSAProtocolSpecification.model_validate(corrected_data)
             logger.info("Stage 2 self-healing correction SUCCEEDED")
         except Exception as retry_error:

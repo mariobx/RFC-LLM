@@ -2,7 +2,7 @@
 
 > Tier 3 — Master CPSA 4.4.9 Knowledge Base Table of Contents (`refrences/cpsa_kb/TOC.md`) with `rebuild_toc` YAML flag, and the complete pytest unit and integration test suite (`tests/`).
 
-*Generated: 2026-11-03 06:57:28 UTC · Git: `main` @ `39f9da039f05` · Tier: Tier 3 — Knowledge Base Index & Test Suites · Files: 11 · Estimated Tokens: ~41,104*
+*Generated: 2026-11-03 15:36:27 UTC · Git: `main` @ `59dd1b43aaa5` · Tier: Tier 3 — Knowledge Base Index & Test Suites · Files: 11 · Estimated Tokens: ~41,104*
 
 ## Table of Contents
 
@@ -2290,7 +2290,7 @@ def test_pipeline_e2e_successful_synthesis_and_build(tmp_path: Path, mock_valid_
 
 ### `tests/test_trajectory_and_hardening.py`
 
-*sha256:`e4e2bb48f12f` · 247 lines · 9.5 KB (~2,437 tokens) · lang:`python`*
+*sha256:`93a5bab7bd66` · 247 lines · 9.5 KB (~2,437 tokens) · lang:`python`*
 
 ```python
 """Hardening and edge-case tests for 60s process-group SIGKILL, malformed YAML frontmatter, S-expr splitting, artifact containment, and offline discovery."""
@@ -2370,7 +2370,7 @@ def test_malformed_yaml_frontmatter_and_edge_cases(tmp_path: Path):
     )
     spec_scalars = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
     assert spec_scalars.model == "strata/unsloth-iq4_xs"
-    assert spec_scalars.timeout == 360
+    assert spec_scalars.timeout == 1500
     assert spec_scalars.temperature == 0.0
 
     with pytest.raises(FileNotFoundError):

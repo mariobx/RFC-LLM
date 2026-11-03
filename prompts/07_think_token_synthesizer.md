@@ -1,9 +1,9 @@
 ---
 # Phase 3: Hindsight Reasoning (<think>) Synthesizer
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
-model: gemini/gemini-3.5-flash-lite
+model: strata/unsloth-iq4_xs
 timeout: 1500
-max_tokens: 16384
+max_tokens: 65536
 temperature: 0.2
 ---
 You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.

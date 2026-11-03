@@ -107,11 +107,16 @@ class SystemEnvironmentConfig(BaseSettings):
         model_name: str,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        json_mode: bool = False,
     ) -> Dict[str, Any]:
         """Returns provider-specific arguments (API keys, base URLs, sampling) for LiteLLM."""
         kwargs: Dict[str, Any] = {"model": model_name}
-        if max_tokens is not None and max_tokens > 0:
-            kwargs["max_tokens"] = int(max_tokens)
+        effective_max_tokens = int(max_tokens) if (max_tokens is not None and max_tokens > 0) else 65536
+        kwargs["max_tokens"] = effective_max_tokens
+
+        is_local_provider = model_name.startswith("strata/") or model_name.startswith("ollama/")
+        if json_mode and not is_local_provider:
+            kwargs["response_format"] = {"type": "json_object"}
         if model_name.startswith("nous/") or model_name.startswith("nousresearch/"):
             target_model = model_name.split("/", 1)[1]
             kwargs["model"] = f"openai/{target_model}"

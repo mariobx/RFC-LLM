@@ -21,6 +21,7 @@ from src.prompt_loader import (
     PROMPT_RAG_QUERY_FORMULATION,
     build_schema_system_prompt,
     load_prompt_spec,
+    parse_llm_json,
 )
 from src.rag_retriever_client import (
     get_cpsa_manual_retriever,
@@ -217,6 +218,7 @@ def repair_protocol_specification(
         model_name,
         temperature=sampling_temperature,
         max_tokens=repair_spec.max_tokens,
+        json_mode=True,
     )
     response = None
     for retry_idx in range(4):
@@ -227,7 +229,6 @@ def repair_protocol_specification(
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                response_format={"type": "json_object"},
                 timeout=repair_spec.timeout,
                 num_retries=0,
             )
@@ -242,12 +243,27 @@ def repair_protocol_specification(
         except Exception as exc:
             err_msg = str(exc)
             if (
-                any(token in err_msg for token in ("429", "Quota exceeded", "RateLimitError"))
+                any(
+                    token in err_msg
+                    for token in (
+                        "429",
+                        "Quota exceeded",
+                        "RateLimitError",
+                        "Timeout",
+                        "timed out",
+                        "BadGateway",
+                        "502",
+                        "503",
+                        "504",
+                        "incomplete",
+                        "output budget",
+                    )
+                )
                 and retry_idx < 3
             ):
-                wait_seconds = 30 * (retry_idx + 1)
+                wait_seconds = 15 * (retry_idx + 1)
                 logger.warning(
-                    "Quota rate limit reached during repair pass. Waiting %ds before retry: %s",
+                    "Transient error during repair pass. Waiting %ds before retry: %s",
                     wait_seconds,
                     exc,
                 )
@@ -256,10 +272,7 @@ def repair_protocol_specification(
                 raise
 
     raw_content = response.choices[0].message.content
-    try:
-        parsed_data = json.loads(raw_content)
-    except Exception:
-        parsed_data = json_repair.loads(raw_content)
+    parsed_data = parse_llm_json(raw_content)
 
     repaired_spec = CPSAProtocolSpecification.model_validate(parsed_data)
     repaired_spec = ensure_three_point_of_view_skeletons(repaired_spec)

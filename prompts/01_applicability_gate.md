@@ -1,9 +1,9 @@
 ---
 # Stage 1c: Protocol Applicability Gatekeeper
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
-model: nous/z-ai/glm-5.3
+model: strata/unsloth-iq4_xs
 timeout: 1500
-max_tokens: 4096
+max_tokens: 65536
 temperature: 0.0
 ---
 You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.
