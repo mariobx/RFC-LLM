@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-03 20:21:34 UTC · Git: `main` @ `039fdf29d2b0` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~205,415*
+*Generated: 2026-11-03 21:53:56 UTC · Git: `main` @ `8b5b88a14002` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~230,453*
 
 ## Table of Contents
 
@@ -5899,7 +5899,7 @@ def _heuristic_section_router(toc_entries: List[TOCSectionEntry]) -> List[str]:
 
 ### `src/document_ingestion/protocol_applicability_gate.py`
 
-*sha256:`4c450d647a62` · 141 lines · 5.3 KB (~1,359 tokens) · lang:`python`*
+*sha256:`e8cb40b8764a` · 142 lines · 5.4 KB (~1,370 tokens) · lang:`python`*
 
 ```python
 """Protocol Applicability Gate (Tier 1 Gatekeeper).
@@ -6014,10 +6014,11 @@ def evaluate_protocol_applicability(
 
         if report.is_cryptographic_protocol:
             logger.info(
-                "Tier 1 ACCEPT: %s is eligible (Protocol: '%s', Principals: %s)",
+                "Tier 1 ACCEPT: %s is eligible (Protocol: '%s', Principals: %s). Reason: %s",
                 rfc_id,
                 report.protocol_name,
                 report.participating_principals,
+                report.rationale,
             )
         else:
             logger.info("Tier 1 REJECT: %s is ineligible. Reason: %s", rfc_id, report.rationale)
@@ -8956,17 +8957,18 @@ class CPSAProtocolSpecification(BaseModel):
 
 ### `src/logging_config.py`
 
-*sha256:`065d3dfdcac1` · 419 lines · 17.6 KB (~4,516 tokens) · lang:`python`*
+*sha256:`879a2721f42c` · 631 lines · 29.3 KB (~7,489 tokens) · lang:`python`*
 
 ```python
 """Comprehensive Structured Logging Subsystem for RFC-LLM Pipeline."""
 
 import csv
 import datetime
+import json
 import logging
 import sys
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from src.system_config import SYSTEM_CONFIG
 
@@ -9082,7 +9084,7 @@ class PipelineMetricsCSVLogger:
         "total_repairs",
         "rejection_gate",
         "protocol_name",
-        # Group B: Protocol & Solver Complexity Telemetry
+        # Group B: Protocol, Solver Complexity & Formal CPSA Security Findings Telemetry
         "message_algebra",
         "selected_sections",
         "sliced_lines_count",
@@ -9093,6 +9095,23 @@ class PipelineMetricsCSVLogger:
         "explored_skeletons_count",
         "all_povs_multi_strand",
         "secrecy_proved",
+        "role_executability",
+        "dead_roles_count",
+        "authentication_profile",
+        "parameter_agreement_status",
+        "disagreed_parameters_count",
+        "disagreed_parameters_summary",
+        "role_reflection_status",
+        "secrecy_status",
+        "protected_secrets",
+        "leaked_secrets",
+        "defgoal_satisfaction_status",
+        "shape_analysis_sentences_count",
+        "encryption_tests_count",
+        "nonce_tests_count",
+        "channel_tests_count",
+        "anomalies_count",
+        "vulnerabilities_and_anomalies",
         # Group C: Self-Healing Searcher & Snowball Telemetry
         "searcher_invocations",
         "herald_options",
@@ -9182,8 +9201,139 @@ class PipelineMetricsCSVLogger:
         except Exception:
             pass
 
+    def seed_from_source(self, source_path: Path) -> int:
+        """Copies rows from an existing CSV file or prior run directory into `self.csv_path`
+        without modifying `source_path` (ensuring strict run-to-run isolation).
+
+        Supports:
+        1. Direct `.csv` file path (e.g., `output/run_.../pipeline_runs.csv` or `logs/pipeline_runs.csv`)
+        2. Run directory containing `pipeline_runs.csv`
+        3. Legacy run directory containing `metadata_index.json` (reconstructs rows from `filtered_rfcs` and `runs`)
+        """
+        resolved = source_path.resolve()
+        if not resolved.exists():
+            raise FileNotFoundError(f"Seed CSV or run directory does not exist: {source_path}")
+
+        csv_file: Optional[Path] = None
+        index_file: Optional[Path] = None
+        if resolved.is_file():
+            if resolved.name == "metadata_index.json":
+                index_file = resolved
+            else:
+                csv_file = resolved
+        elif resolved.is_dir():
+            cand_csv = resolved / "pipeline_runs.csv"
+            cand_idx = resolved / "metadata_index.json"
+            if cand_csv.exists() and cand_csv.stat().st_size > 0:
+                csv_file = cand_csv
+            elif cand_idx.exists():
+                index_file = cand_idx
+            else:
+                raise FileNotFoundError(
+                    f"Directory {source_path} contains neither pipeline_runs.csv nor metadata_index.json"
+                )
+
+        if csv_file is not None:
+            if csv_file.resolve() == self.csv_path.resolve():
+                return len(self._read_existing_rows())
+            seeded_rows: Dict[str, dict] = {}
+            with open(csv_file, mode="r", newline="", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    norm_id = self.normalize_rfc_id(row.get("rfc_id", ""))
+                    if norm_id:
+                        row_copy = dict(row)
+                        row_copy["rfc_id"] = norm_id
+                        seeded_rows[norm_id] = row_copy
+            rows_list = list(seeded_rows.values())
+            self._write_all_rows(rows_list)
+            return len(rows_list)
+
+        if index_file is not None:
+            idx_data = json.loads(index_file.read_text(encoding="utf-8", errors="ignore"))
+            created_ts = (idx_data.get("created_at_utc") or "").replace("T", " ").replace("Z", "")
+            for filt in idx_data.get("filtered_rfcs", []):
+                rid = self.normalize_rfc_id(filt.get("rfc_id", ""))
+                if not rid:
+                    continue
+                reason = filt.get("reason") or "Ineligible"
+                if not reason.lower().startswith("ineligible"):
+                    reason = f"Ineligible: {reason}"
+                self.log_run(
+                    rfc_id=rid,
+                    is_eligible=False,
+                    status="INELIGIBLE",
+                    quality_tier="INELIGIBLE",
+                    rejection_gate=filt.get("gate") or "Intake Gate",
+                    protocol_name=filt.get("title") or rid,
+                    duration_seconds=float(filt.get("duration_seconds") or 0.0),
+                    error_message=reason,
+                )
+            for run_entry in idx_data.get("runs", []):
+                rid = self.normalize_rfc_id(run_entry.get("rfc_id", ""))
+                if not rid:
+                    continue
+                is_elig = bool(run_entry.get("is_eligible", True))
+                traj_str = run_entry.get("metadata_json_file")
+                traj_path = Path(traj_str) if traj_str else None
+                traj_obj: Dict[str, Any] = {}
+                if traj_path and traj_path.exists():
+                    try:
+                        traj_obj = json.loads(traj_path.read_text(encoding="utf-8", errors="ignore"))
+                    except Exception:
+                        traj_obj = {}
+                meta = traj_obj.get("rfc_metadata", {})
+                s2 = traj_obj.get("stage2_initial_extraction", {})
+                s5 = traj_obj.get("stage5_preflight_gate", {})
+                s6 = traj_obj.get("stage6_cpsa4_solver", {})
+                qa = traj_obj.get("quality_assessment", {})
+                sec_f = traj_obj.get("security_findings") or qa.get("security_findings")
+                ast_obj = (traj_obj.get("final_verified_output") or {}).get("final_ast") or {}
+                scm_file_str = run_entry.get("scm_file")
+                scm_p = Path(scm_file_str) if scm_file_str else None
+                xhtml_p: Optional[Path] = None
+                if scm_p and scm_p.parent.exists():
+                    xhtmls = sorted(scm_p.parent.glob("*_shapes.xhtml"))
+                    if xhtmls:
+                        xhtml_p = xhtmls[0]
+                self.log_run(
+                    rfc_id=rid,
+                    is_eligible=is_elig,
+                    quality_tier=qa.get("quality_tier") or run_entry.get("quality_tier"),
+                    protocol_name=meta.get("protocol_name") or run_entry.get("protocol_name"),
+                    message_algebra=meta.get("algebra") or ast_obj.get("message_algebra"),
+                    selected_sections=meta.get("selected_sections"),
+                    sliced_lines_count=int(meta.get("sliced_lines_count") or 0),
+                    role_count=len(ast_obj.get("roles") or []),
+                    preskeleton_count=len(ast_obj.get("skeletons") or []),
+                    roletran_passed=bool(s5.get("final_passed", run_entry.get("build_successful"))),
+                    solver_passed=bool(s6.get("final_passed", run_entry.get("build_successful"))),
+                    shapes_count=int(
+                        (s6.get("shapes_analysis_from_shapes_txt") or {}).get("total_realized_shapes", 0)
+                    ),
+                    explored_skeletons_count=int(
+                        (s6.get("exploration_telemetry_from_txt") or {}).get("total_explored_labels", 0)
+                    ),
+                    all_povs_multi_strand=qa.get("all_participant_povs_multi_strand"),
+                    secrecy_proved=qa.get("all_secrecy_listeners_unrealized"),
+                    schema_repairs=1 if s2.get("schema_self_correction_triggered") else 0,
+                    roletran_repairs=int(s5.get("total_attempts") or 0),
+                    solver_repairs=int(s6.get("total_attempts") or 0),
+                    herald_options=ast_obj.get("herald_options"),
+                    duration_seconds=float(traj_obj.get("duration_seconds") or 0.0),
+                    cost_telemetry=traj_obj.get("cost_telemetry") or run_entry.get("cost_telemetry"),
+                    scm_path=scm_p,
+                    shapes_xhtml_path=xhtml_p,
+                    trajectory_json_path=traj_path,
+                    error_message=run_entry.get("error_message"),
+                    security_findings=sec_f,
+                )
+            return len(self._read_existing_rows())
+
+        return 0
+
     def prune_keep_ineligible_only(self) -> Tuple[int, int]:
-        """Deletes all rows in `logs/pipeline_runs.csv` EXCEPT ineligible RFCs (`is_eligible=False`).
+        """Deletes all rows in `self.csv_path` EXCEPT ineligible RFCs (`is_eligible=False`).
 
         Allows starting a fresh synthesis run over eligible protocols while preserving cached
         Tier 0 / Stage 1 / Stage 2 ineligibility decisions so non-protocol RFCs are skipped in 0ms.
@@ -9247,6 +9397,7 @@ class PipelineMetricsCSVLogger:
         shapes_xhtml_path: Optional[Path] = None,
         trajectory_json_path: Optional[Path] = None,
         error_message: Optional[str] = None,
+        security_findings: Optional[Dict[str, Any]] = None,
     ) -> None:
         now_iso = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         norm_rfc_id = self.normalize_rfc_id(rfc_id)
@@ -9292,6 +9443,39 @@ class PipelineMetricsCSVLogger:
             except Exception:
                 effective_scm_lines = 0
 
+        # Auto-hydrate security_findings from trajectory_json_path if not explicitly passed
+        eff_sec = security_findings
+        if not eff_sec and trajectory_json_path and Path(trajectory_json_path).exists():
+            try:
+                t_data = json.loads(Path(trajectory_json_path).read_text(encoding="utf-8", errors="ignore"))
+                eff_sec = t_data.get("security_findings") or (t_data.get("quality_assessment") or {}).get("security_findings")
+                if not eff_sec:
+                    from src.verification_engine.trajectory_metadata_exporter import compute_security_findings
+                    s6_t = t_data.get("stage6_cpsa4_solver") or {}
+                    fin_t = t_data.get("final_verified_output") or {}
+                    eff_sec = compute_security_findings(
+                        shapes_analysis=s6_t.get("shapes_analysis_from_shapes_txt") or {},
+                        exploration_telemetry=s6_t.get("exploration_telemetry_from_txt") or {},
+                        sas_formulas=fin_t.get("shape_analysis_sentences") or [],
+                    )
+            except Exception:
+                eff_sec = None
+        eff_sec = eff_sec or {}
+
+        disagreed_list = eff_sec.get("parameter_disagreements") or []
+        disagreed_summary_parts = []
+        for dp in disagreed_list:
+            if isinstance(dp, dict):
+                disagreed_summary_parts.append(
+                    f"{dp.get('pov_role', '?')}->{dp.get('peer_role', '?')}:{dp.get('parameter', '?')}({dp.get('pov_value', '?')}!={dp.get('peer_value', '?')})"
+                )
+        disagreed_summary_str = ";".join(disagreed_summary_parts)
+        protected_str = ";".join(str(x) for x in (eff_sec.get("protected_secrets") or []))
+        leaked_str = ";".join(str(x) for x in (eff_sec.get("leaked_secrets") or []))
+        anomalies_list = eff_sec.get("vulnerabilities_and_anomalies") or []
+        anomalies_str = " | ".join(str(x) for x in anomalies_list)
+        auth_tests = eff_sec.get("authentication_tests_summary") or {}
+
         # Extract per-role model telemetry from cost_telemetry (or GLOBAL_COST_TRACKER)
         roles_data = (cost_telemetry or {}).get("roles", {})
         r_info = roles_data.get("router", {})
@@ -9328,6 +9512,23 @@ class PipelineMetricsCSVLogger:
             "explored_skeletons_count": str(explored_skeletons_count) if is_eligible else "0",
             "all_povs_multi_strand": "" if all_povs_multi_strand is None else str(bool(all_povs_multi_strand)),
             "secrecy_proved": "" if secrecy_proved is None else str(bool(secrecy_proved)),
+            "role_executability": str(eff_sec.get("role_executability") or "") if is_eligible else "",
+            "dead_roles_count": str(int(eff_sec.get("dead_roles_count", 0))) if (is_eligible and eff_sec) else ("0" if is_eligible else ""),
+            "authentication_profile": str(eff_sec.get("authentication_profile") or "") if is_eligible else "",
+            "parameter_agreement_status": str(eff_sec.get("parameter_agreement_status") or "") if is_eligible else "",
+            "disagreed_parameters_count": str(len(disagreed_list)) if is_eligible else "0",
+            "disagreed_parameters_summary": disagreed_summary_str if is_eligible else "",
+            "role_reflection_status": str(eff_sec.get("role_reflection_status") or "") if is_eligible else "",
+            "secrecy_status": str(eff_sec.get("secrecy_status") or "") if is_eligible else "",
+            "protected_secrets": protected_str if is_eligible else "",
+            "leaked_secrets": leaked_str if is_eligible else "",
+            "defgoal_satisfaction_status": str(eff_sec.get("defgoal_satisfaction_status") or "") if is_eligible else "",
+            "shape_analysis_sentences_count": str(int(eff_sec.get("shape_analysis_sentences_count", 0))) if is_eligible else "0",
+            "encryption_tests_count": str(int(auth_tests.get("encryption_tests", 0))) if is_eligible else "0",
+            "nonce_tests_count": str(int(auth_tests.get("nonce_tests", 0))) if is_eligible else "0",
+            "channel_tests_count": str(int(auth_tests.get("channel_tests", 0))) if is_eligible else "0",
+            "anomalies_count": str(len(anomalies_list)) if is_eligible else "0",
+            "vulnerabilities_and_anomalies": anomalies_str if is_eligible else "",
             "searcher_invocations": str(searcher_invocations) if is_eligible else "0",
             "herald_options": herald_str,
             "duration_seconds": str(round(duration_seconds, 3)),
@@ -9378,13 +9579,25 @@ class PipelineMetricsCSVLogger:
             updated_rows.append(new_row)
 
         self._write_all_rows(updated_rows)
+        try:
+            from src.pipeline_events import GLOBAL_EVENT_BUS
+            GLOBAL_EVENT_BUS.emit(
+                "csv_updated",
+                csv_path=str(self.csv_path),
+                rfc_id=norm_rfc_id,
+                status=resolved_status,
+                quality_tier=resolved_tier,
+                total_rows=len(updated_rows),
+            )
+        except Exception:
+            pass
 ```
 
 ---
 
 ### `src/main_pipeline_orchestrator.py`
 
-*sha256:`b446685a40d8` · 1188 lines · 52.6 KB (~13,455 tokens) · lang:`python`*
+*sha256:`f276de706842` · 1247 lines · 55.6 KB (~14,244 tokens) · lang:`python`*
 
 ```python
 """Main Pipeline Orchestrator for RFC-to-CPSA Synthesis.
@@ -9462,10 +9675,24 @@ class PipelineExecutionSummary(BaseModel):
     build_artifacts: Optional[CPSABuildArtifacts] = Field(None, description="Generated verification artifacts")
     trajectory_json_path: Optional[Path] = Field(None, description="Path to the generated trajectory metadata JSON")
     quality_tier: Optional[str] = Field(None, description="Programmatic verification quality tier (GOLD/SILVER/BRONZE/REJECTED)")
+    security_findings: Optional[dict] = Field(None, description="Formal CPSA security findings report")
+    intake_rationale: Optional[str] = Field(None, description="Stage 1c applicability gate rationale")
     duration_seconds: float = Field(default=0.0, description="Total pipeline execution time")
     cost_usd: float = Field(default=0.0, description="Total estimated LLM cost in USD for this RFC")
     cost_telemetry: dict = Field(default_factory=dict, description="Per-role token and USD cost breakdown")
     error_message: Optional[str] = Field(None, description="Diagnostic error if pipeline halted")
+
+
+def _compact_diagnostic_headline(diag: Optional[str]) -> str:
+    """Strips multi-line Snowball Autopsy blocks for concise console/CSV summaries while preserving the primary error."""
+    if not diag:
+        return ""
+    marker = "=== CPSA 4.4.9 SNOWBALL STATE AUTOPSY REPORT"
+    if marker in diag:
+        head = diag.split(marker, 1)[0].strip()
+        first_line = head.splitlines()[0].strip() if head else "CPSA state-space snowball timeout"
+        return f"{first_line} [Snowball Autopsy attached in trajectory/RAG tab]"
+    return diag
 
 
 def _extract_rfc_abstract(raw_rfc_text: str) -> str:
@@ -9747,7 +9974,7 @@ def _run_mitre_solver_self_healing_loop(
                     max_attempts,
                     cycle_detected,
                     use_searcher,
-                    last_build_error,
+                    _compact_diagnostic_headline(last_build_error),
                 )
                 try:
                     combined_diagnostic = last_build_error
@@ -9833,6 +10060,7 @@ def run_rfc_translation_pipeline(
     repair_model: Optional[str] = None,
     query_model: Optional[str] = None,
     run_root_dir: Optional[Path] = None,
+    csv_path: Optional[Path] = None,
 ) -> PipelineExecutionSummary:
     """Executes the end-to-end RFC to formally verified MITRE CPSA synthesis pipeline."""
     start_time = time.time()
@@ -9849,7 +10077,8 @@ def run_rfc_translation_pipeline(
     # Configure console/global logger first; defer creating per-RFC output directory and run.log
     # until the RFC passes Stage 1a/1c eligibility so batch runs don't create 9,400+ empty folders.
     configure_pipeline_logging(run_log_file=None)
-    csv_recorder = PipelineMetricsCSVLogger()
+    effective_csv_path = csv_path or (effective_run_root / "pipeline_runs.csv")
+    csv_recorder = PipelineMetricsCSVLogger(csv_path=effective_csv_path)
     repair_override = repair_model or extraction_model
     active_router_model = resolve_prompt_model(PROMPT_APPLICABILITY_GATE, router_model)
     active_extraction_model = resolve_prompt_model(PROMPT_PROTOCOL_EXTRACTION, extraction_model)
@@ -9868,7 +10097,7 @@ def run_rfc_translation_pipeline(
         query_model=active_query_model,
         repair_model=active_repair_model,
     )
-    GLOBAL_EVENT_BUS.set_run_directory(effective_run_root, is_live=True)
+    GLOBAL_EVENT_BUS.set_run_directory(effective_run_root, is_live=True, csv_path=effective_csv_path)
     GLOBAL_EVENT_BUS.start_rfc(rfc_id=rfc_id, rfc_file=rfc_file_path.name)
     GLOBAL_EVENT_BUS.emit(
         "pipeline_started",
@@ -10024,11 +10253,14 @@ def run_rfc_translation_pipeline(
     run_log_path = target_output_dir / "run.log"
     configure_pipeline_logging(run_log_file=run_log_path)
     final_protocol_name = applicability_report.protocol_name or protocol_title
+    intake_rationale = applicability_report.rationale
+    eligible_rationale_msg = f"Eligible: {intake_rationale}" if intake_rationale else None
     tab_index = GLOBAL_EVENT_BUS.register_accepted_tab(
         rfc_id=rfc_number_str,
         protocol_name=final_protocol_name,
         rfc_dir=target_output_dir,
         rfc_title=protocol_title,
+        intake_rationale=intake_rationale,
     )
     logger.info("Eligible Cryptographic Protocol Confirmed [Tab #%d]: %s (%s)", tab_index, rfc_number_str, final_protocol_name)
     logger.info("Output Directory: %s", target_output_dir)
@@ -10086,6 +10318,7 @@ def run_rfc_translation_pipeline(
     except Exception as extraction_exc:
         elapsed = time.time() - start_time
         error_msg = f"Extraction failed: {extraction_exc}"
+        csv_error_msg = f"{error_msg} | {eligible_rationale_msg}" if eligible_rationale_msg else error_msg
         logger.error(error_msg)
         extraction_meta = constrained_protocol_extractor.LAST_EXTRACTION_METADATA
         failed_stage2_record = {
@@ -10127,6 +10360,7 @@ def run_rfc_translation_pipeline(
             trace_txt_path=None,
             shapes_txt_path=None,
             solver_passed=False,
+            intake_rationale=intake_rationale,
         )
         update_run_metadata_index(
             run_root_dir=effective_run_root,
@@ -10138,8 +10372,9 @@ def run_rfc_translation_pipeline(
             quality_tier="REJECTED",
             is_eligible=True,
             build_successful=False,
-            error_message=error_msg,
+            error_message=csv_error_msg,
             tab_index=tab_index,
+            intake_rationale=intake_rationale,
         )
         rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
         schema_repairs_stage2 = 1 if failed_stage2_record["schema_self_correction_triggered"] else 0
@@ -10161,7 +10396,7 @@ def run_rfc_translation_pipeline(
             query_model=active_query_model,
             repair_model=active_repair_model,
             trajectory_json_path=trajectory_path,
-            error_message=error_msg,
+            error_message=csv_error_msg,
         )
         logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix="RFC Run Cost"))
         GLOBAL_EVENT_BUS.update_accepted_tab(
@@ -10173,6 +10408,7 @@ def run_rfc_translation_pipeline(
             cost_telemetry=rfc_cost_summary,
             trajectory_path=str(trajectory_path),
             error_message=error_msg,
+            intake_rationale=intake_rationale,
         )
         GLOBAL_EVENT_BUS.emit("stage_failed", stage=2, error_message=error_msg)
         GLOBAL_EVENT_BUS.emit("pipeline_failed", error_message=error_msg)
@@ -10184,6 +10420,7 @@ def run_rfc_translation_pipeline(
             sliced_lines_count=slice_lines_count,
             trajectory_json_path=trajectory_path,
             quality_tier="REJECTED",
+            intake_rationale=intake_rationale,
             duration_seconds=elapsed,
             cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
             cost_telemetry=rfc_cost_summary,
@@ -10199,9 +10436,14 @@ def run_rfc_translation_pipeline(
         or not protocol_ast.has_cryptographic_primitives()
     ):
         elapsed = time.time() - start_time
-        ineligible_reason = (
+        raw_ineligible_reason = (
             protocol_ast.ineligibility_reason
             or "Stage 2 Verbatim Slice Gate: RFC slice contains no verifiable cryptographic message exchange."
+        )
+        ineligible_reason = (
+            raw_ineligible_reason
+            if raw_ineligible_reason.startswith("Ineligible:")
+            else f"Ineligible: {raw_ineligible_reason}"
         )
         logger.warning(
             "Stage 2 Verbatim Slice Gate rejected '%s' (%s) with 0 repair loops: %s",
@@ -10350,18 +10592,21 @@ def run_rfc_translation_pipeline(
         trace_txt_path=trace_txt_candidate if trace_txt_candidate.exists() else None,
         shapes_txt_path=shapes_txt_candidate if shapes_txt_candidate.exists() else None,
         solver_passed=artifacts is not None,
+        intake_rationale=intake_rationale,
     )
 
     quality_tier = "REJECTED"
     all_povs_multi_strand: Optional[bool] = None
     secrecy_proved: Optional[bool] = None
     explored_skeletons_count = 0
+    sec_findings: dict = {}
     try:
         traj_data = json.loads(trajectory_path.read_text(encoding="utf-8"))
         qa = traj_data.get("quality_assessment", {})
         quality_tier = qa.get("quality_tier", "REJECTED")
         all_povs_multi_strand = qa.get("all_participant_povs_multi_strand")
         secrecy_proved = qa.get("all_secrecy_listeners_unrealized")
+        sec_findings = traj_data.get("security_findings") or qa.get("security_findings") or {}
         explored_skeletons_count = int(
             traj_data.get("stage6_cpsa4_solver", {})
             .get("exploration_telemetry_from_txt", {})
@@ -10385,7 +10630,9 @@ def run_rfc_translation_pipeline(
     )
 
     if artifacts is None:
-        error_msg = f"MITRE make build failed after {build_attempt} repair attempts: {last_build_error}"
+        compact_err = _compact_diagnostic_headline(last_build_error)
+        error_msg = f"MITRE make build failed after {build_attempt} repair attempts: {compact_err}"
+        csv_error_msg = f"{error_msg} | {eligible_rationale_msg}" if eligible_rationale_msg else error_msg
         logger.error(error_msg)
         update_run_metadata_index(
             run_root_dir=effective_run_root,
@@ -10397,8 +10644,10 @@ def run_rfc_translation_pipeline(
             quality_tier=quality_tier,
             is_eligible=True,
             build_successful=False,
-            error_message=error_msg,
+            error_message=csv_error_msg,
             tab_index=tab_index,
+            security_findings=sec_findings,
+            intake_rationale=intake_rationale,
         )
         rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
         csv_recorder.log_run(
@@ -10435,7 +10684,8 @@ def run_rfc_translation_pipeline(
             scm_path=scm_path,
             shapes_xhtml_path=None,
             trajectory_json_path=trajectory_path,
-            error_message=error_msg,
+            error_message=csv_error_msg,
+            security_findings=sec_findings,
         )
         logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix=f"Cost Summary ({rfc_id})"))
         GLOBAL_EVENT_BUS.update_accepted_tab(
@@ -10450,6 +10700,8 @@ def run_rfc_translation_pipeline(
             scm_path=str(scm_path),
             trajectory_path=str(trajectory_path),
             error_message=error_msg,
+            security_findings=sec_findings,
+            intake_rationale=intake_rationale,
         )
         GLOBAL_EVENT_BUS.emit("stage_failed", stage=6, error_message=error_msg)
         GLOBAL_EVENT_BUS.emit("pipeline_failed", error_message=error_msg)
@@ -10463,6 +10715,8 @@ def run_rfc_translation_pipeline(
             build_successful=False,
             trajectory_json_path=trajectory_path,
             quality_tier=quality_tier,
+            security_findings=sec_findings,
+            intake_rationale=intake_rationale,
             duration_seconds=elapsed,
             cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
             cost_telemetry=rfc_cost_summary,
@@ -10479,8 +10733,10 @@ def run_rfc_translation_pipeline(
         quality_tier=quality_tier,
         is_eligible=True,
         build_successful=True,
-        error_message=None,
+        error_message=eligible_rationale_msg,
         tab_index=tab_index,
+        security_findings=sec_findings,
+        intake_rationale=intake_rationale,
     )
 
     rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
@@ -10497,7 +10753,9 @@ def run_rfc_translation_pipeline(
         scm_path=str(scm_path),
         trajectory_path=str(trajectory_path),
         shapes_xhtml=str(artifacts.shapes_graph_xhtml_path),
-        error_message=None,
+        error_message=eligible_rationale_msg,
+        security_findings=sec_findings,
+        intake_rationale=intake_rationale,
     )
 
     csv_recorder.log_run(
@@ -10534,11 +10792,20 @@ def run_rfc_translation_pipeline(
         scm_path=scm_path,
         shapes_xhtml_path=artifacts.shapes_graph_xhtml_path,
         trajectory_json_path=trajectory_path,
-        error_message=None,
+        error_message=eligible_rationale_msg,
+        security_findings=sec_findings,
     )
 
     logger.info("================================================================")
     logger.info("Pipeline Complete for %s in %.2fs! (Quality Tier: %s)", rfc_id, elapsed, quality_tier)
+    if sec_findings:
+        logger.info(
+            "Security Findings: Auth=%s | Agreement=%s | Secrecy=%s | Anomalies=%s",
+            sec_findings.get("authentication_profile", "N/A"),
+            sec_findings.get("parameter_agreement_status", "N/A"),
+            sec_findings.get("secrecy_status", "N/A"),
+            sec_findings.get("anomalies_count", 0),
+        )
     logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix=f"Cost Summary ({rfc_id})"))
     logger.info("Generated: %s", artifacts.shapes_graph_xhtml_path)
     logger.info("Trajectory Metadata: %s", trajectory_path)
@@ -10552,6 +10819,8 @@ def run_rfc_translation_pipeline(
         duration_seconds=elapsed,
         shapes_count=artifacts.shapes_count,
         quality_tier=quality_tier,
+        security_findings=sec_findings,
+        intake_rationale=intake_rationale,
         cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
         cost_telemetry=rfc_cost_summary,
         trajectory_json=str(trajectory_path),
@@ -10571,9 +10840,12 @@ def run_rfc_translation_pipeline(
         build_artifacts=artifacts,
         trajectory_json_path=trajectory_path,
         quality_tier=quality_tier,
+        security_findings=sec_findings,
+        intake_rationale=intake_rationale,
         duration_seconds=elapsed,
         cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
         cost_telemetry=rfc_cost_summary,
+        error_message=eligible_rationale_msg,
     )
 ```
 
@@ -10581,7 +10853,7 @@ def run_rfc_translation_pipeline(
 
 ### `src/pipeline.py`
 
-*sha256:`cca12ee185e2` · 503 lines · 20.1 KB (~5,145 tokens) · lang:`python`*
+*sha256:`60b713ea2277` · 582 lines · 23.9 KB (~6,131 tokens) · lang:`python`*
 
 ```python
 """Command-line interface for RFC-LLM synthesis pipeline supporting single RFCs and directory batching."""
@@ -10596,7 +10868,7 @@ import sys
 import time
 import webbrowser
 from pathlib import Path
-from typing import List, Set
+from typing import List, Optional, Set
 
 from src.cost_tracker import GLOBAL_COST_TRACKER
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
@@ -10638,15 +10910,15 @@ def natural_rfc_sort_key(file_path: Path):
     return (1, file_path.name)
 
 
-def get_completed_rfc_ids() -> Set[str]:
-    """Reads logs/pipeline_runs.csv to retrieve RFC IDs that were already evaluated."""
-    csv_path = SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv"
-    if not csv_path.exists():
+def get_completed_rfc_ids(csv_path: Optional[Path] = None) -> Set[str]:
+    """Reads a pipeline_runs.csv ledger to retrieve RFC IDs that were already evaluated."""
+    target_csv = csv_path or (SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv")
+    if not target_csv.exists():
         return set()
 
     completed = set()
     try:
-        with open(csv_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(target_csv, "r", encoding="utf-8", errors="ignore") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 rfc_val = row.get("rfc_id", "").strip()
@@ -10659,15 +10931,15 @@ def get_completed_rfc_ids() -> Set[str]:
     return completed
 
 
-def get_failed_rfc_ids() -> Set[str]:
-    """Reads logs/pipeline_runs.csv to retrieve RFC IDs whose latest status is FAILED or PARTIAL."""
-    csv_path = SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv"
-    if not csv_path.exists():
+def get_failed_rfc_ids(csv_path: Optional[Path] = None) -> Set[str]:
+    """Reads a pipeline_runs.csv ledger to retrieve RFC IDs whose latest status is FAILED or PARTIAL."""
+    target_csv = csv_path or (SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv")
+    if not target_csv.exists():
         return set()
 
     failed = set()
     try:
-        with open(csv_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(target_csv, "r", encoding="utf-8", errors="ignore") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 rfc_val = row.get("rfc_id", "").strip()
@@ -10798,25 +11070,20 @@ def main():
         help="Pre-filter directory candidates using deterministic Tier 0 frontmatter check before applying --limit",
     )
     parser.add_argument(
+        "--csv",
+        type=str,
+        default=None,
+        help="Path to an existing pipeline_runs.csv or older run directory to copy/seed into this new run's pipeline_runs.csv (source CSV is never modified)",
+    )
+    parser.add_argument(
         "--keep-ineligible",
         "--reset-eligible",
         dest="keep_ineligible",
         action="store_true",
-        help="Prune logs/pipeline_runs.csv by deleting all rows EXCEPT ineligible RFCs (is_eligible=False), and skip those ineligible RFCs when starting a new batch run",
+        help="Prune the active run's pipeline_runs.csv by deleting all rows EXCEPT ineligible RFCs (is_eligible=False), and skip those ineligible RFCs when starting a new batch run",
     )
 
     args = parser.parse_args()
-
-    if args.keep_ineligible:
-        csv_logger = PipelineMetricsCSVLogger()
-        removed_cnt, kept_cnt = csv_logger.prune_keep_ineligible_only()
-        print(
-            f"[CSV PRUNE] Updated {csv_logger.csv_path}: removed {removed_cnt} eligible row(s), "
-            f"retained {kept_cnt} INELIGIBLE row(s) (is_eligible=False)."
-        )
-        args.skip_completed = True
-        if not args.target_path and not args.view:
-            sys.exit(0)
 
     # Offline Replay Mode (--view <run_dir>)
     if args.view:
@@ -10826,12 +11093,23 @@ def main():
             sys.exit(1)
 
         overview = GLOBAL_EVENT_BUS.load_run_from_disk(view_path)
+        if args.csv:
+            src_csv = Path(args.csv)
+            if src_csv.is_dir():
+                src_csv = src_csv / "pipeline_runs.csv"
+            if src_csv.exists():
+                GLOBAL_EVENT_BUS.set_run_directory(
+                    Path(overview.get("run_directory") or view_path),
+                    is_live=False,
+                    csv_path=src_csv,
+                )
         server = run_visualizer_in_background(port=args.port)
         monitor_url = f"http://127.0.0.1:{server.port}"
 
         print(f"\n{'='*70}")
         print(f" [OFFLINE REPLAY MONITOR] Active at: {monitor_url}")
         print(f" - Run Directory   : {overview.get('run_directory')}")
+        print(f" - Run Metrics CSV : {GLOBAL_EVENT_BUS.get_csv_path()}")
         print(f" - Accepted Tabs   : {len(overview.get('accepted_tabs', []))}")
         print(f" - Filtered / Skips: {overview.get('filtered_total', 0)}")
         print(f"{'='*70}\n")
@@ -10853,6 +11131,38 @@ def main():
             time.sleep(wait_sec)
         sys.exit(0)
 
+    # Require --csv whenever --keep-ineligible, --skip-completed, or --retry-failed is used
+    if (args.keep_ineligible or args.skip_completed or args.retry_failed) and not args.csv:
+        active_flags = [
+            flag
+            for flag, enabled in (
+                ("--keep-ineligible", args.keep_ineligible),
+                ("--skip-completed", args.skip_completed),
+                ("--retry-failed", args.retry_failed),
+            )
+            if enabled
+        ]
+        parser.error(
+            f"{', '.join(active_flags)} requires --csv <path_to_existing_csv_or_run_dir>. "
+            "Pass --csv pointing to the existing CSV ledger (or run directory) these flags should apply to, "
+            "or remove those flags to start a fresh run."
+        )
+
+    # Standalone --keep-ineligible --csv <path> prune mode (no target_path passed)
+    if args.keep_ineligible and not args.target_path:
+        cand = Path(args.csv)
+        if not cand.exists():
+            print(f"Error: Source --csv path does not exist: {cand}", file=sys.stderr)
+            sys.exit(1)
+        standalone_csv_path = (cand / "pipeline_runs.csv") if cand.is_dir() else cand
+        csv_logger = PipelineMetricsCSVLogger(csv_path=standalone_csv_path)
+        removed_cnt, kept_cnt = csv_logger.prune_keep_ineligible_only()
+        print(
+            f"[CSV PRUNE] Updated {csv_logger.csv_path}: removed {removed_cnt} eligible row(s), "
+            f"retained {kept_cnt} INELIGIBLE row(s) (is_eligible=False)."
+        )
+        sys.exit(0)
+
     if not args.target_path:
         parser.error("the following arguments are required: target_path (or pass --view <run_dir>)")
 
@@ -10862,7 +11172,41 @@ def main():
             print(f"Error: Target path does not exist: {t}", file=sys.stderr)
             sys.exit(1)
 
-    # 1. Resolve Target Files (Single File, Multiple Files, or Directory Batch)
+    if args.csv and not Path(args.csv).exists():
+        print(f"Error: Source --csv path does not exist: {args.csv}", file=sys.stderr)
+        sys.exit(1)
+
+    # 1. Create Unique Timestamped Run Directory & Per-Run CSV Ledger
+    run_timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    base_dir = Path(args.output_dir) if args.output_dir else SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR
+    if base_dir.name.startswith("run_"):
+        run_root_dir = base_dir
+    else:
+        run_root_dir = base_dir / f"run_{run_timestamp}"
+    run_root_dir.mkdir(parents=True, exist_ok=True)
+    run_csv_path = run_root_dir / "pipeline_runs.csv"
+    csv_logger = PipelineMetricsCSVLogger(csv_path=run_csv_path)
+
+    # Seed new run's CSV from --csv <source> (source CSV is never mutated)
+    if args.csv:
+        src_csv_path = Path(args.csv)
+        seeded_count = csv_logger.seed_from_source(src_csv_path)
+        print(
+            f"[CSV SEED] Copied {seeded_count} row(s) from {src_csv_path} -> {run_csv_path} "
+            f"(source left untouched)."
+        )
+
+    if args.keep_ineligible:
+        removed_cnt, kept_cnt = csv_logger.prune_keep_ineligible_only()
+        print(
+            f"[CSV PRUNE] Pruned {run_csv_path}: removed {removed_cnt} eligible row(s), "
+            f"retained {kept_cnt} INELIGIBLE row(s) (is_eligible=False)."
+        )
+        args.skip_completed = True
+
+    GLOBAL_EVENT_BUS.set_run_directory(run_root_dir, is_live=True, csv_path=run_csv_path)
+
+    # 2. Resolve Target Files (Single File, Multiple Files, or Directory Batch)
     if len(targets) > 1 or targets[0].is_file():
         rfc_files = [t for t in targets if t.is_file()]
     elif targets[0].is_dir():
@@ -10882,14 +11226,14 @@ def main():
             sys.exit(1)
 
         if args.retry_failed:
-            failed_ids = get_failed_rfc_ids()
+            failed_ids = get_failed_rfc_ids(csv_path=run_csv_path)
             rfc_files = [
                 f for f in rfc_files
                 if f.stem.upper().replace(" ", "").replace("_", "") in failed_ids
             ]
-            print(f"[BATCH] Filtered to {len(rfc_files)} previously FAILED/PARTIAL RFCs from logs/pipeline_runs.csv")
+            print(f"[BATCH] Filtered to {len(rfc_files)} previously FAILED/PARTIAL RFCs from {run_csv_path}")
         elif args.skip_completed:
-            completed_ids = get_completed_rfc_ids()
+            completed_ids = get_completed_rfc_ids(csv_path=run_csv_path)
             initial_count = len(rfc_files)
             rfc_files = [
                 f for f in rfc_files
@@ -10916,7 +11260,7 @@ def main():
         print(f"Error: Invalid target path: {targets[0]}", file=sys.stderr)
         sys.exit(1)
 
-    # 2. Launch Visualizer (Default Enabled)
+    # 3. Launch Visualizer (Default Enabled)
     enable_visualizer = not args.no_visualize
     monitor_url = None
     if enable_visualizer:
@@ -10933,15 +11277,6 @@ def main():
         except Exception as e:
             print(f"[WARN] Could not launch live monitor: {e}")
 
-    # 3. Create Unique Timestamped Run Directory (Seconds Resolution)
-    run_timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_dir = Path(args.output_dir) if args.output_dir else SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR
-    if base_dir.name.startswith("run_"):
-        run_root_dir = base_dir
-    else:
-        run_root_dir = base_dir / f"run_{run_timestamp}"
-    run_root_dir.mkdir(parents=True, exist_ok=True)
-
     master_index_path = run_root_dir / "metadata_index.json"
     if not master_index_path.exists():
         now_utc = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -10950,6 +11285,7 @@ def main():
                 {
                     "schema_version": "1.0.0",
                     "run_directory": str(run_root_dir.resolve()),
+                    "csv_file": str(run_csv_path.resolve()),
                     "created_at_utc": now_utc,
                     "updated_at_utc": now_utc,
                     "total_rfcs_processed": 0,
@@ -10967,6 +11303,7 @@ def main():
 
     print(f"[RUN] Created timestamped run directory: {run_root_dir}")
     print(f"[RUN] Master Metadata Index           : {master_index_path}")
+    print(f"[RUN] Run CSV Ledger                  : {run_csv_path}")
 
     # 4. Execution Loop (Models resolve dynamically from prompts/*.md unless CLI overrides are passed)
     results: List[PipelineExecutionSummary] = []
@@ -10992,6 +11329,7 @@ def main():
                 repair_model=cli_repair_model,
                 query_model=cli_query_model,
                 run_root_dir=run_root_dir,
+                csv_path=run_csv_path,
             )
         except Exception as exc:
             print(f"[ERROR] Unhandled exception on {rfc_file.name}: {exc}", file=sys.stderr)
@@ -11017,8 +11355,19 @@ def main():
                 print("\n[SUCCESS] Synthesis & Formal Verification Completed!")
                 print(f"Protocol             : {summary.protocol_name}")
                 print(f"Quality Tier         : {summary.quality_tier}")
+                if summary.intake_rationale:
+                    print(f"Intake Rationale     : Eligible: {summary.intake_rationale}")
+                if summary.security_findings:
+                    sf = summary.security_findings
+                    print(
+                        f"Security Findings    : Auth={sf.get('authentication_profile', 'N/A')} | "
+                        f"Agreement={sf.get('parameter_agreement_status', 'N/A')} | "
+                        f"Secrecy={sf.get('secrecy_status', 'N/A')} | "
+                        f"Anomalies={sf.get('anomalies_count', 0)}"
+                    )
                 print(f"Run Directory        : {run_root_dir}")
                 print(f"Master Metadata Index: {master_index_path}")
+                print(f"Run Metrics Logged   : {run_csv_path}")
                 print(f"RFC Directory        : {rfc_output_dir}")
                 print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
                 print(f"Verified Shapes XHTML: {summary.build_artifacts.shapes_graph_xhtml_path}")
@@ -11026,11 +11375,13 @@ def main():
                 print(f"\n[PARTIAL] Roletran passed, but MITRE build failed: {summary.error_message}")
                 print(f"Run Directory        : {run_root_dir}")
                 print(f"Master Metadata Index: {master_index_path}")
+                print(f"Run Metrics Logged   : {run_csv_path}")
                 print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
             else:
                 print(f"\n[HALTED] Pipeline stopped: {summary.error_message}")
                 print(f"Run Directory        : {run_root_dir}")
                 print(f"Master Metadata Index: {master_index_path}")
+                print(f"Run Metrics Logged   : {run_csv_path}")
                 if summary.trajectory_json_path:
                     print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
 
@@ -11069,7 +11420,7 @@ def main():
         print(f"- Solver Failed        : {solver_failed}")
     print(f"- Run Directory        : {run_root_dir}")
     print(f"- Master Metadata Index: {master_index_path}")
-    print(f"- Run Metrics Logged   : {SYSTEM_CONFIG.LOGS_DIR / 'pipeline_runs.csv'}")
+    print(f"- Run Metrics Logged   : {run_csv_path}")
     _print_cost_breakdown(GLOBAL_COST_TRACKER.get_batch_summary(), "BATCH COST & TOKEN TELEMETRY BY MODEL ROLE")
     print(f"{'='*70}\n")
 
@@ -11093,7 +11444,7 @@ if __name__ == "__main__":
 
 ### `src/pipeline_events.py`
 
-*sha256:`f763e42efece` · 566 lines · 24.6 KB (~6,305 tokens) · lang:`python`*
+*sha256:`0207791836c5` · 609 lines · 26.5 KB (~6,792 tokens) · lang:`python`*
 
 ```python
 """Bounded event bus, sequential tab registry, and disk telemetry sink for pipeline visualization."""
@@ -11153,6 +11504,7 @@ class PipelineEventBus:
 
         # Run-level compact registries (~150 bytes per entry -> <1 MB for 5,000 RFCs)
         self._run_root_dir: Optional[Path] = None
+        self._csv_path: Optional[Path] = None
         self._is_live: bool = True
         self._next_tab_index: int = 0
         self._accepted_tabs: Dict[int, Dict[str, Any]] = {}
@@ -11172,11 +11524,27 @@ class PipelineEventBus:
             if callback in self._listeners:
                 self._listeners.remove(callback)
 
-    def set_run_directory(self, run_root_dir: Path, is_live: bool = True) -> None:
-        """Binds the current run root directory."""
+    def set_run_directory(
+        self,
+        run_root_dir: Path,
+        is_live: bool = True,
+        csv_path: Optional[Path] = None,
+    ) -> None:
+        """Binds the current run root directory and active CSV ledger path."""
         with self._lock:
             self._run_root_dir = run_root_dir.resolve()
+            self._csv_path = (csv_path or (self._run_root_dir / "pipeline_runs.csv")).resolve()
             self._is_live = is_live
+
+    def get_csv_path(self) -> Optional[Path]:
+        """Returns the bound CSV path for the active or replayed run."""
+        with self._lock:
+            return self._csv_path
+
+    def get_run_root_dir(self) -> Optional[Path]:
+        """Returns the bound run root directory."""
+        with self._lock:
+            return self._run_root_dir
 
     def start_rfc(self, rfc_id: str, rfc_file: Optional[str] = None) -> None:
         """Evicts the completed RFC's in-memory event buffer and prepares for the next RFC."""
@@ -11193,6 +11561,7 @@ class PipelineEventBus:
         protocol_name: str,
         rfc_dir: Path,
         rfc_title: Optional[str] = None,
+        intake_rationale: Optional[str] = None,
     ) -> int:
         """Allocates the next sequential 1-based tab number (#1, #2, ...) for an accepted RFC,
         binds its per-RFC events.jsonl sink, and flushes buffered Stage 1 events to disk.
@@ -11227,6 +11596,8 @@ class PipelineEventBus:
                 "trajectory_path": None,
                 "shapes_xhtml": None,
                 "error_message": None,
+                "intake_rationale": intake_rationale,
+                "security_findings": {},
             }
             self._accepted_tabs[tab_idx] = tab_summary
             self._tab_order.append(tab_idx)
@@ -11358,6 +11729,7 @@ class PipelineEventBus:
             return {
                 "is_live": self._is_live,
                 "run_directory": str(self._run_root_dir) if self._run_root_dir else None,
+                "csv_path": str(self._csv_path) if self._csv_path else None,
                 "active_rfc_id": self._current_rfc_id,
                 "active_tab_index": self._current_tab_index,
                 "accepted_tabs": tabs,
@@ -11402,6 +11774,7 @@ class PipelineEventBus:
             self._current_tab_index = None
             self._current_events_jsonl = None
             self._run_root_dir = None
+            self._csv_path = None
             self._is_live = True
             self._next_tab_index = 0
             self._accepted_tabs.clear()
@@ -11425,9 +11798,15 @@ class PipelineEventBus:
                 if resolved.name == "metadata_index.json":
                     index_file = resolved
                     run_dir = resolved.parent
+                elif resolved.suffix.lower() == ".csv":
+                    self._csv_path = resolved
+                    run_dir = resolved.parent
+                    if (run_dir / "metadata_index.json").exists():
+                        index_file = run_dir / "metadata_index.json"
                 elif resolved.name.endswith("_trajectory.json"):
                     run_dir = resolved.parent.parent
                     self._run_root_dir = run_dir
+                    self._csv_path = (run_dir / "pipeline_runs.csv").resolve()
                     self._ingest_trajectory_as_tab(resolved, explicit_index=1)
                     return self.get_tabs_overview()
             elif resolved.is_dir():
@@ -11439,11 +11818,14 @@ class PipelineEventBus:
                     trajs = sorted(resolved.glob("*_trajectory.json"))
                     if trajs:
                         self._run_root_dir = resolved.parent
+                        self._csv_path = (resolved.parent / "pipeline_runs.csv").resolve()
                         for t_path in trajs:
                             self._ingest_trajectory_as_tab(t_path)
                         return self.get_tabs_overview()
 
             self._run_root_dir = run_dir
+            if self._csv_path is None:
+                self._csv_path = (run_dir / "pipeline_runs.csv").resolve()
 
             if index_file and index_file.exists():
                 try:
@@ -11592,6 +11974,14 @@ class PipelineEventBus:
         if not self._batch_cost_telemetry and cost_tel:
             self._batch_cost_telemetry = cost_tel
 
+        sec_findings = (
+            traj.get("security_findings")
+            or qa.get("security_findings")
+            or fallback_entry.get("security_findings")
+            or {}
+        )
+        intake_rationale = meta.get("intake_rationale") or fallback_entry.get("intake_rationale")
+
         tab_summary = {
             "tab_index": tab_idx,
             "rfc_id": rfc_id,
@@ -11611,6 +12001,8 @@ class PipelineEventBus:
             "trajectory_path": str(traj_path.resolve()),
             "shapes_xhtml": shapes_xhtml,
             "error_message": fallback_entry.get("error_message"),
+            "intake_rationale": intake_rationale,
+            "security_findings": sec_findings,
         }
         self._accepted_tabs[tab_idx] = tab_summary
         self._tab_order.append(tab_idx)
@@ -11654,6 +12046,8 @@ class PipelineEventBus:
             "trajectory_path": None,
             "shapes_xhtml": str(shapes_candidates[0]) if shapes_candidates else None,
             "error_message": fallback_entry.get("error_message") or "Interrupted before trajectory export",
+            "intake_rationale": fallback_entry.get("intake_rationale"),
+            "security_findings": fallback_entry.get("security_findings") or {},
         }
         self._accepted_tabs[tab_idx] = tab_summary
         self._tab_order.append(tab_idx)
@@ -14993,7 +15387,7 @@ def generate_snowball_autopsy_report(
 
 ### `src/verification_engine/trajectory_metadata_exporter.py`
 
-*sha256:`de57f6150b7d` · 1060 lines · 43.0 KB (~11,010 tokens) · lang:`python`*
+*sha256:`bd6ac4396e41` · 1067 lines · 43.3 KB (~11,093 tokens) · lang:`python`*
 
 ```python
 """Programmatic Trajectory & Formal Verification Metadata Exporter.
@@ -15688,6 +16082,7 @@ def compute_security_findings(
         "authentication_tests_summary": auth_tests,
         "shape_analysis_sentences_count": len(sas_list),
         "shape_analysis_sentences": sas_list,
+        "anomalies_count": len(anomalies),
         "vulnerabilities_and_anomalies": anomalies,
     }
 
@@ -15826,6 +16221,7 @@ def write_trajectory_metadata_bundle(
     trace_txt_path: Optional[Path],
     shapes_txt_path: Optional[Path],
     solver_passed: bool,
+    intake_rationale: Optional[str] = None,
 ) -> Path:
     """Computes programmatic CPSA verification metrics, prepends `.scm` metadata headers,
     and writes `<protocol_stem>_trajectory.json` into `output_dir`.
@@ -15926,6 +16322,7 @@ def write_trajectory_metadata_bundle(
             "selected_sections": selected_sections,
             "sliced_lines_count": len(verbatim_slice.splitlines()),
             "verbatim_rfc_slice": verbatim_slice,
+            "intake_rationale": intake_rationale,
         },
         "stage2_initial_extraction": stage2_record,
         "stage5_preflight_gate": stage5_record,
@@ -15967,6 +16364,8 @@ def update_run_metadata_index(
     tab_index: Optional[int] = None,
     rejection_gate: Optional[str] = None,
     duration_seconds: float = 0.0,
+    security_findings: Optional[Dict[str, Any]] = None,
+    intake_rationale: Optional[str] = None,
 ) -> Path:
     """Updates the master `metadata_index.json` in the timestamped run directory
     with the locations of all generated RFC directories and JSON metadata files.
@@ -16047,6 +16446,8 @@ def update_run_metadata_index(
         "scm_file": scm_str,
         "metadata_json_file": traj_str,
         "error_message": error_message,
+        "intake_rationale": intake_rationale,
+        "security_findings": security_findings,
         "cost_usd": round(float(rfc_cost.get("total_cost_usd", 0.0)), 6),
         "cost_telemetry": rfc_cost,
     })
@@ -16071,12 +16472,13 @@ def update_run_metadata_index(
 
 ### `src/visualizer/server.py`
 
-*sha256:`e437946037a6` · 639 lines · 27.7 KB (~7,099 tokens) · lang:`python`*
+*sha256:`8aafb7c40a7f` · 733 lines · 31.7 KB (~8,125 tokens) · lang:`python`*
 
 ```python
 """Asynchronous web server for live and offline multi-RFC synthesis visualization."""
 
 import asyncio
+import csv
 import json
 import logging
 import socket
@@ -16086,8 +16488,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 from aiohttp import web
 
-from src.system_config import SYSTEM_CONFIG
+from src.logging_config import PipelineMetricsCSVLogger
 from src.pipeline_events import GLOBAL_EVENT_BUS, PipelineEvent
+from src.system_config import SYSTEM_CONFIG
+from src.verification_engine.trajectory_metadata_exporter import compute_security_findings
 
 logger = logging.getLogger("rfc_llm.visualizer")
 
@@ -16402,10 +16806,45 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
                     cost_telemetry = rc
                     break
 
+    sec_findings = (
+        traj.get("security_findings")
+        or qa.get("security_findings")
+        or tab_summary.get("security_findings")
+        or {}
+    )
+    if not sec_findings and traj:
+        try:
+            sec_findings = compute_security_findings(
+                shapes_analysis=s6.get("shapes_analysis_from_shapes_txt") or {},
+                exploration_telemetry=s6.get("exploration_telemetry_from_txt") or {},
+                sas_formulas=final_out.get("shape_analysis_sentences") or [],
+            )
+        except Exception:
+            sec_findings = {}
+
+    intake_rationale = (
+        meta.get("intake_rationale")
+        or tab_summary.get("intake_rationale")
+        or None
+    )
+    if not intake_rationale:
+        err_msg = tab_summary.get("error_message") or ""
+        if "Eligible:" in err_msg:
+            intake_rationale = err_msg.split("Eligible:", 1)[1].strip()
+
     return {
-        "tab": {**tab_summary, "shapes_xhtml": shapes_xhtml},
+        "tab": {
+            **tab_summary,
+            "shapes_xhtml": shapes_xhtml,
+            "security_findings": sec_findings,
+            "intake_rationale": intake_rationale,
+        },
         "rfc_metadata": meta,
+        "intake_rationale": intake_rationale,
         "quality_assessment": qa,
+        "security_findings": sec_findings,
+        "shapes_analysis": s6.get("shapes_analysis_from_shapes_txt") or {},
+        "exploration_telemetry": s6.get("exploration_telemetry_from_txt") or {},
         "cost_telemetry": cost_telemetry,
         "verbatim_slice": verbatim_slice,
         "shapes_xhtml": shapes_xhtml,
@@ -16504,6 +16943,56 @@ def _synthesize_events_from_trajectory(
     return evts
 
 
+def _load_csv_analytics_payload() -> Dict[str, Any]:
+    """Reads and normalizes the active run's 67-column pipeline_runs.csv off the main thread.
+    If viewing a legacy run directory that only has metadata_index.json (no pipeline_runs.csv yet),
+    reconstructs the 67-column rows from metadata_index.json + trajectory JSONs.
+    """
+    headers = list(PipelineMetricsCSVLogger.CSV_HEADER)
+    csv_path = GLOBAL_EVENT_BUS.get_csv_path()
+    run_dir = GLOBAL_EVENT_BUS.get_run_root_dir()
+
+    target_csv: Optional[Path] = None
+    if csv_path and csv_path.exists() and csv_path.stat().st_size > 0:
+        target_csv = csv_path
+    elif run_dir and (run_dir / "pipeline_runs.csv").exists() and (run_dir / "pipeline_runs.csv").stat().st_size > 0:
+        target_csv = run_dir / "pipeline_runs.csv"
+
+    rows: List[Dict[str, str]] = []
+    if target_csv and target_csv.exists():
+        try:
+            with open(target_csv, mode="r", newline="", encoding="utf-8", errors="ignore") as handle:
+                reader = csv.DictReader(handle)
+                for raw_row in reader:
+                    normalized = {col: str(raw_row.get(col) or "") for col in headers}
+                    rows.append(normalized)
+        except Exception:
+            rows = []
+
+    # If CSV has 0 rows (e.g., offline --view on a legacy run folder with metadata_index.json),
+    # reconstruct rows from metadata_index.json into run_dir/pipeline_runs.csv
+    if not rows and run_dir and (run_dir / "metadata_index.json").exists():
+        try:
+            generated_csv = run_dir / "pipeline_runs.csv"
+            temp_logger = PipelineMetricsCSVLogger(csv_path=generated_csv)
+            temp_logger.seed_from_source(run_dir / "metadata_index.json")
+            target_csv = generated_csv
+            with open(generated_csv, mode="r", newline="", encoding="utf-8", errors="ignore") as handle:
+                reader = csv.DictReader(handle)
+                for raw_row in reader:
+                    normalized = {col: str(raw_row.get(col) or "") for col in headers}
+                    rows.append(normalized)
+        except Exception:
+            rows = []
+
+    return {
+        "csv_path": str(target_csv or csv_path or ""),
+        "headers": headers,
+        "row_count": len(rows),
+        "rows": rows,
+    }
+
+
 class VisualizerServer:
     """Manages SSE streaming, lazy per-tab hydration, and dashboard state."""
 
@@ -16525,10 +17014,16 @@ class VisualizerServer:
         self.app.router.add_get("/api/active", self.handle_active)
         self.app.router.add_get("/api/tab/{tab_index}", self.handle_tab_detail)
         self.app.router.add_get("/api/filtered", self.handle_filtered)
+        self.app.router.add_get("/api/csv", self.handle_csv)
         self.app.router.add_get("/api/models", self.handle_models)
         self.app.router.add_get("/api/artifact", self.handle_artifact)
         if SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR.exists():
             self.app.router.add_static("/output", SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR, show_index=True)
+
+    async def handle_csv(self, request: web.Request) -> web.Response:
+        """Reads and parses the active run's 67-column CSV ledger in a worker thread off the main event loop."""
+        payload = await asyncio.to_thread(_load_csv_analytics_payload)
+        return web.json_response(payload)
 
     async def handle_models(self, request: web.Request) -> web.Response:
         """Returns the live stage-specific models resolved from prompts/*.md frontmatter."""
@@ -16719,7 +17214,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
 ### `src/visualizer/static/index.html`
 
-*sha256:`1417a68828a9` · 2158 lines · 80.1 KB (~20,496 tokens) · lang:`html`*
+*sha256:`15754b1924be` · 3649 lines · 153.1 KB (~39,179 tokens) · lang:`html`*
 
 ```html
 <!DOCTYPE html>
@@ -17523,9 +18018,236 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       word-break: break-word;
       line-height: 1.4;
     }
+
+    /* Floating ~300ms Hover Tooltip Popover */
+    .rating-tooltip {
+      position: fixed;
+      z-index: 99999;
+      max-width: 390px;
+      background: #0d1117f2;
+      border: 1px solid #58a6ff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+      padding: 9px 11px;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+      color: var(--text-main);
+      pointer-events: none;
+      display: none;
+    }
+    .rating-tooltip-title {
+      font-weight: 700;
+      font-size: 11.5px;
+      color: var(--color-blue);
+      margin-bottom: 4px;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 3px;
+    }
+    .rating-tooltip-desc {
+      color: #c9d1d9;
+      white-space: pre-wrap;
+    }
+
+    /* Always-Visible Compact Security Verdict Strip */
+    .security-verdict-strip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 12px;
+      background: #0e131a;
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      flex-shrink: 0;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .sec-strip-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-muted);
+    }
+    .sec-pill {
+      display: inline-block;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      border: 1px solid var(--border-color);
+      background: #21262d;
+      color: var(--text-muted);
+      cursor: help;
+    }
+    .sec-pill.ok { color: #3fb950; border-color: #238636; background: #0e442955; }
+    .sec-pill.info { color: #58a6ff; border-color: #1f6feb; background: #0c2d6b55; }
+    .sec-pill.warn { color: #d29922; border-color: #9e6a03; background: #3b230066; }
+    .sec-pill.bad { color: #f85149; border-color: #da3633; background: #49020266; }
+
+    /* Collapsible Snowball Autopsy Details */
+    details.snowball-details {
+      margin-top: 5px;
+      background: #0b0e14;
+      border: 1px solid #30363d;
+      padding: 4px 8px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+    }
+    details.snowball-details summary {
+      cursor: pointer;
+      color: var(--color-purple);
+      font-weight: 600;
+      user-select: none;
+    }
+    details.snowball-details pre {
+      margin-top: 6px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #8b949e;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    /* Security Findings (CPSA) Sub-Tab */
+    .sec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .sec-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sec-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .sec-card-body {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #c9d1d9;
+      line-height: 1.45;
+    }
+    .sec-banner-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--color-blue);
+      padding: 9px 12px;
+      margin-bottom: 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .sec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 11px;
+      margin-top: 6px;
+    }
+    .sec-table th {
+      background: #161b22;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .sec-table td {
+      padding: 6px 8px;
+      border: 1px solid #21262d;
+      color: #c9d1d9;
+      vertical-align: top;
+    }
+
+    /* CSV Analytics (Live) Sub-Tab */
+    .analytics-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .kpi-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 8px 10px;
+      font-family: var(--mono);
+    }
+    .kpi-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .kpi-val {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .kpi-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .chart-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 235px;
+    }
+    .chart-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+      border-bottom: 1px solid #21262d;
+      padding-bottom: 5px;
+    }
+    .chart-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+    .chart-svg-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 180px;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
+  <!-- Floating ~300ms Hover Tooltip Popover -->
+  <div id="rating-tooltip" class="rating-tooltip">
+    <div id="rating-tooltip-title" class="rating-tooltip-title"></div>
+    <div id="rating-tooltip-desc" class="rating-tooltip-desc"></div>
+  </div>
 
   <!-- Top Utility Bar -->
   <header>
@@ -17595,6 +18317,9 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       />
       <select id="tab-status-filter" class="ctrl-select" onchange="onTabFilterChange()">
         <option value="ALL">ALL TABS (0)</option>
+        <option value="GOLD">GOLD</option>
+        <option value="SILVER">SILVER</option>
+        <option value="BRONZE">BRONZE</option>
         <option value="VERIFIED">VERIFIED</option>
         <option value="PARTIAL">PARTIAL</option>
         <option value="FAILED">FAILED</option>
@@ -17702,6 +18427,17 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         <button class="tab" data-subtab="slice" onclick="switchTab('slice')">RFC Sliced Text</button>
         <button class="tab" data-subtab="rag" id="tab-btn-rag" onclick="switchTab('rag')">RAG Knowledge</button>
         <button class="tab" data-subtab="graph" onclick="switchTab('graph')">Verified Shapes (SVG)</button>
+        <button class="tab" data-subtab="security" id="tab-btn-security" onclick="switchTab('security')">Security Findings (CPSA)</button>
+        <button class="tab" data-subtab="analytics" id="tab-btn-analytics" onclick="switchTab('analytics')">CSV Analytics (Live)</button>
+      </div>
+
+      <!-- Always-Visible Compact Security & Quality Verdict Strip -->
+      <div class="security-verdict-strip" id="security-verdict-strip">
+        <span class="sec-strip-item">Quality: <span class="sec-pill" id="strip-quality" data-tooltip-key="PENDING">PENDING</span></span>
+        <span class="sec-strip-item">Auth Profile: <span class="sec-pill" id="strip-auth" data-tooltip-key="PENDING">PENDING</span></span>
+        <span class="sec-strip-item">Param Agreement: <span class="sec-pill" id="strip-agreement" data-tooltip-key="PENDING">PENDING</span></span>
+        <span class="sec-strip-item">Secrecy: <span class="sec-pill" id="strip-secrecy" data-tooltip-key="PENDING">PENDING</span></span>
+        <span class="sec-strip-item">Anomalies: <span class="sec-pill" id="strip-anomalies" style="cursor:pointer;" onclick="switchTab('security')">--</span></span>
       </div>
 
       <!-- Per-Attempt Time-Travel Stepper -->
@@ -17744,6 +18480,26 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       <div class="tab-viewport" id="tab-graph" style="display:none; padding:0; height:100%;">
         <div id="graph-container" style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-family:var(--mono); font-size:11px;">
           MITRE CPSA shapes graph will render here upon successful verification.
+        </div>
+      </div>
+      <div class="tab-viewport" id="tab-security" style="display:none; padding:12px; overflow-y:auto;">
+        <div id="security-findings-container" style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
+          Formal CPSA 4.4.9 security findings, Stage 1 intake rationale, parameter agreement maplets, and shape analysis sentences (`cpsa4sas`) will appear here upon protocol verification.
+        </div>
+      </div>
+      <div class="tab-viewport" id="tab-analytics" style="display:none; padding:12px; overflow-y:auto;">
+        <div id="analytics-container">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-family:var(--mono); font-size:11px;">
+            <div>
+              <strong style="color:var(--text-main);">LIVE CSV ANALYTICS &amp; GRAPH SUITE (OFF-MAIN-THREAD WEB WORKER)</strong>
+              <span id="analytics-csv-label" style="color:var(--text-muted); margin-left:8px;">Loading CSV...</span>
+            </div>
+            <button class="ctrl-btn" onclick="refreshCsvAnalytics(true)">Refresh CSV Graphs</button>
+          </div>
+          <div id="analytics-kpis" class="analytics-kpi-grid"></div>
+          <div id="analytics-charts" class="charts-grid"></div>
+          <div id="analytics-custom-explorer" style="margin-bottom:14px;"></div>
+          <div id="analytics-table-section"></div>
         </div>
       </div>
     </div>
@@ -17860,7 +18616,13 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       if (allOption) allOption.innerText = `ALL TABS (${acceptedTabs.length})`;
 
       visibleFilteredTabs = acceptedTabs.filter(t => {
-        if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
+        if (statusFilter !== 'ALL') {
+          if (['GOLD', 'SILVER', 'BRONZE'].includes(statusFilter)) {
+            if ((t.quality_tier || '') !== statusFilter) return false;
+          } else if (t.status !== statusFilter) {
+            return false;
+          }
+        }
         if (!q) return true;
         const numMatch = `#${t.tab_index}` === q || `${t.tab_index}` === q;
         return (
@@ -17933,6 +18695,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
         const tierSpan = document.createElement('span');
         tierSpan.className = `rfc-vtab-tier ${badgeClass}`;
+        tierSpan.setAttribute('data-tooltip-key', badgeClass);
         tierSpan.innerText = badgeText;
 
         topDiv.appendChild(idSpan);
@@ -18054,6 +18817,9 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       document.getElementById('code-slice').innerText = 'Verbatim RFC section slice will appear here...';
       document.getElementById('graph-container').innerHTML =
         'MITRE CPSA shapes graph will render here upon successful verification.';
+      document.getElementById('security-findings-container').innerHTML =
+        '<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">Formal CPSA 4.4.9 security findings, Stage 1 intake rationale, parameter agreement maplets, and shape analysis sentences (`cpsa4sas`) will appear here upon protocol verification.</div>';
+      renderSecurityVerdictStrip('PENDING', null);
       document.getElementById('attempt-banner').classList.remove('visible');
       document.getElementById('attempt-stepper').innerHTML =
         '<span class="attempt-stepper-label">Attempts:</span><span style="color:var(--text-muted); font-family:var(--mono); font-size:10px;">Live synthesis...</span>';
@@ -18134,18 +18900,22 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       if (tab.status === 'VERIFIED') {
         pill.className = 'status-badge success';
         pill.innerText = `${tab.quality_tier || 'VERIFIED'}`;
+        pill.setAttribute('data-tooltip-key', tab.quality_tier || 'VERIFIED');
         setDiagnosisBadge(`Verified (${tab.shapes_count || 0} Realized Shapes)`, 'normal');
       } else if (tab.status === 'PARTIAL') {
         pill.className = 'status-badge partial';
         pill.innerText = 'PARTIAL';
+        pill.setAttribute('data-tooltip-key', 'PARTIAL');
         setDiagnosisBadge('Roletran Passed | CPSA Failed', 'syntax');
       } else if (tab.status === 'RUNNING') {
         pill.className = 'status-badge running';
         pill.innerText = 'RUNNING';
+        pill.setAttribute('data-tooltip-key', 'RUNNING');
         setDiagnosisBadge('Active Synthesis...', 'normal');
       } else {
         pill.className = 'status-badge failed';
         pill.innerText = tab.status || 'FAILED';
+        pill.setAttribute('data-tooltip-key', tab.quality_tier || tab.status || 'FAILED');
         setDiagnosisBadge(tab.error_message ? 'Failed (See Attempt Banner)' : 'Halted', 'syntax');
       }
 
@@ -18165,6 +18935,11 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         document.getElementById('graph-container').innerHTML =
           `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(payload.shapes_xhtml)}"></iframe>`;
       }
+
+      const secFindings = payload.security_findings || (payload.quality_assessment || {}).security_findings || tab.security_findings || {};
+      const qTier = (payload.quality_assessment || {}).quality_tier || tab.quality_tier || tab.status || 'REJECTED';
+      renderSecurityVerdictStrip(qTier, secFindings);
+      renderSecurityFindingsTab(payload);
 
       currentAttemptsList = Array.isArray(payload.attempts) ? payload.attempts : [];
       renderAttemptStepper();
@@ -18206,6 +18981,18 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       bar.appendChild(frag);
     }
 
+    function splitSnowballDiagnostic(diagStr) {
+      if (!diagStr) return { headline: '', autopsy: null };
+      const marker = '=== CPSA 4.4.9 SNOWBALL STATE AUTOPSY REPORT';
+      const idx = diagStr.indexOf(marker);
+      if (idx >= 0) {
+        const head = diagStr.slice(0, idx).trim();
+        const autopsy = diagStr.slice(idx).trim();
+        return { headline: head || 'CPSA state-space snowball timeout', autopsy };
+      }
+      return { headline: diagStr, autopsy: null };
+    }
+
     function selectAttemptSnapshot(idx) {
       if (idx < 0 || idx >= currentAttemptsList.length) return;
       selectedAttemptIdx = idx;
@@ -18244,10 +19031,19 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         toggleBtn.style.display = 'none';
       }
 
-      diagEl.innerText = att.diagnostic
-        ? `Diagnostic: ${att.diagnostic}`
-        : 'No compiler errors on this snapshot.';
-      diagEl.style.color = att.diagnostic ? '#f0883e' : '#3fb950';
+      if (att.diagnostic) {
+        const sp = splitSnowballDiagnostic(att.diagnostic);
+        diagEl.style.color = '#f0883e';
+        if (sp.autopsy) {
+          diagEl.innerHTML = `<div>Diagnostic: ${escapeHtml(sp.headline)}</div>` +
+            `<details class="snowball-details"><summary>▸ Show CPSA 4.4.9 Snowball State Autopsy Report</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
+        } else {
+          diagEl.innerText = `Diagnostic: ${att.diagnostic}`;
+        }
+      } else {
+        diagEl.style.color = '#3fb950';
+        diagEl.innerText = 'No compiler errors on this snapshot.';
+      }
 
       if (att.rag_query || (att.retrieved_chunks && att.retrieved_chunks.length) || att.searcher_diagnosis) {
         const cids = (att.retrieved_chunks || []).map(c => `${c.chunk_id}`).join(', ');
@@ -18389,6 +19185,9 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       document.querySelectorAll('.tab-viewport').forEach(v => v.style.display = 'none');
       const targetView = document.getElementById(`tab-${tabId}`);
       if (targetView) targetView.style.display = 'block';
+      if (tabId === 'analytics') {
+        refreshCsvAnalytics(false);
+      }
     }
 
     function setStepState(stageNum, state, label) {
@@ -18408,6 +19207,11 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     function handleIncomingBusEvent(evt) {
       if (!evt || !evt.event_type) return;
 
+      if (evt.event_type === 'csv_updated') {
+        scheduleCsvAnalyticsRefresh();
+        return;
+      }
+
       // Global tab & filtered registry updates ALWAYS apply regardless of whether viewing [LIVE] or Tab #k
       if (evt.event_type === 'tab_accepted' && evt.data && evt.data.tab) {
         liveActiveTabIndex = evt.data.tab.tab_index;
@@ -18426,6 +19230,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         if (document.getElementById('filtered-drawer').classList.contains('open')) {
           fetchFilteredPage();
         }
+        scheduleCsvAnalyticsRefresh();
         return;
       }
       if (evt.event_type === 'cost_updated' && evt.data) {
@@ -18458,6 +19263,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       if (evt.event_type === 'pipeline_completed' || evt.event_type === 'pipeline_failed') {
         pipelineRunning = false;
         updateLivePinButton();
+        scheduleCsvAnalyticsRefresh();
       }
 
       // Only mutate the shared DOM viewport if following [LIVE]
@@ -18466,12 +19272,38 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       }
     }
 
+    function renderSnowballAutopsyCard(timestamp, attemptNum, autopsyText) {
+      if (!autopsyText) return;
+      const feed = document.getElementById('rag-feed');
+      if (!feed) return;
+      if (ragFirstEvent) {
+        feed.innerHTML = '';
+        ragFirstEvent = false;
+      }
+      const timeStr = new Date((timestamp || (Date.now() / 1000)) * 1000).toLocaleTimeString([], { hour12: false });
+      const card = document.createElement('div');
+      card.className = 'rag-card';
+      card.style.borderLeft = '3px solid var(--color-red)';
+      card.innerHTML = `
+        <div class="rag-card-header">
+          <span class="rag-purpose" style="color:var(--color-red); border-color:var(--color-red);">CPSA 4.4.9 SNOWBALL AUTOPSY (REPAIR #${escapeHtml(String(attemptNum || 1))})</span>
+          <span>${escapeHtml(timeStr)}</span>
+        </div>
+        <details class="snowball-details" open>
+          <summary>▸ Snowball State-Space Unification Autopsy Report</summary>
+          <pre>${escapeHtml(autopsyText)}</pre>
+        </details>
+      `;
+      feed.prepend(card);
+    }
+
     function renderEventIntoViewport(evt, fetchLiveArtifacts) {
       if (
         evt.event_type === 'tab_accepted' ||
         evt.event_type === 'tab_updated' ||
         evt.event_type === 'rfc_filtered' ||
-        evt.event_type === 'cost_updated'
+        evt.event_type === 'cost_updated' ||
+        evt.event_type === 'csv_updated'
       ) {
         if (evt.event_type === 'cost_updated' && evt.data && evt.data.rfc_cost) {
           renderCostTelemetry(evt.data.rfc_cost, evt.data.batch_cost || latestBatchCostTelemetry);
@@ -18504,6 +19336,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       const safeData = Object.assign({}, evt.data || {});
       delete safeData.ast;
       let bodyText = Object.keys(safeData).length ? JSON.stringify(safeData) : '';
+      let extraAutopsyHtml = '';
 
       const stageDefaultModels = {
         1: document.getElementById('step-1-model')?.innerText || defaultModelCfg.router_model,
@@ -18539,6 +19372,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           const pill = document.getElementById('pipeline-status');
           pill.className = 'status-badge running';
           pill.innerText = 'RUNNING';
+          pill.setAttribute('data-tooltip-key', 'RUNNING');
         }
         if (evt.data.router_model) document.getElementById('step-1-model').innerText = evt.data.router_model;
         if (evt.data.extraction_model) document.getElementById('step-2-model').innerText = evt.data.extraction_model;
@@ -18618,19 +19452,29 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         currentStageNum = evt.stage || 5;
         currentRepairAttempt = evt.data.attempt || 1;
         activeAttemptEpoch = evt.timestamp;
-        const diagStr = (evt.data.diagnostic || '').toLowerCase();
+        const rawDiag = evt.data.diagnostic || '';
+        const sp = splitSnowballDiagnostic(rawDiag);
+        const diagStr = rawDiag.toLowerCase();
         const isTimeout = diagStr.includes('timed out') || diagStr.includes('step limit');
         currentActivityMode = isTimeout ? 'repair_timeout' : 'repair_syntax';
         const failureTag = isTimeout ? '[60s TIMEOUT / STATE-SPACE SNOWBALL]' : '[FAST SYNTAX / ROLETRAN ERROR]';
         const repMod = evt.data.model || defaultModelCfg.repair_model;
         const qMod = evt.data.query_model || defaultModelCfg.query_model;
         updateActiveModel(`${repMod} (RAG: ${qMod.split('/').pop()})`, evt.stage || 5);
-        bodyText = `${failureTag}\nRepair Model: ${repMod} | Query Model: ${qMod}\nDiagnostic: ${evt.data.diagnostic}\nCycle Detected: ${evt.data.cycle_detected ? 'YES (Perturbation active)' : 'NO'}`;
+        bodyText = `${failureTag}\nRepair Model: ${repMod} | Query Model: ${qMod}\nDiagnostic: ${sp.headline}\nCycle Detected: ${evt.data.cycle_detected ? 'YES (Perturbation active)' : 'NO'}`;
+        if (sp.autopsy) {
+          renderSnowballAutopsyCard(evt.timestamp, evt.data.attempt, sp.autopsy);
+          extraAutopsyHtml = `<details class="snowball-details"><summary>▸ View Snowball State Autopsy Report (also in RAG Knowledge tab)</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
+        }
         setStepState(evt.stage || 5, 'active', `Attempt ${evt.data.attempt}/${evt.data.max_attempts || 50}`);
       } else if (evt.event_type === 'stage_failed') {
         item.classList.add('error');
         typeLabel = `STAGE_${evt.stage}_FAIL`;
-        bodyText = evt.data.error_message || evt.data.reason || 'Stage failed';
+        const sp = splitSnowballDiagnostic(evt.data.error_message || evt.data.reason || 'Stage failed');
+        bodyText = sp.headline;
+        if (sp.autopsy) {
+          extraAutopsyHtml = `<details class="snowball-details"><summary>▸ View Snowball State Autopsy Report</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
+        }
         setStepState(evt.stage, 'failed', 'Failed');
       } else if (evt.event_type === 'pipeline_completed') {
         item.classList.add('success');
@@ -18640,9 +19484,19 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           const pill = document.getElementById('pipeline-status');
           pill.className = 'status-badge success';
           pill.innerText = evt.data.quality_tier || 'VERIFIED';
+          pill.setAttribute('data-tooltip-key', evt.data.quality_tier || 'VERIFIED');
           if (evt.data.shapes_xhtml) {
             document.getElementById('graph-container').innerHTML =
               `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
+          }
+          if (evt.data.security_findings) {
+            renderSecurityVerdictStrip(evt.data.quality_tier || 'VERIFIED', evt.data.security_findings);
+            renderSecurityFindingsTab({
+              tab: { rfc_id: evt.rfc_id, protocol_name: evt.data.protocol_name, quality_tier: evt.data.quality_tier, status: 'VERIFIED', shapes_count: evt.data.shapes_count },
+              intake_rationale: evt.data.intake_rationale,
+              security_findings: evt.data.security_findings,
+              quality_assessment: { quality_tier: evt.data.quality_tier, security_findings: evt.data.security_findings }
+            });
           }
         }
         typeLabel = 'SYNTHESIS_VERIFIED';
@@ -18656,9 +19510,14 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           const pill = document.getElementById('pipeline-status');
           pill.className = 'status-badge failed';
           pill.innerText = 'FAILED';
+          pill.setAttribute('data-tooltip-key', 'REJECTED');
         }
         typeLabel = 'PIPELINE_HALTED';
-        bodyText = evt.data.error_message || evt.data.reason || 'Pipeline halted';
+        const sp = splitSnowballDiagnostic(evt.data.error_message || evt.data.reason || 'Pipeline halted');
+        bodyText = sp.headline;
+        if (sp.autopsy) {
+          extraAutopsyHtml = `<details class="snowball-details"><summary>▸ View Snowball State Autopsy Report</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
+        }
       }
 
       item.innerHTML = `
@@ -18667,6 +19526,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           <span>${escapeHtml(timeStr)}</span>
         </div>
         <div class="log-data">${escapeHtml(bodyText)}</div>
+        ${extraAutopsyHtml}
       `;
 
       feed.appendChild(item);
@@ -18772,6 +19632,1130 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     }
 
     // =========================================================================
+    // Plain-English Hover Tooltips (~300ms Delay) for Quality Tiers & CPSA Verdicts
+    // =========================================================================
+    const RATING_TOOLTIPS = {
+      GOLD: {
+        title: 'GOLD — Full Multi-Party Interaction (Structural Quality)',
+        desc: 'Every participant role in the protocol compiled in CPSA, realized at least one valid execution shape, and interacted with at least one peer strand (>=2 strands in every point-of-view shape). Graded purely on structural fidelity — independent of whether the RFC protocol has security weaknesses.'
+      },
+      SILVER: {
+        title: 'SILVER — Partial Interaction / Local Execution',
+        desc: 'CPSA compiled the model and realized >=1 execution shape, and all defined roles are executable, but at least one point-of-view skeleton completed locally (single-strand) without requiring a peer response.'
+      },
+      BRONZE: {
+        title: 'BRONZE — Vacuous or Dead-Role Model',
+        desc: 'CPSA exited 0, but either 0 shapes were realized (contradictory assumptions), or the model contains dead/unused roles that were never instantiated in any skeleton.'
+      },
+      REJECTED: {
+        title: 'REJECTED — Uncompilable Model',
+        desc: 'The model failed CPSA syntax/executability checks or exhausted the 60s solver budget without compiling.'
+      },
+      PARTIAL: {
+        title: 'PARTIAL — Pre-Flight Passed, Solver Failed',
+        desc: 'Static role executability (cpsa4roletran / cpsa4 -l 1) succeeded, but full CPSA4 shape search failed or timed out.'
+      },
+      VERIFIED: {
+        title: 'VERIFIED — Formally Analyzed by CPSA4',
+        desc: 'MITRE CPSA4 completed shape analysis and generated formal execution shapes.'
+      },
+      FAILED: {
+        title: 'FAILED — Pipeline Halted',
+        desc: 'Synthesis or formal verification halted before producing a compiled CPSA shape graph.'
+      },
+      RUNNING: {
+        title: 'RUNNING — Live Synthesis in Progress',
+        desc: 'Currently executing synthesis and formal verification stages for this RFC.'
+      },
+      PENDING: {
+        title: 'PENDING — Awaiting CPSA Verification',
+        desc: 'Formal verification results have not been finalized yet.'
+      },
+      ALL_ROLES_EXECUTABLE: {
+        title: 'ALL_ROLES_EXECUTABLE (CPSA Role Executability)',
+        desc: 'Every defined role passed cpsa4roletran / cpsa4 -l 1 static executability and is instantiated in at least one preskeleton.'
+      },
+      PARTIAL_DEAD_ROLES: {
+        title: 'PARTIAL_DEAD_ROLES (CPSA Role Executability)',
+        desc: 'One or more defined roles were never instantiated in any preskeleton or realized shape.'
+      },
+      DEAD_ROLES_PRESENT: {
+        title: 'DEAD_ROLES_PRESENT (CPSA Role Executability)',
+        desc: 'One or more defined roles were never instantiated in any preskeleton or realized shape.'
+      },
+      NO_ROLES_EXECUTABLE: {
+        title: 'NO_ROLES_EXECUTABLE (CPSA Role Executability)',
+        desc: 'No participant roles realized an executable shape or static roletran failed.'
+      },
+      ROLETRAN_FAILED: {
+        title: 'ROLETRAN_FAILED (CPSA Role Executability)',
+        desc: 'At least one role failed static executability (e.g. sends a variable before receiving or originating it).'
+      },
+      MUTUAL_MULTI_STRAND: {
+        title: 'MUTUAL_MULTI_STRAND (CPSA Authentication Profile)',
+        desc: 'Every participant point-of-view skeleton realized >=1 shape and every realized shape required >=2 interacting strands (mutual peer authentication).'
+      },
+      MUTUAL_PEER_INTERACTION: {
+        title: 'MUTUAL_PEER_INTERACTION (CPSA Authentication Profile)',
+        desc: 'Every participant point-of-view skeleton realized >=1 shape and every realized shape required >=2 interacting strands (peer authentication).'
+      },
+      UNILATERAL_AUTHENTICATED: {
+        title: 'UNILATERAL_AUTHENTICATED (CPSA Authentication Profile)',
+        desc: 'At least one participant POV strictly required peer interaction (>=2 strands), while another POV completed locally (e.g. unilateral server-authenticated key exchange).'
+      },
+      UNILATERAL_PARTIAL: {
+        title: 'UNILATERAL_PARTIAL (CPSA Authentication Profile)',
+        desc: 'Some participant POVs required peer interaction (>=2 strands), while at least one POV completed locally (single-strand).'
+      },
+      CONDITIONAL_BRANCHED_AUTHENTICATION: {
+        title: 'CONDITIONAL_BRANCHED_AUTHENTICATION (Branched 1-Strand / 2-Strand Shapes)',
+        desc: 'A participant POV split into both a 2-strand peer-authenticated shape and a 1-strand self-communication/unauthenticated shape (e.g. missing principal inequality fact).'
+      },
+      UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE: {
+        title: 'UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE (Single-Strand Execution Only)',
+        desc: 'All realized shapes contained only a single strand — the POV role completed without CPSA proving any peer strand participated.'
+      },
+      LOCAL_ONLY: {
+        title: 'LOCAL_ONLY (CPSA Authentication Profile)',
+        desc: 'All realized shapes contained only a single strand (the POV role completed without proving any peer strand existed).'
+      },
+      NON_EXECUTABLE: {
+        title: 'NON_EXECUTABLE (0 Realized Shapes)',
+        desc: 'CPSA realized 0 shapes (preskeleton assumptions were contradictory or solver failed).'
+      },
+      NO_REALIZED_SHAPES: {
+        title: 'NO_REALIZED_SHAPES (CPSA Authentication Profile)',
+        desc: 'CPSA realized 0 shapes (preskeleton assumptions were contradictory or solver failed).'
+      },
+      FULL_PARAMETER_AGREEMENT: {
+        title: 'FULL_PARAMETER_AGREEMENT (Injective Parameter Agreement)',
+        desc: 'In every realized multi-strand shape, peer strands mapped identical values onto all shared protocol parameters (no MITM principal mismatch or parameter substitution).'
+      },
+      FULL_AGREEMENT: {
+        title: 'FULL_AGREEMENT (Injective Parameter Agreement)',
+        desc: 'In every realized shape, peer strands mapped identical values onto all shared protocol parameters (no parameter substitution or MITM mismatch).'
+      },
+      PRINCIPAL_DISAGREEMENT_MITM_OR_UKS: {
+        title: 'PRINCIPAL_DISAGREEMENT_MITM_OR_UKS (Lowe MITM / Unknown Key-Share)',
+        desc: 'CPSA realized a shape where the POV strand and a peer strand disagreed on a principal identity parameter (e.g. b vs b-0 in Needham-Schroeder Lowe MITM).'
+      },
+      PARAMETER_DISAGREEMENT_DETECTED: {
+        title: 'PARAMETER_DISAGREEMENT_DETECTED (Data/Key Parameter Substitution)',
+        desc: 'CPSA realized a shape where the POV strand and a peer strand bound different values (e.g. x vs x-0) to a shared non-principal parameter.'
+      },
+      DISAGREEMENT_DETECTED: {
+        title: 'DISAGREEMENT_DETECTED (Parameter Substitution / Mismatch)',
+        desc: 'CPSA realized a shape where the POV strand and a peer strand bound different values (e.g. n != n-0) to the same role parameter.'
+      },
+      NOT_APPLICABLE_SINGLE_STRAND: {
+        title: 'NOT_APPLICABLE_SINGLE_STRAND (Parameter Agreement)',
+        desc: 'No multi-strand shapes were realized, so cross-strand parameter agreement could not be evaluated.'
+      },
+      NO_PEER_STRANDS: {
+        title: 'NO_PEER_STRANDS (Parameter Agreement)',
+        desc: 'No multi-strand shapes were realized, so cross-strand parameter agreement could not be established.'
+      },
+      NO_REFLECTION: {
+        title: 'NO_REFLECTION (Role Reflection Check)',
+        desc: 'Principals and roles are properly separated; no POV shape instantiated multiple strands of the same role or collapsed distinct principals.'
+      },
+      DISTINCT_PEERS: {
+        title: 'DISTINCT_PEERS (Role Reflection Check)',
+        desc: 'Principals are properly separated; no peer strand collapsed its own sender/receiver principal variables onto the same identity.'
+      },
+      SAME_ROLE_REFLECTION_DETECTED: {
+        title: 'SAME_ROLE_REFLECTION_DETECTED (Same-Role / Symmetric Reflection)',
+        desc: 'CPSA satisfied a POV query by instantiating multiple strands of the same role (symmetric reflection attack where an initiator talks to another initiator).'
+      },
+      ROLE_REFLECTION_POSSIBLE: {
+        title: 'ROLE_REFLECTION_POSSIBLE (Self-Communication / Reflection)',
+        desc: 'A realized shape unified two distinct principal variables inside a strand onto the same identity (A = B reflection attack).'
+      },
+      SECRECY_PROVED: {
+        title: 'SECRECY_PROVED (Listener Secrecy Analysis)',
+        desc: 'Every (deflistener secret) query realized 0 shapes (dead tree), proving the Dolev-Yao adversary cannot derive any protected secret.'
+      },
+      ALL_SECRETS_PROTECTED: {
+        title: 'ALL_SECRETS_PROTECTED (Listener Secrecy Analysis)',
+        desc: 'Every (deflistener secret) query realized 0 shapes (dead tree), proving the Dolev-Yao adversary cannot derive the protected secret.'
+      },
+      PARTIAL_SECRECY: {
+        title: 'PARTIAL_SECRECY (Mixed Secrecy Verdict)',
+        desc: 'Some (deflistener ...) queries realized 0 shapes (secret protected), while at least one listener realized >=1 shape (secret leaked).'
+      },
+      SECRECY_LEAK_DETECTED: {
+        title: 'SECRECY_LEAK_DETECTED (Secrecy Breach)',
+        desc: 'A (deflistener secret) query realized >=1 shape, meaning the adversary learned the secret in a valid protocol execution.'
+      },
+      NOT_APPLICABLE_NO_LISTENER: {
+        title: 'NOT_APPLICABLE_NO_LISTENER (Secrecy Analysis)',
+        desc: 'The protocol model did not include any (deflistener ...) secrecy queries (e.g. pure authentication or integrity protocol).'
+      },
+      NO_SECRECY_CLAIMS_TESTED: {
+        title: 'NO_SECRECY_CLAIMS_TESTED (Secrecy Analysis)',
+        desc: 'The protocol model did not include any (deflistener ...) secrecy queries (e.g. pure authentication or integrity protocol).'
+      },
+      ALL_SATISFIED: {
+        title: 'ALL_SATISFIED (CPSA Security Goals)',
+        desc: 'All declared (defgoal ...) security sentences were satisfied with 0 counterexamples.'
+      },
+      ALL_DEFGOALS_SATISFIED: {
+        title: 'ALL_DEFGOALS_SATISFIED (CPSA Security Goals)',
+        desc: 'All (defgoal ...) security sentences were satisfied with 0 counterexamples.'
+      },
+      COUNTEREXAMPLE_FOUND: {
+        title: 'COUNTEREXAMPLE_FOUND (CPSA Security Goals)',
+        desc: 'CPSA found at least one shape violating a declared (defgoal ...) security sentence.'
+      },
+      NO_EXPLICIT_DEFGOALS: {
+        title: 'NO_EXPLICIT_DEFGOALS (Standard defskeleton Exploration)',
+        desc: 'Model used standard (defskeleton ...) point-of-view queries; cpsa4sas extracted the strongest satisfied (defgoal ...) shape analysis sentences automatically.'
+      },
+      NO_DEFGOALS: {
+        title: 'NO_DEFGOALS (Standard defskeleton Exploration)',
+        desc: 'Model used standard (defskeleton ...) point-of-view queries; cpsa4sas extracted the strongest satisfied (defgoal ...) shape analysis sentences automatically.'
+      }
+    };
+
+    let tooltipTimer = null;
+    let activeTooltipTarget = null;
+
+    function initHoverTooltips() {
+      const tipEl = document.getElementById('rating-tooltip');
+      const titleEl = document.getElementById('rating-tooltip-title');
+      const descEl = document.getElementById('rating-tooltip-desc');
+      if (!tipEl) return;
+
+      function positionTooltip(clientX, clientY) {
+        const pad = 14;
+        const rect = tipEl.getBoundingClientRect();
+        let left = clientX + pad;
+        let top = clientY + pad;
+        if (left + rect.width > window.innerWidth - 10) {
+          left = Math.max(8, clientX - rect.width - pad);
+        }
+        if (top + rect.height > window.innerHeight - 10) {
+          top = Math.max(8, clientY - rect.height - pad);
+        }
+        tipEl.style.left = `${left}px`;
+        tipEl.style.top = `${top}px`;
+      }
+
+      document.addEventListener('mouseover', (e) => {
+        const target = e.target.closest('[data-tooltip-key]');
+        if (!target) return;
+        const key = target.getAttribute('data-tooltip-key');
+        const info = RATING_TOOLTIPS[key];
+        if (!info) return;
+        activeTooltipTarget = target;
+        const startX = e.clientX;
+        const startY = e.clientY;
+        clearTimeout(tooltipTimer);
+        tooltipTimer = setTimeout(() => {
+          if (activeTooltipTarget !== target) return;
+          titleEl.innerText = info.title;
+          descEl.innerText = info.desc;
+          tipEl.style.display = 'block';
+          positionTooltip(startX, startY);
+        }, 280);
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (tipEl.style.display === 'block') {
+          positionTooltip(e.clientX, e.clientY);
+        }
+      });
+
+      document.addEventListener('mouseout', (e) => {
+        const target = e.target.closest('[data-tooltip-key]');
+        if (target && target === activeTooltipTarget) {
+          const related = e.relatedTarget ? e.relatedTarget.closest('[data-tooltip-key]') : null;
+          if (related !== target) {
+            clearTimeout(tooltipTimer);
+            activeTooltipTarget = null;
+            tipEl.style.display = 'none';
+          }
+        }
+      });
+    }
+    initHoverTooltips();
+
+    // =========================================================================
+    // Part C: Compact Security Verdict Strip & Security Findings (CPSA) Sub-Tab
+    // =========================================================================
+    function verdictPillClass(val) {
+      const v = String(val || '').toUpperCase();
+      if ([
+        'GOLD', 'VERIFIED', 'ALL_ROLES_EXECUTABLE', 'MUTUAL_MULTI_STRAND', 'MUTUAL_PEER_INTERACTION',
+        'FULL_PARAMETER_AGREEMENT', 'FULL_AGREEMENT', 'NO_REFLECTION', 'DISTINCT_PEERS',
+        'SECRECY_PROVED', 'ALL_SECRETS_PROTECTED', 'ALL_SATISFIED', 'ALL_DEFGOALS_SATISFIED'
+      ].includes(v)) {
+        return 'ok';
+      }
+      if ([
+        'SILVER', 'UNILATERAL_AUTHENTICATED', 'NOT_APPLICABLE_NO_LISTENER', 'NO_SECRECY_CLAIMS_TESTED',
+        'NO_EXPLICIT_DEFGOALS', 'NO_DEFGOALS'
+      ].includes(v)) {
+        return 'info';
+      }
+      if ([
+        'BRONZE', 'PARTIAL', 'UNILATERAL_PARTIAL', 'CONDITIONAL_BRANCHED_AUTHENTICATION',
+        'UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE', 'LOCAL_ONLY', 'NOT_APPLICABLE_SINGLE_STRAND',
+        'NO_PEER_STRANDS', 'PARTIAL_DEAD_ROLES', 'DEAD_ROLES_PRESENT', 'PARTIAL_SECRECY'
+      ].includes(v)) {
+        return 'warn';
+      }
+      if ([
+        'REJECTED', 'FAILED', 'NO_ROLES_EXECUTABLE', 'ROLETRAN_FAILED', 'NON_EXECUTABLE',
+        'NO_REALIZED_SHAPES', 'PRINCIPAL_DISAGREEMENT_MITM_OR_UKS', 'PARAMETER_DISAGREEMENT_DETECTED',
+        'DISAGREEMENT_DETECTED', 'SAME_ROLE_REFLECTION_DETECTED', 'ROLE_REFLECTION_POSSIBLE',
+        'SECRECY_LEAK_DETECTED', 'COUNTEREXAMPLE_FOUND'
+      ].includes(v)) {
+        return 'bad';
+      }
+      return '';
+    }
+
+    function setStripPill(elId, val) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      const text = val || 'PENDING';
+      el.innerText = text;
+      el.className = `sec-pill ${verdictPillClass(text)}`;
+      el.setAttribute('data-tooltip-key', text);
+    }
+
+    function renderSecurityVerdictStrip(qualityTier, secFindings) {
+      const sf = secFindings || {};
+      setStripPill('strip-quality', qualityTier || 'PENDING');
+      setStripPill('strip-auth', sf.authentication_profile || 'PENDING');
+      setStripPill('strip-agreement', sf.parameter_agreement_status || 'PENDING');
+      setStripPill('strip-secrecy', sf.secrecy_status || 'PENDING');
+
+      const anomEl = document.getElementById('strip-anomalies');
+      if (anomEl) {
+        if (!secFindings || Object.keys(sf).length === 0) {
+          anomEl.innerText = '--';
+          anomEl.className = 'sec-pill';
+        } else {
+          const cnt = Number(sf.anomalies_count ?? (sf.vulnerabilities_and_anomalies || []).length ?? 0);
+          anomEl.innerText = `${cnt} Anomal${cnt === 1 ? 'y' : 'ies'}`;
+          anomEl.className = `sec-pill ${cnt === 0 ? 'ok' : 'warn'}`;
+        }
+      }
+    }
+
+    function renderSecurityFindingsTab(payload) {
+      const container = document.getElementById('security-findings-container');
+      if (!container) return;
+      const tab = payload.tab || {};
+      const meta = payload.rfc_metadata || {};
+      const qa = payload.quality_assessment || {};
+      const sf = payload.security_findings || qa.security_findings || tab.security_findings || {};
+      const shapesAnalysis = payload.shapes_analysis || {};
+      const expTel = payload.exploration_telemetry || {};
+      const rationale = payload.intake_rationale || meta.intake_rationale || tab.intake_rationale || '';
+      const qTier = qa.quality_tier || tab.quality_tier || tab.status || 'PENDING';
+
+      if (!sf || Object.keys(sf).length === 0) {
+        container.innerHTML = `
+          ${rationale ? `<div class="sec-banner-box"><strong style="color:var(--color-green);">Stage 1 Intake Rationale:</strong> Eligible: ${escapeHtml(rationale)}</div>` : ''}
+          <div style="color:var(--text-muted);">No formal CPSA security findings recorded for this tab yet.</div>
+        `;
+        return;
+      }
+
+      const deadRoles = (sf.dead_roles || []).join(', ') || 'None';
+      const multiPovs = (sf.multi_strand_pov_roles || []).join(', ') || 'None';
+      const singlePovs = (sf.single_strand_pov_roles || []).join(', ') || 'None';
+      const zeroPovs = (sf.unrealized_pov_roles || []).join(', ') || 'None';
+      const protSecrets = (sf.protected_secrets || []).join(', ') || 'None';
+      const leakSecrets = (sf.leaked_secrets || []).join(', ') || 'None';
+      const anomalies = sf.vulnerabilities_and_anomalies || [];
+      const disagreements = sf.disagreed_parameters || sf.parameter_disagreements || [];
+      const reflections = sf.role_reflections || [];
+      const authTests = sf.authentication_tests_summary || {};
+      const sasList = sf.shape_analysis_sentences || sf.shape_analysis_sentences_defgoals || [];
+      const perSkel = shapesAnalysis.per_preskeleton_outcomes || shapesAnalysis.per_preskeleton || [];
+
+      const anomaliesHtml = anomalies.length === 0
+        ? `<div class="sec-banner-box" style="border-left-color:var(--color-green);"><strong style="color:var(--color-green);">0 Formal Anomalies Detected:</strong> All POV roles interacted with distinct peer strands in full parameter agreement with no secrecy leaks.</div>`
+        : `<div class="sec-banner-box" style="border-left-color:var(--color-yellow);">
+             <strong style="color:var(--color-yellow);">Detected Protocol Vulnerabilities &amp; CPSA Anomalies (${anomalies.length}):</strong>
+             <ul style="margin-top:5px; padding-left:18px; color:#e6edf3;">
+               ${anomalies.map(a => `<li>${escapeHtml(a)}</li>`).join('')}
+             </ul>
+           </div>`;
+
+      const skelRowsHtml = perSkel.length === 0
+        ? `<tr><td colspan="7" style="color:var(--text-muted);">No per-preskeleton shape breakdown available.</td></tr>`
+        : perSkel.map(sk => {
+            const rawDis = sk.disagreed_parameters || sk.parameter_disagreements || [];
+            const disList = rawDis.map(d =>
+              `${d.pov_role || ''}->${d.peer_role || ''}:${d.param || d.parameter || ''}(${d.pov_val || d.pov_value || ''}!=${d.peer_val || d.peer_value || ''})`
+            ).join('; ') || 'Full Agreement';
+            const isSecList = Boolean(sk.is_secrecy_listener || sk.query_type === 'SECRECY_LISTENER' || (sk.listener_vars || sk.listener_terms || []).length > 0);
+            const listVars = sk.listener_vars || sk.listener_terms || [];
+            const realCount = sk.shapes_realized ?? sk.realized_shapes_count ?? 0;
+            const hasMulti = Boolean(sk.has_multi_strand_shape || (sk.max_strands_in_any_shape || 0) >= 2);
+            const hasSingle = Boolean(sk.has_single_strand_shape || (realCount > 0 && !hasMulti));
+            const hasRefl = Boolean(sk.has_same_role_reflection || sk.has_self_reflection_split || (sk.role_reflections || []).length > 0);
+            const refList = hasRefl
+              ? (sk.has_same_role_reflection ? 'Same-Role Reflection' : 'Branched 1-Strand Split')
+              : 'Distinct Peers';
+            return `
+              <tr>
+                <td>#${escapeHtml(String(sk.root_label ?? sk.skeleton_label ?? ''))}</td>
+                <td style="font-weight:700; color:var(--color-blue);">${escapeHtml(sk.pov_role || (isSecList ? 'Secrecy Listener' : 'POV'))}</td>
+                <td>${isSecList ? `Listener (${escapeHtml(listVars.join(', '))})` : 'Participant POV'}</td>
+                <td>${escapeHtml(String(realCount))}</td>
+                <td>${hasMulti ? '<span style="color:var(--color-green);">YES (>=2 strands)</span>' : (hasSingle ? '<span style="color:var(--color-yellow);">Single-Strand Only</span>' : '<span style="color:var(--text-muted);">0 Shapes</span>')}</td>
+                <td style="color:${rawDis.length ? 'var(--color-red)' : 'var(--color-green)'};">${escapeHtml(disList)}</td>
+                <td style="color:${hasRefl ? 'var(--color-yellow)' : 'var(--color-green)'};">${escapeHtml(refList)}</td>
+              </tr>
+            `;
+          }).join('');
+
+      const sasBlockHtml = sasList.length > 0
+        ? `<details class="snowball-details" style="margin-top:10px;" open>
+             <summary>▸ CPSA4SAS Extracted Shape Analysis Sentences — (defgoal ...) (${sasList.length})</summary>
+             <pre>${escapeHtml(sasList.join('\n\n'))}</pre>
+           </details>`
+        : '';
+
+      container.innerHTML = `
+        <div class="sec-banner-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <strong>${escapeHtml(tab.rfc_id || meta.rfc_id || '')} — ${escapeHtml(tab.protocol_name || meta.protocol_name || '')}</strong>
+            <span class="sec-pill ${verdictPillClass(qTier)}" data-tooltip-key="${escapeHtml(qTier)}">Structural Quality: ${escapeHtml(qTier)}</span>
+          </div>
+          ${rationale ? `<div><strong style="color:var(--color-green);">Stage 1 Intake Rationale:</strong> Eligible: ${escapeHtml(rationale)}</div>` : ''}
+          ${qa.tier_rationale ? `<div style="margin-top:3px; color:var(--text-muted);"><strong>Quality Tier Rationale:</strong> ${escapeHtml(qa.tier_rationale)}</div>` : ''}
+        </div>
+
+        ${anomaliesHtml}
+
+        <div class="sec-grid">
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>1. Role Executability</span>
+              <span class="sec-pill ${verdictPillClass(sf.role_executability)}" data-tooltip-key="${escapeHtml(sf.role_executability || '')}">${escapeHtml(sf.role_executability || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Dead / Uninstantiated Roles (${escapeHtml(String(sf.dead_roles_count ?? 0))}): <span style="color:var(--text-main);">${escapeHtml(deadRoles)}</span></div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>2. Authentication Profile</span>
+              <span class="sec-pill ${verdictPillClass(sf.authentication_profile)}" data-tooltip-key="${escapeHtml(sf.authentication_profile || '')}">${escapeHtml(sf.authentication_profile || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Multi-Strand POVs: <span style="color:var(--color-green);">${escapeHtml(multiPovs)}</span></div>
+              <div>Single-Strand POVs: <span style="color:var(--color-yellow);">${escapeHtml(singlePovs)}</span></div>
+              <div>Unrealized POVs: <span style="color:var(--text-muted);">${escapeHtml(zeroPovs)}</span></div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>3. Parameter Agreement</span>
+              <span class="sec-pill ${verdictPillClass(sf.parameter_agreement_status)}" data-tooltip-key="${escapeHtml(sf.parameter_agreement_status || '')}">${escapeHtml(sf.parameter_agreement_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Disagreed Parameters: <span style="color:${disagreements.length ? 'var(--color-red)' : 'var(--color-green)'};">${disagreements.length}</span></div>
+              <div style="font-size:10px; color:var(--text-muted);">Hover badge for CPSA maplet agreement definition.</div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>4. Role Reflection Check</span>
+              <span class="sec-pill ${verdictPillClass(sf.role_reflection_status)}" data-tooltip-key="${escapeHtml(sf.role_reflection_status || '')}">${escapeHtml(sf.role_reflection_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Self-Communication Instances: <span style="color:${reflections.length ? 'var(--color-yellow)' : 'var(--color-green)'};">${reflections.length}</span></div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>5. Secrecy &amp; Listeners</span>
+              <span class="sec-pill ${verdictPillClass(sf.secrecy_status)}" data-tooltip-key="${escapeHtml(sf.secrecy_status || '')}">${escapeHtml(sf.secrecy_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Protected Secrets: <span style="color:var(--color-green);">${escapeHtml(protSecrets)}</span></div>
+              <div>Leaked Secrets: <span style="color:${(sf.leaked_secrets || []).length ? 'var(--color-red)' : 'var(--text-muted)'};">${escapeHtml(leakSecrets)}</span></div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>6. Security Goals &amp; SAS</span>
+              <span class="sec-pill ${verdictPillClass(sf.defgoal_satisfaction_status)}" data-tooltip-key="${escapeHtml(sf.defgoal_satisfaction_status || '')}">${escapeHtml(sf.defgoal_satisfaction_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Extracted cpsa4sas defgoals: <span style="color:var(--color-blue); font-weight:700;">${escapeHtml(String(sf.shape_analysis_sentences_count ?? sasList.length))}</span></div>
+              <div>Cohort Tests: enc=${escapeHtml(String(authTests.encryption_tests ?? 0))} | nonce=${escapeHtml(String(authTests.nonce_tests ?? 0))} | chan=${escapeHtml(String(authTests.channel_tests ?? 0))}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-family:var(--mono); font-size:11px; font-weight:700; color:var(--text-main); margin-top:6px;">
+          PER-PRESKELETON SHAPE &amp; AGREEMENT BREAKDOWN (FROM *_shapes.txt)
+        </div>
+        <table class="sec-table">
+          <thead>
+            <tr>
+              <th>Skeleton</th>
+              <th>POV Role</th>
+              <th>Query Type</th>
+              <th>Realized Shapes</th>
+              <th>Peer Interaction</th>
+              <th>Parameter Agreement</th>
+              <th>Role Reflection</th>
+            </tr>
+          </thead>
+          <tbody>${skelRowsHtml}</tbody>
+        </table>
+        ${sasBlockHtml}
+      `;
+    }
+
+    // =========================================================================
+    // Part D: Off-Main-Thread CSV Analytics (Live) via Inline Web Worker
+    // =========================================================================
+    let analyticsWorker = null;
+    let latestCsvRows = [];
+    let latestCsvHeaders = [];
+    let latestCsvPath = '';
+    let csvRefreshTimer = null;
+
+    const WORKER_SOURCE = `
+      function toNum(v) {
+        const n = parseFloat(v);
+        return isNaN(n) ? 0 : n;
+      }
+      function isTrue(v) {
+        return String(v || '').trim().toLowerCase() === 'true';
+      }
+      self.onmessage = function(e) {
+        const rows = (e.data && e.data.rows) || [];
+        const totalRows = rows.length;
+        const eligibleRows = rows.filter(r => isTrue(r.is_eligible));
+        const ineligibleRows = rows.filter(r => !isTrue(r.is_eligible));
+        const verifiedRows = eligibleRows.filter(r => (r.status || '').toUpperCase() === 'VERIFIED');
+        const partialRows = eligibleRows.filter(r => (r.status || '').toUpperCase() === 'PARTIAL');
+        const failedRows = eligibleRows.filter(r => (r.status || '').toUpperCase() === 'FAILED');
+        const zeroShotRows = verifiedRows.filter(r => isTrue(r.zero_shot_passed));
+
+        // Tier counts
+        const tierCounts = { GOLD: 0, SILVER: 0, BRONZE: 0, REJECTED: 0 };
+        eligibleRows.forEach(r => {
+          const t = (r.quality_tier || 'REJECTED').toUpperCase();
+          if (tierCounts[t] !== undefined) tierCounts[t]++;
+          else tierCounts.REJECTED++;
+        });
+
+        // Intake Funnel
+        const gateCounts = {
+          'Tier 0 Header Filter': 0,
+          'Stage 1c Applicability Gate': 0,
+          'Stage 2 Verbatim Slice Gate': 0,
+          'Eligible -> FAILED': failedRows.length,
+          'Eligible -> PARTIAL': partialRows.length,
+          'Eligible -> VERIFIED': verifiedRows.length
+        };
+        ineligibleRows.forEach(r => {
+          const g = r.rejection_gate || 'Stage 1c Applicability Gate';
+          if (gateCounts[g] !== undefined) gateCounts[g]++;
+          else gateCounts['Stage 1c Applicability Gate']++;
+        });
+
+        // Security Findings counts on Verified/Eligible
+        const authCounts = { MUTUAL_PEER_INTERACTION: 0, UNILATERAL_PARTIAL: 0, LOCAL_ONLY: 0, NO_REALIZED_SHAPES: 0 };
+        const agreeCounts = { FULL_AGREEMENT: 0, DISAGREEMENT_DETECTED: 0, NO_PEER_STRANDS: 0 };
+        const secCounts = { ALL_SECRETS_PROTECTED: 0, SECRECY_LEAK_DETECTED: 0, NO_SECRECY_CLAIMS_TESTED: 0 };
+        const reflCounts = { DISTINCT_PEERS: 0, ROLE_REFLECTION_POSSIBLE: 0 };
+        let anomalyProtocols = 0;
+
+        eligibleRows.forEach(r => {
+          const ap = (r.authentication_profile || '').toUpperCase();
+          if (ap === 'MUTUAL_MULTI_STRAND' || ap === 'MUTUAL_PEER_INTERACTION') authCounts.MUTUAL_PEER_INTERACTION++;
+          else if (ap === 'UNILATERAL_AUTHENTICATED' || ap === 'UNILATERAL_PARTIAL' || ap === 'CONDITIONAL_BRANCHED_AUTHENTICATION') authCounts.UNILATERAL_PARTIAL++;
+          else if (ap === 'UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE' || ap === 'LOCAL_ONLY') authCounts.LOCAL_ONLY++;
+          else if (ap === 'NON_EXECUTABLE' || ap === 'NO_REALIZED_SHAPES') authCounts.NO_REALIZED_SHAPES++;
+
+          const ag = (r.parameter_agreement_status || '').toUpperCase();
+          if (ag === 'FULL_PARAMETER_AGREEMENT' || ag === 'FULL_AGREEMENT') agreeCounts.FULL_AGREEMENT++;
+          else if (ag === 'PRINCIPAL_DISAGREEMENT_MITM_OR_UKS' || ag === 'PARAMETER_DISAGREEMENT_DETECTED' || ag === 'DISAGREEMENT_DETECTED') agreeCounts.DISAGREEMENT_DETECTED++;
+          else if (ag === 'NOT_APPLICABLE_SINGLE_STRAND' || ag === 'NO_PEER_STRANDS') agreeCounts.NO_PEER_STRANDS++;
+
+          const sc = (r.secrecy_status || '').toUpperCase();
+          if (sc === 'SECRECY_PROVED' || sc === 'ALL_SECRETS_PROTECTED') secCounts.ALL_SECRETS_PROTECTED++;
+          else if (sc === 'SECRECY_LEAK_DETECTED' || sc === 'PARTIAL_SECRECY') secCounts.SECRECY_LEAK_DETECTED++;
+          else if (sc === 'NOT_APPLICABLE_NO_LISTENER' || sc === 'NO_SECRECY_CLAIMS_TESTED') secCounts.NO_SECRECY_CLAIMS_TESTED++;
+
+          const rf = (r.role_reflection_status || '').toUpperCase();
+          if (rf === 'NO_REFLECTION' || rf === 'DISTINCT_PEERS') reflCounts.DISTINCT_PEERS++;
+          else if (rf === 'SAME_ROLE_REFLECTION_DETECTED' || rf === 'ROLE_REFLECTION_POSSIBLE') reflCounts.ROLE_REFLECTION_POSSIBLE++;
+
+          if (toNum(r.anomalies_count) > 0) anomalyProtocols++;
+        });
+
+        // Completion steps histogram
+        const stepBins = { '1 (Zero-Shot)': 0, '2-3 Steps': 0, '4-6 Steps': 0, '7-10 Steps': 0, '11+ Steps': 0, 'Unverified': 0 };
+        eligibleRows.forEach(r => {
+          if ((r.status || '').toUpperCase() !== 'VERIFIED') {
+            stepBins['Unverified']++;
+            return;
+          }
+          const st = toNum(r.total_completion_steps);
+          if (st <= 1) stepBins['1 (Zero-Shot)']++;
+          else if (st <= 3) stepBins['2-3 Steps']++;
+          else if (st <= 6) stepBins['4-6 Steps']++;
+          else if (st <= 10) stepBins['7-10 Steps']++;
+          else stepBins['11+ Steps']++;
+        });
+
+        // Per-eligible protocol repair breakdown & cohort tests & scale
+        const repairSeries = eligibleRows.slice(-25).map(r => ({
+          label: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          schema: toNum(r.schema_repairs),
+          roletran: toNum(r.roletran_repairs),
+          solver: toNum(r.solver_repairs),
+          searcher: toNum(r.searcher_invocations)
+        }));
+
+        const cohortSeries = eligibleRows.slice(-25).map(r => ({
+          label: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          enc: toNum(r.encryption_tests_count),
+          nonce: toNum(r.nonce_tests_count),
+          chan: toNum(r.channel_tests_count)
+        }));
+
+        const scaleSeries = eligibleRows.slice(-25).map(r => ({
+          label: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          roles: toNum(r.role_count),
+          skeletons: toNum(r.preskeleton_count),
+          anomalies: toNum(r.anomalies_count),
+          sas: toNum(r.shape_analysis_sentences_count)
+        }));
+
+        // State-space scatter
+        const stateScatter = eligibleRows.map(r => ({
+          rfc_id: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          x: toNum(r.explored_skeletons_count),
+          y: toNum(r.shapes_count),
+          size: Math.max(4, Math.min(11, 3 + toNum(r.preskeleton_count) * 1.5)),
+          tier: (r.quality_tier || 'REJECTED').toUpperCase()
+        }));
+
+        // Duration vs Slice Lines scatter
+        const durationScatter = eligibleRows.map(r => ({
+          rfc_id: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          x: toNum(r.sliced_lines_count),
+          y: toNum(r.duration_seconds),
+          tier: (r.quality_tier || 'REJECTED').toUpperCase()
+        }));
+
+        // Cost & Token breakdown by role
+        const roleTotals = {
+          Router: { cost: 0, tokens: 0 },
+          Extraction: { cost: 0, tokens: 0 },
+          Searcher: { cost: 0, tokens: 0 },
+          Repair: { cost: 0, tokens: 0 }
+        };
+        let totalCostUsd = 0;
+        let totalTokens = 0;
+        rows.forEach(r => {
+          roleTotals.Router.cost += toNum(r.router_cost_usd);
+          roleTotals.Router.tokens += toNum(r.router_total_tokens);
+          roleTotals.Extraction.cost += toNum(r.extraction_cost_usd);
+          roleTotals.Extraction.tokens += toNum(r.extraction_total_tokens);
+          roleTotals.Searcher.cost += toNum(r.query_cost_usd);
+          roleTotals.Searcher.tokens += toNum(r.query_total_tokens);
+          roleTotals.Repair.cost += toNum(r.repair_cost_usd);
+          roleTotals.Repair.tokens += toNum(r.repair_total_tokens);
+          totalCostUsd += toNum(r.total_cost_usd);
+          totalTokens += toNum(r.total_tokens);
+        });
+
+        // Cumulative timeline over rows
+        let cumVerified = 0;
+        let cumGold = 0;
+        let cumCost = 0;
+        const timeline = rows.map((r, idx) => {
+          if ((r.status || '').toUpperCase() === 'VERIFIED') cumVerified++;
+          if ((r.quality_tier || '').toUpperCase() === 'GOLD') cumGold++;
+          cumCost += toNum(r.total_cost_usd);
+          return {
+            index: idx + 1,
+            rfc_id: r.rfc_id,
+            verified: cumVerified,
+            gold: cumGold,
+            cost: cumCost
+          };
+        });
+
+        const avgSteps = eligibleRows.length
+          ? (eligibleRows.reduce((a, r) => a + toNum(r.total_completion_steps), 0) / eligibleRows.length)
+          : 0;
+        const avgRepairs = eligibleRows.length
+          ? (eligibleRows.reduce((a, r) => a + toNum(r.total_repairs), 0) / eligibleRows.length)
+          : 0;
+        const avgEligDur = eligibleRows.length
+          ? (eligibleRows.reduce((a, r) => a + toNum(r.duration_seconds), 0) / eligibleRows.length)
+          : 0;
+        const avgIneligDur = ineligibleRows.length
+          ? (ineligibleRows.reduce((a, r) => a + toNum(r.duration_seconds), 0) / ineligibleRows.length)
+          : 0;
+
+        self.postMessage({
+          kpis: {
+            totalRows,
+            eligibleCount: eligibleRows.length,
+            ineligibleCount: ineligibleRows.length,
+            verifiedCount: verifiedRows.length,
+            zeroShotCount: zeroShotRows.length,
+            passRate: eligibleRows.length ? ((verifiedRows.length / eligibleRows.length) * 100).toFixed(1) : '0.0',
+            zeroShotRate: eligibleRows.length ? ((zeroShotRows.length / eligibleRows.length) * 100).toFixed(1) : '0.0',
+            tierCounts,
+            fullAgreeCount: agreeCounts.FULL_AGREEMENT,
+            secretsProtectedCount: secCounts.ALL_SECRETS_PROTECTED,
+            anomalyProtocols,
+            avgSteps: avgSteps.toFixed(2),
+            avgRepairs: avgRepairs.toFixed(2),
+            totalCostUsd: totalCostUsd.toFixed(4),
+            avgVerifiedCost: verifiedRows.length ? (totalCostUsd / verifiedRows.length).toFixed(4) : '0.0000',
+            totalTokens,
+            avgEligDur: avgEligDur.toFixed(1),
+            avgIneligDur: avgIneligDur.toFixed(2)
+          },
+          gateCounts,
+          tierCounts,
+          securityMatrix: { authCounts, agreeCounts, secCounts, reflCounts },
+          stepBins,
+          repairSeries,
+          cohortSeries,
+          scaleSeries,
+          stateScatter,
+          durationScatter,
+          roleTotals,
+          timeline
+        });
+      };
+    `;
+
+    function initAnalyticsWorker() {
+      if (analyticsWorker) return;
+      try {
+        const blob = new Blob([WORKER_SOURCE], { type: 'application/javascript' });
+        analyticsWorker = new Worker(URL.createObjectURL(blob));
+        analyticsWorker.onmessage = (e) => {
+          renderCsvAnalyticsResult(e.data);
+        };
+      } catch (err) {
+        analyticsWorker = null;
+      }
+    }
+    initAnalyticsWorker();
+
+    function scheduleCsvAnalyticsRefresh() {
+      clearTimeout(csvRefreshTimer);
+      csvRefreshTimer = setTimeout(() => {
+        const analyticsTab = document.getElementById('tab-analytics');
+        if (analyticsTab && analyticsTab.style.display !== 'none') {
+          refreshCsvAnalytics(false);
+        }
+      }, 280);
+    }
+
+    function refreshCsvAnalytics(force) {
+      fetch('/api/csv')
+        .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+        .then(data => {
+          latestCsvRows = data.rows || [];
+          latestCsvHeaders = data.headers || [];
+          latestCsvPath = data.csv_path || '';
+          const lbl = document.getElementById('analytics-csv-label');
+          if (lbl) {
+            const shortPath = latestCsvPath ? latestCsvPath.split('/').slice(-2).join('/') : 'pipeline_runs.csv';
+            lbl.innerText = `${shortPath} (${latestCsvRows.length} rows, ${latestCsvHeaders.length} columns)`;
+            lbl.title = latestCsvPath;
+          }
+          if (analyticsWorker) {
+            analyticsWorker.postMessage({ rows: latestCsvRows });
+          }
+          renderCustomExplorerUI();
+          renderCsvTableUI();
+        })
+        .catch(() => {});
+    }
+
+    function svgHorizontalBars(entries, colors) {
+      const vals = entries.map(e => e[1]);
+      const maxVal = Math.max(1, ...vals);
+      const w = 360;
+      const rowH = 24;
+      const h = Math.max(150, entries.length * rowH + 16);
+      let rowsSvg = '';
+      entries.forEach(([label, count], i) => {
+        const y = 10 + i * rowH;
+        const barW = Math.round((count / maxVal) * 165);
+        const col = (colors && colors[i % colors.length]) || '#58a6ff';
+        rowsSvg += `
+          <text x="4" y="${y + 13}" fill="#c9d1d9" font-family="monospace" font-size="10">${escapeHtml(String(label).slice(0, 24))}</text>
+          <rect x="158" y="${y + 3}" width="${Math.max(2, barW)}" height="13" fill="${col}" rx="2" />
+          <text x="${164 + Math.max(2, barW)}" y="${y + 13}" fill="#8b949e" font-family="monospace" font-size="10">${count}</text>
+        `;
+      });
+      return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${rowsSvg}</svg>`;
+    }
+
+    function svgStackedVerticalBars(items, keys, colors, legendLabels) {
+      if (!items || !items.length) {
+        return `<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">Waiting for eligible RFC runs...</div>`;
+      }
+      const w = 380;
+      const h = 185;
+      const plotH = 130;
+      const baseY = 145;
+      const totals = items.map(it => keys.reduce((s, k) => s + (Number(it[k]) || 0), 0));
+      const maxTot = Math.max(1, ...totals);
+      const slotW = Math.max(10, Math.min(34, Math.floor((w - 40) / items.length)));
+
+      let barsSvg = `<line x1="28" y1="${baseY}" x2="${w - 8}" y2="${baseY}" stroke="#30363d" />`;
+      items.forEach((it, idx) => {
+        const x = 32 + idx * slotW;
+        let curY = baseY;
+        keys.forEach((k, kIdx) => {
+          const v = Number(it[k]) || 0;
+          if (v <= 0) return;
+          const bh = Math.max(2, Math.round((v / maxTot) * plotH));
+          curY -= bh;
+          barsSvg += `<rect x="${x}" y="${curY}" width="${Math.max(6, slotW - 4)}" height="${bh}" fill="${colors[kIdx]}"><title>${escapeHtml(it.label)} (${escapeHtml(it.protocol || '')}) - ${legendLabels[kIdx]}: ${v}</title></rect>`;
+        });
+        barsSvg += `<text x="${x + 3}" y="${baseY + 11}" fill="#8b949e" font-family="monospace" font-size="8.5" transform="rotate(28 ${x + 3} ${baseY + 11})">${escapeHtml(String(it.label).replace('RFC', ''))}</text>`;
+      });
+
+      let legSvg = '';
+      legendLabels.forEach((lbl, i) => {
+        const lx = 8 + i * 92;
+        legSvg += `<rect x="${lx}" y="4" width="8" height="8" fill="${colors[i]}" /><text x="${lx + 11}" y="11" fill="#8b949e" font-family="monospace" font-size="9">${escapeHtml(lbl)}</text>`;
+      });
+      return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${legSvg}${barsSvg}</svg>`;
+    }
+
+    function svgScatterPlot(points, xLabel, yLabel) {
+      if (!points || !points.length) {
+        return `<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">Waiting for eligible RFC runs...</div>`;
+      }
+      const w = 380;
+      const h = 185;
+      const padL = 38, padR = 14, padT = 14, padB = 28;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+      const maxX = Math.max(1, ...points.map(p => Number(p.x) || 0));
+      const maxY = Math.max(1, ...points.map(p => Number(p.y) || 0));
+      const tierCol = { GOLD: '#3fb950', SILVER: '#58a6ff', BRONZE: '#d29922', REJECTED: '#f85149', VERIFIED: '#3fb950', PARTIAL: '#d29922', FAILED: '#f85149' };
+
+      let dots = `
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#30363d" />
+        <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#30363d" />
+        <text x="${padL + plotW / 2}" y="${h - 4}" fill="#8b949e" font-family="monospace" font-size="9.5" text-anchor="middle">${escapeHtml(xLabel)} (max ${maxX.toFixed(0)})</text>
+        <text x="10" y="${padT + plotH / 2}" fill="#8b949e" font-family="monospace" font-size="9.5" text-anchor="middle" transform="rotate(-90 10 ${padT + plotH / 2})">${escapeHtml(yLabel)}</text>
+      `;
+      points.forEach(p => {
+        const cx = padL + ((Number(p.x) || 0) / maxX) * plotW;
+        const cy = padT + plotH - ((Number(p.y) || 0) / maxY) * plotH;
+        const r = p.size || 5;
+        const c = tierCol[p.tier] || '#58a6ff';
+        dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${c}" fill-opacity="0.82" stroke="#0d1117" stroke-width="1"><title>${escapeHtml(p.rfc_id)} (${escapeHtml(p.protocol || '')})\n${xLabel}: ${p.x} | ${yLabel}: ${p.y} | Tier: ${p.tier}</title></circle>`;
+      });
+      return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${dots}</svg>`;
+    }
+
+    function svgTimelineChart(timeline) {
+      if (!timeline || !timeline.length) {
+        return `<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">No CSV rows recorded yet.</div>`;
+      }
+      const w = 380, h = 185, padL = 34, padR = 14, padT = 18, padB = 24;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+      const n = Math.max(1, timeline.length - 1);
+      const maxV = Math.max(1, timeline[timeline.length - 1].verified, timeline[timeline.length - 1].gold);
+
+      const verPts = timeline.map((pt, i) => {
+        const x = padL + (i / n) * plotW;
+        const y = padT + plotH - (pt.verified / maxV) * plotH;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+      const goldPts = timeline.map((pt, i) => {
+        const x = padL + (i / n) * plotW;
+        const y = padT + plotH - (pt.gold / maxV) * plotH;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+
+      return `
+        <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">
+          <rect x="8" y="3" width="8" height="8" fill="#58a6ff" /><text x="20" y="10" fill="#8b949e" font-family="monospace" font-size="9">Cumulative Verified (${timeline[timeline.length - 1].verified})</text>
+          <rect x="180" y="3" width="8" height="8" fill="#3fb950" /><text x="192" y="10" fill="#8b949e" font-family="monospace" font-size="9">Cumulative GOLD (${timeline[timeline.length - 1].gold})</text>
+          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#30363d" />
+          <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#30363d" />
+          <polyline fill="none" stroke="#58a6ff" stroke-width="2" points="${verPts}" />
+          <polyline fill="none" stroke="#3fb950" stroke-width="2" points="${goldPts}" />
+          <text x="${padL + plotW / 2}" y="${h - 4}" fill="#8b949e" font-family="monospace" font-size="9.5" text-anchor="middle">RFC Run Sequence (1 .. ${timeline.length})</text>
+        </svg>
+      `;
+    }
+
+    function renderCsvAnalyticsResult(d) {
+      if (!d || !d.kpis) return;
+      const k = d.kpis;
+      const kpiEl = document.getElementById('analytics-kpis');
+      if (kpiEl) {
+        kpiEl.innerHTML = `
+          <div class="kpi-card">
+            <div class="kpi-label">Total RFCs in CSV</div>
+            <div class="kpi-val">${k.totalRows}</div>
+            <div class="kpi-sub"><span style="color:var(--color-green);">${k.eligibleCount} Eligible</span> | ${k.ineligibleCount} Filtered</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Verification Pass Rate</div>
+            <div class="kpi-val" style="color:var(--color-green);">${k.passRate}%</div>
+            <div class="kpi-sub">${k.verifiedCount}/${k.eligibleCount} Verified | ${k.zeroShotRate}% Zero-Shot</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Quality Tiers (Structural)</div>
+            <div class="kpi-val"><span style="color:#3fb950;" data-tooltip-key="GOLD">${k.tierCounts.GOLD}G</span> / <span style="color:#58a6ff;" data-tooltip-key="SILVER">${k.tierCounts.SILVER}S</span> / <span style="color:#d29922;" data-tooltip-key="BRONZE">${k.tierCounts.BRONZE}B</span></div>
+            <div class="kpi-sub">${k.tierCounts.REJECTED} Rejected</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">CPSA Security Verdicts</div>
+            <div class="kpi-val" style="color:var(--color-blue);">${k.fullAgreeCount} Agree</div>
+            <div class="kpi-sub">${k.secretsProtectedCount} Secrecy OK | ${k.anomalyProtocols} w/ Anomalies</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Avg Steps / Repairs</div>
+            <div class="kpi-val">${k.avgSteps} steps</div>
+            <div class="kpi-sub">Avg ${k.avgRepairs} repairs per eligible RFC</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Cumulative CSV Cost</div>
+            <div class="kpi-val" style="color:var(--color-green);">$${k.totalCostUsd}</div>
+            <div class="kpi-sub">$${k.avgVerifiedCost} / verified protocol</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total Tokens Consumed</div>
+            <div class="kpi-val">${Number(k.totalTokens || 0).toLocaleString()}</div>
+            <div class="kpi-sub">Across Router, Extraction, Searcher, Repair</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Avg Synthesis Time</div>
+            <div class="kpi-val">${k.avgEligDur}s</div>
+            <div class="kpi-sub">Eligible avg (${k.avgIneligDur}s Ineligible avg)</div>
+          </div>
+        `;
+      }
+
+      const chartsEl = document.getElementById('analytics-charts');
+      if (!chartsEl) return;
+
+      const sm = d.securityMatrix;
+      const secEntries = [
+        ['Auth: Mutual Peer', sm.authCounts.MUTUAL_PEER_INTERACTION],
+        ['Auth: Unilateral/Local', sm.authCounts.UNILATERAL_PARTIAL + sm.authCounts.LOCAL_ONLY],
+        ['Agree: Full Agreement', sm.agreeCounts.FULL_AGREEMENT],
+        ['Agree: Disagreement', sm.agreeCounts.DISAGREEMENT_DETECTED],
+        ['Secrecy: Protected', sm.secCounts.ALL_SECRETS_PROTECTED],
+        ['Secrecy: Leak Found', sm.secCounts.SECRECY_LEAK_DETECTED],
+        ['Peers: Distinct', sm.reflCounts.DISTINCT_PEERS],
+        ['Peers: Reflection', sm.reflCounts.ROLE_REFLECTION_POSSIBLE]
+      ];
+
+      const roleCostEntries = Object.entries(d.roleTotals || {}).map(([role, obj]) => [
+        `${role} ($${obj.cost.toFixed(4)})`,
+        Math.round(obj.tokens / 1000)
+      ]);
+
+      chartsEl.innerHTML = `
+        <div class="chart-card">
+          <div class="chart-title"><span>1. Intake Funnel &amp; Gate Breakdown</span><span class="chart-sub">All CSV Rows</span></div>
+          <div class="chart-svg-wrap">${svgHorizontalBars(Object.entries(d.gateCounts), ['#8b949e', '#d29922', '#bc8cff', '#f85149', '#d29922', '#3fb950'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>2. Structural Quality Tier Distribution</span><span class="chart-sub">Decoupled from Flaws</span></div>
+          <div class="chart-svg-wrap">${svgHorizontalBars(Object.entries(d.tierCounts), ['#3fb950', '#58a6ff', '#d29922', '#f85149'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>3. CPSA 4.4.9 Formal Security Verdicts</span><span class="chart-sub">Agreement / Secrecy / Reflection</span></div>
+          <div class="chart-svg-wrap">${svgHorizontalBars(secEntries, ['#3fb950', '#d29922', '#3fb950', '#f85149', '#3fb950', '#f85149', '#58a6ff', '#d29922'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>4. Self-Healing Convergence Steps</span><span class="chart-sub">total_completion_steps</span></div>
+          <div class="chart-svg-wrap">${svgHorizontalBars(Object.entries(d.stepBins), ['#3fb950', '#58a6ff', '#bc8cff', '#d29922', '#f0883e', '#f85149'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>5. Repair Effort by Stage (Per Protocol)</span><span class="chart-sub">Schema / Roletran / Solver / RAG</span></div>
+          <div class="chart-svg-wrap">${svgStackedVerticalBars(d.repairSeries, ['schema', 'roletran', 'solver', 'searcher'], ['#bc8cff', '#d29922', '#f85149', '#58a6ff'], ['Schema', 'Roletran', 'Solver', 'RAG'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>6. State-Space Complexity Scatter</span><span class="chart-sub">Explored Skeletons vs Shapes</span></div>
+          <div class="chart-svg-wrap">${svgScatterPlot(d.stateScatter, 'Explored Skeletons', 'Realized Shapes')}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>7. CPSA Cohort Authentication Tests</span><span class="chart-sub">enc-test / nonce-test / chan-test</span></div>
+          <div class="chart-svg-wrap">${svgStackedVerticalBars(d.cohortSeries, ['enc', 'nonce', 'chan'], ['#58a6ff', '#3fb950', '#bc8cff'], ['enc-test', 'nonce-test', 'chan-test'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>8. LLM Role Cost &amp; Token Share (kTok)</span><span class="chart-sub">Router / Extract / Search / Repair</span></div>
+          <div class="chart-svg-wrap">${svgHorizontalBars(roleCostEntries, ['#bc8cff', '#58a6ff', '#d29922', '#3fb950'])}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>9. Synthesis Duration vs RFC Slice Lines</span><span class="chart-sub">Sliced Lines vs Seconds</span></div>
+          <div class="chart-svg-wrap">${svgScatterPlot(d.durationScatter, 'Sliced Lines', 'Duration (s)')}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>10. Live Cumulative Verification Timeline</span><span class="chart-sub">Verified &amp; GOLD Growth</span></div>
+          <div class="chart-svg-wrap">${svgTimelineChart(d.timeline)}</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><span>11. Protocol Scale &amp; Extracted SAS Goals</span><span class="chart-sub">Roles / Skeletons / SAS / Anomalies</span></div>
+          <div class="chart-svg-wrap">${svgStackedVerticalBars(d.scaleSeries, ['roles', 'skeletons', 'sas', 'anomalies'], ['#58a6ff', '#3fb950', '#bc8cff', '#f85149'], ['Roles', 'Skeletons', 'SAS Goals', 'Anomalies'])}</div>
+        </div>
+      `;
+    }
+
+    const NUMERIC_CSV_COLS = [
+      'sliced_lines_count', 'role_count', 'preskeleton_count', 'scm_lines_count',
+      'shapes_count', 'explored_skeletons_count', 'total_completion_steps', 'total_repairs',
+      'roletran_repairs', 'solver_repairs', 'searcher_invocations', 'encryption_tests_count',
+      'nonce_tests_count', 'channel_tests_count', 'shape_analysis_sentences_count',
+      'anomalies_count', 'disagreed_parameters_count', 'duration_seconds', 'total_cost_usd', 'total_tokens'
+    ];
+
+    function renderCustomExplorerUI() {
+      const wrap = document.getElementById('analytics-custom-explorer');
+      if (!wrap) return;
+      const xSel = document.getElementById('custom-x-col')?.value || 'scm_lines_count';
+      const ySel = document.getElementById('custom-y-col')?.value || 'duration_seconds';
+      const eligOnly = document.getElementById('custom-elig-only') ? document.getElementById('custom-elig-only').checked : true;
+
+      const sourceRows = eligOnly
+        ? latestCsvRows.filter(r => String(r.is_eligible || '').toLowerCase() === 'true')
+        : latestCsvRows;
+
+      const pts = sourceRows.map(r => ({
+        rfc_id: r.rfc_id,
+        protocol: r.protocol_name || r.rfc_id,
+        x: parseFloat(r[xSel] || 0) || 0,
+        y: parseFloat(r[ySel] || 0) || 0,
+        tier: (r.quality_tier || r.status || 'REJECTED').toUpperCase()
+      }));
+
+      wrap.innerHTML = `
+        <div class="chart-card">
+          <div class="chart-title">
+            <span>12. Custom 67-Column X/Y Scatter Explorer</span>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <span class="chart-sub">X:</span>
+              <select id="custom-x-col" class="ctrl-select" onchange="renderCustomExplorerUI()">
+                ${NUMERIC_CSV_COLS.map(c => `<option value="${c}" ${c === xSel ? 'selected' : ''}>${c}</option>`).join('')}
+              </select>
+              <span class="chart-sub">Y:</span>
+              <select id="custom-y-col" class="ctrl-select" onchange="renderCustomExplorerUI()">
+                ${NUMERIC_CSV_COLS.map(c => `<option value="${c}" ${c === ySel ? 'selected' : ''}>${c}</option>`).join('')}
+              </select>
+              <label style="font-size:10px; color:var(--text-muted); display:inline-flex; align-items:center; gap:3px;">
+                <input type="checkbox" id="custom-elig-only" ${eligOnly ? 'checked' : ''} onchange="renderCustomExplorerUI()" /> Eligible Only
+              </label>
+            </div>
+          </div>
+          <div class="chart-svg-wrap">${svgScatterPlot(pts, xSel, ySel)}</div>
+        </div>
+      `;
+    }
+
+    function renderCsvTableUI() {
+      const sec = document.getElementById('analytics-table-section');
+      if (!sec) return;
+      const q = (document.getElementById('csv-table-search')?.value || '').trim().toLowerCase();
+      const filtered = latestCsvRows.filter(r => {
+        if (!q) return true;
+        return (
+          (r.rfc_id || '').toLowerCase().includes(q) ||
+          (r.protocol_name || '').toLowerCase().includes(q) ||
+          (r.quality_tier || '').toLowerCase().includes(q) ||
+          (r.status || '').toLowerCase().includes(q) ||
+          (r.authentication_profile || '').toLowerCase().includes(q) ||
+          (r.parameter_agreement_status || '').toLowerCase().includes(q) ||
+          (r.secrecy_status || '').toLowerCase().includes(q) ||
+          (r.error_message || '').toLowerCase().includes(q)
+        );
+      });
+
+      const keyCols = [
+        'rfc_id', 'is_eligible', 'status', 'quality_tier', 'protocol_name',
+        'total_completion_steps', 'shapes_count', 'authentication_profile',
+        'parameter_agreement_status', 'secrecy_status', 'anomalies_count',
+        'duration_seconds', 'total_cost_usd', 'error_message'
+      ];
+
+      const bodyHtml = filtered.slice(0, 200).map(r => `
+        <tr>
+          <td style="font-weight:700; color:var(--color-blue);">${escapeHtml(r.rfc_id || '')}</td>
+          <td>${escapeHtml(r.is_eligible || '')}</td>
+          <td>${escapeHtml(r.status || '')}</td>
+          <td><span class="sec-pill ${verdictPillClass(r.quality_tier)}" data-tooltip-key="${escapeHtml(r.quality_tier || '')}">${escapeHtml(r.quality_tier || '')}</span></td>
+          <td>${escapeHtml(r.protocol_name || '')}</td>
+          <td>${escapeHtml(r.total_completion_steps || '')}</td>
+          <td>${escapeHtml(r.shapes_count || '')}</td>
+          <td><span class="sec-pill ${verdictPillClass(r.authentication_profile)}" data-tooltip-key="${escapeHtml(r.authentication_profile || '')}">${escapeHtml(r.authentication_profile || '-')}</span></td>
+          <td><span class="sec-pill ${verdictPillClass(r.parameter_agreement_status)}" data-tooltip-key="${escapeHtml(r.parameter_agreement_status || '')}">${escapeHtml(r.parameter_agreement_status || '-')}</span></td>
+          <td><span class="sec-pill ${verdictPillClass(r.secrecy_status)}" data-tooltip-key="${escapeHtml(r.secrecy_status || '')}">${escapeHtml(r.secrecy_status || '-')}</span></td>
+          <td>${escapeHtml(r.anomalies_count || '0')}</td>
+          <td>${escapeHtml(r.duration_seconds || '')}s</td>
+          <td>$${escapeHtml(r.total_cost_usd || '0')}</td>
+          <td style="max-width:340px; white-space:normal; word-break:break-word; color:var(--text-muted);">${escapeHtml(r.error_message || '')}</td>
+        </tr>
+      `).join('');
+
+      sec.innerHTML = `
+        <div class="chart-card">
+          <div class="chart-title">
+            <span>LIVE CSV LEDGER EXPLORER (${filtered.length} matching / ${latestCsvRows.length} total rows)</span>
+            <input type="text" id="csv-table-search" class="ctrl-input" style="width:240px;" placeholder="Filter CSV rows (RFC, tier, verdict, rationale)..." value="${escapeHtml(q)}" oninput="renderCsvTableUI()" />
+          </div>
+          <div style="overflow-x:auto; max-height:340px;">
+            <table class="sec-table">
+              <thead>
+                <tr>${keyCols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr>
+              </thead>
+              <tbody>${bodyHtml || '<tr><td colspan="14" style="color:var(--text-muted);">No matching CSV rows.</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
     // Initial Bootstrap & Named-Event SSE Subscription (Zero Polling Spam!)
     // =========================================================================
     fetch('/api/models')
@@ -18821,6 +20805,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           recomputeVisibleTabs();
           updateLivePinButton();
 
+          refreshCsvAnalytics(false);
           if (!isServerLive) {
             if (acceptedTabs.length > 0) {
               selectNumberedTab(acceptedTabs[0].tab_index);
@@ -18867,6 +20852,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       'tab_updated',
       'rfc_filtered',
       'cost_updated',
+      'csv_updated',
       'message'
     ];
     SSE_EVENT_TYPES.forEach(evtName => {

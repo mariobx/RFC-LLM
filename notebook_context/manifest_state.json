@@ -5,10 +5,15 @@
     "deleted": [],
     "modified": [
       "logs/pipeline_runs.csv",
+      "src/document_ingestion/protocol_applicability_gate.py",
       "src/logging_config.py",
+      "src/main_pipeline_orchestrator.py",
       "src/pipeline.py",
-      "src/system_config.py",
+      "src/pipeline_events.py",
       "src/verification_engine/trajectory_metadata_exporter.py",
+      "src/visualizer/server.py",
+      "src/visualizer/static/index.html",
+      "tests/test_cpsa_kb_and_agentic_searcher.py",
       "tests/test_trajectory_and_hardening.py"
     ]
   },
@@ -93,8 +98,8 @@
     },
     "logs/pipeline_runs.csv": {
       "bundle": "(tier4)",
-      "sha256": "2faf5eec55b01871e838b5d537b6b88cd6423324c2ea4411aed6976f3bd63093",
-      "size_bytes": 69328,
+      "sha256": "ec2ad95382344f82963057b1f8b4a7d2a3533f6441ea67cd7878e12cc8274330",
+      "size_bytes": 283825,
       "status": "summarized"
     },
     "prompts/01_applicability_gate.md": {
@@ -1263,8 +1268,8 @@
     },
     "src/document_ingestion/protocol_applicability_gate.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "4c450d647a62a6600a632853b6776f2bfb872508bc9a0da4cf862d7db7ee5521",
-      "size_bytes": 5436,
+      "sha256": "e8cb40b8764ab2d7b454c2f02beb3fd0803b10b64721dc0e2bce819527bd5a10",
+      "size_bytes": 5482,
       "status": "included"
     },
     "src/document_ingestion/rfc_header_filter.py": {
@@ -1335,26 +1340,26 @@
     },
     "src/logging_config.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "065d3dfdcac1759e7331f3553176dca674efe70071a8c45d2ecb38050c12889d",
-      "size_bytes": 18065,
+      "sha256": "879a2721f42c90a9bcda8e06f60d00059d83dd3df59bccedcaa5fc4bd0923f96",
+      "size_bytes": 29956,
       "status": "included"
     },
     "src/main_pipeline_orchestrator.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "b446685a40d8d868504ad1181db6949c92175f4a08a21e9ad6e2ecc9e6a1f356",
-      "size_bytes": 53823,
+      "sha256": "f276de706842e34f52a6cc11869a2f8d666d875f556c45059396007e776eb67b",
+      "size_bytes": 56977,
       "status": "included"
     },
     "src/pipeline.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "cca12ee185e24c8bcd90a34747873913fac384c400616238d3b19bcc1b98e7e3",
-      "size_bytes": 20582,
+      "sha256": "60b713ea2277d77e5ca3ad12d2c5baa527c028e898b3a573ac4b9f5af7ce8725",
+      "size_bytes": 24524,
       "status": "included"
     },
     "src/pipeline_events.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "f763e42efece79abdeeb91a2255f7d2a7c99bc4bcc97f759d4e41f71f8d72415",
-      "size_bytes": 25222,
+      "sha256": "0207791836c5e1c32cc2c54bc81f4340d2725bbbd9e92b446739e6cf074cec29",
+      "size_bytes": 27171,
       "status": "included"
     },
     "src/prompt_loader.py": {
@@ -1419,8 +1424,8 @@
     },
     "src/verification_engine/trajectory_metadata_exporter.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "de57f6150b7d0ad72a4fb019d4968598e8d5ed2451549aed0588b75c630b9128",
-      "size_bytes": 44044,
+      "sha256": "bd6ac4396e41de4968a5e18b15279ec5672f268bdbe774a63ce6b98684baba1b",
+      "size_bytes": 44375,
       "status": "included"
     },
     "src/visualizer/__init__.py": {
@@ -1431,14 +1436,14 @@
     },
     "src/visualizer/server.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "e437946037a60503fe7c5ff3959b9e1a761bb0c1880b9809ecb9e955631e759e",
-      "size_bytes": 28399,
+      "sha256": "8aafb7c40a7f903b3a34f69e9899c29014a81abfe550aebcc699fc019b4ed27a",
+      "size_bytes": 32501,
       "status": "included"
     },
     "src/visualizer/static/index.html": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "1417a68828a91a38e2c4fe6ba1e4f792a743fb0c4374c408ab39f6264e4cca56",
-      "size_bytes": 81991,
+      "sha256": "15754b1924be38a535f0fe46ece2b60c5e27e95406c88485a1c070f1e8defd31",
+      "size_bytes": 156763,
       "status": "included"
     },
     "tests/conftest.py": {
@@ -1455,7 +1460,7 @@
     },
     "tests/test_cpsa_kb_and_agentic_searcher.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "ae78b462be9eaebeb1c7df92a3ee35df0006d535e91929cbeb7a93d57340d10a",
+      "sha256": "76f560b2ae3d441700925afac9d845ba8ac5d76f8f40039cfa53a6f6d94c98cc",
       "size_bytes": 26117,
       "status": "included"
     },
@@ -1485,8 +1490,8 @@
     },
     "tests/test_trajectory_and_hardening.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "bf24fcce7b4d1d464698bb6f80b5eb0ade9fab6f6d748415e2107cd5a47bf92c",
-      "size_bytes": 26526,
+      "sha256": "fe62a412bb1384bfe3434d6abd828d4cc411a83d009e9db13f4d710da620ab59",
+      "size_bytes": 32135,
       "status": "included"
     },
     "tests/test_visualizer_and_events.py": {
@@ -1502,15 +1507,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-03 20:21:34 UTC",
+  "generated_at": "2026-11-03 21:53:56 UTC",
   "git": {
     "branch": "main",
-    "commit": "039fdf29d2b09ee77b82228c13b6322cc6cbe64f",
-    "subject": "feat: decouple quality_tier from CPSA 4.4.9 security_findings and add --keep-ineligible CLI flag"
+    "commit": "8b5b88a140020030905017025b2975da4d30dc5c",
+    "subject": "feat: 67-col CPSA security CSV, per-run --csv isolation, hover tooltips, security & live analytics tabs, and collapsible snowball autopsy"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "0230f58419121be3fbc2e9433a46432701898451",
-    "subject": "Simplify README: remove roadmap and important callout, add concise top-level overview"
+    "commit": "039fdf29d2b09ee77b82228c13b6322cc6cbe64f",
+    "subject": "feat: decouple quality_tier from CPSA 4.4.9 security_findings and add --keep-ineligible CLI flag"
   }
 }

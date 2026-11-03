@@ -280,8 +280,59 @@ class PipelineMetricsCSVLogger:
                 for row in reader:
                     norm_id = self.normalize_rfc_id(row.get("rfc_id", ""))
                     if norm_id:
-                        row_copy = dict(row)
+                        row_copy = {col: str(row.get(col) or "") for col in self.CSV_HEADER}
                         row_copy["rfc_id"] = norm_id
+                        # Backfill the 17 CPSA security_findings columns if seeding from an older 50-column CSV
+                        if (
+                            row_copy.get("is_eligible", "").strip().lower() == "true"
+                            and not row_copy.get("role_executability")
+                            and row_copy.get("trajectory_json_path")
+                        ):
+                            t_path = Path(row_copy["trajectory_json_path"])
+                            if t_path.exists():
+                                try:
+                                    t_obj = json.loads(t_path.read_text(encoding="utf-8", errors="ignore"))
+                                    qa_t = t_obj.get("quality_assessment") or {}
+                                    s6_t = t_obj.get("stage6_cpsa4_solver") or {}
+                                    fin_t = t_obj.get("final_verified_output") or {}
+                                    sf = t_obj.get("security_findings") or qa_t.get("security_findings")
+                                    if not sf and s6_t.get("shapes_analysis_from_shapes_txt"):
+                                        from src.verification_engine.trajectory_metadata_exporter import (
+                                            compute_security_findings,
+                                        )
+                                        sf = compute_security_findings(
+                                            shapes_analysis=s6_t.get("shapes_analysis_from_shapes_txt") or {},
+                                            exploration_telemetry=s6_t.get("exploration_telemetry_from_txt") or {},
+                                            sas_formulas=fin_t.get("shape_analysis_sentences") or [],
+                                        )
+                                    if isinstance(sf, dict) and sf:
+                                        dis_list = sf.get("parameter_disagreements") or []
+                                        dis_str = ";".join(
+                                            f"{d.get('pov_role', '?')}->{d.get('peer_role', '?')}:{d.get('parameter', '?')}({d.get('pov_value', '?')}!={d.get('peer_value', '?')})"
+                                            for d in dis_list
+                                            if isinstance(d, dict)
+                                        )
+                                        at = sf.get("authentication_tests_summary") or {}
+                                        anom_list = sf.get("vulnerabilities_and_anomalies") or []
+                                        row_copy["role_executability"] = str(sf.get("role_executability") or "")
+                                        row_copy["dead_roles_count"] = str(int(sf.get("dead_roles_count", 0)))
+                                        row_copy["authentication_profile"] = str(sf.get("authentication_profile") or "")
+                                        row_copy["parameter_agreement_status"] = str(sf.get("parameter_agreement_status") or "")
+                                        row_copy["disagreed_parameters_count"] = str(len(dis_list))
+                                        row_copy["disagreed_parameters_summary"] = dis_str
+                                        row_copy["role_reflection_status"] = str(sf.get("role_reflection_status") or "")
+                                        row_copy["secrecy_status"] = str(sf.get("secrecy_status") or "")
+                                        row_copy["protected_secrets"] = ";".join(str(x) for x in (sf.get("protected_secrets") or []))
+                                        row_copy["leaked_secrets"] = ";".join(str(x) for x in (sf.get("leaked_secrets") or []))
+                                        row_copy["defgoal_satisfaction_status"] = str(sf.get("defgoal_satisfaction_status") or "")
+                                        row_copy["shape_analysis_sentences_count"] = str(int(sf.get("shape_analysis_sentences_count", 0)))
+                                        row_copy["encryption_tests_count"] = str(int(at.get("encryption_tests", 0)))
+                                        row_copy["nonce_tests_count"] = str(int(at.get("nonce_tests", 0)))
+                                        row_copy["channel_tests_count"] = str(int(at.get("channel_tests", 0)))
+                                        row_copy["anomalies_count"] = str(len(anom_list))
+                                        row_copy["vulnerabilities_and_anomalies"] = " | ".join(str(x) for x in anom_list)
+                                except Exception:
+                                    pass
                         seeded_rows[norm_id] = row_copy
             rows_list = list(seeded_rows.values())
             self._write_all_rows(rows_list)
