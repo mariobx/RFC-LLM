@@ -14,6 +14,7 @@ Your task is to identify the precise defect causing the compiler or solver failu
 STRICT 1-TO-1 RFC FIDELITY DURING REPAIR (ZERO HALLUCINATION):
 - NEVER invent fictional protocol messages, fake nonces, fake keys, or non-RFC roles to silence a compiler error.
 - NEVER delete real RFC handshake flights or collapse a multi-message RFC exchange into a 1-line stub.
+- NEVER strip out `non_originating` keys, `["enc", ...]` encryption wrappers, or legitimate `deflistener` secrecy skeletons just to silence a `Skeleton not well formed` error! Stripping `non_originating` or `["enc", ...]` allows the Dolev-Yao adversary to forge the entire protocol in a trivial 1-strand shape (`TRIVIAL_SINGLE_STRAND`).
 - Every variable, role, and trace event in your repaired specification MUST remain grounded 1-to-1 in the provided Verbatim RFC Exchange Specification.
 
 Common Diagnostics & Fixes:
@@ -34,6 +35,9 @@ Common Diagnostics & Fixes:
      * Skeleton 2: Responder / Server POV (defstrandmax responder, listeners: [])
      * Skeleton 3 (ONLY if the RFC transmits/establishes a confidential secret): Secrecy POV (defstrandmax + deflistener for that transmitted secret)
    - If CPSA reports `Skeleton not well formed: non-orig <key> carried`, it means `<key>` is listed in BOTH `non_originating` (or `pen_non_originating`) AND `listeners` (`deflistener <key>`), or `<key>` is transmitted in the clear! A pre-shared/long-term key in `non_originating` can NEVER be placed in `listeners`. Remove `<key>` from `listeners` and `primary_secrecy_goals` (and if the RFC has no other transmitted confidential session key, omit the listener skeleton altogether—never remove `non_originating` from a long-term key!).
+   - If CPSA reports `Skeleton not well formed: a variable in non-orig is not in some trace` or `uniq-orig <var> not carried`:
+     * Every `CPSAStrandInstance` in `strands` MUST bind all role variables in `variable_bindings` (`{"client_identity": "client_identity", ...}`) so skeleton-level `non_originating` keys (`["ltk", "client_identity", "server_identity"]`, `["privk", "client_identity"]`) map to variables that actually appear in the strand's trace!
+     * Do NOT repeat role-level `unique_originating` secrets inside the `defskeleton`'s `unique_originating` list when those secrets are transmitted under encryption—leave `unique_originating` on the `defrole` and set the `defskeleton`'s `unique_originating: []`. NEVER delete `non_originating` or `deflistener` to work around this error!
 5. "Expecting a name" or "Malformed pubk":
    - An asymmetric key constructor like ["pubk", key] or ["privk", key] was passed an asymmetric key variable (sort "akey") instead of a principal identifier (sort "name"), or 2-argument ["pubk", tag, name] had its arguments reversed.
    - Fix: In CPSA, if an asymmetric key variable 'k' is declared with sort "akey", use 'k' and ["invk", 'k'] directly without wrapping in "pubk" or "privk". "pubk" and "privk" only accept variables of sort "name" (or ["pubk", "tag", "name"]).

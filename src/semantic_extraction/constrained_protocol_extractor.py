@@ -309,4 +309,32 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
             final_skeletons.append(secrecy_skeleton)
 
     spec.skeletons = final_skeletons
+
+    # Ensure every skeleton's strands explicitly bind role variables to skeleton variables
+    # (preventing `Skeleton not well formed: a variable in non-orig is not in some trace`)
+    # and strip redundant skeleton-level `uniq-orig` atoms already declared in the strand's `defrole`
+    # (preventing `Skeleton not well formed: uniq-orig <var> not carried` when encrypted under a non-orig key).
+    role_map = {r.role_name: r for r in spec.roles}
+    for skel in spec.skeletons:
+        existing_var_names = {v.name for v in skel.variables}
+        role_level_uniq_orig = set()
+        for strand in skel.strands:
+            matched_role = role_map.get(strand.role_name)
+            if not matched_role:
+                continue
+            for r_var in matched_role.variables:
+                if r_var.name not in existing_var_names:
+                    skel.variables.append(CPSAVariableDeclaration(name=r_var.name, sort=r_var.sort))
+                    existing_var_names.add(r_var.name)
+                if r_var.name not in strand.variable_bindings:
+                    strand.variable_bindings[r_var.name] = r_var.name
+            for uo in matched_role.unique_originating:
+                if isinstance(uo, str):
+                    role_level_uniq_orig.add(uo)
+        if role_level_uniq_orig and skel.unique_originating:
+            skel.unique_originating = [
+                uo for uo in skel.unique_originating
+                if not (isinstance(uo, str) and uo in role_level_uniq_orig)
+            ]
+
     return spec

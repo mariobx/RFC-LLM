@@ -337,7 +337,7 @@ def compute_quality_assessment(
     all_povs_multi_strand = all_povs_realized and all(
         o.get("max_strands_in_realized_shape", 0) >= 2 for o in participant_povs
     )
-    all_listeners_unrealized = all(
+    all_listeners_unrealized = bool(listener_povs) and all(
         o.get("realized_shapes_count", 0) == 0 for o in listener_povs
     )
 
