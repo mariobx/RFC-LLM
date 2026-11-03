@@ -2,7 +2,7 @@
 
 > Tier 3 — Master CPSA 4.4.9 Knowledge Base Table of Contents (`refrences/cpsa_kb/TOC.md`) with `rebuild_toc` YAML flag, and the complete pytest unit and integration test suite (`tests/`).
 
-*Generated: 2026-11-03 00:16:46 UTC · Git: `main` @ `5f64ca9aadef` · Tier: Tier 3 — Knowledge Base Index & Test Suites · Files: 11 · Estimated Tokens: ~41,053*
+*Generated: 2026-11-03 00:29:01 UTC · Git: `main` @ `1ef75fa80796` · Tier: Tier 3 — Knowledge Base Index & Test Suites · Files: 11 · Estimated Tokens: ~41,104*
 
 ## Table of Contents
 
@@ -901,7 +901,7 @@ def test_clean_rag_diagnostic_query_sanitization():
 
 ### `tests/test_cpsa_kb_and_agentic_searcher.py`
 
-*sha256:`8666ff2ddb8c` · 611 lines · 25.3 KB (~6,478 tokens) · lang:`python`*
+*sha256:`ae78b462be9e` · 616 lines · 25.5 KB (~6,529 tokens) · lang:`python`*
 
 ```python
 """Unit & Integration Tests for the CPSA 4.4.9 Knowledge Base, TOC Rebuild Flag,
@@ -1409,7 +1409,7 @@ def test_csv_logger_upsert_overwrites_by_rfc_id_and_logs_all_model_columns(tmp_p
 
     csv_file = tmp_path / "pipeline_runs.csv"
     logger_csv = PipelineMetricsCSVLogger(csv_path=csv_file)
-    assert len(PipelineMetricsCSVLogger.CSV_HEADER) == 48
+    assert len(PipelineMetricsCSVLogger.CSV_HEADER) == 50
 
     scm_file = tmp_path / "mobile_ipv6.scm"
     scm_file.write_text("(herald test)\n(defprotocol p basic)\n", encoding="utf-8")
@@ -1459,6 +1459,11 @@ def test_csv_logger_upsert_overwrites_by_rfc_id_and_logs_all_model_columns(tmp_p
     assert r1["rfc_id"] == "RFC4285"
     assert r1["run_count"] == "1"
     assert r1["status"] == "PARTIAL"
+    assert r1["total_completion_steps"] == "4"
+    assert r1["schema_repairs"] == "0"
+    assert r1["roletran_repairs"] == "1"
+    assert r1["solver_repairs"] == "2"
+    assert r1["total_repairs"] == "3"
     assert r1["scm_path"] == str(scm_file)
     assert r1["scm_lines_count"] == "2"
     assert r1["router_model"] == "nous/z-ai/glm-5.3"

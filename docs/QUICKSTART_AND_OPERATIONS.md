@@ -84,7 +84,7 @@ Key batch flags:
 - `--limit N` (`-n N`): Scan at most `N` candidate RFC files.
 - `--target-eligible E` (`-e E`): Stop batch processing once `E` eligible cryptographic protocols have been synthesized.
 - `--tier0-eligible-only`: Pre-filter directory candidates using the deterministic <1ms Tier 0 header check before applying `--limit`.
-- `--skip-completed`: Skip RFC IDs already recorded in the 48-column deduplicated master ledger `logs/pipeline_runs.csv`.
+- `--skip-completed`: Skip RFC IDs already recorded in the 50-column deduplicated master ledger `logs/pipeline_runs.csv`.
 - `--retry-failed`: Filter batch processing strictly to RFC IDs in `logs/pipeline_runs.csv` whose latest status is `FAILED` or `PARTIAL`, overwriting their CSV rows in-place upon completion.
 - `--random`: Shuffle candidate RFCs randomly before applying `--limit`.
 - `--pattern "rfc*.txt"`: Custom glob pattern when scanning a directory.

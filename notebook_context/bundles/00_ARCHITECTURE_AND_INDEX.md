@@ -2,41 +2,22 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-03 00:16:46 UTC · Git: `main` @ `5f64ca9aadef` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
+*Generated: 2026-11-03 00:29:01 UTC · Git: `main` @ `1ef75fa80796` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `5f64ca9aadef` — chore(context): sync notebook_context bundles with CPSA 4.4.9 KB
-- **Added (2):**
-  - `src/cost_tracker.py`
-  - `src/verification_engine/snowball_autopsy.py`
-- **Modified (23):**
+- **Git commit:** `1ef75fa80796` — feat: add 3-tier snowball recovery, per-role USD cost telemetry, 48-col upsert CSV, and strict 1-to-1 RFC grounding
+- **Added (0):** none
+- **Modified (6):**
   - `README.md`
   - `docs/QUICKSTART_AND_OPERATIONS.md`
-  - `docs/VERIFICATION_AND_SELF_HEALING.md`
   - `logs/pipeline_runs.csv`
-  - `prompts/03_protocol_extraction.md`
-  - `prompts/06_compiler_repair.md`
-  - `src/document_ingestion/handshake_section_router.py`
-  - `src/document_ingestion/protocol_applicability_gate.py`
-  - `src/intermediate_representation/protocol_syntax_tree.py`
   - `src/logging_config.py`
   - `src/main_pipeline_orchestrator.py`
-  - `src/pipeline.py`
-  - `src/pipeline_events.py`
-  - `src/rag_retriever_client.py`
-  - `src/semantic_extraction/constrained_protocol_extractor.py`
-  - `src/system_config.py`
-  - `src/verification_engine/compiler_diagnostic_repair.py`
-  - `src/verification_engine/mitre_build_orchestrator.py`
-  - `src/verification_engine/trajectory_metadata_exporter.py`
-  - `src/visualizer/server.py`
-  - `src/visualizer/static/index.html`
   - `tests/test_cpsa_kb_and_agentic_searcher.py`
-  - `tests/test_trajectory_and_hardening.py`
 - **Deleted (0):** none
 
 ---
@@ -62,12 +43,12 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | Bundle | Title | Files | Size | Estimated Tokens | Tier |
 |---|---|---|---|---|---|
 | `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 119.7 KB | ~30,592 | Tier 1 — Architecture, Documentation & Project Configs |
-| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 749.4 KB | ~191,804 | Tier 2 — Core Source Code & CLI Entrypoints |
-| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 161.3 KB | ~41,053 | Tier 3 — Knowledge Base Index & Test Suites |
+| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 750.6 KB | ~192,104 | Tier 2 — Core Source Code & CLI Entrypoints |
+| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 161.5 KB | ~41,104 | Tier 3 — Knowledge Base Index & Test Suites |
 | `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 693.4 KB | ~175,802 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
 | `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files) | 155 | 915.3 KB | ~234,169 | Tier 3 — Domain Reference Code Corpus (.scm) |
 
-**Total Ingested Context Payload:** ~673,420 tokens across all bundles (67.3% of Gemini 1M context window)
+**Total Ingested Context Payload:** ~673,771 tokens across all bundles (67.4% of Gemini 1M context window)
 
 ---
 
@@ -132,13 +113,10 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 
 ### `logs/pipeline_runs.csv`
 
-*7.9 KB · excluded because: declared Tier 4 summarized asset*
+*0.7 KB · excluded because: declared Tier 4 summarized asset*
 
-- Header (48 cols): `timestamp, rfc_id, run_count, is_eligible, status, quality_tier, rejection_gate, protocol_name, message_algebra, selected_sections, sliced_lines_count, role_count, preskeleton_count, scm_lines_count, shapes_count, explored_skeletons_count, all_povs_multi_strand, secrecy_proved, zero_shot_passed, roletran_repairs, solver_repairs, total_repairs, searcher_invocations, herald_options, duration_seconds, router_model, router_calls, router_tokens, router_cost_usd, extraction_model, extraction_calls, extraction_tokens, extraction_cost_usd, query_model, query_calls, query_tokens, query_cost_usd, repair_model, repair_calls, repair_tokens, repair_cost_usd, total_calls, total_tokens, total_cost_usd, scm_path, shapes_xhtml_path, trajectory_json_path, error_message`
-- Sample row: `2026-11-02 19:12:07, RFC7486, 1, True, VERIFIED, SILVER, , HTTP Origin-Bound Authentication (HOBA), basic, 2;3, 207, 2, 2, 61, 2, 0, False, True, False, 2, 0, 2, 0, , 132.844, nous/anthropic/claude-haiku-5.5, 2, 4171, 0.000834, nous/openai/gpt-6.1-terra, 1, 15855, 0.029943, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/google/gemini-3.7-flash, 2, 43507, 0.072110, 5, 63533, 0.102888, /home/mario/Work/RFC-LLM/output/run_2..., /home/mario/Work/RFC-LLM/output/run_2..., /home/mario/Work/RFC-LLM/output/run_2..., `
-- Sample row: `2026-11-02 19:12:13, RFC9858, 1, False, INELIGIBLE, INELIGIBLE, Stage 1c Applicability Gate, HSS/LMS Hash-Based Signatures (Additi..., , , 0, 0, 0, 0, 0, 0, , , , 0, 0, 0, 0, , 5.579, nous/anthropic/claude-haiku-5.5, 1, 2726, 0.000584, nous/openai/gpt-6.1-terra, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/google/gemini-3.7-flash, 0, 0, 0.000000, 1, 2726, 0.000584, , , , Ineligible: RFC 9858 extends the HSS/...`
-- Sample row: `2026-11-02 19:12:14, RFC6791, 1, False, INELIGIBLE, INELIGIBLE, Stage 1c Applicability Gate, Stateless Source Address Mapping for ..., , , 0, 0, 0, 0, 0, 0, , , , 0, 0, 0, 0, , 1.907, nous/anthropic/claude-haiku-5.5, 1, 1793, 0.000296, nous/openai/gpt-6.1-terra, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/google/gemini-3.7-flash, 0, 0, 0.000000, 1, 1793, 0.000296, , , , Ineligible: RFC 6791 specifies a stat...`
-- Total rows (incl. header): 8
+- Header (50 cols): `timestamp, rfc_id, run_count, is_eligible, status, quality_tier, total_completion_steps, zero_shot_passed, schema_repairs, roletran_repairs, solver_repairs, total_repairs, rejection_gate, protocol_name, message_algebra, selected_sections, sliced_lines_count, role_count, preskeleton_count, scm_lines_count, shapes_count, explored_skeletons_count, all_povs_multi_strand, secrecy_proved, searcher_invocations, herald_options, duration_seconds, router_model, router_calls, router_tokens, router_cost_usd, extraction_model, extraction_calls, extraction_tokens, extraction_cost_usd, query_model, query_calls, query_tokens, query_cost_usd, repair_model, repair_calls, repair_tokens, repair_cost_usd, total_calls, total_tokens, total_cost_usd, scm_path, shapes_xhtml_path, trajectory_json_path, error_message`
+- Total rows (incl. header): 1
 
 ### `refrences/cpsa_kb/04_examples_catalog/batch1_meta.json`
 
@@ -535,7 +513,7 @@ SOFTWARE.
 
 ### `README.md`
 
-*sha256:`409fe2748159` · 161 lines · 16.8 KB (~4,299 tokens) · lang:`markdown`*
+*sha256:`c98b6e91421f` · 161 lines · 16.8 KB (~4,299 tokens) · lang:`markdown`*
 
 ````markdown
 # RFC-LLM: Formal Cryptographic Protocol Synthesis & MoE Post-Training Roadmap
@@ -614,7 +592,7 @@ Rather than prompting an LLM to emit raw, unconstrained Scheme strings, the synt
      1. *Tier 1 (Zero-Token Herald Search-Order Portfolio)*: Automatically tests `--try-old-strands`, `--try-old-strands --check-nonces`, and `--try-old-strands --check-nonces --reverse-nodes`, persisting winning herald flags into `<protocol>.scm` and `CPSAProtocolSpecification.herald_options` with 0 LLM calls if any search order converges.
      2. *Tier 2 (Partial `.txt` Snowball Autopsy)*: If all Tier 1 search orders snowball, inspects `<stem>.txt` (or runs a `<0.4s` bounded `cpsa4 -l 120` probe) to extract the exact repeating `(operation ... (added-strand Role H) <critical-term>)` loop and cloned primed variables (`var-0..var-N`).
      3. *Tier 3 (Targeted Structural Anti-Unification Repair)*: Feeds the Snowball Autopsy Report + pinned `06_termination_and_anti_snowballing.md` rules to the Repair LLM to domain-separate flights using actual RFC message headers/types, add `(facts (neq a b))`, and separate `data` vs. `text` sorts.
-   - Scores deterministic verification quality tiers (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`), records per-role and batch USD/token telemetry ([`src/cost_tracker.py`](src/cost_tracker.py)), upserts the 48-column deduplicated master ledger (`logs/pipeline_runs.csv`), and updates `output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`.
+   - Scores deterministic verification quality tiers (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`), records per-role and batch USD/token telemetry ([`src/cost_tracker.py`](src/cost_tracker.py)), upserts the 50-column deduplicated master ledger (`logs/pipeline_runs.csv`), and updates `output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`.
 
 #### YAML Frontmatter Model Routing & Live Hot-Reload (`prompts/*.md`)
 All 7 LLM prompt templates ([`prompts/01_applicability_gate.md`](prompts/01_applicability_gate.md) through [`prompts/07_think_token_synthesizer.md`](prompts/07_think_token_synthesizer.md)) define their per-stage `model`, HTTP `timeout` (`180s` default; `15s` for `05_rag_query_formulation.md`), and `temperature` directly in leading YAML frontmatter via [`src/prompt_loader.py`](src/prompt_loader.py):
@@ -1693,7 +1671,7 @@ sequenceDiagram
 
 ### `docs/QUICKSTART_AND_OPERATIONS.md`
 
-*sha256:`3373592eff1f` · 181 lines · 12.1 KB (~3,092 tokens) · lang:`markdown`*
+*sha256:`0eaffe8f77a1` · 181 lines · 12.1 KB (~3,092 tokens) · lang:`markdown`*
 
 ````markdown
 # Quickstart & Operations Runbook
@@ -1782,7 +1760,7 @@ Key batch flags:
 - `--limit N` (`-n N`): Scan at most `N` candidate RFC files.
 - `--target-eligible E` (`-e E`): Stop batch processing once `E` eligible cryptographic protocols have been synthesized.
 - `--tier0-eligible-only`: Pre-filter directory candidates using the deterministic <1ms Tier 0 header check before applying `--limit`.
-- `--skip-completed`: Skip RFC IDs already recorded in the 48-column deduplicated master ledger `logs/pipeline_runs.csv`.
+- `--skip-completed`: Skip RFC IDs already recorded in the 50-column deduplicated master ledger `logs/pipeline_runs.csv`.
 - `--retry-failed`: Filter batch processing strictly to RFC IDs in `logs/pipeline_runs.csv` whose latest status is `FAILED` or `PARTIAL`, overwriting their CSV rows in-place upon completion.
 - `--random`: Shuffle candidate RFCs randomly before applying `--limit`.
 - `--pattern "rfc*.txt"`: Custom glob pattern when scanning a directory.

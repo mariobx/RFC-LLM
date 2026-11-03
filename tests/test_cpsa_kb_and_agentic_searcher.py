@@ -503,7 +503,7 @@ def test_csv_logger_upsert_overwrites_by_rfc_id_and_logs_all_model_columns(tmp_p
 
     csv_file = tmp_path / "pipeline_runs.csv"
     logger_csv = PipelineMetricsCSVLogger(csv_path=csv_file)
-    assert len(PipelineMetricsCSVLogger.CSV_HEADER) == 48
+    assert len(PipelineMetricsCSVLogger.CSV_HEADER) == 50
 
     scm_file = tmp_path / "mobile_ipv6.scm"
     scm_file.write_text("(herald test)\n(defprotocol p basic)\n", encoding="utf-8")
@@ -553,6 +553,11 @@ def test_csv_logger_upsert_overwrites_by_rfc_id_and_logs_all_model_columns(tmp_p
     assert r1["rfc_id"] == "RFC4285"
     assert r1["run_count"] == "1"
     assert r1["status"] == "PARTIAL"
+    assert r1["total_completion_steps"] == "4"
+    assert r1["schema_repairs"] == "0"
+    assert r1["roletran_repairs"] == "1"
+    assert r1["solver_repairs"] == "2"
+    assert r1["total_repairs"] == "3"
     assert r1["scm_path"] == str(scm_file)
     assert r1["scm_lines_count"] == "2"
     assert r1["router_model"] == "nous/z-ai/glm-5.3"

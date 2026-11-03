@@ -1,35 +1,15 @@
 {
   "config_sha256": "fa9bbc0f35e620a446193163ce020dc71e5f52049c54fea63adef045744a972e",
   "delta_of_this_sync": {
-    "added": [
-      "src/cost_tracker.py",
-      "src/verification_engine/snowball_autopsy.py"
-    ],
+    "added": [],
     "deleted": [],
     "modified": [
       "README.md",
       "docs/QUICKSTART_AND_OPERATIONS.md",
-      "docs/VERIFICATION_AND_SELF_HEALING.md",
       "logs/pipeline_runs.csv",
-      "prompts/03_protocol_extraction.md",
-      "prompts/06_compiler_repair.md",
-      "src/document_ingestion/handshake_section_router.py",
-      "src/document_ingestion/protocol_applicability_gate.py",
-      "src/intermediate_representation/protocol_syntax_tree.py",
       "src/logging_config.py",
       "src/main_pipeline_orchestrator.py",
-      "src/pipeline.py",
-      "src/pipeline_events.py",
-      "src/rag_retriever_client.py",
-      "src/semantic_extraction/constrained_protocol_extractor.py",
-      "src/system_config.py",
-      "src/verification_engine/compiler_diagnostic_repair.py",
-      "src/verification_engine/mitre_build_orchestrator.py",
-      "src/verification_engine/trajectory_metadata_exporter.py",
-      "src/visualizer/server.py",
-      "src/visualizer/static/index.html",
-      "tests/test_cpsa_kb_and_agentic_searcher.py",
-      "tests/test_trajectory_and_hardening.py"
+      "tests/test_cpsa_kb_and_agentic_searcher.py"
     ]
   },
   "files": {
@@ -53,7 +33,7 @@
     },
     "README.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "409fe2748159c0d890a7cce7c3c85eae7bd350b5556b37b478d5fe628a8b7842",
+      "sha256": "c98b6e91421fb378ed3da8e940f3f5c364773b7c8d4f9b76db05d7b88dff3093",
       "size_bytes": 17219,
       "status": "included"
     },
@@ -83,7 +63,7 @@
     },
     "docs/QUICKSTART_AND_OPERATIONS.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "3373592eff1fc71253942d750ef48fa52019a2646d4c2b5f6c080719f8b31f96",
+      "sha256": "0eaffe8f77a1c5b81d1ab29d6a506a9e631516faeca485700c2d6c23f0bf07c6",
       "size_bytes": 12370,
       "status": "included"
     },
@@ -113,8 +93,8 @@
     },
     "logs/pipeline_runs.csv": {
       "bundle": "(tier4)",
-      "sha256": "8c295d61c8be907b55c3e3f9d8766a8d1849ebe93fd97dd81ff42bfa5bdc0fcd",
-      "size_bytes": 8101,
+      "sha256": "6b057dac819b64c879d991bf9929edc21762f2e00f5007095870e096d90c5c32",
+      "size_bytes": 754,
       "status": "summarized"
     },
     "prompts/01_applicability_gate.md": {
@@ -1355,14 +1335,14 @@
     },
     "src/logging_config.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "f10d50fe277fd5bd7cced2140dda2a6f6d70fe5fa2eff621c60d49fc62e1be5b",
-      "size_bytes": 16225,
+      "sha256": "6900598060e727481b332fd6b6b98892d39f9d91ca0cb04021f035cd7b5d5a24",
+      "size_bytes": 16814,
       "status": "included"
     },
     "src/main_pipeline_orchestrator.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "f4c427ad8fb00de072f1edac62b3901accfdc36e86bbbbd3492e358222a3074d",
-      "size_bytes": 48331,
+      "sha256": "b0fda8b293803ade371016be777241e2437cfd05acde7d43587b5eb68e3b25c5",
+      "size_bytes": 48940,
       "status": "included"
     },
     "src/pipeline.py": {
@@ -1475,8 +1455,8 @@
     },
     "tests/test_cpsa_kb_and_agentic_searcher.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "8666ff2ddb8c3d829649d6111241cca44585d6db60132c0a863a9902d0484f65",
-      "size_bytes": 25913,
+      "sha256": "ae78b462be9eaebeb1c7df92a3ee35df0006d535e91929cbeb7a93d57340d10a",
+      "size_bytes": 26117,
       "status": "included"
     },
     "tests/test_cpsa_scoping_and_prompts.py": {
@@ -1522,15 +1502,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-03 00:16:46 UTC",
+  "generated_at": "2026-11-03 00:29:01 UTC",
   "git": {
     "branch": "main",
-    "commit": "5f64ca9aadef3e9f922a332fb51f0d527c1a1700",
-    "subject": "chore(context): sync notebook_context bundles with CPSA 4.4.9 KB"
+    "commit": "1ef75fa80796951a1c740b3511160da169618828",
+    "subject": "feat: add 3-tier snowball recovery, per-role USD cost telemetry, 48-col upsert CSV, and strict 1-to-1 RFC grounding"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "b4cd7635e6d6438d11dc27d40760c1ceb6ddd5be",
-    "subject": "chore(context): sync notebook_context bundles with CPSA 4.4.9 KB"
+    "commit": "1ef75fa80796951a1c740b3511160da169618828",
+    "subject": "feat: add 3-tier snowball recovery, per-role USD cost telemetry, 48-col upsert CSV, and strict 1-to-1 RFC grounding"
   }
 }

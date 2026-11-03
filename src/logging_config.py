@@ -102,17 +102,23 @@ class PipelineMetricsCSVLogger:
 
     Performs atomic in-place upserts keyed by normalized `rfc_id` (`RFC4285`), overwriting older
     entries when an RFC is re-evaluated while incrementing `run_count`, and automatically
-    migrating legacy CSV headers to the expanded 48-column telemetry schema.
+    migrating legacy CSV headers to the expanded 50-column telemetry schema.
     """
 
     CSV_HEADER = [
-        # Group A: Identity, Status & Intake
+        # Group A: Identity, Status, Step Counts & Intake
         "timestamp",
         "rfc_id",
         "run_count",
         "is_eligible",
         "status",
         "quality_tier",
+        "total_completion_steps",
+        "zero_shot_passed",
+        "schema_repairs",
+        "roletran_repairs",
+        "solver_repairs",
+        "total_repairs",
         "rejection_gate",
         "protocol_name",
         # Group B: Protocol & Solver Complexity Telemetry
@@ -126,11 +132,7 @@ class PipelineMetricsCSVLogger:
         "explored_skeletons_count",
         "all_povs_multi_strand",
         "secrecy_proved",
-        # Group C: Self-Healing Repair & Snowball Telemetry
-        "zero_shot_passed",
-        "roletran_repairs",
-        "solver_repairs",
-        "total_repairs",
+        # Group C: Self-Healing Searcher & Snowball Telemetry
         "searcher_invocations",
         "herald_options",
         # Group D: Runtime & Per-Role Model Telemetry (Dedicated columns per model role)
@@ -240,9 +242,11 @@ class PipelineMetricsCSVLogger:
         all_povs_multi_strand: Optional[bool] = None,
         secrecy_proved: Optional[bool] = None,
         zero_shot_passed: Optional[bool] = None,
+        schema_repairs: int = 0,
         roletran_repairs: int = 0,
         solver_repairs: int = 0,
         total_repairs: Optional[int] = None,
+        total_completion_steps: Optional[int] = None,
         searcher_invocations: int = 0,
         herald_options: Optional[List[str]] = None,
         duration_seconds: float = 0.0,
@@ -275,7 +279,14 @@ class PipelineMetricsCSVLogger:
 
         resolved_tier = quality_tier or ("INELIGIBLE" if not is_eligible else "REJECTED")
         computed_total_repairs = (
-            total_repairs if total_repairs is not None else (int(roletran_repairs) + int(solver_repairs))
+            total_repairs
+            if total_repairs is not None
+            else (int(schema_repairs) + int(roletran_repairs) + int(solver_repairs))
+        )
+        computed_total_steps = (
+            total_completion_steps
+            if total_completion_steps is not None
+            else ((1 + int(schema_repairs) + int(roletran_repairs) + int(solver_repairs)) if is_eligible else 0)
         )
         resolved_zero_shot = (
             zero_shot_passed
@@ -311,6 +322,12 @@ class PipelineMetricsCSVLogger:
             "is_eligible": str(bool(is_eligible)),
             "status": resolved_status,
             "quality_tier": resolved_tier,
+            "total_completion_steps": str(computed_total_steps),
+            "zero_shot_passed": "" if not is_eligible else str(bool(resolved_zero_shot)),
+            "schema_repairs": str(schema_repairs) if is_eligible else "0",
+            "roletran_repairs": str(roletran_repairs) if is_eligible else "0",
+            "solver_repairs": str(solver_repairs) if is_eligible else "0",
+            "total_repairs": str(computed_total_repairs) if is_eligible else "0",
             "rejection_gate": rejection_gate or "",
             "protocol_name": protocol_name or "",
             "message_algebra": message_algebra or "",
@@ -323,10 +340,6 @@ class PipelineMetricsCSVLogger:
             "explored_skeletons_count": str(explored_skeletons_count) if is_eligible else "0",
             "all_povs_multi_strand": "" if all_povs_multi_strand is None else str(bool(all_povs_multi_strand)),
             "secrecy_proved": "" if secrecy_proved is None else str(bool(secrecy_proved)),
-            "zero_shot_passed": "" if not is_eligible else str(bool(resolved_zero_shot)),
-            "roletran_repairs": str(roletran_repairs) if is_eligible else "0",
-            "solver_repairs": str(solver_repairs) if is_eligible else "0",
-            "total_repairs": str(computed_total_repairs) if is_eligible else "0",
             "searcher_invocations": str(searcher_invocations) if is_eligible else "0",
             "herald_options": herald_str,
             "duration_seconds": str(round(duration_seconds, 3)),

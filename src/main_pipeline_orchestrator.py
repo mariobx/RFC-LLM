@@ -734,6 +734,7 @@ def run_rfc_translation_pipeline(
             tab_index=tab_index,
         )
         rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+        schema_repairs_stage2 = 1 if failed_stage2_record["schema_self_correction_triggered"] else 0
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=True,
@@ -742,6 +743,9 @@ def run_rfc_translation_pipeline(
             protocol_name=final_protocol_name,
             selected_sections=target_sections,
             sliced_lines_count=slice_lines_count,
+            schema_repairs=schema_repairs_stage2,
+            total_repairs=schema_repairs_stage2,
+            total_completion_steps=1 + schema_repairs_stage2,
             duration_seconds=elapsed,
             cost_telemetry=rfc_cost_summary,
             router_model=active_router_model,
@@ -870,9 +874,11 @@ def run_rfc_translation_pipeline(
     except Exception:
         pass
 
+    schema_repairs = 1 if stage2_record.get("schema_self_correction_triggered") else 0
     roletran_repairs = int(stage5_record.get("total_attempts", 0))
     solver_repairs = int(stage6_record.get("total_attempts", 0))
-    total_repairs = roletran_repairs + solver_repairs
+    total_repairs = schema_repairs + roletran_repairs + solver_repairs
+    total_completion_steps = 1 + total_repairs
     all_repair_attempts = list(stage5_record.get("repair_attempts", [])) + list(
         stage6_record.get("repair_attempts", [])
     )
@@ -917,9 +923,11 @@ def run_rfc_translation_pipeline(
             all_povs_multi_strand=all_povs_multi_strand,
             secrecy_proved=secrecy_proved,
             zero_shot_passed=False,
+            schema_repairs=schema_repairs,
             roletran_repairs=roletran_repairs,
             solver_repairs=solver_repairs,
             total_repairs=total_repairs,
+            total_completion_steps=total_completion_steps,
             searcher_invocations=searcher_invocations,
             herald_options=protocol_ast.herald_options,
             duration_seconds=elapsed,
@@ -1014,9 +1022,11 @@ def run_rfc_translation_pipeline(
         all_povs_multi_strand=all_povs_multi_strand,
         secrecy_proved=secrecy_proved,
         zero_shot_passed=(total_repairs == 0),
+        schema_repairs=schema_repairs,
         roletran_repairs=roletran_repairs,
         solver_repairs=solver_repairs,
         total_repairs=total_repairs,
+        total_completion_steps=total_completion_steps,
         searcher_invocations=searcher_invocations,
         herald_options=protocol_ast.herald_options,
         duration_seconds=elapsed,

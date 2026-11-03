@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-03 00:16:46 UTC · Git: `main` @ `5f64ca9aadef` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~191,804*
+*Generated: 2026-11-03 00:29:01 UTC · Git: `main` @ `1ef75fa80796` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~192,104*
 
 ## Table of Contents
 
@@ -8782,7 +8782,7 @@ class CPSAProtocolSpecification(BaseModel):
 
 ### `src/logging_config.py`
 
-*sha256:`f10d50fe277f` · 379 lines · 15.8 KB (~4,056 tokens) · lang:`python`*
+*sha256:`6900598060e7` · 392 lines · 16.4 KB (~4,203 tokens) · lang:`python`*
 
 ```python
 """Comprehensive Structured Logging Subsystem for RFC-LLM Pipeline."""
@@ -8889,17 +8889,23 @@ class PipelineMetricsCSVLogger:
 
     Performs atomic in-place upserts keyed by normalized `rfc_id` (`RFC4285`), overwriting older
     entries when an RFC is re-evaluated while incrementing `run_count`, and automatically
-    migrating legacy CSV headers to the expanded 48-column telemetry schema.
+    migrating legacy CSV headers to the expanded 50-column telemetry schema.
     """
 
     CSV_HEADER = [
-        # Group A: Identity, Status & Intake
+        # Group A: Identity, Status, Step Counts & Intake
         "timestamp",
         "rfc_id",
         "run_count",
         "is_eligible",
         "status",
         "quality_tier",
+        "total_completion_steps",
+        "zero_shot_passed",
+        "schema_repairs",
+        "roletran_repairs",
+        "solver_repairs",
+        "total_repairs",
         "rejection_gate",
         "protocol_name",
         # Group B: Protocol & Solver Complexity Telemetry
@@ -8913,11 +8919,7 @@ class PipelineMetricsCSVLogger:
         "explored_skeletons_count",
         "all_povs_multi_strand",
         "secrecy_proved",
-        # Group C: Self-Healing Repair & Snowball Telemetry
-        "zero_shot_passed",
-        "roletran_repairs",
-        "solver_repairs",
-        "total_repairs",
+        # Group C: Self-Healing Searcher & Snowball Telemetry
         "searcher_invocations",
         "herald_options",
         # Group D: Runtime & Per-Role Model Telemetry (Dedicated columns per model role)
@@ -9027,9 +9029,11 @@ class PipelineMetricsCSVLogger:
         all_povs_multi_strand: Optional[bool] = None,
         secrecy_proved: Optional[bool] = None,
         zero_shot_passed: Optional[bool] = None,
+        schema_repairs: int = 0,
         roletran_repairs: int = 0,
         solver_repairs: int = 0,
         total_repairs: Optional[int] = None,
+        total_completion_steps: Optional[int] = None,
         searcher_invocations: int = 0,
         herald_options: Optional[List[str]] = None,
         duration_seconds: float = 0.0,
@@ -9062,7 +9066,14 @@ class PipelineMetricsCSVLogger:
 
         resolved_tier = quality_tier or ("INELIGIBLE" if not is_eligible else "REJECTED")
         computed_total_repairs = (
-            total_repairs if total_repairs is not None else (int(roletran_repairs) + int(solver_repairs))
+            total_repairs
+            if total_repairs is not None
+            else (int(schema_repairs) + int(roletran_repairs) + int(solver_repairs))
+        )
+        computed_total_steps = (
+            total_completion_steps
+            if total_completion_steps is not None
+            else ((1 + int(schema_repairs) + int(roletran_repairs) + int(solver_repairs)) if is_eligible else 0)
         )
         resolved_zero_shot = (
             zero_shot_passed
@@ -9098,6 +9109,12 @@ class PipelineMetricsCSVLogger:
             "is_eligible": str(bool(is_eligible)),
             "status": resolved_status,
             "quality_tier": resolved_tier,
+            "total_completion_steps": str(computed_total_steps),
+            "zero_shot_passed": "" if not is_eligible else str(bool(resolved_zero_shot)),
+            "schema_repairs": str(schema_repairs) if is_eligible else "0",
+            "roletran_repairs": str(roletran_repairs) if is_eligible else "0",
+            "solver_repairs": str(solver_repairs) if is_eligible else "0",
+            "total_repairs": str(computed_total_repairs) if is_eligible else "0",
             "rejection_gate": rejection_gate or "",
             "protocol_name": protocol_name or "",
             "message_algebra": message_algebra or "",
@@ -9110,10 +9127,6 @@ class PipelineMetricsCSVLogger:
             "explored_skeletons_count": str(explored_skeletons_count) if is_eligible else "0",
             "all_povs_multi_strand": "" if all_povs_multi_strand is None else str(bool(all_povs_multi_strand)),
             "secrecy_proved": "" if secrecy_proved is None else str(bool(secrecy_proved)),
-            "zero_shot_passed": "" if not is_eligible else str(bool(resolved_zero_shot)),
-            "roletran_repairs": str(roletran_repairs) if is_eligible else "0",
-            "solver_repairs": str(solver_repairs) if is_eligible else "0",
-            "total_repairs": str(computed_total_repairs) if is_eligible else "0",
             "searcher_invocations": str(searcher_invocations) if is_eligible else "0",
             "herald_options": herald_str,
             "duration_seconds": str(round(duration_seconds, 3)),
@@ -9170,7 +9183,7 @@ class PipelineMetricsCSVLogger:
 
 ### `src/main_pipeline_orchestrator.py`
 
-*sha256:`f4c427ad8fb0` · 1071 lines · 47.2 KB (~12,082 tokens) · lang:`python`*
+*sha256:`b0fda8b29380` · 1081 lines · 47.8 KB (~12,235 tokens) · lang:`python`*
 
 ```python
 """Main Pipeline Orchestrator for RFC-to-CPSA Synthesis.
@@ -9909,6 +9922,7 @@ def run_rfc_translation_pipeline(
             tab_index=tab_index,
         )
         rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+        schema_repairs_stage2 = 1 if failed_stage2_record["schema_self_correction_triggered"] else 0
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=True,
@@ -9917,6 +9931,9 @@ def run_rfc_translation_pipeline(
             protocol_name=final_protocol_name,
             selected_sections=target_sections,
             sliced_lines_count=slice_lines_count,
+            schema_repairs=schema_repairs_stage2,
+            total_repairs=schema_repairs_stage2,
+            total_completion_steps=1 + schema_repairs_stage2,
             duration_seconds=elapsed,
             cost_telemetry=rfc_cost_summary,
             router_model=active_router_model,
@@ -10045,9 +10062,11 @@ def run_rfc_translation_pipeline(
     except Exception:
         pass
 
+    schema_repairs = 1 if stage2_record.get("schema_self_correction_triggered") else 0
     roletran_repairs = int(stage5_record.get("total_attempts", 0))
     solver_repairs = int(stage6_record.get("total_attempts", 0))
-    total_repairs = roletran_repairs + solver_repairs
+    total_repairs = schema_repairs + roletran_repairs + solver_repairs
+    total_completion_steps = 1 + total_repairs
     all_repair_attempts = list(stage5_record.get("repair_attempts", [])) + list(
         stage6_record.get("repair_attempts", [])
     )
@@ -10092,9 +10111,11 @@ def run_rfc_translation_pipeline(
             all_povs_multi_strand=all_povs_multi_strand,
             secrecy_proved=secrecy_proved,
             zero_shot_passed=False,
+            schema_repairs=schema_repairs,
             roletran_repairs=roletran_repairs,
             solver_repairs=solver_repairs,
             total_repairs=total_repairs,
+            total_completion_steps=total_completion_steps,
             searcher_invocations=searcher_invocations,
             herald_options=protocol_ast.herald_options,
             duration_seconds=elapsed,
@@ -10189,9 +10210,11 @@ def run_rfc_translation_pipeline(
         all_povs_multi_strand=all_povs_multi_strand,
         secrecy_proved=secrecy_proved,
         zero_shot_passed=(total_repairs == 0),
+        schema_repairs=schema_repairs,
         roletran_repairs=roletran_repairs,
         solver_repairs=solver_repairs,
         total_repairs=total_repairs,
+        total_completion_steps=total_completion_steps,
         searcher_invocations=searcher_invocations,
         herald_options=protocol_ast.herald_options,
         duration_seconds=elapsed,
