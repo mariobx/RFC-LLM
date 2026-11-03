@@ -241,7 +241,7 @@ def test_visualizer_artifact_endpoint_blocks_path_traversal_and_dotfiles(tmp_pat
         resp_models = await server.handle_models(req_models)
         assert resp_models.status == 200
         models_payload = json.loads(resp_models.text)
-        assert models_payload["cpsa_timeout_seconds"] == 60
+        assert models_payload["cpsa_timeout_seconds"] == 15
         assert "router_model" in models_payload
 
     asyncio.run(_exercise())

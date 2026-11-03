@@ -98,21 +98,66 @@ def get_pipeline_logger(subsystem: str) -> logging.Logger:
 
 
 class PipelineMetricsCSVLogger:
-    """Logs tabular run-level experiment metrics to a persistent CSV for analysis."""
+    """Logs tabular run-level experiment metrics to a persistent deduplicated CSV master ledger.
+
+    Performs atomic in-place upserts keyed by normalized `rfc_id` (`RFC4285`), overwriting older
+    entries when an RFC is re-evaluated while incrementing `run_count`, and automatically
+    migrating legacy CSV headers to the expanded 48-column telemetry schema.
+    """
 
     CSV_HEADER = [
+        # Group A: Identity, Status & Intake
         "timestamp",
         "rfc_id",
+        "run_count",
         "is_eligible",
+        "status",
+        "quality_tier",
+        "rejection_gate",
         "protocol_name",
+        # Group B: Protocol & Solver Complexity Telemetry
+        "message_algebra",
         "selected_sections",
         "sliced_lines_count",
         "role_count",
         "preskeleton_count",
-        "roletran_passed",
-        "solver_passed",
+        "scm_lines_count",
         "shapes_count",
+        "explored_skeletons_count",
+        "all_povs_multi_strand",
+        "secrecy_proved",
+        # Group C: Self-Healing Repair & Snowball Telemetry
+        "zero_shot_passed",
+        "roletran_repairs",
+        "solver_repairs",
+        "total_repairs",
+        "searcher_invocations",
+        "herald_options",
+        # Group D: Runtime & Per-Role Model Telemetry (Dedicated columns per model role)
         "duration_seconds",
+        "router_model",
+        "router_calls",
+        "router_tokens",
+        "router_cost_usd",
+        "extraction_model",
+        "extraction_calls",
+        "extraction_tokens",
+        "extraction_cost_usd",
+        "query_model",
+        "query_calls",
+        "query_tokens",
+        "query_cost_usd",
+        "repair_model",
+        "repair_calls",
+        "repair_tokens",
+        "repair_cost_usd",
+        "total_calls",
+        "total_tokens",
+        "total_cost_usd",
+        # Group E: Persistent Artifact File Paths & Diagnostics
+        "scm_path",
+        "shapes_xhtml_path",
+        "trajectory_json_path",
         "error_message",
     ]
 
@@ -120,45 +165,215 @@ class PipelineMetricsCSVLogger:
         self.csv_path = csv_path or (SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv")
         self._ensure_header()
 
+    @staticmethod
+    def normalize_rfc_id(rfc_id: str) -> str:
+        """Normalizes 'rfc4285', 'RFC 4285', or 'RFC_4285' to canonical 'RFC4285'."""
+        return (rfc_id or "").strip().upper().replace(" ", "").replace("_", "")
+
+    def _read_existing_rows(self) -> List[dict]:
+        if not self.csv_path.exists() or self.csv_path.stat().st_size == 0:
+            return []
+        try:
+            with open(self.csv_path, mode="r", newline="", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f)
+                return [dict(row) for row in reader if row.get("rfc_id")]
+        except Exception:
+            return []
+
+    def _write_all_rows(self, rows: List[dict]) -> None:
+        self.csv_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = self.csv_path.with_suffix(".csv.tmp")
+        with open(tmp_path, mode="w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=self.CSV_HEADER, extrasaction="ignore")
+            writer.writeheader()
+            for r in rows:
+                clean_row = {col: r.get(col, "") for col in self.CSV_HEADER}
+                writer.writerow(clean_row)
+        tmp_path.replace(self.csv_path)
+
     def _ensure_header(self) -> None:
         self.csv_path.parent.mkdir(parents=True, exist_ok=True)
         if not self.csv_path.exists() or self.csv_path.stat().st_size == 0:
-            with open(self.csv_path, mode="w", newline="", encoding="utf-8") as f:
-                writer = csv.writer(f)
-                writer.writerow(self.CSV_HEADER)
+            self._write_all_rows([])
+            return
+        # Automatically migrate legacy CSV headers if columns changed
+        try:
+            with open(self.csv_path, mode="r", newline="", encoding="utf-8", errors="ignore") as f:
+                reader = csv.reader(f)
+                first_row = next(reader, None)
+            if first_row != self.CSV_HEADER:
+                existing = self._read_existing_rows()
+                # Deduplicate any legacy duplicate rows on migration, keeping latest & counting runs
+                deduped: dict = {}
+                counts: dict = {}
+                for r in existing:
+                    norm_id = self.normalize_rfc_id(r.get("rfc_id", ""))
+                    if not norm_id:
+                        continue
+                    counts[norm_id] = counts.get(norm_id, 0) + 1
+                    r["rfc_id"] = norm_id
+                    if not r.get("run_count"):
+                        r["run_count"] = str(counts[norm_id])
+                    deduped[norm_id] = r
+                self._write_all_rows(list(deduped.values()))
+        except Exception:
+            pass
 
     def log_run(
         self,
         rfc_id: str,
         is_eligible: bool,
+        status: Optional[str] = None,
+        quality_tier: Optional[str] = None,
+        rejection_gate: Optional[str] = None,
         protocol_name: Optional[str] = None,
+        message_algebra: Optional[str] = None,
         selected_sections: Optional[List[str]] = None,
         sliced_lines_count: int = 0,
         role_count: int = 0,
         preskeleton_count: int = 0,
+        scm_lines_count: int = 0,
         roletran_passed: Optional[bool] = None,
         solver_passed: Optional[bool] = None,
         shapes_count: int = 0,
+        explored_skeletons_count: int = 0,
+        all_povs_multi_strand: Optional[bool] = None,
+        secrecy_proved: Optional[bool] = None,
+        zero_shot_passed: Optional[bool] = None,
+        roletran_repairs: int = 0,
+        solver_repairs: int = 0,
+        total_repairs: Optional[int] = None,
+        searcher_invocations: int = 0,
+        herald_options: Optional[List[str]] = None,
         duration_seconds: float = 0.0,
+        cost_telemetry: Optional[dict] = None,
+        router_model: Optional[str] = None,
+        extraction_model: Optional[str] = None,
+        query_model: Optional[str] = None,
+        repair_model: Optional[str] = None,
+        scm_path: Optional[Path] = None,
+        shapes_xhtml_path: Optional[Path] = None,
+        trajectory_json_path: Optional[Path] = None,
         error_message: Optional[str] = None,
     ) -> None:
         now_iso = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        norm_rfc_id = self.normalize_rfc_id(rfc_id)
         sec_str = ";".join(selected_sections) if selected_sections else ""
-        row = [
-            now_iso,
-            rfc_id,
-            is_eligible,
-            protocol_name or "",
-            sec_str,
-            sliced_lines_count,
-            role_count,
-            preskeleton_count,
-            "" if roletran_passed is None else str(roletran_passed),
-            "" if solver_passed is None else str(solver_passed),
-            shapes_count,
-            round(duration_seconds, 3),
-            error_message or "",
-        ]
-        with open(self.csv_path, mode="a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(row)
+        herald_str = ";".join(herald_options) if herald_options else ""
+
+        # Resolve high-level status if not explicitly passed
+        resolved_status = status
+        if not resolved_status:
+            if not is_eligible:
+                resolved_status = "INELIGIBLE"
+            elif solver_passed:
+                resolved_status = "VERIFIED"
+            elif roletran_passed:
+                resolved_status = "PARTIAL"
+            else:
+                resolved_status = "FAILED"
+
+        resolved_tier = quality_tier or ("INELIGIBLE" if not is_eligible else "REJECTED")
+        computed_total_repairs = (
+            total_repairs if total_repairs is not None else (int(roletran_repairs) + int(solver_repairs))
+        )
+        resolved_zero_shot = (
+            zero_shot_passed
+            if zero_shot_passed is not None
+            else (bool(solver_passed) and computed_total_repairs == 0)
+        )
+
+        # Auto-compute scm_lines_count if scm_path exists and wasn't explicitly passed
+        effective_scm_lines = scm_lines_count
+        if effective_scm_lines == 0 and scm_path and Path(scm_path).exists():
+            try:
+                effective_scm_lines = len(
+                    Path(scm_path).read_text(encoding="utf-8", errors="ignore").splitlines()
+                )
+            except Exception:
+                effective_scm_lines = 0
+
+        # Extract per-role model telemetry from cost_telemetry (or GLOBAL_COST_TRACKER)
+        roles_data = (cost_telemetry or {}).get("roles", {})
+        r_info = roles_data.get("router", {})
+        e_info = roles_data.get("extraction", {})
+        q_info = roles_data.get("query", {})
+        p_info = roles_data.get("repair", {})
+
+        tot_calls = int((cost_telemetry or {}).get("total_calls", 0))
+        tot_tokens = int((cost_telemetry or {}).get("total_tokens", 0))
+        tot_cost = float((cost_telemetry or {}).get("total_cost_usd", 0.0))
+
+        new_row = {
+            "timestamp": now_iso,
+            "rfc_id": norm_rfc_id,
+            "run_count": "1",
+            "is_eligible": str(bool(is_eligible)),
+            "status": resolved_status,
+            "quality_tier": resolved_tier,
+            "rejection_gate": rejection_gate or "",
+            "protocol_name": protocol_name or "",
+            "message_algebra": message_algebra or "",
+            "selected_sections": sec_str,
+            "sliced_lines_count": str(sliced_lines_count) if is_eligible else "0",
+            "role_count": str(role_count) if is_eligible else "0",
+            "preskeleton_count": str(preskeleton_count) if is_eligible else "0",
+            "scm_lines_count": str(effective_scm_lines) if is_eligible else "0",
+            "shapes_count": str(shapes_count) if is_eligible else "0",
+            "explored_skeletons_count": str(explored_skeletons_count) if is_eligible else "0",
+            "all_povs_multi_strand": "" if all_povs_multi_strand is None else str(bool(all_povs_multi_strand)),
+            "secrecy_proved": "" if secrecy_proved is None else str(bool(secrecy_proved)),
+            "zero_shot_passed": "" if not is_eligible else str(bool(resolved_zero_shot)),
+            "roletran_repairs": str(roletran_repairs) if is_eligible else "0",
+            "solver_repairs": str(solver_repairs) if is_eligible else "0",
+            "total_repairs": str(computed_total_repairs) if is_eligible else "0",
+            "searcher_invocations": str(searcher_invocations) if is_eligible else "0",
+            "herald_options": herald_str,
+            "duration_seconds": str(round(duration_seconds, 3)),
+            "router_model": router_model or r_info.get("model") or "",
+            "router_calls": str(int(r_info.get("calls", 0))),
+            "router_tokens": str(int(r_info.get("total_tokens", 0))),
+            "router_cost_usd": f"{float(r_info.get('cost_usd', 0.0)):.6f}",
+            "extraction_model": extraction_model or e_info.get("model") or "",
+            "extraction_calls": str(int(e_info.get("calls", 0))),
+            "extraction_tokens": str(int(e_info.get("total_tokens", 0))),
+            "extraction_cost_usd": f"{float(e_info.get('cost_usd', 0.0)):.6f}",
+            "query_model": query_model or q_info.get("model") or "",
+            "query_calls": str(int(q_info.get("calls", 0))),
+            "query_tokens": str(int(q_info.get("total_tokens", 0))),
+            "query_cost_usd": f"{float(q_info.get('cost_usd', 0.0)):.6f}",
+            "repair_model": repair_model or p_info.get("model") or "",
+            "repair_calls": str(int(p_info.get("calls", 0))),
+            "repair_tokens": str(int(p_info.get("total_tokens", 0))),
+            "repair_cost_usd": f"{float(p_info.get('cost_usd', 0.0)):.6f}",
+            "total_calls": str(tot_calls),
+            "total_tokens": str(tot_tokens),
+            "total_cost_usd": f"{tot_cost:.6f}",
+            "scm_path": str(scm_path) if scm_path else "",
+            "shapes_xhtml_path": str(shapes_xhtml_path) if shapes_xhtml_path else "",
+            "trajectory_json_path": str(trajectory_json_path) if trajectory_json_path else "",
+            "error_message": error_message or "",
+        }
+
+        existing_rows = self._read_existing_rows()
+        replaced = False
+        updated_rows: List[dict] = []
+        for row in existing_rows:
+            row_id = self.normalize_rfc_id(row.get("rfc_id", ""))
+            if row_id == norm_rfc_id:
+                if not replaced:
+                    try:
+                        prev_count = int(row.get("run_count") or 1)
+                    except (TypeError, ValueError):
+                        prev_count = 1
+                    new_row["run_count"] = str(prev_count + 1)
+                    updated_rows.append(new_row)
+                    replaced = True
+                # Skip any older duplicate rows for this same rfc_id
+            else:
+                updated_rows.append(row)
+
+        if not replaced:
+            updated_rows.append(new_row)
+
+        self._write_all_rows(updated_rows)

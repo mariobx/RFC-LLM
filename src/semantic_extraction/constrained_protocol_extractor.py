@@ -58,10 +58,12 @@ def extract_protocol_specification(
     user_prompt = (
         f"Protocol Identifier: {protocol_name}\n"
         f"{principals_hint}\n\n"
-        "Verbatim RFC Exchange Specification (SOLE GROUND TRUTH):\n"
+        "Verbatim RFC Exchange Specification (SOLE GROUND TRUTH — STRICT 1-TO-1 FIDELITY REQUIRED):\n"
         f"{verbatim_slice}\n\n"
-        "Extract the complete CPSAProtocolSpecification adhering to all executability and sort constraints.\n"
-        "Extract strictly what is defined in the Verbatim RFC Exchange Specification."
+        "Extract the complete CPSAProtocolSpecification adhering to all MITRE CPSA 4.4.9 executability and sort constraints.\n"
+        "CRITICAL ZERO-HALLUCINATION RULE: Model strictly the roles, message flights, fields, and cryptographic "
+        "operations defined in the Verbatim RFC Exchange Specification above. Do NOT invent fictional messages, "
+        "non-RFC variables, or textbook protocol fields that do not appear in the RFC text."
     )
 
     system_prompt = build_schema_system_prompt(
@@ -83,6 +85,8 @@ def extract_protocol_specification(
                 timeout=extraction_spec.timeout,
                 num_retries=0,
             )
+            from src.cost_tracker import GLOBAL_COST_TRACKER
+            GLOBAL_COST_TRACKER.record_llm_call(response, role="extraction", model_name=model_name, stage=2)
             break
         except Exception as exc:
             err_msg = str(exc)
@@ -140,6 +144,8 @@ def extract_protocol_specification(
                 timeout=corr_spec.timeout,
                 num_retries=0,
             )
+            from src.cost_tracker import GLOBAL_COST_TRACKER
+            GLOBAL_COST_TRACKER.record_llm_call(correction_response, role="extraction", model_name=corr_model, stage=2)
             corrected_content = correction_response.choices[0].message.content
             try:
                 corrected_data = json.loads(corrected_content)
@@ -188,11 +194,29 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
             deduplicated_non_orig.append(non_orig_term)
 
     # Separate pure POV skeletons (without listeners) and secrecy skeletons (with listeners)
+    # CRITICAL: Filter out any invalid listener term that is also declared in non_originating
+    # or pen_non_originating (which causes CPSA fatal error: `non-orig <key> carried`).
+    non_orig_set = {json.dumps(t, sort_keys=True) for t in deduplicated_non_orig}
+    for skel in spec.skeletons:
+        for pno in skel.pen_non_originating:
+            non_orig_set.add(json.dumps(pno, sort_keys=True))
+    for role in spec.roles:
+        for no_t in role.non_originating + role.pen_non_originating:
+            non_orig_set.add(json.dumps(no_t, sort_keys=True))
+
+    spec.primary_secrecy_goals = [
+        t for t in spec.primary_secrecy_goals if json.dumps(t, sort_keys=True) not in non_orig_set
+    ]
+
     roles_with_pure_pov = set()
     pure_pov_skeletons = []
     secrecy_skeletons = []
 
     for skel in spec.skeletons:
+        valid_listeners = [
+            l for l in skel.listeners if json.dumps(l, sort_keys=True) not in non_orig_set
+        ]
+        skel.listeners = valid_listeners
         if not skel.listeners:
             pure_pov_skeletons.append(skel)
             for strand in skel.strands:
@@ -226,11 +250,14 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
             )
             final_skeletons.append(pure_role_skeleton)
 
-    # Guarantee at least one secrecy verification skeleton if a secret was semantically identified
+    # Guarantee at least one secrecy verification skeleton if a valid transmitted secret was identified
     if secrecy_skeletons:
         final_skeletons.extend(secrecy_skeletons)
     else:
-        secret_targets = existing_listeners or spec.primary_secrecy_goals
+        valid_existing_listeners = [
+            l for l in existing_listeners if json.dumps(l, sort_keys=True) not in non_orig_set
+        ]
+        secret_targets = valid_existing_listeners or spec.primary_secrecy_goals
         if secret_targets:
             chosen_secret = secret_targets[0]
             originating_role = spec.roles[0]

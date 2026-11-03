@@ -462,6 +462,59 @@
       50% { opacity: 0.65; }
     }
 
+    /* Cost & Token Telemetry Strip */
+    .cost-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 4px 14px;
+      background: #11161e;
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .cost-roles {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+    }
+    .cost-totals {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+    .cost-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-muted);
+    }
+    .cost-val {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+    .cost-val.highlight {
+      color: var(--color-green);
+      background: #0e442955;
+      border: 1px solid #23863688;
+      padding: 1px 6px;
+    }
+    .cost-val.batch {
+      color: var(--color-blue);
+      background: #0c2d6b55;
+      border: 1px solid #1f6feb88;
+      padding: 1px 6px;
+    }
+    .cost-tok {
+      color: var(--text-muted);
+      font-size: 10px;
+    }
+
     /* Main Grid */
     .main-grid {
       display: flex;
@@ -765,6 +818,32 @@
     </div>
   </header>
 
+  <!-- Live & Per-RFC Cost & Token Telemetry Strip -->
+  <div class="cost-strip" id="cost-strip">
+    <div class="cost-roles">
+      <span class="cost-item" title="Stage 1b/1c Router & Applicability Gate Cost">
+        Router: <span class="cost-val" id="cost-router">$0.0000</span><span class="cost-tok" id="tok-router">(0 tok)</span>
+      </span>
+      <span class="cost-item" title="Stage 2 Initial Extraction & Schema Correction Cost">
+        Extraction: <span class="cost-val" id="cost-extraction">$0.0000</span><span class="cost-tok" id="tok-extraction">(0 tok)</span>
+      </span>
+      <span class="cost-item" title="Stage 5/6 Agentic CPSA KB Searcher Cost">
+        Query/Searcher: <span class="cost-val" id="cost-query">$0.0000</span><span class="cost-tok" id="tok-query">(0 tok)</span>
+      </span>
+      <span class="cost-item" title="Stage 5/6 Compiler & Solver Diagnostic Repair Cost">
+        Repair: <span class="cost-val" id="cost-repair">$0.0000</span><span class="cost-tok" id="tok-repair">(0 tok)</span>
+      </span>
+    </div>
+    <div class="cost-totals">
+      <span class="cost-item" title="Total USD Cost & Tokens for Currently Viewed RFC">
+        RFC Run Total: <span class="cost-val highlight" id="cost-rfc-total">$0.0000</span><span class="cost-tok" id="tok-rfc-total">(0 tok)</span>
+      </span>
+      <span class="cost-item" title="Cumulative USD Cost & Tokens Across Entire Batch">
+        Batch Total: <span class="cost-val batch" id="cost-batch-total">$0.0000</span><span class="cost-tok" id="tok-batch-total">(0 tok)</span>
+      </span>
+    </div>
+  </div>
+
   <!-- Virtualized Numbered Accepted-RFC Tab Strip (#1..#N) -->
   <div class="rfc-tabbar">
     <button class="live-pin-btn active" id="btn-live-follow" onclick="selectLiveFollow()">
@@ -885,7 +964,7 @@
     <!-- Left: Event Stream -->
     <div class="log-panel">
       <div class="panel-heading">
-        <span id="log-panel-title">Execution Diagnostics</span>
+        <span id="log-panel-title" style="display:inline-flex; align-items:center; gap:6px;"><span class="dot failed" style="box-shadow:0 0 6px var(--color-red);"></span>LIVE</span>
         <span id="event-counter" style="color:var(--text-muted); font-size:10px;">0 Events</span>
       </div>
       <div class="log-feed" id="log-feed"></div>
@@ -990,6 +1069,44 @@
       repair_model: 'nous/google/gemini-3.8-flash',
       query_model: 'nous/anthropic/claude-haiku-5.5'
     };
+    let latestBatchCostTelemetry = null;
+
+    function formatUsd(val) {
+      const n = Number(val || 0);
+      return `$${n.toFixed(4)}`;
+    }
+
+    function formatTok(val) {
+      const n = Number(val || 0);
+      return `(${n.toLocaleString()} tok)`;
+    }
+
+    function renderCostTelemetry(rfcCost, batchCost) {
+      if (batchCost && typeof batchCost === 'object') {
+        latestBatchCostTelemetry = batchCost;
+      }
+      if (rfcCost && typeof rfcCost === 'object') {
+        const roles = rfcCost.roles || {};
+        ['router', 'extraction', 'query', 'repair'].forEach(roleKey => {
+          const rb = roles[roleKey] || {};
+          const costEl = document.getElementById(`cost-${roleKey}`);
+          const tokEl = document.getElementById(`tok-${roleKey}`);
+          if (costEl) costEl.innerText = formatUsd(rb.cost_usd);
+          if (tokEl) tokEl.innerText = formatTok(rb.total_tokens);
+        });
+        const rfcTotEl = document.getElementById('cost-rfc-total');
+        const rfcTokEl = document.getElementById('tok-rfc-total');
+        if (rfcTotEl) rfcTotEl.innerText = formatUsd(rfcCost.total_cost_usd);
+        if (rfcTokEl) rfcTokEl.innerText = formatTok(rfcCost.total_tokens);
+      }
+      const effBatch = latestBatchCostTelemetry || rfcCost;
+      if (effBatch && typeof effBatch === 'object') {
+        const bTotEl = document.getElementById('cost-batch-total');
+        const bTokEl = document.getElementById('tok-batch-total');
+        if (bTotEl) bTotEl.innerText = formatUsd(effBatch.total_cost_usd);
+        if (bTokEl) bTokEl.innerText = formatTok(effBatch.total_tokens);
+      }
+    }
 
     function lruGet(tabIdx) {
       if (!tabLruCache.has(tabIdx)) return null;
@@ -1073,13 +1190,14 @@
         const badgeText = (t.status === 'RUNNING') ? 'LIVE' : (t.quality_tier || t.status || '');
         const badgeClass = (t.status === 'RUNNING') ? 'RUNNING' : (t.quality_tier || t.status || '');
         const protoDisplay = t.protocol_name || t.rfc_title || t.rfc_id;
+        const tabCostStr = (typeof t.cost_usd === 'number' && t.cost_usd > 0) ? ` | $${t.cost_usd.toFixed(4)}` : '';
 
         btn.title = [
           `Tab #${t.tab_index} | ${t.rfc_id}`,
           `Protocol: ${protoDisplay}`,
           t.rfc_title && t.rfc_title !== protoDisplay ? `Title: ${t.rfc_title}` : null,
           `Status: ${t.status} | Tier: ${t.quality_tier}`,
-          `Repairs: ${t.total_attempts || 0} | Shapes: ${t.shapes_count || 0} | Time: ${t.duration_seconds || 0}s`
+          `Repairs: ${t.total_attempts || 0} | Shapes: ${t.shapes_count || 0} | Time: ${t.duration_seconds || 0}s${tabCostStr}`
         ].filter(Boolean).join('\n');
 
         const topDiv = document.createElement('div');
@@ -1098,7 +1216,7 @@
 
         const protoDiv = document.createElement('div');
         protoDiv.className = 'rfc-vtab-proto';
-        protoDiv.innerText = protoDisplay;
+        protoDiv.innerText = `${protoDisplay}${tabCostStr}`;
 
         btn.appendChild(topDiv);
         btn.appendChild(protoDiv);
@@ -1196,7 +1314,12 @@
       showingRejectedScm = false;
 
       document.getElementById('event-counter').innerText = '0 Events';
-      document.getElementById('log-panel-title').innerText = headerTitle || 'Execution Diagnostics';
+      const titleEl = document.getElementById('log-panel-title');
+      if (!headerTitle || headerTitle === 'LIVE') {
+        titleEl.innerHTML = '<span class="dot failed" style="box-shadow:0 0 6px var(--color-red);"></span>LIVE';
+      } else {
+        titleEl.innerText = headerTitle;
+      }
       document.getElementById('log-feed').innerHTML = '';
       document.getElementById('rag-feed').innerHTML = `
         <div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
@@ -1230,7 +1353,7 @@
       selectedTabIndex = null;
       updateLivePinButton();
       renderVirtualTabs();
-      resetViewportDom('Live Execution Diagnostics');
+      resetViewportDom('LIVE');
 
       fetch('/api/active')
         .then(r => r.json())
@@ -1304,6 +1427,10 @@
 
       if (payload.verbatim_slice) {
         document.getElementById('code-slice').innerText = payload.verbatim_slice;
+      }
+
+      if (payload.cost_telemetry || tab.cost_telemetry) {
+        renderCostTelemetry(payload.cost_telemetry || tab.cost_telemetry, latestBatchCostTelemetry);
       }
 
       if (Array.isArray(payload.events)) {
@@ -1577,13 +1704,31 @@
         }
         return;
       }
+      if (evt.event_type === 'cost_updated' && evt.data) {
+        if (evt.data.batch_cost) {
+          latestBatchCostTelemetry = evt.data.batch_cost;
+        }
+        if (evt.tab_index && acceptedTabsByIndex.has(evt.tab_index) && evt.data.rfc_cost) {
+          const existing = acceptedTabsByIndex.get(evt.tab_index);
+          existing.cost_usd = Number(evt.data.rfc_cost.total_cost_usd || 0);
+          existing.cost_telemetry = evt.data.rfc_cost;
+          renderVirtualTabs();
+        }
+        if (viewMode === 'live') {
+          renderCostTelemetry(evt.data.rfc_cost, evt.data.batch_cost);
+        } else if (evt.data.batch_cost) {
+          renderCostTelemetry(null, evt.data.batch_cost);
+        }
+        return;
+      }
       if (evt.event_type === 'pipeline_started') {
         liveActiveRfcId = (evt.data && (evt.data.rfc_id || evt.data.rfc_file)) || evt.rfc_id;
         liveActiveTabIndex = null;
         pipelineRunning = true;
         updateLivePinButton();
         if (viewMode === 'live') {
-          resetViewportDom('Live Execution Diagnostics');
+          resetViewportDom('LIVE');
+          renderCostTelemetry({ total_cost_usd: 0, total_tokens: 0, roles: {} }, latestBatchCostTelemetry);
         }
       }
       if (evt.event_type === 'pipeline_completed' || evt.event_type === 'pipeline_failed') {
@@ -1598,12 +1743,30 @@
     }
 
     function renderEventIntoViewport(evt, fetchLiveArtifacts) {
-      if (evt.event_type === 'tab_accepted' || evt.event_type === 'tab_updated' || evt.event_type === 'rfc_filtered') {
+      if (
+        evt.event_type === 'tab_accepted' ||
+        evt.event_type === 'tab_updated' ||
+        evt.event_type === 'rfc_filtered' ||
+        evt.event_type === 'cost_updated'
+      ) {
+        if (evt.event_type === 'cost_updated' && evt.data && evt.data.rfc_cost) {
+          renderCostTelemetry(evt.data.rfc_cost, evt.data.batch_cost || latestBatchCostTelemetry);
+        }
         return;
       }
       const key = `${evt.timestamp}_${evt.event_type}_${evt.stage || 0}`;
       if (seenEventKeys.has(key)) return;
       seenEventKeys.add(key);
+
+      // Route Agentic KB Search strictly to the RAG Knowledge tab (never into the LIVE feed)
+      if (evt.event_type === 'rag_retrieval') {
+        activeAttemptEpoch = evt.timestamp;
+        const ragMod = `${defaultModelCfg.query_model} (Agentic KB Searcher)`;
+        const badge = document.getElementById('active-model');
+        if (badge) badge.innerText = ragMod;
+        renderRagEvent(evt);
+        return;
+      }
 
       eventCount++;
       document.getElementById('event-counter').innerText = `${eventCount} Events`;
@@ -1614,7 +1777,9 @@
 
       const timeStr = new Date(evt.timestamp * 1000).toLocaleTimeString([], { hour12: false });
       let typeLabel = evt.event_type;
-      let bodyText = JSON.stringify(evt.data, null, 2);
+      const safeData = Object.assign({}, evt.data || {});
+      delete safeData.ast;
+      let bodyText = Object.keys(safeData).length ? JSON.stringify(safeData) : '';
 
       const stageDefaultModels = {
         1: document.getElementById('step-1-model')?.innerText || defaultModelCfg.router_model,
@@ -1637,6 +1802,7 @@
 
       if (evt.event_type === 'pipeline_started') {
         typeLabel = 'PIPELINE_INIT';
+        bodyText = `Target: ${evt.data.rfc_file || evt.data.rfc_id || ''}`;
         if (fetchLiveArtifacts) pipelineRunning = true;
         currentStageNum = 1;
         currentRepairAttempt = 0;
@@ -1661,6 +1827,8 @@
         setStepState(1, 'active', 'Started');
       } else if (evt.event_type === 'stage_started') {
         typeLabel = `STAGE_${evt.stage}_START`;
+        const stgModel = (evt.data && evt.data.model) || stageDefaultModels[evt.stage] || '';
+        bodyText = `${evt.stage_name || (evt.data && evt.data.stage_name) || `Stage ${evt.stage}`} | Model: ${stgModel}`;
         currentStageNum = evt.stage;
         activeAttemptEpoch = evt.timestamp;
         stageStartEpochs[evt.stage] = evt.timestamp;
@@ -1671,9 +1839,10 @@
           else if (evt.stage === 6) { currentActivityMode = 'solver'; setDiagnosisBadge('CPSA4 Compiling & Solving...', 'normal'); }
         }
         setStepState(evt.stage, 'active', 'Processing');
-        updateActiveModel((evt.data && evt.data.model) || stageDefaultModels[evt.stage], evt.stage);
+        updateActiveModel(stgModel, evt.stage);
       } else if (evt.event_type === 'compiler_check_started') {
         typeLabel = `COMPILER_RUN_${evt.data.attempt || 0}`;
+        bodyText = `Validator: ${evt.data.model || 'cpsa4'} | Attempt #${evt.data.attempt || 0}`;
         currentStageNum = evt.stage || 6;
         activeAttemptEpoch = evt.timestamp;
         currentActivityMode = (evt.stage === 6) ? 'solver' : 'roletran';
@@ -1682,6 +1851,19 @@
       } else if (evt.event_type === 'stage_completed') {
         typeLabel = `STAGE_${evt.stage}_OK`;
         setStepState(evt.stage, 'passed', 'Passed');
+        if (evt.stage === 1) {
+          bodyText = `Confirmed Protocol: ${evt.data.protocol_name || ''} (${evt.data.rfc_id || ''})`;
+        } else if (evt.stage === 2) {
+          const rCount = evt.data.roles_count ?? (evt.data.ast?.roles?.length || 0);
+          const sCount = evt.data.skeletons_count ?? (evt.data.ast?.skeletons?.length || 0);
+          bodyText = `Synthesized Pydantic AST (${rCount} roles, ${sCount} skeletons)`;
+        } else if (evt.stage === 3) {
+          const scmName = (evt.data.scm_path || '').split('/').pop() || 'protocol.scm';
+          const repTag = evt.data.repair_attempt ? ` (Repair #${evt.data.repair_attempt})` : '';
+          bodyText = `Emitted CPSA Scheme: ${scmName}${repTag}`;
+        } else if (evt.stage === 4 || evt.stage === 5) {
+          bodyText = `Roletran Executability Passed${evt.data.attempts !== undefined ? ` (${evt.data.attempts} repair attempts)` : ''}`;
+        }
         if (stageStartEpochs[evt.stage]) {
           const dur = Math.max(0, evt.timestamp - stageStartEpochs[evt.stage]);
           const timeEl = document.getElementById(`step-${evt.stage}-time`);
@@ -1705,16 +1887,6 @@
             .then(txt => { document.getElementById('code-slice').innerText = txt; })
             .catch(() => {});
         }
-      } else if (evt.event_type === 'rag_retrieval') {
-        typeLabel = 'AGENTIC_KB_SEARCH';
-        activeAttemptEpoch = evt.timestamp;
-        const chkCount = (evt.data && evt.data.chunks) ? evt.data.chunks.length : 0;
-        const turnsCount = (evt.data && evt.data.searcher_turns) ? evt.data.searcher_turns.length : 1;
-        const ragMod = `${defaultModelCfg.query_model} (Agentic KB Searcher)`;
-        updateActiveModel(ragMod);
-        const diagSnippet = (evt.data && evt.data.searcher_diagnosis) ? `\n${evt.data.searcher_diagnosis}` : '';
-        bodyText = `Model: ${ragMod} (${turnsCount} turn${turnsCount > 1 ? 's' : ''})\nPurpose: ${evt.data.purpose || 'Agentic KB Search'}\nTools / Queries: ${evt.data.query || ''}\nRetrieved: ${chkCount} KB rules/examples${diagSnippet}`;
-        renderRagEvent(evt);
       } else if (evt.event_type === 'repair_attempt') {
         item.classList.add('repair');
         if (evt.data.cycle_detected) item.classList.add('cycle');
@@ -1734,6 +1906,7 @@
       } else if (evt.event_type === 'stage_failed') {
         item.classList.add('error');
         typeLabel = `STAGE_${evt.stage}_FAIL`;
+        bodyText = evt.data.error_message || evt.data.reason || 'Stage failed';
         setStepState(evt.stage, 'failed', 'Failed');
       } else if (evt.event_type === 'pipeline_completed') {
         item.classList.add('success');
@@ -1749,6 +1922,7 @@
           }
         }
         typeLabel = 'SYNTHESIS_VERIFIED';
+        bodyText = `Protocol: ${evt.data.protocol_name || ''} | Tier: ${evt.data.quality_tier || 'VERIFIED'} | Shapes: ${evt.data.shapes_count ?? 0}`;
         setStepState(6, 'passed', `Shapes: ${evt.data.shapes_count}`);
       } else if (evt.event_type === 'pipeline_failed') {
         item.classList.add('error');
@@ -1760,6 +1934,7 @@
           pill.innerText = 'FAILED';
         }
         typeLabel = 'PIPELINE_HALTED';
+        bodyText = evt.data.error_message || evt.data.reason || 'Pipeline halted';
       }
 
       item.innerHTML = `
@@ -1915,6 +2090,9 @@
             acceptedTabsByIndex.set(t.tab_index, t);
           });
           acceptedTabs.sort((a, b) => a.tab_index - b.tab_index);
+          if (overview.batch_cost_telemetry && Object.keys(overview.batch_cost_telemetry).length > 0) {
+            renderCostTelemetry(null, overview.batch_cost_telemetry);
+          }
           updateFilteredButtonCount(overview.filtered_total || 0);
           recomputeVisibleTabs();
           updateLivePinButton();
@@ -1964,6 +2142,7 @@
       'tab_accepted',
       'tab_updated',
       'rfc_filtered',
+      'cost_updated',
       'message'
     ];
     SSE_EVENT_TYPES.forEach(evtName => {

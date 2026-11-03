@@ -12,11 +12,35 @@ import webbrowser
 from pathlib import Path
 from typing import List, Set
 
+from src.cost_tracker import GLOBAL_COST_TRACKER
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
 from src.main_pipeline_orchestrator import PipelineExecutionSummary, run_rfc_translation_pipeline
 from src.pipeline_events import GLOBAL_EVENT_BUS
 from src.system_config import SYSTEM_CONFIG
 from src.visualizer.server import run_visualizer_in_background
+
+
+def _print_cost_breakdown(cost_summary: dict, title: str = "COST & TOKEN TELEMETRY") -> None:
+    """Prints a formatted breakdown of USD cost and tokens by model role."""
+    roles = cost_summary.get("roles", {})
+    role_labels = [
+        ("router", "Router Model"),
+        ("extraction", "Extraction Model"),
+        ("query", "Query/Searcher Model"),
+        ("repair", "Repair Model"),
+    ]
+    print(f"\n[{title}]")
+    for role_key, label in role_labels:
+        rb = roles.get(role_key, {})
+        mod = rb.get("model") or "n/a"
+        usd = float(rb.get("cost_usd", 0.0))
+        calls = int(rb.get("calls", 0))
+        toks = int(rb.get("total_tokens", 0))
+        print(f" - {label:<20}: ${usd:.4f} ({calls} calls, {toks:,} tokens) [{mod}]")
+    tot_usd = float(cost_summary.get("total_cost_usd", 0.0))
+    tot_calls = int(cost_summary.get("total_calls", 0))
+    tot_toks = int(cost_summary.get("total_tokens", 0))
+    print(f" - {'Total Run Cost':<20}: ${tot_usd:.4f} ({tot_calls} calls, {tot_toks:,} tokens)")
 
 
 def natural_rfc_sort_key(file_path: Path):
@@ -46,6 +70,27 @@ def get_completed_rfc_ids() -> Set[str]:
     except Exception:
         pass
     return completed
+
+
+def get_failed_rfc_ids() -> Set[str]:
+    """Reads logs/pipeline_runs.csv to retrieve RFC IDs whose latest status is FAILED or PARTIAL."""
+    csv_path = SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv"
+    if not csv_path.exists():
+        return set()
+
+    failed = set()
+    try:
+        with open(csv_path, "r", encoding="utf-8", errors="ignore") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                rfc_val = row.get("rfc_id", "").strip()
+                status_val = (row.get("status") or "").strip().upper()
+                if rfc_val and status_val in {"FAILED", "PARTIAL"}:
+                    clean_id = rfc_val.upper().replace(" ", "").replace("_", "")
+                    failed.add(clean_id)
+    except Exception:
+        pass
+    return failed
 
 
 def main():
@@ -151,6 +196,11 @@ def main():
         help="Skip RFCs that already have completed run entries in logs/pipeline_runs.csv",
     )
     parser.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help="Run only RFCs recorded in logs/pipeline_runs.csv with status FAILED or PARTIAL (overwriting their rows in-place)",
+    )
+    parser.add_argument(
         "--random",
         action="store_true",
         help="Randomly sample RFC files when pointing to a directory (useful with --limit)",
@@ -226,7 +276,14 @@ def main():
             print(f"Error: No RFC text files found in directory {target}", file=sys.stderr)
             sys.exit(1)
 
-        if args.skip_completed:
+        if args.retry_failed:
+            failed_ids = get_failed_rfc_ids()
+            rfc_files = [
+                f for f in rfc_files
+                if f.stem.upper().replace(" ", "").replace("_", "") in failed_ids
+            ]
+            print(f"[BATCH] Filtered to {len(rfc_files)} previously FAILED/PARTIAL RFCs from logs/pipeline_runs.csv")
+        elif args.skip_completed:
             completed_ids = get_completed_rfc_ids()
             initial_count = len(rfc_files)
             rfc_files = [
@@ -372,6 +429,8 @@ def main():
                 if summary.trajectory_json_path:
                     print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
 
+            _print_cost_breakdown(GLOBAL_COST_TRACKER.get_current_rfc_summary(), "RFC RUN COST & TOKEN TELEMETRY")
+
             if enable_visualizer and monitor_url:
                 print(f"\n[LIVE MONITOR] View execution trace and shapes at: {monitor_url}")
                 if sys.stdin.isatty():
@@ -406,6 +465,7 @@ def main():
     print(f"- Run Directory        : {run_root_dir}")
     print(f"- Master Metadata Index: {master_index_path}")
     print(f"- Run Metrics Logged   : {SYSTEM_CONFIG.LOGS_DIR / 'pipeline_runs.csv'}")
+    _print_cost_breakdown(GLOBAL_COST_TRACKER.get_batch_summary(), "BATCH COST & TOKEN TELEMETRY BY MODEL ROLE")
     print(f"{'='*70}\n")
 
     if enable_visualizer and monitor_url:

@@ -59,7 +59,7 @@ class SystemEnvironmentConfig(BaseSettings):
 
     # Compiler & Harness Execution Limits
     LLM_TIMEOUT_SECONDS: int = 180
-    CPSA_TIMEOUT_SECONDS: int = 60
+    CPSA_TIMEOUT_SECONDS: int = 15
     ROLETRAN_TIMEOUT_SECONDS: int = 15
     MAX_REPAIR_ATTEMPTS: int = 50
 

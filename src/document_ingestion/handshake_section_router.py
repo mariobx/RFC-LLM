@@ -69,6 +69,8 @@ def route_handshake_sections(
             response_format={"type": "json_object"},
             timeout=prompt_spec.timeout,
         )
+        from src.cost_tracker import GLOBAL_COST_TRACKER
+        GLOBAL_COST_TRACKER.record_llm_call(response, role="router", model_name=model_name, stage=1)
 
         raw_content = response.choices[0].message.content
         try:

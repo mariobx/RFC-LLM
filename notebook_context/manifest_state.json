@@ -1,9 +1,36 @@
 {
   "config_sha256": "fa9bbc0f35e620a446193163ce020dc71e5f52049c54fea63adef045744a972e",
   "delta_of_this_sync": {
-    "added": [],
+    "added": [
+      "src/cost_tracker.py",
+      "src/verification_engine/snowball_autopsy.py"
+    ],
     "deleted": [],
-    "modified": []
+    "modified": [
+      "README.md",
+      "docs/QUICKSTART_AND_OPERATIONS.md",
+      "docs/VERIFICATION_AND_SELF_HEALING.md",
+      "logs/pipeline_runs.csv",
+      "prompts/03_protocol_extraction.md",
+      "prompts/06_compiler_repair.md",
+      "src/document_ingestion/handshake_section_router.py",
+      "src/document_ingestion/protocol_applicability_gate.py",
+      "src/intermediate_representation/protocol_syntax_tree.py",
+      "src/logging_config.py",
+      "src/main_pipeline_orchestrator.py",
+      "src/pipeline.py",
+      "src/pipeline_events.py",
+      "src/rag_retriever_client.py",
+      "src/semantic_extraction/constrained_protocol_extractor.py",
+      "src/system_config.py",
+      "src/verification_engine/compiler_diagnostic_repair.py",
+      "src/verification_engine/mitre_build_orchestrator.py",
+      "src/verification_engine/trajectory_metadata_exporter.py",
+      "src/visualizer/server.py",
+      "src/visualizer/static/index.html",
+      "tests/test_cpsa_kb_and_agentic_searcher.py",
+      "tests/test_trajectory_and_hardening.py"
+    ]
   },
   "files": {
     ".env.example": {
@@ -26,8 +53,8 @@
     },
     "README.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "bc103f60bea35650dda1a650b56494415d5fde21e835a5f9d76c506332dc1e37",
-      "size_bytes": 15948,
+      "sha256": "409fe2748159c0d890a7cce7c3c85eae7bd350b5556b37b478d5fe628a8b7842",
+      "size_bytes": 17219,
       "status": "included"
     },
     "docs/ARCHITECTURE.md": {
@@ -56,8 +83,8 @@
     },
     "docs/QUICKSTART_AND_OPERATIONS.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "1a6b5b4a5e6fccbf53c90d9dc27078b639595b072eb9435012f90d724bb40dcb",
-      "size_bytes": 12009,
+      "sha256": "3373592eff1fc71253942d750ef48fa52019a2646d4c2b5f6c080719f8b31f96",
+      "size_bytes": 12370,
       "status": "included"
     },
     "docs/README.md": {
@@ -74,8 +101,8 @@
     },
     "docs/VERIFICATION_AND_SELF_HEALING.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "ca025320f86406cd558f4f8a80361a567f1615622a1cd79a60c0dbc42e18b374",
-      "size_bytes": 10362,
+      "sha256": "ae94e3bb7f1345a1077dfb18ac7b80727dabcb8fbca240ada767979495dc1e64",
+      "size_bytes": 11657,
       "status": "included"
     },
     "logs/.gitignore": {
@@ -86,8 +113,8 @@
     },
     "logs/pipeline_runs.csv": {
       "bundle": "(tier4)",
-      "sha256": "a7cf098bfdb299a391431896bf5ab54e6f2aca7eadf2d066cfa2402fa2fd9738",
-      "size_bytes": 27088,
+      "sha256": "8c295d61c8be907b55c3e3f9d8766a8d1849ebe93fd97dd81ff42bfa5bdc0fcd",
+      "size_bytes": 8101,
       "status": "summarized"
     },
     "prompts/01_applicability_gate.md": {
@@ -104,8 +131,8 @@
     },
     "prompts/03_protocol_extraction.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "f664e9e90d9d55d0c6576bbf7030f3c300cae1ce3592c665ff9bd0878fb40d49",
-      "size_bytes": 7239,
+      "sha256": "30dd469ae6b721b6c7f82f0ce6296d99b9fedd2a9b30d0ead3a3077562421a2e",
+      "size_bytes": 8898,
       "status": "included"
     },
     "prompts/04_schema_self_correction.md": {
@@ -122,8 +149,8 @@
     },
     "prompts/06_compiler_repair.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "96816fc4751e5b08602590bdcce2d60643615b681bae8a21ca01298ed3346a63",
-      "size_bytes": 5403,
+      "sha256": "dd84a9c332cdab48b09a4690c73c9528804df43d1ba4a66811f468045467f8b3",
+      "size_bytes": 6993,
       "status": "included"
     },
     "prompts/07_think_token_synthesizer.md": {
@@ -1236,6 +1263,12 @@
       "size_bytes": 2570,
       "status": "included"
     },
+    "src/cost_tracker.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "7e821742be5b30391894a63beffa697099b5f2e7e054e57299b2b704a5f15976",
+      "size_bytes": 12904,
+      "status": "included"
+    },
     "src/document_ingestion/__init__.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
       "sha256": "9332eee6bcf324568084d5cf5048a9408fda64dd4f587bee04273fb822527be2",
@@ -1244,14 +1277,14 @@
     },
     "src/document_ingestion/handshake_section_router.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "c2cbfca72aee135e521e7610201747d113ba3c26fc7a2455520c3a1f64999240",
-      "size_bytes": 4963,
+      "sha256": "8d54821acc2bc2fb6fa0b138a1847e68c17550b4f38b97ee3d8d88884daffcf7",
+      "size_bytes": 5121,
       "status": "included"
     },
     "src/document_ingestion/protocol_applicability_gate.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "c8ec77917afcc460122001acf5e6a61ab021ed8d66860ec6fc1b7d7661184adf",
-      "size_bytes": 4778,
+      "sha256": "29f61aad99923051a536e25bb3a1c2493d9242a1470afc14529d90668000895e",
+      "size_bytes": 4936,
       "status": "included"
     },
     "src/document_ingestion/rfc_header_filter.py": {
@@ -1316,32 +1349,32 @@
     },
     "src/intermediate_representation/protocol_syntax_tree.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "81b3a9386854e315bba89692c5dc0561522a66d13c32ffdbb4918c1a947c7e70",
-      "size_bytes": 33068,
+      "sha256": "8837f5c57aab2f6e8b87ab17c301f019203478409c10ac8392ac491fd2ada378",
+      "size_bytes": 33544,
       "status": "included"
     },
     "src/logging_config.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "b5a79abf1c5f3976258ace05c40bf4dc2581915c16416634a12ccdb9d23d2558",
-      "size_bytes": 6105,
+      "sha256": "f10d50fe277fd5bd7cced2140dda2a6f6d70fe5fa2eff621c60d49fc62e1be5b",
+      "size_bytes": 16225,
       "status": "included"
     },
     "src/main_pipeline_orchestrator.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "630cad532e6fa524590ebebc465a89ebc69c920764ba1ea22d652cfeb51bf705",
-      "size_bytes": 41784,
+      "sha256": "f4c427ad8fb00de072f1edac62b3901accfdc36e86bbbbd3492e358222a3074d",
+      "size_bytes": 48331,
       "status": "included"
     },
     "src/pipeline.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "68cc29521b383bf8f4b308fca0fd6363928ea5b0f39a809776e2600c721add21",
-      "size_bytes": 17077,
+      "sha256": "1a944efeed50fc55449142940a73a89bedc00ca218bf6200c4e8753426e44261",
+      "size_bytes": 19749,
       "status": "included"
     },
     "src/pipeline_events.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "caa37db5fcd1090936ae357a70fee646be5300c4b34f5a1bf79fa5d6854fca7b",
-      "size_bytes": 23871,
+      "sha256": "f763e42efece79abdeeb91a2255f7d2a7c99bc4bcc97f759d4e41f71f8d72415",
+      "size_bytes": 25222,
       "status": "included"
     },
     "src/prompt_loader.py": {
@@ -1352,8 +1385,8 @@
     },
     "src/rag_retriever_client.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "d5b7b27522588c4c08edeb252eaf6b663a2887005276694087023bfa87cdf911",
-      "size_bytes": 47864,
+      "sha256": "fc697842cb3e1e12c19d2702f7d0116a3275ce100f4f630335620fc0718cdf71",
+      "size_bytes": 48880,
       "status": "included"
     },
     "src/semantic_extraction/__init__.py": {
@@ -1364,13 +1397,13 @@
     },
     "src/semantic_extraction/constrained_protocol_extractor.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "dbb2c9fb22b7a012f6107efd72713c11795ab15348a6f2d80082369607992cb7",
-      "size_bytes": 10939,
+      "sha256": "01ab689ca53bd207956055e54a75f3f27fef64e6594b3abc2bf74dc8bf2c42d4",
+      "size_bytes": 12605,
       "status": "included"
     },
     "src/system_config.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "afc968ce2578a8c178211c7fde7619b4f26032fa674d6244f73f2d9298f2567f",
+      "sha256": "1c897a59a3e65a3dd932a4436d3eb0edb5eb30cd93f13cdafeb748d4f1782bc0",
       "size_bytes": 6177,
       "status": "included"
     },
@@ -1382,14 +1415,14 @@
     },
     "src/verification_engine/compiler_diagnostic_repair.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "93c7aecec46ff887713de86fe9cb30b1f8330888f8d5a10c2a3b44f434a0955a",
-      "size_bytes": 9341,
+      "sha256": "601ca8a7683ea0964df3c1c086038cd7b426224034ebf3a7f35e7a6446bf0f97",
+      "size_bytes": 11985,
       "status": "included"
     },
     "src/verification_engine/mitre_build_orchestrator.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "920a0ddd73de784865394f0e19df8967a3860c94e93ef6903b54bd942990fda9",
-      "size_bytes": 7475,
+      "sha256": "0f74f410fcabf487855f35886425c2c3edeeefb76dc42185ba73416d92d80db1",
+      "size_bytes": 13218,
       "status": "included"
     },
     "src/verification_engine/roletran_executability_gate.py": {
@@ -1398,10 +1431,16 @@
       "size_bytes": 6602,
       "status": "included"
     },
+    "src/verification_engine/snowball_autopsy.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "a293af53c0ec29e55f98adc986a68d3bbef1541c105558e1083f67eaa620b2ad",
+      "size_bytes": 18133,
+      "status": "included"
+    },
     "src/verification_engine/trajectory_metadata_exporter.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "bf2372345d8f94d9a4b3e6c8cee0ca47c384cadbc3ffcc37c12daea924a87ae4",
-      "size_bytes": 23744,
+      "sha256": "0ff2a1fed79dac44a699305bb8ff4c81660be78b6e9877453c01efddf57b2a14",
+      "size_bytes": 24323,
       "status": "included"
     },
     "src/visualizer/__init__.py": {
@@ -1412,14 +1451,14 @@
     },
     "src/visualizer/server.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "5be7af9d17de9115bdf3bdcb4609ab11e8a16912cddb5cddedf06b073e16c7d9",
-      "size_bytes": 27966,
+      "sha256": "e437946037a60503fe7c5ff3959b9e1a761bb0c1880b9809ecb9e955631e759e",
+      "size_bytes": 28399,
       "status": "included"
     },
     "src/visualizer/static/index.html": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "b8f91708f9530a5abe8ea26ee942371b89d23b14304fbc773e3af3aef50bf116",
-      "size_bytes": 74380,
+      "sha256": "1417a68828a91a38e2c4fe6ba1e4f792a743fb0c4374c408ab39f6264e4cca56",
+      "size_bytes": 81991,
       "status": "included"
     },
     "tests/conftest.py": {
@@ -1436,8 +1475,8 @@
     },
     "tests/test_cpsa_kb_and_agentic_searcher.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "05d39992d68e37eb7cfeee3524930be1441542f49ac69318c0b7880fa5c59df2",
-      "size_bytes": 10573,
+      "sha256": "8666ff2ddb8c3d829649d6111241cca44585d6db60132c0a863a9902d0484f65",
+      "size_bytes": 25913,
       "status": "included"
     },
     "tests/test_cpsa_scoping_and_prompts.py": {
@@ -1466,7 +1505,7 @@
     },
     "tests/test_trajectory_and_hardening.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "97f9ec12a95389365998f844d05574cae16c578e3315714d6427f5e76e58da77",
+      "sha256": "4503060f3643cf404fd843da358e00fc39256aeafc7b47027e24e564206ec652",
       "size_bytes": 9749,
       "status": "included"
     },
@@ -1483,15 +1522,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-02 20:54:28 UTC",
+  "generated_at": "2026-11-03 00:16:46 UTC",
   "git": {
     "branch": "main",
-    "commit": "b4cd7635e6d6438d11dc27d40760c1ceb6ddd5be",
+    "commit": "5f64ca9aadef3e9f922a332fb51f0d527c1a1700",
     "subject": "chore(context): sync notebook_context bundles with CPSA 4.4.9 KB"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "ebb0ae85d84e858e204c64c397dcaac9dd334235",
-    "subject": "feat(kb): transition to CPSA 4.4.9 Knowledge Base, TOC rebuild flag, Agentic Searcher, and Two-Speed Repair"
+    "commit": "b4cd7635e6d6438d11dc27d40760c1ceb6ddd5be",
+    "subject": "chore(context): sync notebook_context bundles with CPSA 4.4.9 KB"
   }
 }

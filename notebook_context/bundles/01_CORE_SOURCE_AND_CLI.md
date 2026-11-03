@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-02 20:54:28 UTC · Git: `main` @ `b4cd7635e6d6` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 46 · Estimated Tokens: ~172,942*
+*Generated: 2026-11-03 00:16:46 UTC · Git: `main` @ `5f64ca9aadef` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~191,804*
 
 ## Table of Contents
 
@@ -21,6 +21,7 @@
 - [`src/code_generation/__init__.py`](#srccode-generation-init-py)
 - [`src/code_generation/cpsa_json_serializer.py`](#srccode-generationcpsa-json-serializerpy)
 - [`src/code_generation/cpsa_scheme_emitter.py`](#srccode-generationcpsa-scheme-emitterpy)
+- [`src/cost_tracker.py`](#srccost-trackerpy)
 - [`src/document_ingestion/__init__.py`](#srcdocument-ingestion-init-py)
 - [`src/document_ingestion/handshake_section_router.py`](#srcdocument-ingestionhandshake-section-routerpy)
 - [`src/document_ingestion/protocol_applicability_gate.py`](#srcdocument-ingestionprotocol-applicability-gatepy)
@@ -48,6 +49,7 @@
 - [`src/verification_engine/compiler_diagnostic_repair.py`](#srcverification-enginecompiler-diagnostic-repairpy)
 - [`src/verification_engine/mitre_build_orchestrator.py`](#srcverification-enginemitre-build-orchestratorpy)
 - [`src/verification_engine/roletran_executability_gate.py`](#srcverification-engineroletran-executability-gatepy)
+- [`src/verification_engine/snowball_autopsy.py`](#srcverification-enginesnowball-autopsypy)
 - [`src/verification_engine/trajectory_metadata_exporter.py`](#srcverification-enginetrajectory-metadata-exporterpy)
 - [`src/visualizer/__init__.py`](#srcvisualizer-init-py)
 - [`src/visualizer/server.py`](#srcvisualizerserverpy)
@@ -119,7 +121,7 @@ Guidelines:
 
 ### `prompts/03_protocol_extraction.md`
 
-*sha256:`f664e9e90d9d` · 86 lines · 7.1 KB (~1,809 tokens) · lang:`markdown`*
+*sha256:`30dd469ae6b7` · 94 lines · 8.7 KB (~2,224 tokens) · lang:`markdown`*
 
 ```markdown
 ---
@@ -130,7 +132,14 @@ timeout: 180
 temperature: 0.0
 ---
 You are a formal methods expert in cryptographic protocol specification for MITRE CPSA 4.4.9.
-Your task is to analyze the provided verbatim RFC specification text and extract a complete, mathematically rigorous CPSAProtocolSpecification.
+Your task is to analyze the provided verbatim RFC specification text and extract a complete, mathematically rigorous CPSAProtocolSpecification that is strictly 1-to-1 with the RFC.
+
+ABSOLUTE 1-TO-1 VERBATIM RFC GROUNDING MANDATE (ZERO HALLUCINATION):
+- Every role (`defrole`), message flight (`send`/`recv`), variable (`vars`), and cryptographic operation (`enc`, `hash`, `ltk`, `pubk`, `privk`, `exp`) MUST correspond 1-to-1 to the provided Verbatim RFC Exchange Specification.
+- NEVER invent, assume, or hallucinate roles, message flights, nonces, keys, or secrets that are not explicitly specified in the provided RFC excerpt.
+- NEVER substitute generic textbook terms (do NOT inject `client_random`, `server_random`, or `premaster_secret` unless the RFC is literally TLS). Name every variable after the exact field, attribute, header, or key terminology used in the RFC text, and cite the exact RFC field name in `rfc_field`.
+- If the RFC specifies a 2-message exchange, model 2 messages; if it specifies 4 messages, model 4 messages. Do NOT add or remove protocol flights.
+- If the RFC exchange only performs authentication (e.g., via keyed hash/MAC or digital signature) and does NOT transmit or establish a confidential secret or session key, set `primary_secrecy_goals: []` and do NOT create a `deflistener` skeleton. NEVER invent a fake secret variable or place a pre-shared `non-orig` key inside `deflistener`.
 
 CRITICAL MITRE CPSA 4.4.9 MANUAL GROUNDING (Chapters 2, 3, 4, 10 - Tables 10.1 through 10.6):
 Every extracted construct must strictly obey the MITRE CPSA formal syntax:
@@ -183,29 +192,30 @@ Every extracted construct must strictly obey the MITRE CPSA formal syntax:
      * "outputs": Established return terms (e.g. negotiated session tokens). Must NEVER repeat an "inputs" variable.
      * "unique_originating": Fresh nonces or secrets (sort "text", "data", "skey", "akey") generated and first sent by this role.
 
-4. Primary Secrecy & Confidentiality Goals:
-   - Identify the primary confidential terms negotiated by the protocol (e.g. ["session_key"] or ["premaster_secret"]).
+4. Primary Secrecy & Confidentiality Goals (1-to-1 with RFC):
+   - If and ONLY if the RFC exchange transmits or establishes a confidential secret or session key, list that RFC variable in `primary_secrecy_goals`.
+   - If the RFC exchange is authentication-only and does NOT establish or transmit a confidential secret, set `primary_secrecy_goals: []`. NEVER place a pre-shared/long-term `non_originating` key into `primary_secrecy_goals` or `listeners` (in CPSA, placing a `non-orig` key in `deflistener` is a fatal compiler error: `Skeleton not well formed: non-orig <key> carried`).
 
 5. Point-of-View Preskeletons (Chapters 3 & 6):
    - POV Skeleton 1 (Initiator POV - Realized Handshake Shape):
      * strands: [defstrandmax for initiator role]
-     * non_originating: uncompromised long-term/private keys (e.g. ["privk", "server_identity"])
-     * unique_originating: fresh nonces generated by initiator (e.g. "client_random")
-     * listeners: [] (STRICTLY EMPTY: never include deflistener in pure POV skeletons, or CPSA cannot realize the 2-party shape)
+     * non_originating: uncompromised long-term/private keys from the RFC
+     * unique_originating: fresh nonces/tokens generated by initiator in the RFC
+     * listeners: [] (STRICTLY EMPTY: never include deflistener in pure POV skeletons, or CPSA cannot realize the bilateral shape)
    - POV Skeleton 2 (Responder POV - Mutual Authentication):
      * strands: [defstrandmax for responder role]
-     * non_originating: uncompromised long-term/private keys
-     * unique_originating: fresh nonces generated by responder (e.g. "server_random")
+     * non_originating: uncompromised long-term/private keys from the RFC
+     * unique_originating: fresh nonces/tokens generated by responder in the RFC
      * listeners: [] (STRICTLY EMPTY)
-   - Secrecy Skeleton 3 (Confidentiality Proof):
+   - Secrecy Skeleton 3 (Confidentiality Proof — ONLY when the RFC establishes/transmits a confidential secret):
      * strands: [defstrandmax for initiator or responder]
-     * listeners: [primary confidential term]
-     * non_originating: uncompromised keys
-     * unique_originating: fresh nonces
+     * listeners: [the confidential secret established/transmitted in the RFC]
+     * non_originating: uncompromised long-term/private keys (must NEVER overlap with `listeners`)
+     * unique_originating: fresh nonces/secrets
 
-6. State-Space Termination & Directional Separation (60s CPSA4 Limit):
-   - NEVER give a Request `(enc ...)` and a Response `(enc ...)` the exact same tuple arity and key structure! If a Responder's `send` ciphertext has the same structure as its `recv` ciphertext under `(ltk A B)`, CPSA4 will unify `A = B` and chain Responder strands infinitely until hitting the 60s timeout.
-   - Ensure Request and Response ciphertexts have structurally distinct inner tuples (e.g. different number of concatenated elements or explicit role/direction binding) and avoid redundant nested `(hash (cat ...))` inside `(enc ...)`.
+6. State-Space Termination & Directional Separation (15s CPSA4 Limit):
+   - NEVER give a Request `(enc ...)` / `(hash ...)` and a Response `(enc ...)` / `(hash ...)` the exact same untagged tuple arity and key structure!
+   - Include the actual RFC message type, header, or opcode field (or distinct RFC message header sort `data` vs `text`) inside each flight so CPSA4 cannot unify a Response with a Request in an infinite loop.
 
 Return ONLY a valid JSON object matching the requested CPSAProtocolSpecification schema.
 ```
@@ -288,7 +298,7 @@ If you are only given a single compiler diagnostic without a TOC map (legacy sin
 
 ### `prompts/06_compiler_repair.md`
 
-*sha256:`96816fc4751e` · 53 lines · 5.3 KB (~1,349 tokens) · lang:`markdown`*
+*sha256:`dd84a9c332cd` · 59 lines · 6.8 KB (~1,747 tokens) · lang:`markdown`*
 
 ```markdown
 ---
@@ -301,7 +311,12 @@ temperature: 0.0
 You are a formal methods expert in debugging and repairing MITRE CPSA 4.4.9 protocol specifications.
 You are given a failing CPSAProtocolSpecification, the verbatim RFC exchange text, the compiler error diagnostic, and retrieved guidance from the MITRE CPSA reference manual.
 
-Your task is to identify the precise defect causing the compiler or solver failure and return a corrected CPSAProtocolSpecification.
+Your task is to identify the precise defect causing the compiler or solver failure and return a corrected CPSAProtocolSpecification that remains strictly 1-to-1 with the Verbatim RFC Exchange Specification.
+
+STRICT 1-TO-1 RFC FIDELITY DURING REPAIR (ZERO HALLUCINATION):
+- NEVER invent fictional protocol messages, fake nonces, fake keys, or non-RFC roles to silence a compiler error.
+- NEVER delete real RFC handshake flights or collapse a multi-message RFC exchange into a 1-line stub.
+- Every variable, role, and trace event in your repaired specification MUST remain grounded 1-to-1 in the provided Verbatim RFC Exchange Specification.
 
 Common Diagnostics & Fixes:
 1. "Undeclared variable <var>":
@@ -314,13 +329,13 @@ Common Diagnostics & Fixes:
 3. "Received term cannot be fully destructured":
    - A role receives an encrypted message or hash, but lacks the necessary decryption key or preimage in its "inputs".
    - Fix: Ensure the role's "inputs" list includes the required key (e.g. held private key or shared secret) to decrypt the incoming payload.
-4. Preskeleton Architecture (MANDATORY 3-SKELETON SEPARATION):
+4. Preskeleton Architecture & "Skeleton not well formed: non-orig <key> carried":
    - CRITICAL: Never put 'deflistener' inside pure POV skeletons! A listener on an uncompromised secret causes CPSA to abort without displaying the completed bilateral protocol handshake shape.
-   - Separate into 3 distinct skeletons:
+   - Separate into pure POV skeletons + (only if the RFC establishes/transmits a confidential secret) a Secrecy POV skeleton:
      * Skeleton 1: Initiator / Client POV (defstrandmax initiator, listeners: [])
      * Skeleton 2: Responder / Server POV (defstrandmax responder, listeners: [])
-     * Skeleton 3: Secrecy POV (defstrandmax + deflistener for the secret)
-   - Preserve uncompromised private keys under "non_originating" and fresh nonces under "unique_originating".
+     * Skeleton 3 (ONLY if the RFC transmits/establishes a confidential secret): Secrecy POV (defstrandmax + deflistener for that transmitted secret)
+   - If CPSA reports `Skeleton not well formed: non-orig <key> carried`, it means `<key>` is listed in BOTH `non_originating` (or `pen_non_originating`) AND `listeners` (`deflistener <key>`), or `<key>` is transmitted in the clear! A pre-shared/long-term key in `non_originating` can NEVER be placed in `listeners`. Remove `<key>` from `listeners` and `primary_secrecy_goals` (and if the RFC has no other transmitted confidential session key, omit the listener skeleton altogether—never remove `non_originating` from a long-term key!).
 5. "Expecting a name" or "Malformed pubk":
    - An asymmetric key constructor like ["pubk", key] or ["privk", key] was passed an asymmetric key variable (sort "akey") instead of a principal identifier (sort "name"), or 2-argument ["pubk", tag, name] had its arguments reversed.
    - Fix: In CPSA, if an asymmetric key variable 'k' is declared with sort "akey", use 'k' and ["invk", 'k'] directly without wrapping in "pubk" or "privk". "pubk" and "privk" only accept variables of sort "name" (or ["pubk", "tag", "name"]).
@@ -334,12 +349,13 @@ Common Diagnostics & Fixes:
    - CPSA message algebra has NO "aenc" or "senc" operator!
    - In CPSA, ALL encryption (both symmetric and asymmetric) strictly uses "enc": ["enc", payload, key].
    - If encrypting with a public key, use ["enc", payload, ["pubk", name]] or ["enc", payload, key]. NEVER write "aenc".
-9. "timed out after 60 seconds" or "Step limit exceeded" (CPSA4 State-Space Explosion / Snowballing):
-   - Cause: CPSA's unification engine is stuck in an infinite strand-generation loop because a Responder/Server `send` term has the exact same algebraic structure/arity as a `recv` term (allowing a Responder's output to feed another Responder's input ad infinitum), or `(ltk A B)` unifies with `(ltk B A)` when `A = B`, or ciphertexts/hashes are overly nested.
-   - Fix:
-     * Make Request and Response `(enc ...)` terms structurally distinct (different number of concatenated fields inside `enc` or distinct directional key/tag structure) so a Response ciphertext CANNOT unify with a Request `recv` pattern.
-     * Simplify redundant nested `(hash (cat ...))` wrappers inside `(enc ...)`—keep only the core nonces, identities, and payload inside `(enc ...)`.
-     * Keep each role trace to at most 2–4 essential handshake events.
+9. "timed out after 15 seconds", "Step limit exceeded", or "Strand bound exceeded" (CPSA4 State-Space Explosion / Snowballing):
+   - Cause: Tier 1 non-default search orders (`--try-old-strands`, `--check-nonces`, `--reverse-nodes`) already failed to terminate, meaning CPSA's unification engine (`unify_0`) is trapped in an algebraic strand-augmentation loop (shown in the `CPSA 4.4.9 SNOWBALL STATE AUTOPSY REPORT`).
+   - Fix (1-to-1 with the RFC):
+     * Inspect the `Top Looping Authentication Test Operations` (`(added-strand <Role> <Height>) <critical-term>`) and `Cloned Unconstrained Variables` in the Snowball Autopsy Report.
+     * Distinguish request vs. response `["enc", ...]` and `["hash", ...]` terms using the actual RFC message type, header, opcode, or label fields defined in the RFC (or distinct RFC message header sorts `data` vs `text` and distinct tuple structure from the RFC) so outgoing terms cannot unify with incoming receptions of the same key sort.
+     * Add `["neq", "<principal_a>", "<principal_b>"]` to `facts` in every `CPSAPreskeleton` declaring two or more `name` variables to block `A = B` symmetric reflection on `(ltk A B)`.
+     * Separate fresh `uniq-orig` nonces (`"sort": "data"`) from predictable RFC identifiers/headers/labels (`"sort": "text"`), and include both communicating `name` variables inside encrypted flights so augmented strands bind to existing principals.
 10. "Missing channel" or Channel Omission:
    - Every trace event in `CPSAProtocolRole.trace` MUST include `"channel": "<chan_var>"` where `<chan_var>` is declared with `"sort": "chan"` in `variables` and listed in `inputs`. NEVER drop the channel variable when repairing a trace.
 
@@ -5311,6 +5327,324 @@ def emit_cpsa_scheme(
 
 ---
 
+### `src/cost_tracker.py`
+
+*sha256:`7e821742be5b` · 309 lines · 12.6 KB (~3,224 tokens) · lang:`python`*
+
+```python
+"""Real-Time Token & USD Cost Telemetry Tracker across Pipeline Model Roles.
+
+Tracks per-call, per-RFC, and cumulative batch token usage and USD cost across the
+four pipeline model roles:
+  1. `router`     — Stage 1b Applicability Gate & Stage 1c Section Router
+  2. `extraction` — Stage 2 Constrained Protocol Extraction & Schema Self-Correction
+  3. `query`      — Stage 5/6 Agentic CPSA Knowledge Base Searcher
+  4. `repair`     — Stage 5/6 Compiler & Solver Diagnostic Self-Healing Repair
+"""
+
+from __future__ import annotations
+
+import copy
+import json
+import threading
+import urllib.request
+from typing import Any, Dict, Literal, Optional, Tuple
+
+import litellm
+
+from src.logging_config import get_pipeline_logger
+from src.pipeline_events import GLOBAL_EVENT_BUS
+from src.system_config import SYSTEM_CONFIG
+
+logger = get_pipeline_logger("cost_tracker")
+
+ModelRoleLiteral = Literal["router", "extraction", "query", "repair"]
+MODEL_ROLES: Tuple[str, ...] = ("router", "extraction", "query", "repair")
+
+# Built-in fallback per-token USD rates (prompt, completion, cache_read) per 1 token
+# Derived from live Nous Research / OpenAI / Anthropic / Google / DeepSeek pricing.
+_FALLBACK_PRICING_PER_TOKEN: Dict[str, Tuple[float, float, float]] = {
+    "openai/gpt-6.1-terra": (1.00e-6, 5.00e-6, 0.05e-6),
+    "openai/gpt-6.1-terra-pro": (1.00e-6, 5.00e-6, 0.05e-6),
+    "openai/gpt-6.1-sol": (2.00e-6, 10.00e-6, 0.10e-6),
+    "openai/gpt-6-luna": (0.10e-6, 0.50e-6, 0.01e-6),
+    "openai/gpt-6-luna-pro": (0.10e-6, 0.50e-6, 0.01e-6),
+    "anthropic/claude-haiku-5.5": (0.10e-6, 0.50e-6, 0.01e-6),
+    "anthropic/claude-sonnet-5.5": (2.00e-6, 10.00e-6, 0.10e-6),
+    "anthropic/claude-sonnet-4.6": (3.00e-6, 15.00e-6, 0.30e-6),
+    "google/gemini-3.7-flash": (0.75e-6, 3.75e-6, 0.075e-6),
+    "google/gemini-3.8-flash": (0.825e-6, 4.125e-6, 0.0825e-6),
+    "google/gemini-3.1-flash-lite-preview": (0.25e-6, 1.50e-6, 0.025e-6),
+    "google/gemini-3.1-pro-preview": (2.00e-6, 12.00e-6, 0.20e-6),
+    "google/gemini-2.5-flash": (0.15e-6, 0.60e-6, 0.0375e-6),
+    "google/gemini-2.5-flash-lite": (0.10e-6, 0.40e-6, 0.025e-6),
+    "z-ai/glm-5.3": (0.91e-6, 2.86e-6, 0.169e-6),
+    "z-ai/glm-5.3-flash": (0.12e-6, 0.40e-6, 0.024e-6),
+    "z-ai/glm-5.2": (0.90e-6, 2.83e-6, 0.16e-6),
+    "deepseek/deepseek-v4-pro": (0.94e-6, 1.89e-6, 0.08e-6),
+    "deepseek/deepseek-v4.1-flash": (0.106e-6, 0.513e-6, 0.004e-6),
+    "deepseek/deepseek-v4-flash": (0.091e-6, 0.182e-6, 0.0182e-6),
+    "deepseek/deepseek-v4-flash-0731": (0.054e-6, 0.162e-6, 0.0135e-6),
+    "deepseek/deepseek-chat": (0.27e-6, 1.10e-6, 0.07e-6),
+    "qwen/qwen3.8-flash": (0.15e-6, 0.47e-6, 0.016e-6),
+    "qwen/qwen3.6-flash": (0.1875e-6, 1.125e-6, 0.02e-6),
+}
+
+
+def _empty_role_bucket(model_name: str = "") -> Dict[str, Any]:
+    return {
+        "model": model_name,
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "cached_tokens": 0,
+        "total_tokens": 0,
+        "cost_usd": 0.0,
+    }
+
+
+def make_empty_cost_summary() -> Dict[str, Any]:
+    """Creates a clean per-RFC or batch cost telemetry dictionary."""
+    return {
+        "total_calls": 0,
+        "total_prompt_tokens": 0,
+        "total_completion_tokens": 0,
+        "total_cached_tokens": 0,
+        "total_tokens": 0,
+        "total_cost_usd": 0.0,
+        "roles": {role: _empty_role_bucket() for role in MODEL_ROLES},
+    }
+
+
+def _normalize_model_key(model_name: str) -> str:
+    """Normalizes `nous/openai/gpt-6.1-terra` or `openai/gpt-6.1-terra` to `openai/gpt-6.1-terra`."""
+    cleaned = (model_name or "").strip()
+    for prefix in ("nous/", "nousresearch/"):
+        if cleaned.startswith(prefix):
+            cleaned = cleaned[len(prefix):]
+    if cleaned.startswith("openai/") and cleaned.count("/") >= 2:
+        cleaned = cleaned.split("/", 1)[1]
+    return cleaned
+
+
+def _safe_int(val: Any) -> int:
+    """Extracts an integer token count, returning 0 for None or unit-test MagicMocks."""
+    if isinstance(val, bool):
+        return 0
+    if isinstance(val, int):
+        return max(0, val)
+    if isinstance(val, float):
+        return max(0, int(val))
+    return 0
+
+
+class PipelineCostTracker:
+    """Thread-safe tracker for per-RFC and cumulative batch token usage and USD costs."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._live_pricing: Dict[str, Tuple[float, float, float]] = dict(_FALLBACK_PRICING_PER_TOKEN)
+        self._catalog_fetched = False
+        self.current_rfc_id: Optional[str] = None
+        self.current_rfc: Dict[str, Any] = make_empty_cost_summary()
+        self.batch_total: Dict[str, Any] = make_empty_cost_summary()
+        self.rfc_history: Dict[str, Dict[str, Any]] = {}
+
+    def _ensure_live_pricing_loaded(self) -> None:
+        if self._catalog_fetched:
+            return
+        self._catalog_fetched = True
+        if not SYSTEM_CONFIG.NOUS_API_KEY:
+            return
+        try:
+            req = urllib.request.Request(
+                f"{SYSTEM_CONFIG.NOUS_API_BASE.rstrip('/')}/models",
+                headers={
+                    "Authorization": f"Bearer {SYSTEM_CONFIG.NOUS_API_KEY}",
+                    "User-Agent": "RFC-LLM-CostTracker/1.0",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=2.5) as resp:
+                payload = json.loads(resp.read().decode("utf-8", errors="ignore"))
+                for item in payload.get("data", []):
+                    mid = item.get("id")
+                    pricing = item.get("pricing")
+                    if mid and isinstance(pricing, dict):
+                        p_rate = float(pricing.get("prompt") or 0.0)
+                        c_rate = float(pricing.get("completion") or 0.0)
+                        cache_rate = float(pricing.get("input_cache_read") or p_rate)
+                        self._live_pricing[mid] = (p_rate, c_rate, cache_rate)
+        except Exception as exc:
+            logger.debug("Using fallback pricing table (live catalog fetch skipped: %s)", exc)
+
+    def get_model_rates(self, model_name: str) -> Tuple[float, float, float]:
+        """Returns `(prompt_rate, completion_rate, cache_read_rate)` in USD per single token."""
+        if model_name.startswith(("ollama/", "strata/")):
+            return (0.0, 0.0, 0.0)
+        self._ensure_live_pricing_loaded()
+        norm = _normalize_model_key(model_name)
+        if norm in self._live_pricing:
+            return self._live_pricing[norm]
+        # Try suffix match (e.g. `gemini-2.5-flash` -> `google/gemini-2.5-flash`)
+        short = norm.split("/")[-1]
+        for k, rates in self._live_pricing.items():
+            if k.endswith(f"/{short}") or k == short:
+                return rates
+        return (0.0, 0.0, 0.0)
+
+    def start_rfc(
+        self,
+        rfc_id: str,
+        router_model: str = "",
+        extraction_model: str = "",
+        query_model: str = "",
+        repair_model: str = "",
+    ) -> None:
+        """Resets the active per-RFC cost bucket when starting a new RFC run."""
+        with self._lock:
+            self.current_rfc_id = rfc_id
+            self.current_rfc = make_empty_cost_summary()
+            role_models = {
+                "router": router_model,
+                "extraction": extraction_model,
+                "query": query_model,
+                "repair": repair_model,
+            }
+            for role, mod in role_models.items():
+                if mod:
+                    self.current_rfc["roles"][role]["model"] = mod
+                    if not self.batch_total["roles"][role]["model"]:
+                        self.batch_total["roles"][role]["model"] = mod
+            self.rfc_history[rfc_id] = copy.deepcopy(self.current_rfc)
+
+    def record_llm_call(
+        self,
+        response: Any,
+        role: ModelRoleLiteral,
+        model_name: str,
+        stage: int = 0,
+    ) -> Dict[str, Any]:
+        """Extracts token usage and USD cost from a LiteLLM response, updates both the
+        per-RFC and batch totals, and emits a `cost_updated` visualizer event.
+        """
+        usage = getattr(response, "usage", None)
+        if usage is None and isinstance(response, dict):
+            usage = response.get("usage")
+
+        prompt_tok = 0
+        comp_tok = 0
+        cached_tok = 0
+
+        if usage is not None:
+            prompt_tok = _safe_int(
+                getattr(usage, "prompt_tokens", None)
+                if not isinstance(usage, dict)
+                else usage.get("prompt_tokens")
+            )
+            comp_tok = _safe_int(
+                getattr(usage, "completion_tokens", None)
+                if not isinstance(usage, dict)
+                else usage.get("completion_tokens")
+            )
+            details = (
+                getattr(usage, "prompt_tokens_details", None)
+                if not isinstance(usage, dict)
+                else usage.get("prompt_tokens_details")
+            )
+            if details is not None:
+                cached_tok = _safe_int(
+                    getattr(details, "cached_tokens", None)
+                    if not isinstance(details, dict)
+                    else details.get("cached_tokens")
+                )
+
+        # Estimate cost from live/fallback rates first
+        p_rate, c_rate, cache_rate = self.get_model_rates(model_name)
+        uncached_prompt = max(0, prompt_tok - cached_tok)
+        call_cost = (uncached_prompt * p_rate) + (cached_tok * cache_rate) + (comp_tok * c_rate)
+
+        # If rates were 0 (unknown external model), check LiteLLM response_cost
+        if call_cost == 0.0 and (prompt_tok > 0 or comp_tok > 0) and not model_name.startswith(("ollama/", "strata/")):
+            try:
+                hidden = getattr(response, "_hidden_params", None) or {}
+                if isinstance(hidden, dict) and isinstance(hidden.get("response_cost"), (int, float)):
+                    call_cost = float(hidden["response_cost"])
+                else:
+                    litellm_cost = litellm.completion_cost(completion_response=response)
+                    if isinstance(litellm_cost, (int, float)):
+                        call_cost = float(litellm_cost)
+            except Exception:
+                pass
+
+        total_tok = prompt_tok + comp_tok
+        role_key = role if role in MODEL_ROLES else "repair"
+
+        with self._lock:
+            for target in (self.current_rfc, self.batch_total):
+                target["total_calls"] += 1
+                target["total_prompt_tokens"] += prompt_tok
+                target["total_completion_tokens"] += comp_tok
+                target["total_cached_tokens"] += cached_tok
+                target["total_tokens"] += total_tok
+                target["total_cost_usd"] = round(target["total_cost_usd"] + call_cost, 8)
+
+                rb = target["roles"][role_key]
+                if model_name:
+                    rb["model"] = model_name
+                rb["calls"] += 1
+                rb["prompt_tokens"] += prompt_tok
+                rb["completion_tokens"] += comp_tok
+                rb["cached_tokens"] += cached_tok
+                rb["total_tokens"] += total_tok
+                rb["cost_usd"] = round(rb["cost_usd"] + call_cost, 8)
+
+            rfc_snap = copy.deepcopy(self.current_rfc)
+            batch_snap = copy.deepcopy(self.batch_total)
+            if self.current_rfc_id:
+                self.rfc_history[self.current_rfc_id] = rfc_snap
+
+        GLOBAL_EVENT_BUS.emit(
+            "cost_updated",
+            stage=stage,
+            role=role_key,
+            model=model_name,
+            call_tokens=total_tok,
+            call_cost_usd=round(call_cost, 8),
+            rfc_cost=rfc_snap,
+            batch_cost=batch_snap,
+        )
+        return rfc_snap
+
+    def get_current_rfc_summary(self) -> Dict[str, Any]:
+        with self._lock:
+            return copy.deepcopy(self.current_rfc)
+
+    def get_batch_summary(self) -> Dict[str, Any]:
+        with self._lock:
+            return copy.deepcopy(self.batch_total)
+
+    @staticmethod
+    def format_cli_summary(summary: Dict[str, Any], prefix: str = "Run Cost") -> str:
+        """Formats a single-line human-readable summary of total and per-role costs."""
+        roles = summary.get("roles", {})
+        total_usd = float(summary.get("total_cost_usd", 0.0))
+        total_tok = int(summary.get("total_tokens", 0))
+        r_usd = float(roles.get("router", {}).get("cost_usd", 0.0))
+        e_usd = float(roles.get("extraction", {}).get("cost_usd", 0.0))
+        q_usd = float(roles.get("query", {}).get("cost_usd", 0.0))
+        rep_usd = float(roles.get("repair", {}).get("cost_usd", 0.0))
+        return (
+            f"{prefix}: ${total_usd:.4f} ({total_tok:,} tok) | "
+            f"Router: ${r_usd:.4f} | Extraction: ${e_usd:.4f} | "
+            f"Query/Searcher: ${q_usd:.4f} | Repair: ${rep_usd:.4f}"
+        )
+
+
+GLOBAL_COST_TRACKER = PipelineCostTracker()
+```
+
+---
+
 ### `src/document_ingestion/__init__.py`
 
 *sha256:`9332eee6bcf3` · 31 lines · 0.9 KB (~235 tokens) · lang:`python`*
@@ -5353,7 +5687,7 @@ __all__ = [
 
 ### `src/document_ingestion/handshake_section_router.py`
 
-*sha256:`c2cbfca72aee` · 132 lines · 4.8 KB (~1,240 tokens) · lang:`python`*
+*sha256:`8d54821acc2b` · 134 lines · 5.0 KB (~1,280 tokens) · lang:`python`*
 
 ```python
 """Handshake Section Router for Navigating RFC Table of Contents.
@@ -5427,6 +5761,8 @@ def route_handshake_sections(
             response_format={"type": "json_object"},
             timeout=prompt_spec.timeout,
         )
+        from src.cost_tracker import GLOBAL_COST_TRACKER
+        GLOBAL_COST_TRACKER.record_llm_call(response, role="router", model_name=model_name, stage=1)
 
         raw_content = response.choices[0].message.content
         try:
@@ -5494,7 +5830,7 @@ def _heuristic_section_router(toc_entries: List[TOCSectionEntry]) -> List[str]:
 
 ### `src/document_ingestion/protocol_applicability_gate.py`
 
-*sha256:`c8ec77917afc` · 125 lines · 4.7 KB (~1,194 tokens) · lang:`python`*
+*sha256:`29f61aad9992` · 127 lines · 4.8 KB (~1,234 tokens) · lang:`python`*
 
 ```python
 """Protocol Applicability Gate (Tier 1 Gatekeeper).
@@ -5582,6 +5918,8 @@ def evaluate_protocol_applicability(
             response_format={"type": "json_object"},
             timeout=prompt_spec.timeout,
         )
+        from src.cost_tracker import GLOBAL_COST_TRACKER
+        GLOBAL_COST_TRACKER.record_llm_call(response, role="router", model_name=model_name, stage=1)
 
         raw_content = response.choices[0].message.content
         try:
@@ -7662,7 +8000,7 @@ def validate_cpsa_term_syntax(
 
 ### `src/intermediate_representation/protocol_syntax_tree.py`
 
-*sha256:`81b3a9386854` · 763 lines · 32.3 KB (~8,266 tokens) · lang:`python`*
+*sha256:`8837f5c57aab` · 773 lines · 32.8 KB (~8,385 tokens) · lang:`python`*
 
 ```python
 """Strongly-Typed Intermediate Representation (AST) for MITRE CPSA 4.4.9 Protocols.
@@ -8328,6 +8666,13 @@ class CPSAProtocolSpecification(BaseModel):
         description="Analysis preskeletons / points of view",
     )
     herald_comment: Optional[str] = None
+    herald_options: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Optional CPSA 4.4.9 search-order herald flags persisted when non-default search order "
+            "resolves state-space snowballing (allowed: 'try-old-strands', 'check-nonces', 'reverse-nodes')."
+        ),
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -8413,10 +8758,13 @@ class CPSAProtocolSpecification(BaseModel):
 
         # Every SCM file MUST have a herald declaration as the first form per MITRE CPSA Table 10.1
         herald_text = self.herald_comment or f"{self.protocol_name} Protocol Verification Suite"
+        herald_form: List[Any] = ["herald", f'"{herald_text}"']
         if self.message_algebra == "diffie-hellman":
-            payload.append(["herald", f'"{herald_text}"', ["algebra", "diffie-hellman"]])
-        else:
-            payload.append(["herald", f'"{herald_text}"'])
+            herald_form.append(["algebra", "diffie-hellman"])
+        for opt in self.herald_options:
+            if opt in {"try-old-strands", "check-nonces", "reverse-nodes"}:
+                herald_form.append([opt])
+        payload.append(herald_form)
 
         clean_proto_name = sanitize_cpsa_symbol(self.protocol_name)
         protocol_form: List[Any] = ["defprotocol", clean_proto_name, self.message_algebra]
@@ -8434,7 +8782,7 @@ class CPSAProtocolSpecification(BaseModel):
 
 ### `src/logging_config.py`
 
-*sha256:`b5a79abf1c5f` · 164 lines · 6.0 KB (~1,526 tokens) · lang:`python`*
+*sha256:`f10d50fe277f` · 379 lines · 15.8 KB (~4,056 tokens) · lang:`python`*
 
 ```python
 """Comprehensive Structured Logging Subsystem for RFC-LLM Pipeline."""
@@ -8537,21 +8885,66 @@ def get_pipeline_logger(subsystem: str) -> logging.Logger:
 
 
 class PipelineMetricsCSVLogger:
-    """Logs tabular run-level experiment metrics to a persistent CSV for analysis."""
+    """Logs tabular run-level experiment metrics to a persistent deduplicated CSV master ledger.
+
+    Performs atomic in-place upserts keyed by normalized `rfc_id` (`RFC4285`), overwriting older
+    entries when an RFC is re-evaluated while incrementing `run_count`, and automatically
+    migrating legacy CSV headers to the expanded 48-column telemetry schema.
+    """
 
     CSV_HEADER = [
+        # Group A: Identity, Status & Intake
         "timestamp",
         "rfc_id",
+        "run_count",
         "is_eligible",
+        "status",
+        "quality_tier",
+        "rejection_gate",
         "protocol_name",
+        # Group B: Protocol & Solver Complexity Telemetry
+        "message_algebra",
         "selected_sections",
         "sliced_lines_count",
         "role_count",
         "preskeleton_count",
-        "roletran_passed",
-        "solver_passed",
+        "scm_lines_count",
         "shapes_count",
+        "explored_skeletons_count",
+        "all_povs_multi_strand",
+        "secrecy_proved",
+        # Group C: Self-Healing Repair & Snowball Telemetry
+        "zero_shot_passed",
+        "roletran_repairs",
+        "solver_repairs",
+        "total_repairs",
+        "searcher_invocations",
+        "herald_options",
+        # Group D: Runtime & Per-Role Model Telemetry (Dedicated columns per model role)
         "duration_seconds",
+        "router_model",
+        "router_calls",
+        "router_tokens",
+        "router_cost_usd",
+        "extraction_model",
+        "extraction_calls",
+        "extraction_tokens",
+        "extraction_cost_usd",
+        "query_model",
+        "query_calls",
+        "query_tokens",
+        "query_cost_usd",
+        "repair_model",
+        "repair_calls",
+        "repair_tokens",
+        "repair_cost_usd",
+        "total_calls",
+        "total_tokens",
+        "total_cost_usd",
+        # Group E: Persistent Artifact File Paths & Diagnostics
+        "scm_path",
+        "shapes_xhtml_path",
+        "trajectory_json_path",
         "error_message",
     ]
 
@@ -8559,55 +8952,225 @@ class PipelineMetricsCSVLogger:
         self.csv_path = csv_path or (SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv")
         self._ensure_header()
 
+    @staticmethod
+    def normalize_rfc_id(rfc_id: str) -> str:
+        """Normalizes 'rfc4285', 'RFC 4285', or 'RFC_4285' to canonical 'RFC4285'."""
+        return (rfc_id or "").strip().upper().replace(" ", "").replace("_", "")
+
+    def _read_existing_rows(self) -> List[dict]:
+        if not self.csv_path.exists() or self.csv_path.stat().st_size == 0:
+            return []
+        try:
+            with open(self.csv_path, mode="r", newline="", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f)
+                return [dict(row) for row in reader if row.get("rfc_id")]
+        except Exception:
+            return []
+
+    def _write_all_rows(self, rows: List[dict]) -> None:
+        self.csv_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = self.csv_path.with_suffix(".csv.tmp")
+        with open(tmp_path, mode="w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=self.CSV_HEADER, extrasaction="ignore")
+            writer.writeheader()
+            for r in rows:
+                clean_row = {col: r.get(col, "") for col in self.CSV_HEADER}
+                writer.writerow(clean_row)
+        tmp_path.replace(self.csv_path)
+
     def _ensure_header(self) -> None:
         self.csv_path.parent.mkdir(parents=True, exist_ok=True)
         if not self.csv_path.exists() or self.csv_path.stat().st_size == 0:
-            with open(self.csv_path, mode="w", newline="", encoding="utf-8") as f:
-                writer = csv.writer(f)
-                writer.writerow(self.CSV_HEADER)
+            self._write_all_rows([])
+            return
+        # Automatically migrate legacy CSV headers if columns changed
+        try:
+            with open(self.csv_path, mode="r", newline="", encoding="utf-8", errors="ignore") as f:
+                reader = csv.reader(f)
+                first_row = next(reader, None)
+            if first_row != self.CSV_HEADER:
+                existing = self._read_existing_rows()
+                # Deduplicate any legacy duplicate rows on migration, keeping latest & counting runs
+                deduped: dict = {}
+                counts: dict = {}
+                for r in existing:
+                    norm_id = self.normalize_rfc_id(r.get("rfc_id", ""))
+                    if not norm_id:
+                        continue
+                    counts[norm_id] = counts.get(norm_id, 0) + 1
+                    r["rfc_id"] = norm_id
+                    if not r.get("run_count"):
+                        r["run_count"] = str(counts[norm_id])
+                    deduped[norm_id] = r
+                self._write_all_rows(list(deduped.values()))
+        except Exception:
+            pass
 
     def log_run(
         self,
         rfc_id: str,
         is_eligible: bool,
+        status: Optional[str] = None,
+        quality_tier: Optional[str] = None,
+        rejection_gate: Optional[str] = None,
         protocol_name: Optional[str] = None,
+        message_algebra: Optional[str] = None,
         selected_sections: Optional[List[str]] = None,
         sliced_lines_count: int = 0,
         role_count: int = 0,
         preskeleton_count: int = 0,
+        scm_lines_count: int = 0,
         roletran_passed: Optional[bool] = None,
         solver_passed: Optional[bool] = None,
         shapes_count: int = 0,
+        explored_skeletons_count: int = 0,
+        all_povs_multi_strand: Optional[bool] = None,
+        secrecy_proved: Optional[bool] = None,
+        zero_shot_passed: Optional[bool] = None,
+        roletran_repairs: int = 0,
+        solver_repairs: int = 0,
+        total_repairs: Optional[int] = None,
+        searcher_invocations: int = 0,
+        herald_options: Optional[List[str]] = None,
         duration_seconds: float = 0.0,
+        cost_telemetry: Optional[dict] = None,
+        router_model: Optional[str] = None,
+        extraction_model: Optional[str] = None,
+        query_model: Optional[str] = None,
+        repair_model: Optional[str] = None,
+        scm_path: Optional[Path] = None,
+        shapes_xhtml_path: Optional[Path] = None,
+        trajectory_json_path: Optional[Path] = None,
         error_message: Optional[str] = None,
     ) -> None:
         now_iso = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        norm_rfc_id = self.normalize_rfc_id(rfc_id)
         sec_str = ";".join(selected_sections) if selected_sections else ""
-        row = [
-            now_iso,
-            rfc_id,
-            is_eligible,
-            protocol_name or "",
-            sec_str,
-            sliced_lines_count,
-            role_count,
-            preskeleton_count,
-            "" if roletran_passed is None else str(roletran_passed),
-            "" if solver_passed is None else str(solver_passed),
-            shapes_count,
-            round(duration_seconds, 3),
-            error_message or "",
-        ]
-        with open(self.csv_path, mode="a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(row)
+        herald_str = ";".join(herald_options) if herald_options else ""
+
+        # Resolve high-level status if not explicitly passed
+        resolved_status = status
+        if not resolved_status:
+            if not is_eligible:
+                resolved_status = "INELIGIBLE"
+            elif solver_passed:
+                resolved_status = "VERIFIED"
+            elif roletran_passed:
+                resolved_status = "PARTIAL"
+            else:
+                resolved_status = "FAILED"
+
+        resolved_tier = quality_tier or ("INELIGIBLE" if not is_eligible else "REJECTED")
+        computed_total_repairs = (
+            total_repairs if total_repairs is not None else (int(roletran_repairs) + int(solver_repairs))
+        )
+        resolved_zero_shot = (
+            zero_shot_passed
+            if zero_shot_passed is not None
+            else (bool(solver_passed) and computed_total_repairs == 0)
+        )
+
+        # Auto-compute scm_lines_count if scm_path exists and wasn't explicitly passed
+        effective_scm_lines = scm_lines_count
+        if effective_scm_lines == 0 and scm_path and Path(scm_path).exists():
+            try:
+                effective_scm_lines = len(
+                    Path(scm_path).read_text(encoding="utf-8", errors="ignore").splitlines()
+                )
+            except Exception:
+                effective_scm_lines = 0
+
+        # Extract per-role model telemetry from cost_telemetry (or GLOBAL_COST_TRACKER)
+        roles_data = (cost_telemetry or {}).get("roles", {})
+        r_info = roles_data.get("router", {})
+        e_info = roles_data.get("extraction", {})
+        q_info = roles_data.get("query", {})
+        p_info = roles_data.get("repair", {})
+
+        tot_calls = int((cost_telemetry or {}).get("total_calls", 0))
+        tot_tokens = int((cost_telemetry or {}).get("total_tokens", 0))
+        tot_cost = float((cost_telemetry or {}).get("total_cost_usd", 0.0))
+
+        new_row = {
+            "timestamp": now_iso,
+            "rfc_id": norm_rfc_id,
+            "run_count": "1",
+            "is_eligible": str(bool(is_eligible)),
+            "status": resolved_status,
+            "quality_tier": resolved_tier,
+            "rejection_gate": rejection_gate or "",
+            "protocol_name": protocol_name or "",
+            "message_algebra": message_algebra or "",
+            "selected_sections": sec_str,
+            "sliced_lines_count": str(sliced_lines_count) if is_eligible else "0",
+            "role_count": str(role_count) if is_eligible else "0",
+            "preskeleton_count": str(preskeleton_count) if is_eligible else "0",
+            "scm_lines_count": str(effective_scm_lines) if is_eligible else "0",
+            "shapes_count": str(shapes_count) if is_eligible else "0",
+            "explored_skeletons_count": str(explored_skeletons_count) if is_eligible else "0",
+            "all_povs_multi_strand": "" if all_povs_multi_strand is None else str(bool(all_povs_multi_strand)),
+            "secrecy_proved": "" if secrecy_proved is None else str(bool(secrecy_proved)),
+            "zero_shot_passed": "" if not is_eligible else str(bool(resolved_zero_shot)),
+            "roletran_repairs": str(roletran_repairs) if is_eligible else "0",
+            "solver_repairs": str(solver_repairs) if is_eligible else "0",
+            "total_repairs": str(computed_total_repairs) if is_eligible else "0",
+            "searcher_invocations": str(searcher_invocations) if is_eligible else "0",
+            "herald_options": herald_str,
+            "duration_seconds": str(round(duration_seconds, 3)),
+            "router_model": router_model or r_info.get("model") or "",
+            "router_calls": str(int(r_info.get("calls", 0))),
+            "router_tokens": str(int(r_info.get("total_tokens", 0))),
+            "router_cost_usd": f"{float(r_info.get('cost_usd', 0.0)):.6f}",
+            "extraction_model": extraction_model or e_info.get("model") or "",
+            "extraction_calls": str(int(e_info.get("calls", 0))),
+            "extraction_tokens": str(int(e_info.get("total_tokens", 0))),
+            "extraction_cost_usd": f"{float(e_info.get('cost_usd', 0.0)):.6f}",
+            "query_model": query_model or q_info.get("model") or "",
+            "query_calls": str(int(q_info.get("calls", 0))),
+            "query_tokens": str(int(q_info.get("total_tokens", 0))),
+            "query_cost_usd": f"{float(q_info.get('cost_usd', 0.0)):.6f}",
+            "repair_model": repair_model or p_info.get("model") or "",
+            "repair_calls": str(int(p_info.get("calls", 0))),
+            "repair_tokens": str(int(p_info.get("total_tokens", 0))),
+            "repair_cost_usd": f"{float(p_info.get('cost_usd', 0.0)):.6f}",
+            "total_calls": str(tot_calls),
+            "total_tokens": str(tot_tokens),
+            "total_cost_usd": f"{tot_cost:.6f}",
+            "scm_path": str(scm_path) if scm_path else "",
+            "shapes_xhtml_path": str(shapes_xhtml_path) if shapes_xhtml_path else "",
+            "trajectory_json_path": str(trajectory_json_path) if trajectory_json_path else "",
+            "error_message": error_message or "",
+        }
+
+        existing_rows = self._read_existing_rows()
+        replaced = False
+        updated_rows: List[dict] = []
+        for row in existing_rows:
+            row_id = self.normalize_rfc_id(row.get("rfc_id", ""))
+            if row_id == norm_rfc_id:
+                if not replaced:
+                    try:
+                        prev_count = int(row.get("run_count") or 1)
+                    except (TypeError, ValueError):
+                        prev_count = 1
+                    new_row["run_count"] = str(prev_count + 1)
+                    updated_rows.append(new_row)
+                    replaced = True
+                # Skip any older duplicate rows for this same rfc_id
+            else:
+                updated_rows.append(row)
+
+        if not replaced:
+            updated_rows.append(new_row)
+
+        self._write_all_rows(updated_rows)
 ```
 
 ---
 
 ### `src/main_pipeline_orchestrator.py`
 
-*sha256:`630cad532e6f` · 943 lines · 40.8 KB (~10,446 tokens) · lang:`python`*
+*sha256:`f4c427ad8fb0` · 1071 lines · 47.2 KB (~12,082 tokens) · lang:`python`*
 
 ```python
 """Main Pipeline Orchestrator for RFC-to-CPSA Synthesis.
@@ -8659,6 +9222,7 @@ from src.verification_engine.mitre_build_orchestrator import (
     CPSABuildArtifacts,
     execute_mitre_make_build,
 )
+from src.verification_engine.snowball_autopsy import is_snowball_state_error
 from src.verification_engine.roletran_executability_gate import (
     RoletranVerificationResult,
     verify_role_executability,
@@ -8685,6 +9249,8 @@ class PipelineExecutionSummary(BaseModel):
     trajectory_json_path: Optional[Path] = Field(None, description="Path to the generated trajectory metadata JSON")
     quality_tier: Optional[str] = Field(None, description="Programmatic verification quality tier (GOLD/SILVER/BRONZE/REJECTED)")
     duration_seconds: float = Field(default=0.0, description="Total pipeline execution time")
+    cost_usd: float = Field(default=0.0, description="Total estimated LLM cost in USD for this RFC")
+    cost_telemetry: dict = Field(default_factory=dict, description="Per-role token and USD cost breakdown")
     error_message: Optional[str] = Field(None, description="Diagnostic error if pipeline halted")
 
 
@@ -8905,6 +9471,8 @@ def _run_mitre_solver_self_healing_loop(
                 model="cpsa4 + cpsa4graph",
             )
             artifacts = execute_mitre_make_build(scm_path, target_output_dir)
+            if artifacts.winning_herald_options:
+                protocol_ast.herald_options = list(artifacts.winning_herald_options)
             if solver_attempts_log:
                 solver_attempts_log[-1]["passed_after_repair"] = True
             break
@@ -8918,8 +9486,10 @@ def _run_mitre_solver_self_healing_loop(
 
                 rejected_ast_snapshot = protocol_ast.model_dump()
                 rejected_scm_snapshot = _read_scm_safe(scm_path)
+                snowball_detected = is_snowball_state_error(last_build_error)
                 use_searcher = bool(
-                    build_attempt >= 3
+                    snowball_detected
+                    or build_attempt >= 3
                     or cycle_detected
                     or (build_attempt == 2 and last_build_error and last_build_error == prev_solver_diag)
                 )
@@ -9057,6 +9627,14 @@ def run_rfc_translation_pipeline(
     logger.info("Starting RFC-LLM Synthesis Pipeline for: %s", rfc_file_path.name)
     logger.info("================================================================")
 
+    from src.cost_tracker import GLOBAL_COST_TRACKER
+    GLOBAL_COST_TRACKER.start_rfc(
+        rfc_id=rfc_id,
+        router_model=active_router_model,
+        extraction_model=active_extraction_model,
+        query_model=active_query_model,
+        repair_model=active_repair_model,
+    )
     GLOBAL_EVENT_BUS.set_run_directory(effective_run_root, is_live=True)
     GLOBAL_EVENT_BUS.start_rfc(rfc_id=rfc_id, rfc_file=rfc_file_path.name)
     GLOBAL_EVENT_BUS.emit(
@@ -9090,11 +9668,21 @@ def run_rfc_translation_pipeline(
     header_filter_result = filter_rfc_header(raw_rfc_text)
     if not header_filter_result.is_eligible:
         elapsed = time.time() - start_time
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=False,
-            error_message=header_filter_result.disqualification_reason,
+            status="INELIGIBLE",
+            quality_tier="INELIGIBLE",
+            rejection_gate="Tier 0 Header Filter",
+            protocol_name=header_filter_result.title,
             duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            error_message=header_filter_result.disqualification_reason,
         )
         update_run_metadata_index(
             run_root_dir=effective_run_root,
@@ -9148,12 +9736,21 @@ def run_rfc_translation_pipeline(
 
     if not applicability_report.is_cryptographic_protocol:
         elapsed = time.time() - start_time
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=False,
+            status="INELIGIBLE",
+            quality_tier="INELIGIBLE",
+            rejection_gate="Stage 1c Applicability Gate",
             protocol_name=applicability_report.protocol_name or protocol_title,
-            error_message=f"Ineligible: {applicability_report.rationale}",
             duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            error_message=f"Ineligible: {applicability_report.rationale}",
         )
         update_run_metadata_index(
             run_root_dir=effective_run_root,
@@ -9177,11 +9774,15 @@ def run_rfc_translation_pipeline(
             duration_seconds=elapsed,
         )
         GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=applicability_report.rationale)
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+        logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix="Ineligible RFC Cost"))
         return PipelineExecutionSummary(
             rfc_id=rfc_id,
             protocol_name=applicability_report.protocol_name or protocol_title,
             is_eligible=False,
             duration_seconds=elapsed,
+            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+            cost_telemetry=rfc_cost_summary,
             error_message=applicability_report.rationale,
         )
 
@@ -9307,20 +9908,32 @@ def run_rfc_translation_pipeline(
             error_message=error_msg,
             tab_index=tab_index,
         )
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=True,
+            status="FAILED",
+            quality_tier="REJECTED",
             protocol_name=final_protocol_name,
             selected_sections=target_sections,
             sliced_lines_count=slice_lines_count,
             duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            trajectory_json_path=trajectory_path,
             error_message=error_msg,
         )
+        logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix="RFC Run Cost"))
         GLOBAL_EVENT_BUS.update_accepted_tab(
             tab_index,
             status="FAILED",
             quality_tier="REJECTED",
             duration_seconds=round(elapsed, 2),
+            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+            cost_telemetry=rfc_cost_summary,
             trajectory_path=str(trajectory_path),
             error_message=error_msg,
         )
@@ -9335,6 +9948,8 @@ def run_rfc_translation_pipeline(
             trajectory_json_path=trajectory_path,
             quality_tier="REJECTED",
             duration_seconds=elapsed,
+            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+            cost_telemetry=rfc_cost_summary,
             error_message=error_msg,
         )
 
@@ -9413,13 +10028,34 @@ def run_rfc_translation_pipeline(
     )
 
     quality_tier = "REJECTED"
+    all_povs_multi_strand: Optional[bool] = None
+    secrecy_proved: Optional[bool] = None
+    explored_skeletons_count = 0
     try:
         traj_data = json.loads(trajectory_path.read_text(encoding="utf-8"))
-        quality_tier = traj_data.get("quality_assessment", {}).get("quality_tier", "REJECTED")
+        qa = traj_data.get("quality_assessment", {})
+        quality_tier = qa.get("quality_tier", "REJECTED")
+        all_povs_multi_strand = qa.get("all_participant_povs_multi_strand")
+        secrecy_proved = qa.get("all_secrecy_listeners_unrealized")
+        explored_skeletons_count = int(
+            traj_data.get("stage6_cpsa_solver_verification", {})
+            .get("exploration_telemetry_from_txt", {})
+            .get("total_explored_labels", 0)
+        )
     except Exception:
         pass
 
-    total_repairs = int(stage5_record.get("total_attempts", 0)) + int(stage6_record.get("total_attempts", 0))
+    roletran_repairs = int(stage5_record.get("total_attempts", 0))
+    solver_repairs = int(stage6_record.get("total_attempts", 0))
+    total_repairs = roletran_repairs + solver_repairs
+    all_repair_attempts = list(stage5_record.get("repair_attempts", [])) + list(
+        stage6_record.get("repair_attempts", [])
+    )
+    searcher_invocations = sum(
+        1
+        for att in all_repair_attempts
+        if att.get("rag_query") or att.get("retrieved_chunk_ids")
+    )
 
     if artifacts is None:
         error_msg = f"MITRE make build failed after {build_attempt} repair attempts: {last_build_error}"
@@ -9437,19 +10073,42 @@ def run_rfc_translation_pipeline(
             error_message=error_msg,
             tab_index=tab_index,
         )
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=True,
+            status="PARTIAL" if roletran_result.is_executable else "FAILED",
+            quality_tier=quality_tier,
             protocol_name=final_protocol_name,
+            message_algebra=protocol_ast.message_algebra,
             selected_sections=target_sections,
             sliced_lines_count=slice_lines_count,
             role_count=len(protocol_ast.roles),
             preskeleton_count=len(protocol_ast.skeletons),
             roletran_passed=roletran_result.is_executable,
             solver_passed=False,
+            shapes_count=0,
+            explored_skeletons_count=explored_skeletons_count,
+            all_povs_multi_strand=all_povs_multi_strand,
+            secrecy_proved=secrecy_proved,
+            zero_shot_passed=False,
+            roletran_repairs=roletran_repairs,
+            solver_repairs=solver_repairs,
+            total_repairs=total_repairs,
+            searcher_invocations=searcher_invocations,
+            herald_options=protocol_ast.herald_options,
             duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            scm_path=scm_path,
+            shapes_xhtml_path=None,
+            trajectory_json_path=trajectory_path,
             error_message=error_msg,
         )
+        logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix=f"Cost Summary ({rfc_id})"))
         GLOBAL_EVENT_BUS.update_accepted_tab(
             tab_index,
             protocol_name=protocol_ast.protocol_name or final_protocol_name,
@@ -9457,6 +10116,8 @@ def run_rfc_translation_pipeline(
             quality_tier=quality_tier,
             total_attempts=total_repairs,
             duration_seconds=round(elapsed, 2),
+            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+            cost_telemetry=rfc_cost_summary,
             scm_path=str(scm_path),
             trajectory_path=str(trajectory_path),
             error_message=error_msg,
@@ -9474,6 +10135,8 @@ def run_rfc_translation_pipeline(
             trajectory_json_path=trajectory_path,
             quality_tier=quality_tier,
             duration_seconds=elapsed,
+            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+            cost_telemetry=rfc_cost_summary,
             error_message=error_msg,
         )
 
@@ -9491,6 +10154,7 @@ def run_rfc_translation_pipeline(
         tab_index=tab_index,
     )
 
+    rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
     GLOBAL_EVENT_BUS.update_accepted_tab(
         tab_index,
         protocol_name=protocol_ast.protocol_name or final_protocol_name,
@@ -9499,6 +10163,8 @@ def run_rfc_translation_pipeline(
         total_attempts=total_repairs,
         shapes_count=artifacts.shapes_count,
         duration_seconds=round(elapsed, 2),
+        cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+        cost_telemetry=rfc_cost_summary,
         scm_path=str(scm_path),
         trajectory_path=str(trajectory_path),
         shapes_xhtml=str(artifacts.shapes_graph_xhtml_path),
@@ -9508,7 +10174,10 @@ def run_rfc_translation_pipeline(
     csv_recorder.log_run(
         rfc_id=rfc_id,
         is_eligible=True,
+        status="VERIFIED",
+        quality_tier=quality_tier,
         protocol_name=final_protocol_name,
+        message_algebra=protocol_ast.message_algebra,
         selected_sections=target_sections,
         sliced_lines_count=slice_lines_count,
         role_count=len(protocol_ast.roles),
@@ -9516,12 +10185,30 @@ def run_rfc_translation_pipeline(
         roletran_passed=roletran_result.is_executable,
         solver_passed=True,
         shapes_count=artifacts.shapes_count,
+        explored_skeletons_count=explored_skeletons_count,
+        all_povs_multi_strand=all_povs_multi_strand,
+        secrecy_proved=secrecy_proved,
+        zero_shot_passed=(total_repairs == 0),
+        roletran_repairs=roletran_repairs,
+        solver_repairs=solver_repairs,
+        total_repairs=total_repairs,
+        searcher_invocations=searcher_invocations,
+        herald_options=protocol_ast.herald_options,
         duration_seconds=elapsed,
+        cost_telemetry=rfc_cost_summary,
+        router_model=active_router_model,
+        extraction_model=active_extraction_model,
+        query_model=active_query_model,
+        repair_model=active_repair_model,
+        scm_path=scm_path,
+        shapes_xhtml_path=artifacts.shapes_graph_xhtml_path,
+        trajectory_json_path=trajectory_path,
         error_message=None,
     )
 
     logger.info("================================================================")
     logger.info("Pipeline Complete for %s in %.2fs! (Quality Tier: %s)", rfc_id, elapsed, quality_tier)
+    logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix=f"Cost Summary ({rfc_id})"))
     logger.info("Generated: %s", artifacts.shapes_graph_xhtml_path)
     logger.info("Trajectory Metadata: %s", trajectory_path)
     logger.info("Master Run Index: %s", effective_run_root / "metadata_index.json")
@@ -9534,6 +10221,8 @@ def run_rfc_translation_pipeline(
         duration_seconds=elapsed,
         shapes_count=artifacts.shapes_count,
         quality_tier=quality_tier,
+        cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+        cost_telemetry=rfc_cost_summary,
         trajectory_json=str(trajectory_path),
         shapes_xhtml=str(artifacts.shapes_graph_xhtml_path),
         shapes_txt=str(artifacts.shapes_txt_path),
@@ -9552,6 +10241,8 @@ def run_rfc_translation_pipeline(
         trajectory_json_path=trajectory_path,
         quality_tier=quality_tier,
         duration_seconds=elapsed,
+        cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+        cost_telemetry=rfc_cost_summary,
     )
 ```
 
@@ -9559,7 +10250,7 @@ def run_rfc_translation_pipeline(
 
 ### `src/pipeline.py`
 
-*sha256:`68cc29521b38` · 424 lines · 16.7 KB (~4,269 tokens) · lang:`python`*
+*sha256:`1a944efeed50` · 484 lines · 19.3 KB (~4,937 tokens) · lang:`python`*
 
 ```python
 """Command-line interface for RFC-LLM synthesis pipeline supporting single RFCs and directory batching."""
@@ -9576,11 +10267,35 @@ import webbrowser
 from pathlib import Path
 from typing import List, Set
 
+from src.cost_tracker import GLOBAL_COST_TRACKER
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
 from src.main_pipeline_orchestrator import PipelineExecutionSummary, run_rfc_translation_pipeline
 from src.pipeline_events import GLOBAL_EVENT_BUS
 from src.system_config import SYSTEM_CONFIG
 from src.visualizer.server import run_visualizer_in_background
+
+
+def _print_cost_breakdown(cost_summary: dict, title: str = "COST & TOKEN TELEMETRY") -> None:
+    """Prints a formatted breakdown of USD cost and tokens by model role."""
+    roles = cost_summary.get("roles", {})
+    role_labels = [
+        ("router", "Router Model"),
+        ("extraction", "Extraction Model"),
+        ("query", "Query/Searcher Model"),
+        ("repair", "Repair Model"),
+    ]
+    print(f"\n[{title}]")
+    for role_key, label in role_labels:
+        rb = roles.get(role_key, {})
+        mod = rb.get("model") or "n/a"
+        usd = float(rb.get("cost_usd", 0.0))
+        calls = int(rb.get("calls", 0))
+        toks = int(rb.get("total_tokens", 0))
+        print(f" - {label:<20}: ${usd:.4f} ({calls} calls, {toks:,} tokens) [{mod}]")
+    tot_usd = float(cost_summary.get("total_cost_usd", 0.0))
+    tot_calls = int(cost_summary.get("total_calls", 0))
+    tot_toks = int(cost_summary.get("total_tokens", 0))
+    print(f" - {'Total Run Cost':<20}: ${tot_usd:.4f} ({tot_calls} calls, {tot_toks:,} tokens)")
 
 
 def natural_rfc_sort_key(file_path: Path):
@@ -9610,6 +10325,27 @@ def get_completed_rfc_ids() -> Set[str]:
     except Exception:
         pass
     return completed
+
+
+def get_failed_rfc_ids() -> Set[str]:
+    """Reads logs/pipeline_runs.csv to retrieve RFC IDs whose latest status is FAILED or PARTIAL."""
+    csv_path = SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv"
+    if not csv_path.exists():
+        return set()
+
+    failed = set()
+    try:
+        with open(csv_path, "r", encoding="utf-8", errors="ignore") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                rfc_val = row.get("rfc_id", "").strip()
+                status_val = (row.get("status") or "").strip().upper()
+                if rfc_val and status_val in {"FAILED", "PARTIAL"}:
+                    clean_id = rfc_val.upper().replace(" ", "").replace("_", "")
+                    failed.add(clean_id)
+    except Exception:
+        pass
+    return failed
 
 
 def main():
@@ -9715,6 +10451,11 @@ def main():
         help="Skip RFCs that already have completed run entries in logs/pipeline_runs.csv",
     )
     parser.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help="Run only RFCs recorded in logs/pipeline_runs.csv with status FAILED or PARTIAL (overwriting their rows in-place)",
+    )
+    parser.add_argument(
         "--random",
         action="store_true",
         help="Randomly sample RFC files when pointing to a directory (useful with --limit)",
@@ -9790,7 +10531,14 @@ def main():
             print(f"Error: No RFC text files found in directory {target}", file=sys.stderr)
             sys.exit(1)
 
-        if args.skip_completed:
+        if args.retry_failed:
+            failed_ids = get_failed_rfc_ids()
+            rfc_files = [
+                f for f in rfc_files
+                if f.stem.upper().replace(" ", "").replace("_", "") in failed_ids
+            ]
+            print(f"[BATCH] Filtered to {len(rfc_files)} previously FAILED/PARTIAL RFCs from logs/pipeline_runs.csv")
+        elif args.skip_completed:
             completed_ids = get_completed_rfc_ids()
             initial_count = len(rfc_files)
             rfc_files = [
@@ -9936,6 +10684,8 @@ def main():
                 if summary.trajectory_json_path:
                     print(f"RFC Trajectory JSON  : {summary.trajectory_json_path}")
 
+            _print_cost_breakdown(GLOBAL_COST_TRACKER.get_current_rfc_summary(), "RFC RUN COST & TOKEN TELEMETRY")
+
             if enable_visualizer and monitor_url:
                 print(f"\n[LIVE MONITOR] View execution trace and shapes at: {monitor_url}")
                 if sys.stdin.isatty():
@@ -9970,6 +10720,7 @@ def main():
     print(f"- Run Directory        : {run_root_dir}")
     print(f"- Master Metadata Index: {master_index_path}")
     print(f"- Run Metrics Logged   : {SYSTEM_CONFIG.LOGS_DIR / 'pipeline_runs.csv'}")
+    _print_cost_breakdown(GLOBAL_COST_TRACKER.get_batch_summary(), "BATCH COST & TOKEN TELEMETRY BY MODEL ROLE")
     print(f"{'='*70}\n")
 
     if enable_visualizer and monitor_url:
@@ -9992,7 +10743,7 @@ if __name__ == "__main__":
 
 ### `src/pipeline_events.py`
 
-*sha256:`caa37db5fcd1` · 540 lines · 23.3 KB (~5,967 tokens) · lang:`python`*
+*sha256:`f763e42efece` · 566 lines · 24.6 KB (~6,305 tokens) · lang:`python`*
 
 ```python
 """Bounded event bus, sequential tab registry, and disk telemetry sink for pipeline visualization."""
@@ -10057,6 +10808,7 @@ class PipelineEventBus:
         self._accepted_tabs: Dict[int, Dict[str, Any]] = {}
         self._tab_order: List[int] = []
         self._filtered_rfcs: List[Dict[str, Any]] = []
+        self._batch_cost_telemetry: Dict[str, Any] = {}
 
     def subscribe(self, callback: Callable[[PipelineEvent], None]):
         """Registers a listener callback."""
@@ -10116,6 +10868,8 @@ class PipelineEventBus:
                 "total_attempts": 0,
                 "shapes_count": 0,
                 "duration_seconds": 0.0,
+                "cost_usd": 0.0,
+                "cost_telemetry": {},
                 "rfc_dir": str(resolved_dir),
                 "events_jsonl": str(jsonl_path),
                 "slice_path": None,
@@ -10200,6 +10954,15 @@ class PipelineEventBus:
                 tab_index=tab_index,
                 data=kwargs,
             )
+            if event_type == "cost_updated":
+                if isinstance(kwargs.get("batch_cost"), dict):
+                    self._batch_cost_telemetry = kwargs["batch_cost"]
+                if tab_index and tab_index in self._accepted_tabs and isinstance(kwargs.get("rfc_cost"), dict):
+                    self._accepted_tabs[tab_index]["cost_telemetry"] = kwargs["rfc_cost"]
+                    self._accepted_tabs[tab_index]["cost_usd"] = round(
+                        float(kwargs["rfc_cost"].get("total_cost_usd", 0.0)), 6
+                    )
+
             # Meta-events for filtered RFCs don't need to bloat an accepted tab's buffer,
             # while active RFC progress events stay in the bounded buffer.
             if event_type != "rfc_filtered":
@@ -10249,6 +11012,7 @@ class PipelineEventBus:
                 "active_tab_index": self._current_tab_index,
                 "accepted_tabs": tabs,
                 "filtered_total": len(self._filtered_rfcs),
+                "batch_cost_telemetry": self._batch_cost_telemetry,
             }
 
     def get_tab_summary(self, tab_index: int) -> Optional[Dict[str, Any]]:
@@ -10293,6 +11057,7 @@ class PipelineEventBus:
             self._accepted_tabs.clear()
             self._tab_order.clear()
             self._filtered_rfcs.clear()
+            self._batch_cost_telemetry = {}
 
     def load_run_from_disk(self, target_path: Path) -> Dict[str, Any]:
         """Reconstructs numbered accepted tabs and filtered RFCs from an existing run directory,
@@ -10335,6 +11100,9 @@ class PipelineEventBus:
                     idx_data = json.loads(index_file.read_text(encoding="utf-8"))
                 except Exception:
                     idx_data = {}
+
+                if isinstance(idx_data.get("batch_cost_telemetry"), dict):
+                    self._batch_cost_telemetry = idx_data["batch_cost_telemetry"]
 
                 # 1. Restore filtered/rejected RFC list if persisted
                 for filt in idx_data.get("filtered_rfcs", []):
@@ -10467,6 +11235,13 @@ class PipelineEventBus:
         else:
             status = "FAILED"
 
+        cost_tel = traj.get("cost_telemetry") or fallback_entry.get("cost_telemetry") or {}
+        cost_usd = round(
+            float(cost_tel.get("total_cost_usd", fallback_entry.get("cost_usd", 0.0))), 6
+        )
+        if not self._batch_cost_telemetry and cost_tel:
+            self._batch_cost_telemetry = cost_tel
+
         tab_summary = {
             "tab_index": tab_idx,
             "rfc_id": rfc_id,
@@ -10477,6 +11252,8 @@ class PipelineEventBus:
             "total_attempts": total_attempts,
             "shapes_count": shapes_count,
             "duration_seconds": round(duration_sec, 2),
+            "cost_usd": cost_usd,
+            "cost_telemetry": cost_tel,
             "rfc_dir": str(rfc_dir),
             "events_jsonl": str(events_jsonl) if events_jsonl.exists() else None,
             "slice_path": str(slice_file) if slice_file.exists() else None,
@@ -10754,7 +11531,7 @@ def build_schema_system_prompt(
 
 ### `src/rag_retriever_client.py`
 
-*sha256:`d5b7b2752258` · 1074 lines · 46.7 KB (~11,965 tokens) · lang:`python`*
+*sha256:`fc697842cb3e` · 1093 lines · 47.7 KB (~12,219 tokens) · lang:`python`*
 
 ```python
 """CPSA 4.4.9 Knowledge Base Indexer, `TOC.md` Flag Manager, and Agentic Searcher Client.
@@ -11600,6 +12377,13 @@ def run_agentic_cpsa_searcher(
                 timeout=searcher_spec.timeout,
                 num_retries=0,
             )
+            from src.cost_tracker import GLOBAL_COST_TRACKER
+            GLOBAL_COST_TRACKER.record_llm_call(
+                resp,
+                role="query",
+                model_name=searcher_model,
+                stage=5 if failure_stage == "roletran" else 6,
+            )
             raw_reply = (resp.choices[0].message.content or "").strip()
             if not raw_reply:
                 break
@@ -11755,7 +12539,19 @@ def run_agentic_cpsa_searcher(
     except Exception as exc:
         logger.warning("Agentic CPSA searcher LLM step encountered exception (%s); using deterministic KB lookup", exc)
 
-    # Step 2: Always guarantee high-precision deterministic fallback / enrichment from the error string
+    # Step 2: If this is a Snowball State Error, always pin the authoritative CPSA 4.4.9
+    # Anti-Snowballing & Termination core rule section so the Repair LLM has exact mathematical guidance.
+    from src.verification_engine.snowball_autopsy import is_snowball_state_error
+    if is_snowball_state_error(error_diagnostic):
+        for sec in kb.search_cpsa_docs(
+            "state space snowballing non-termination encryption-test try-old-strands check-nonces domain separation tags neq",
+            category="01_core_rules",
+            top_k=2,
+        ):
+            if "06_termination_and_anti_snowballing" in sec.get("source_file", "") or not collected_sections:
+                collected_sections[sec["section_id"]] = sec
+
+    # Step 3: Always guarantee high-precision deterministic fallback / enrichment from the error string
     if not collected_sections:
         fallback_q = (
             fallback_query_fn(error_diagnostic, failure_stage)
@@ -11857,7 +12653,7 @@ __all__ = [
 
 ### `src/semantic_extraction/constrained_protocol_extractor.py`
 
-*sha256:`dbb2c9fb22b7` · 268 lines · 10.7 KB (~2,734 tokens) · lang:`python`*
+*sha256:`01ab689ca53b` · 295 lines · 12.3 KB (~3,150 tokens) · lang:`python`*
 
 ```python
 """Constrained Protocol Semantic Extractor with RAG Grounding.
@@ -11920,10 +12716,12 @@ def extract_protocol_specification(
     user_prompt = (
         f"Protocol Identifier: {protocol_name}\n"
         f"{principals_hint}\n\n"
-        "Verbatim RFC Exchange Specification (SOLE GROUND TRUTH):\n"
+        "Verbatim RFC Exchange Specification (SOLE GROUND TRUTH — STRICT 1-TO-1 FIDELITY REQUIRED):\n"
         f"{verbatim_slice}\n\n"
-        "Extract the complete CPSAProtocolSpecification adhering to all executability and sort constraints.\n"
-        "Extract strictly what is defined in the Verbatim RFC Exchange Specification."
+        "Extract the complete CPSAProtocolSpecification adhering to all MITRE CPSA 4.4.9 executability and sort constraints.\n"
+        "CRITICAL ZERO-HALLUCINATION RULE: Model strictly the roles, message flights, fields, and cryptographic "
+        "operations defined in the Verbatim RFC Exchange Specification above. Do NOT invent fictional messages, "
+        "non-RFC variables, or textbook protocol fields that do not appear in the RFC text."
     )
 
     system_prompt = build_schema_system_prompt(
@@ -11945,6 +12743,8 @@ def extract_protocol_specification(
                 timeout=extraction_spec.timeout,
                 num_retries=0,
             )
+            from src.cost_tracker import GLOBAL_COST_TRACKER
+            GLOBAL_COST_TRACKER.record_llm_call(response, role="extraction", model_name=model_name, stage=2)
             break
         except Exception as exc:
             err_msg = str(exc)
@@ -12002,6 +12802,8 @@ def extract_protocol_specification(
                 timeout=corr_spec.timeout,
                 num_retries=0,
             )
+            from src.cost_tracker import GLOBAL_COST_TRACKER
+            GLOBAL_COST_TRACKER.record_llm_call(correction_response, role="extraction", model_name=corr_model, stage=2)
             corrected_content = correction_response.choices[0].message.content
             try:
                 corrected_data = json.loads(corrected_content)
@@ -12050,11 +12852,29 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
             deduplicated_non_orig.append(non_orig_term)
 
     # Separate pure POV skeletons (without listeners) and secrecy skeletons (with listeners)
+    # CRITICAL: Filter out any invalid listener term that is also declared in non_originating
+    # or pen_non_originating (which causes CPSA fatal error: `non-orig <key> carried`).
+    non_orig_set = {json.dumps(t, sort_keys=True) for t in deduplicated_non_orig}
+    for skel in spec.skeletons:
+        for pno in skel.pen_non_originating:
+            non_orig_set.add(json.dumps(pno, sort_keys=True))
+    for role in spec.roles:
+        for no_t in role.non_originating + role.pen_non_originating:
+            non_orig_set.add(json.dumps(no_t, sort_keys=True))
+
+    spec.primary_secrecy_goals = [
+        t for t in spec.primary_secrecy_goals if json.dumps(t, sort_keys=True) not in non_orig_set
+    ]
+
     roles_with_pure_pov = set()
     pure_pov_skeletons = []
     secrecy_skeletons = []
 
     for skel in spec.skeletons:
+        valid_listeners = [
+            l for l in skel.listeners if json.dumps(l, sort_keys=True) not in non_orig_set
+        ]
+        skel.listeners = valid_listeners
         if not skel.listeners:
             pure_pov_skeletons.append(skel)
             for strand in skel.strands:
@@ -12088,11 +12908,14 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
             )
             final_skeletons.append(pure_role_skeleton)
 
-    # Guarantee at least one secrecy verification skeleton if a secret was semantically identified
+    # Guarantee at least one secrecy verification skeleton if a valid transmitted secret was identified
     if secrecy_skeletons:
         final_skeletons.extend(secrecy_skeletons)
     else:
-        secret_targets = existing_listeners or spec.primary_secrecy_goals
+        valid_existing_listeners = [
+            l for l in existing_listeners if json.dumps(l, sort_keys=True) not in non_orig_set
+        ]
+        secret_targets = valid_existing_listeners or spec.primary_secrecy_goals
         if secret_targets:
             chosen_secret = secret_targets[0]
             originating_role = spec.roles[0]
@@ -12134,7 +12957,7 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
 
 ### `src/system_config.py`
 
-*sha256:`afc968ce2578` · 136 lines · 6.0 KB (~1,544 tokens) · lang:`python`*
+*sha256:`1c897a59a3e6` · 136 lines · 6.0 KB (~1,544 tokens) · lang:`python`*
 
 ```python
 """Global environment, binary paths, execution limits, and provider configuration."""
@@ -12198,7 +13021,7 @@ class SystemEnvironmentConfig(BaseSettings):
 
     # Compiler & Harness Execution Limits
     LLM_TIMEOUT_SECONDS: int = 180
-    CPSA_TIMEOUT_SECONDS: int = 60
+    CPSA_TIMEOUT_SECONDS: int = 15
     ROLETRAN_TIMEOUT_SECONDS: int = 15
     MAX_REPAIR_ATTEMPTS: int = 50
 
@@ -12327,7 +13150,7 @@ __all__ = [
 
 ### `src/verification_engine/compiler_diagnostic_repair.py`
 
-*sha256:`93c7aecec46f` · 227 lines · 9.1 KB (~2,335 tokens) · lang:`python`*
+*sha256:`601ca8a7683e` · 264 lines · 11.7 KB (~2,996 tokens) · lang:`python`*
 
 ```python
 """Compiler Diagnostic Repair Engine with RAG-Guided Self-Healing.
@@ -12363,6 +13186,7 @@ from src.semantic_extraction.constrained_protocol_extractor import (
     ensure_three_point_of_view_skeletons,
 )
 from src.system_config import SYSTEM_CONFIG
+from src.verification_engine.snowball_autopsy import is_snowball_state_error
 
 logger = get_pipeline_logger("diagnostic_repair")
 
@@ -12416,6 +13240,13 @@ def formulate_rag_diagnostic_query(
                 {"role": "user", "content": user_prompt},
             ],
             timeout=query_spec.timeout,
+        )
+        from src.cost_tracker import GLOBAL_COST_TRACKER
+        GLOBAL_COST_TRACKER.record_llm_call(
+            response,
+            role="query",
+            model_name=query_model,
+            stage=5 if failure_stage == "roletran" else 6,
         )
         raw_content = response.choices[0].message.content
         if raw_content:
@@ -12489,6 +13320,28 @@ def repair_protocol_specification(
             "or adjust preskeleton non-originating/unique-originating assumptions) to escape this cycle."
         )
 
+    snowball_directive = ""
+    if is_snowball_state_error(error_diagnostic):
+        snowball_directive = (
+            "\n\nMANDATORY TIER-3 SNOWBALL STATE RECOVERY PROTOCOL (Applies ONLY to State-Space Snowballing):\n"
+            "Tier 1 non-default search orders (`--try-old-strands`, `--check-nonces`, `--reverse-nodes`) already "
+            "failed to terminate on this specification, proving a structural unification cycle (`unify_0` / `cows` loop). "
+            "Inspect the `CPSA 4.4.9 SNOWBALL STATE AUTOPSY REPORT` in the diagnostic above and apply ALL of the following "
+            "structural fixes while preserving strict 1-to-1 fidelity to the RFC:\n"
+            "1. DOMAIN-SEPARATE EVERY `enc` AND `hash` TERM USING RFC MESSAGE HEADERS/TYPES: Distinguish request vs. "
+            "response `[\"enc\", ...]` and `[\"hash\", ...]` terms using the actual RFC message type, header, opcode, "
+            "or label fields from the Verbatim RFC Exchange Specification (and distinct prefix sorts `data` vs `text`) "
+            "so outgoing ciphertexts/hashes cannot unify with incoming receptions of the same key sort.\n"
+            "2. ADD PRINCIPAL INEQUALITY FACTS (`neq`): In every `CPSAPreskeleton` declaring two or more `name` variables "
+            "(e.g. `client_id`, `server_id`), add `[\"neq\", \"<name_a>\", \"<name_b>\"]` to `facts` to block `A = B` "
+            "symmetric key reflection.\n"
+            "3. ENFORCE `data` vs `text` SORT SEPARATION (CPSA Primer §16.2): Declare fresh `uniq-orig` nonces/challenges/secrets "
+            "with `\"sort\": \"data\"` and predictable RFC identifiers/headers/labels with `\"sort\": \"text\"`.\n"
+            "4. BIND PRINCIPAL IDENTITIES INSIDE ENCRYPTED FLIGHTS: Include the communicating `name` variables inside the "
+            "`[\"enc\", ...]` terms of the looping role identified in the autopsy so regular augmentation binds to existing "
+            "principals instead of spawning unbounded `*-0, *-1` strands."
+        )
+
     # Truncate verbatim slice to concise context to preserve token quota across multiple repair passes
     slice_snippet = verbatim_slice[:3000]
     if len(verbatim_slice) > 3000:
@@ -12503,7 +13356,7 @@ def repair_protocol_specification(
         "Verbatim RFC Exchange Specification (Excerpt for repair context):\n"
         f"{slice_snippet}\n\n"
         "Current Failing CPSA Specification (JSON):\n"
-        f"{failing_spec.model_dump_json(indent=2)}{cycle_warning}\n\n"
+        f"{failing_spec.model_dump_json(indent=2)}{cycle_warning}{snowball_directive}\n\n"
         "Provide the complete repaired CPSAProtocolSpecification resolving the error without inventing fictional protocol terms."
     )
 
@@ -12528,6 +13381,13 @@ def repair_protocol_specification(
                 response_format={"type": "json_object"},
                 timeout=repair_spec.timeout,
                 num_retries=0,
+            )
+            from src.cost_tracker import GLOBAL_COST_TRACKER
+            GLOBAL_COST_TRACKER.record_llm_call(
+                response,
+                role="repair",
+                model_name=model_name,
+                stage=5 if failure_stage == "roletran" else 6,
             )
             break
         except Exception as exc:
@@ -12563,7 +13423,7 @@ def repair_protocol_specification(
 
 ### `src/verification_engine/mitre_build_orchestrator.py`
 
-*sha256:`920a0ddd73de` · 197 lines · 7.3 KB (~1,868 tokens) · lang:`python`*
+*sha256:`0f74f410fcab` · 314 lines · 12.9 KB (~3,304 tokens) · lang:`python`*
 
 ```python
 """MITRE Build Orchestrator for CPSA Verification and Visualization."""
@@ -12580,6 +13440,12 @@ from pydantic import BaseModel, Field
 
 from src.system_config import SYSTEM_CONFIG
 from src.logging_config import get_pipeline_logger
+from src.verification_engine.snowball_autopsy import (
+    SNOWBALL_HERALD_PORTFOLIO,
+    generate_snowball_autopsy_report,
+    inject_herald_options_into_scm,
+    is_snowball_state_error,
+)
 
 logger = get_pipeline_logger("build_orchestrator")
 
@@ -12628,6 +13494,10 @@ class CPSABuildArtifacts(BaseModel):
     full_graph_xhtml_path: Path = Field(..., description="Interactive SVG graph of all search steps (.xhtml)")
     shapes_graph_xhtml_path: Path = Field(..., description="Interactive SVG graph of proved shapes (.xhtml)")
     shapes_count: int = Field(default=0, description="Total number of realized shapes discovered")
+    winning_herald_options: List[str] = Field(
+        default_factory=list,
+        description="Search-order herald flags that deterministically resolved a state-space snowball in Tier 1",
+    )
 
 
 class CPSABuildError(Exception):
@@ -12705,35 +13575,142 @@ def execute_mitre_make_build(
     env["PATH"] = f"{cabal_bin_str}:{env.get('PATH', '')}"
 
     # Remove stale derived artifacts before running make so each attempt is fresh
-    for stale_name in (f"{stem}.txt", f"{stem}_shapes.txt", f"{stem}_shapes.xhtml", f"{stem}.xhtml"):
-        stale_file = build_dir / stale_name
-        if stale_file.exists():
-            stale_file.unlink()
+    def _clean_derived_artifacts() -> None:
+        for stale_name in (f"{stem}.txt", f"{stem}_shapes.txt", f"{stem}_shapes.xhtml", f"{stem}.xhtml"):
+            stale_file = build_dir / stale_name
+            if stale_file.exists():
+                stale_file.unlink()
 
-    max_budget_sec = min(60.0, float(getattr(SYSTEM_CONFIG, "CPSA_TIMEOUT_SECONDS", 60)))
+    _clean_derived_artifacts()
+
+    max_budget_sec = min(15.0, float(getattr(SYSTEM_CONFIG, "CPSA_TIMEOUT_SECONDS", 15)))
     start_ts = time.monotonic()
+    trace_txt = build_dir / f"{stem}.txt"
+    winning_herald_options: List[str] = []
 
     # Target 1: Minimal shapes graph (triggers cpsa4, cpsa4shapes, and cpsa4graph)
     target_shapes_xhtml = f"{stem}_shapes.xhtml"
-    rc_shapes, out_shapes, err_shapes = _run_make_with_hard_timeout(
-        ["make", "-B", target_shapes_xhtml],
-        cwd=build_dir,
-        env=env,
-        timeout_seconds=max_budget_sec,
-    )
+    initial_snowball_msg: Optional[str] = None
+    try:
+        rc_shapes, out_shapes, err_shapes = _run_make_with_hard_timeout(
+            ["make", "-B", target_shapes_xhtml],
+            cwd=build_dir,
+            env=env,
+            timeout_seconds=max_budget_sec,
+        )
+        if rc_shapes != 0:
+            err_msg = err_shapes.strip() or out_shapes.strip()
+            full_err = f"MITRE build failed for {target_shapes_xhtml}: {err_msg}"
+            if is_snowball_state_error(full_err):
+                initial_snowball_msg = full_err
+            else:
+                logger.error("Make build failed for %s: %s", target_shapes_xhtml, err_msg)
+                raise CPSABuildError(full_err)
+    except CPSABuildError as exc:
+        if is_snowball_state_error(str(exc)):
+            initial_snowball_msg = str(exc)
+        else:
+            raise
 
-    if rc_shapes != 0:
-        err_msg = err_shapes.strip() or out_shapes.strip()
-        logger.error("Make build failed for %s: %s", target_shapes_xhtml, err_msg)
-        raise CPSABuildError(f"MITRE build failed for {target_shapes_xhtml}: {err_msg}")
+    # -------------------------------------------------------------------------
+    # SNOWBALL-ONLY RECOVERY PATH (Tier 1 Search-Order Portfolio -> Tier 2 Autopsy)
+    # Every non-snowball error already raised above and follows the normal route.
+    # -------------------------------------------------------------------------
+    if initial_snowball_msg is not None:
+        partial_trace_snapshot = ""
+        if trace_txt.exists():
+            try:
+                partial_trace_snapshot = trace_txt.read_text(encoding="utf-8", errors="replace")
+            except Exception:
+                partial_trace_snapshot = ""
 
-    # Target 2 (Optional): Full derivation search graph (capped within remaining 60s budget)
+        logger.warning(
+            "Snowball state detected on default cpsa4 search for '%s' (%s). "
+            "Launching Tier 1 Deterministic Herald Search-Order Portfolio (0 LLM tokens)...",
+            stem,
+            initial_snowball_msg,
+        )
+
+        tier1_resolved = False
+        last_snowball_msg = initial_snowball_msg
+
+        for strategy_label, cli_flags, herald_opts in SNOWBALL_HERALD_PORTFOLIO:
+            _clean_derived_artifacts()
+            cpsa_flags_arg = f"CPSAFLAGS=+RTS -M512m -N -RTS {' '.join(cli_flags)}"
+            logger.info("Tier 1 Portfolio trying strategy [%s]: %s", strategy_label, cpsa_flags_arg)
+            try:
+                rc_strat, out_strat, err_strat = _run_make_with_hard_timeout(
+                    ["make", "-B", target_shapes_xhtml, cpsa_flags_arg],
+                    cwd=build_dir,
+                    env=env,
+                    timeout_seconds=max_budget_sec,
+                )
+                if rc_strat == 0:
+                    logger.info(
+                        "Tier 1 Search-Order Portfolio RESOLVED snowball for '%s' using [%s] (0 LLM tokens)!",
+                        stem,
+                        strategy_label,
+                    )
+                    winning_herald_options = list(herald_opts)
+                    tier1_resolved = True
+                    try:
+                        raw_scm = target_scm_in_build.read_text(encoding="utf-8")
+                        updated_scm = inject_herald_options_into_scm(raw_scm, winning_herald_options)
+                        target_scm_in_build.write_text(updated_scm, encoding="utf-8")
+                        if scm_path.exists() and scm_path.resolve() != target_scm_in_build.resolve():
+                            scm_path.write_text(updated_scm, encoding="utf-8")
+                        for built_name in (f"{stem}.txt", f"{stem}_shapes.txt", target_shapes_xhtml):
+                            built_file = build_dir / built_name
+                            if built_file.exists():
+                                os.utime(built_file, None)
+                    except Exception as inject_exc:
+                        logger.warning("Could not persist winning herald options into %s: %s", target_scm_in_build, inject_exc)
+                    break
+
+                strat_err = err_strat.strip() or out_strat.strip()
+                last_snowball_msg = f"MITRE build failed for {target_shapes_xhtml} [{strategy_label}]: {strat_err}"
+            except CPSABuildError as strat_exc:
+                last_snowball_msg = str(strat_exc)
+
+            if trace_txt.exists():
+                try:
+                    candidate_snap = trace_txt.read_text(encoding="utf-8", errors="replace")
+                    if candidate_snap.count("(defskeleton") > partial_trace_snapshot.count("(defskeleton"):
+                        partial_trace_snapshot = candidate_snap
+                except Exception:
+                    pass
+
+        if not tier1_resolved:
+            logger.warning(
+                "All Tier 1 search-order strategies snowballed for '%s'. "
+                "Running Tier 2 Partial .txt Snowball Autopsy...",
+                stem,
+            )
+            autopsy_report = generate_snowball_autopsy_report(
+                scm_path=target_scm_in_build,
+                build_dir=build_dir,
+                env=env,
+                partial_trace_text=partial_trace_snapshot,
+            )
+            portfolio_note = (
+                "Tier 1 Search-Order Portfolio (`--try-old-strands`, `--check-nonces`, `--reverse-nodes`) "
+                "also failed to terminate, confirming a true algebraic unification loop in the protocol roles."
+            )
+            if autopsy_report:
+                raise CPSABuildError(f"{initial_snowball_msg}\n{portfolio_note}\n\n{autopsy_report}")
+            raise CPSABuildError(f"{last_snowball_msg}\n{portfolio_note}")
+
+    # Target 2 (Optional): Full derivation search graph (capped within remaining 15s budget)
     if build_full_graph:
         remaining_sec = max(1.0, max_budget_sec - (time.monotonic() - start_ts))
         target_full_xhtml = f"{stem}.xhtml"
         try:
+            full_cmd = ["make", target_full_xhtml]
+            if winning_herald_options:
+                cli_flags = [f"--{opt}" for opt in winning_herald_options]
+                full_cmd.append(f"CPSAFLAGS=+RTS -M512m -N -RTS {' '.join(cli_flags)}")
             _run_make_with_hard_timeout(
-                ["make", target_full_xhtml],
+                full_cmd,
                 cwd=build_dir,
                 env=env,
                 timeout_seconds=remaining_sec,
@@ -12742,7 +13719,6 @@ def execute_mitre_make_build(
             logger.warning("Full derivation graph %s exceeded remaining budget; keeping shapes graph.", target_full_xhtml)
 
     # Verify generated artifact paths
-    trace_txt = build_dir / f"{stem}.txt"
     shapes_txt = build_dir / f"{stem}_shapes.txt"
     full_xhtml = build_dir / f"{stem}.xhtml"
     shapes_xhtml = build_dir / f"{stem}_shapes.xhtml"
@@ -12762,6 +13738,7 @@ def execute_mitre_make_build(
         full_graph_xhtml_path=full_xhtml if full_xhtml.exists() else shapes_xhtml,
         shapes_graph_xhtml_path=shapes_xhtml,
         shapes_count=shapes_count,
+        winning_herald_options=winning_herald_options,
     )
 ```
 
@@ -12917,9 +13894,469 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
 
 ---
 
+### `src/verification_engine/snowball_autopsy.py`
+
+*sha256:`a293af53c0ec` · 451 lines · 17.7 KB (~4,532 tokens) · lang:`python`*
+
+```python
+"""CPSA 4.4.9 State-Space Snowball Classifier, Herald Injector, and Partial `.txt` Trace Autopsy.
+
+Strictly isolates state-space explosion / non-termination failures (`timed out`, `Step limit exceeded`,
+`Strand bound exceeded`, `Heap exhausted`) from ordinary compiler/syntax errors, and extracts a
+surgical derivation autopsy from partial `cpsa4` `.txt` output when deterministic search-order
+strategies (`--try-old-strands`, `--check-nonces`, `--reverse-nodes`) cannot resolve an
+algebraic unification loop.
+"""
+
+from __future__ import annotations
+
+from collections import Counter, defaultdict
+from pathlib import Path
+import re
+import subprocess
+from typing import Any, Dict, List, Optional, Tuple
+
+from src.logging_config import get_pipeline_logger
+from src.system_config import SYSTEM_CONFIG
+
+logger = get_pipeline_logger("snowball_autopsy")
+
+# Ordered portfolio of CPSA 4.4.9 search-order configurations (Manual §9.1.1 & §10.5)
+# Tried deterministically (0 LLM tokens) ONLY when the default cpsa4 search snowballs.
+SNOWBALL_HERALD_PORTFOLIO: List[Tuple[str, List[str], List[str]]] = [
+    (
+        "oldest-strand-first (try-old-strands)",
+        ["--try-old-strands"],
+        ["try-old-strands"],
+    ),
+    (
+        "oldest-strand + nonce-first (try-old-strands + check-nonces)",
+        ["--try-old-strands", "--check-nonces"],
+        ["try-old-strands", "check-nonces"],
+    ),
+    (
+        "oldest-strand + nonce-first + youngest-node (try-old-strands + check-nonces + reverse-nodes)",
+        ["--try-old-strands", "--check-nonces", "--reverse-nodes"],
+        ["try-old-strands", "check-nonces", "reverse-nodes"],
+    ),
+]
+
+_SNOWBALL_ERROR_MARKERS: Tuple[str, ...] = (
+    "timed out after",
+    "state-space explosion",
+    "infinite strand loop",
+    "step limit exceeded",
+    "step limit reached",
+    "strand bound exceeded",
+    "heap exhausted",
+    "out of memory",
+    "aborting after applying 500 rules",
+)
+
+
+def is_snowball_state_error(error_msg: Optional[str]) -> bool:
+    """Returns True strictly when `error_msg` is a CPSA 4.4.9 state-space snowball / non-termination error.
+
+    All other errors (syntax errors, undeclared variables, malformed terms, sort mismatches,
+    roletran executability errors, or 0-shape dead skeletons) return False and follow the
+    normal pipeline route.
+    """
+    if not error_msg:
+        return False
+    lowered = error_msg.lower()
+    return any(marker in lowered for marker in _SNOWBALL_ERROR_MARKERS)
+
+
+def inject_herald_options_into_scm(scm_text: str, herald_options: List[str]) -> str:
+    """Injects winning search-order options (e.g. `(try-old-strands)`, `(check-nonces)`)
+    into the top-level `(herald ...)` form of a `.scm` file without duplicating existing flags.
+    """
+    valid_opts = [
+        opt for opt in herald_options
+        if opt in {"try-old-strands", "check-nonces", "reverse-nodes"}
+    ]
+    if not valid_opts:
+        return scm_text
+
+    herald_match = re.search(r"\(\s*herald\b", scm_text)
+    if not herald_match:
+        opts_str = " ".join(f"({opt})" for opt in valid_opts)
+        return f'(herald "Protocol Verification Suite" {opts_str})\n\n{scm_text}'
+
+    start_idx = herald_match.start()
+    depth = 0
+    in_string = False
+    escape = False
+    end_idx = -1
+
+    for idx in range(start_idx, len(scm_text)):
+        ch = scm_text[idx]
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if not in_string:
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    end_idx = idx
+                    break
+
+    if end_idx == -1:
+        return scm_text
+
+    herald_block = scm_text[start_idx:end_idx]
+    additions: List[str] = []
+    for opt in valid_opts:
+        if not re.search(rf"\(\s*{re.escape(opt)}\s*\)", herald_block):
+            additions.append(f"({opt})")
+
+    if not additions:
+        return scm_text
+
+    updated_herald = f"{herald_block} {' '.join(additions)})"
+    return scm_text[:start_idx] + updated_herald + scm_text[end_idx + 1 :]
+
+
+def _extract_balanced_sexp(text: str, start_pos: int) -> Tuple[str, int]:
+    """Extracts a balanced parenthesized S-expression starting at or after `start_pos`."""
+    open_idx = text.find("(", start_pos)
+    if open_idx == -1:
+        return "", len(text)
+    depth = 0
+    in_string = False
+    escape = False
+    for idx in range(open_idx, len(text)):
+        ch = text[idx]
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if not in_string:
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    return text[open_idx : idx + 1], idx + 1
+    return text[open_idx:], len(text)
+
+
+def _normalize_primed_identifiers(sexp_str: str) -> str:
+    """Collapses CPSA primed variable suffixes (`var-0`, `var-1`, `var-12`) to `var-*`
+    so repeating augmentation operations across generations group together cleanly.
+    """
+    collapsed_ws = " ".join(sexp_str.split())
+    return re.sub(r"\b([a-zA-Z_][a-zA-Z0-9_\-]*)-\d+\b", r"\1-*", collapsed_ws)
+
+
+def _parse_skeleton_records(raw_txt: str) -> Tuple[int, Optional[str], List[Dict[str, Any]]]:
+    """Parses `(defskeleton ...)` blocks from a partial or bounded `cpsa4` `.txt` file.
+
+    Returns:
+        (exploding_pov_index, exploding_pov_desc, parsed_skeleton_records)
+    """
+    # CPSA emits `(defprotocol ...)` before each top-level POV skeleton search tree,
+    # and emits `(comment "Nothing left to do")` when a POV search tree finishes.
+    chunks = re.split(r"(?=\(\s*defprotocol\b)", raw_txt)
+    protocol_sections = [c for c in chunks if re.match(r"\A\(\s*defprotocol\b", c.strip())]
+
+    target_section = raw_txt
+    exploding_pov_idx = 1
+    if protocol_sections:
+        for idx, sec in enumerate(protocol_sections, 1):
+            if '(comment "Nothing left to do")' not in sec:
+                target_section = sec
+                exploding_pov_idx = idx
+                break
+        else:
+            # If all sections completed or `-l` stopped inside the last section
+            target_section = protocol_sections[-1]
+            exploding_pov_idx = len(protocol_sections)
+
+    records: List[Dict[str, Any]] = []
+    pos = 0
+    skel_pattern = re.compile(r"\(\s*defskeleton\b")
+
+    while True:
+        match = skel_pattern.search(target_section, pos)
+        if not match:
+            break
+        block, next_pos = _extract_balanced_sexp(target_section, match.start())
+        if not block:
+            break
+        pos = next_pos
+
+        label_m = re.search(r"\(\s*label\s+(\d+)\s*\)", block)
+        parent_m = re.search(r"\(\s*parent\s+(\d+)\s*\)", block)
+        comment_m = re.search(r'\(\s*comment\s+"([^"]+)"\s*\)', block)
+        unrealized_m = re.search(r"\(\s*unrealized\s+([^)]*)\)", block)
+        strands = re.findall(r"\(\s*defstrand(?:max)?\s+([^\s()]+)\s+(\d+)", block)
+
+        op_match = re.search(r"\(\s*operation\b", block)
+        op_raw = ""
+        op_type = ""
+        op_action = ""
+        op_term = ""
+        op_node = ""
+        if op_match:
+            op_raw, _ = _extract_balanced_sexp(block, op_match.start())
+            # Format: (operation <test-type> (<action> ...) <critical-term> (<strand> <node>))
+            header_m = re.match(
+                r"\(\s*operation\s+([^\s()]+)\s+(\([^)]+\)|[^\s()]+)\s*(.*)\)\Z",
+                " ".join(op_raw.split()),
+            )
+            if header_m:
+                op_type = header_m.group(1)
+                op_action = header_m.group(2)
+                remainder = header_m.group(3).strip()
+                node_m = re.search(r"\(\s*(\d+\s+\d+)\s*\)\s*(?:\(\s*seen-ops\b.*\))?\Z", remainder)
+                if node_m:
+                    op_node = f"({node_m.group(1)})"
+                    op_term = remainder[: node_m.start()].strip()
+                else:
+                    op_term = remainder
+
+        # Parse (vars ...) declarations to inspect primed variable explosion
+        vars_match = re.search(r"\(\s*vars\b", block)
+        vars_block = ""
+        if vars_match:
+            vars_block, _ = _extract_balanced_sexp(block, vars_match.start())
+
+        records.append({
+            "label": int(label_m.group(1)) if label_m else len(records),
+            "parent": int(parent_m.group(1)) if parent_m else None,
+            "comment": comment_m.group(1) if comment_m else None,
+            "unrealized": " ".join(unrealized_m.group(1).split()) if unrealized_m else "",
+            "strands": strands,
+            "strand_count": len(strands),
+            "op_raw": " ".join(op_raw.split()) if op_raw else "",
+            "op_type": op_type,
+            "op_action": op_action,
+            "op_term": op_term,
+            "op_node": op_node,
+            "vars_block": vars_block,
+        })
+
+    pov_desc = None
+    if records:
+        first_rec = records[0]
+        first_strands = ", ".join(f"{r}(h={h})" for r, h in first_rec["strands"])
+        pov_desc = f"POV Skeleton #{exploding_pov_idx}"
+        if first_rec.get("comment"):
+            pov_desc += f' ("{first_rec["comment"]}")'
+        if first_strands:
+            pov_desc += f" [Initial strands: {first_strands}]"
+
+    return exploding_pov_idx, pov_desc, records
+
+
+def _extract_primed_variable_stats(vars_block: str) -> List[Tuple[str, str, int]]:
+    """Extracts `(base_var_name, sort, clone_count)` for primed variables (`x-0`, `x-1`, ...)
+    inside a skeleton's `(vars ...)` block.
+    """
+    if not vars_block:
+        return []
+    decl_groups = re.findall(r"\(([^()]+)\)", vars_block)
+    base_counts: Counter[Tuple[str, str]] = Counter()
+    for grp in decl_groups:
+        tokens = grp.strip().split()
+        if len(tokens) < 2 or tokens[0] == "vars":
+            continue
+        sort_name = tokens[-1]
+        for var_tok in tokens[:-1]:
+            m = re.match(r"^([a-zA-Z_][a-zA-Z0-9_\-]*)-\d+$", var_tok)
+            if m:
+                base_counts[(m.group(1), sort_name)] += 1
+    ranked = sorted(base_counts.items(), key=lambda kv: (-kv[1], kv[0][0]))
+    return [(base, sort_name, count) for (base, sort_name), count in ranked]
+
+
+def analyze_snowball_trace_text(raw_txt: str) -> str:
+    """Analyzes a partial or step-bounded `cpsa4` `.txt` derivation file and returns a
+    concise, actionable Snowball Autopsy Report pinpointing the exact looping role,
+    authentication test, critical term, and cloned variables.
+    """
+    if not raw_txt or "(defskeleton" not in raw_txt:
+        return ""
+
+    _, pov_desc, records = _parse_skeleton_records(raw_txt)
+    if not records:
+        return ""
+
+    by_label: Dict[int, Dict[str, Any]] = {r["label"]: r for r in records}
+    depth_map: Dict[int, int] = {}
+    for r in records:
+        lbl = r["label"]
+        parent = r["parent"]
+        depth_map[lbl] = (depth_map.get(parent, 0) + 1) if parent is not None else 0
+
+    deepest_rec = max(records, key=lambda r: (depth_map.get(r["label"], 0), r["strand_count"]))
+    max_depth = depth_map.get(deepest_rec["label"], 0)
+    max_strands = max(r["strand_count"] for r in records)
+
+    # Reconstruct the deepest parent -> child derivation chain
+    deepest_chain: List[Dict[str, Any]] = []
+    curr: Optional[Dict[str, Any]] = deepest_rec
+    visited = set()
+    while curr is not None and curr["label"] not in visited:
+        visited.add(curr["label"])
+        deepest_chain.append(curr)
+        curr = by_label.get(curr["parent"]) if curr["parent"] is not None else None
+    deepest_chain.reverse()
+
+    # Count normalized operations across all skeletons and along the deepest chain
+    op_counter: Counter[Tuple[str, str, str]] = Counter()
+    chain_op_counter: Counter[Tuple[str, str, str]] = Counter()
+    role_spawn_counter: Counter[str] = Counter()
+
+    for r in records:
+        if r["op_type"] and r["op_action"]:
+            norm_action = _normalize_primed_identifiers(r["op_action"])
+            norm_term = _normalize_primed_identifiers(r["op_term"])
+            op_counter[(r["op_type"], norm_action, norm_term)] += 1
+            added_m = re.match(r"\(\s*added-strand\s+([^\s()]+)\s+(\d+)\s*\)", norm_action)
+            if added_m:
+                role_spawn_counter[f"{added_m.group(1)} (height {added_m.group(2)})"] += 1
+
+    for r in deepest_chain:
+        if r["op_type"] and r["op_action"]:
+            norm_action = _normalize_primed_identifiers(r["op_action"])
+            norm_term = _normalize_primed_identifiers(r["op_term"])
+            chain_op_counter[(r["op_type"], norm_action, norm_term)] += 1
+
+    primed_stats = _extract_primed_variable_stats(deepest_rec.get("vars_block", ""))
+
+    # Build the structured autopsy report
+    lines: List[str] = [
+        "=== CPSA 4.4.9 SNOWBALL STATE AUTOPSY REPORT (Tier 2 Trace Analysis) ===",
+        f"Exploding Query: {pov_desc or 'POV Skeleton'}",
+        (
+            f"Derivation Stats: {len(records)} skeletons inspected | "
+            f"Max derivation depth: {max_depth} | Max concurrent strands in a skeleton: {max_strands}"
+        ),
+    ]
+
+    if role_spawn_counter:
+        top_roles = ", ".join(f"{role}: {cnt}x" for role, cnt in role_spawn_counter.most_common(4))
+        lines.append(f"Repeatedly Augmented Roles (`added-strand`): {top_roles}")
+
+    if op_counter:
+        lines.append("Top Looping Authentication Test Operations Across Derivation Tree:")
+        for (op_type, norm_action, norm_term), count in op_counter.most_common(3):
+            chain_cnt = chain_op_counter.get((op_type, norm_action, norm_term), 0)
+            lines.append(
+                f"  - [{count}x total, {chain_cnt}x in deepest chain] "
+                f"Test: `{op_type}` | Action: `{norm_action}` | Unifying Critical Term: `{norm_term[:220]}`"
+            )
+
+    if primed_stats:
+        cloned_summary = ", ".join(
+            f"{base}:{sort_name} (cloned {cnt}x as {base}-0..{base}-{cnt - 1})"
+            for base, sort_name, cnt in primed_stats[:6]
+        )
+        lines.append(f"Cloned Unconstrained Variables in Deepest Skeleton: {cloned_summary}")
+
+    if deepest_rec.get("unrealized"):
+        lines.append(f"Remaining Unrealized Reception Nodes in Deepest Skeleton: ({deepest_rec['unrealized']})")
+
+    # Synthesize targeted Tier 3 structural repair directives from the autopsy findings
+    lines.append("Targeted Structural Anti-Snowballing Fixes Required (Tier 3):")
+    full_ops_str = " ".join(
+        f"{t} {a} {term}" for (t, a, term) in op_counter.keys()
+    )
+    if "encryption-test" in full_ops_str or "(enc " in full_ops_str:
+        lines.append(
+            "  1. DOMAIN-SEPARATE EVERY `(enc ...)` AND `(hash ...)` TERM: The solver is unifying an outgoing "
+            "role encryption with an incoming reception (`encryption-test` loop). Distinguish request vs. response "
+            "`[\"enc\", ...]` and `[\"hash\", ...]` terms using the actual RFC message type, header, opcode, or "
+            "direction label fields from the RFC (and distinct prefix sorts `data` vs `text`) so order-sorted "
+            "unification (`unify_0`) fails immediately between different protocol flights."
+        )
+    if "(ltk " in full_ops_str or any(s == "name" for _, s, _ in primed_stats):
+        lines.append(
+            "  2. PRINCIPAL INEQUALITY FACTS & IDENTITY BINDING: Add `[\"neq\", \"<principal_a>\", \"<principal_b>\"]` "
+            "to `facts` in every `CPSAPreskeleton` to block `A = B` symmetric reflection, and include both "
+            "communicating `name` variables inside encrypted flights so augmented strands bind to existing "
+            "principals instead of spawning unconstrained `name-0`, `name-1` peers."
+        )
+    lines.append(
+        "  3. SORT SEPARATION (`data` vs `text`): Declare fresh `uniq-orig` nonces/secrets as sort `\"data\"` "
+        "and predictable identifiers/headers/labels as sort `\"text\"` (CPSA Primer §16.2) so CPSA's order-sorted "
+        "unifier cannot cross-unify a fresh nonce slot with a metadata/identifier slot."
+    )
+
+    return "\n".join(lines)
+
+
+def generate_snowball_autopsy_report(
+    scm_path: Path,
+    build_dir: Path,
+    env: Dict[str, str],
+    partial_trace_text: Optional[str] = None,
+    step_limit: int = 120,
+) -> str:
+    """Generates a deterministic Snowball Autopsy Report from `<stem>.txt` or by running a
+    fast (<0.4s) step-bounded `cpsa4 -l <step_limit>` probe when `<stem>.txt` was buffered.
+    """
+    raw_txt = partial_trace_text or ""
+    if raw_txt.count("(defskeleton") < 4 and SYSTEM_CONFIG.CPSA4_BIN.exists():
+        autopsy_txt_path = build_dir / f"{scm_path.stem}_autopsy.txt"
+        try:
+            cmd = [
+                str(SYSTEM_CONFIG.CPSA4_BIN),
+                "+RTS",
+                "-M512m",
+                "-N",
+                "-RTS",
+                "-l",
+                str(step_limit),
+                "-o",
+                str(autopsy_txt_path),
+                str(scm_path),
+            ]
+            subprocess.run(
+                cmd,
+                cwd=build_dir,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=4.0,
+                check=False,
+            )
+            if autopsy_txt_path.exists():
+                probed = autopsy_txt_path.read_text(encoding="utf-8", errors="replace")
+                if probed.count("(defskeleton") > raw_txt.count("(defskeleton"):
+                    raw_txt = probed
+        except Exception as exc:
+            logger.debug("Bounded cpsa4 autopsy probe encountered exception: %s", exc)
+        finally:
+            if autopsy_txt_path.exists():
+                try:
+                    autopsy_txt_path.unlink()
+                except Exception:
+                    pass
+
+    return analyze_snowball_trace_text(raw_txt)
+```
+
+---
+
 ### `src/verification_engine/trajectory_metadata_exporter.py`
 
-*sha256:`bf2372345d8f` · 608 lines · 23.2 KB (~5,936 tokens) · lang:`python`*
+*sha256:`0ff2a1fed79d` · 620 lines · 23.8 KB (~6,080 tokens) · lang:`python`*
 
 ```python
 """Programmatic Trajectory & Formal Verification Metadata Exporter.
@@ -13397,11 +14834,15 @@ def write_trajectory_metadata_bundle(
     )
     trajectory_path = output_dir / f"{stem}_trajectory.json"
 
+    from src.cost_tracker import GLOBAL_COST_TRACKER
+    rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+
     payload: Dict[str, Any] = {
         "schema_version": "1.0.0",
         "run_id": f"{rfc_id.lower()}_{compact_ts}",
         "timestamp_utc": now_utc,
         "duration_seconds": round(duration_seconds, 2),
+        "cost_telemetry": rfc_cost_summary,
         "rfc_metadata": {
             "rfc_id": rfc_id,
             "rfc_title": rfc_title,
@@ -13480,8 +14921,13 @@ def update_run_metadata_index(
             "filtered_rfcs": [],
         }
 
+    from src.cost_tracker import GLOBAL_COST_TRACKER
+    rfc_cost = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+    batch_cost = GLOBAL_COST_TRACKER.get_batch_summary()
+
     index_data["updated_at_utc"] = now_utc
     index_data["total_rfcs_processed"] = int(index_data.get("total_rfcs_processed", 0)) + 1
+    index_data["batch_cost_telemetry"] = batch_cost
     index_data.setdefault("filtered_rfcs", [])
 
     if not is_eligible:
@@ -13492,6 +14938,7 @@ def update_run_metadata_index(
             "gate": rejection_gate or "Intake Gate",
             "reason": error_message or "Ineligible",
             "duration_seconds": round(float(duration_seconds), 2),
+            "cost_usd": round(float(rfc_cost.get("total_cost_usd", 0.0)), 6),
         })
         with open(index_path, "w", encoding="utf-8") as handle:
             json.dump(index_data, handle, indent=2)
@@ -13523,6 +14970,8 @@ def update_run_metadata_index(
         "scm_file": scm_str,
         "metadata_json_file": traj_str,
         "error_message": error_message,
+        "cost_usd": round(float(rfc_cost.get("total_cost_usd", 0.0)), 6),
+        "cost_telemetry": rfc_cost,
     })
 
     with open(index_path, "w", encoding="utf-8") as handle:
@@ -13545,7 +14994,7 @@ def update_run_metadata_index(
 
 ### `src/visualizer/server.py`
 
-*sha256:`5be7af9d17de` · 629 lines · 27.3 KB (~6,991 tokens) · lang:`python`*
+*sha256:`e437946037a6` · 639 lines · 27.7 KB (~7,099 tokens) · lang:`python`*
 
 ```python
 """Asynchronous web server for live and offline multi-RFC synthesis visualization."""
@@ -13867,10 +15316,20 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
         if xhtmls:
             shapes_xhtml = str(xhtmls[0])
 
+    cost_telemetry = traj.get("cost_telemetry") or tab_summary.get("cost_telemetry") or {}
+    if not cost_telemetry and events:
+        for evt in reversed(events):
+            if evt.get("event_type") == "cost_updated":
+                rc = (evt.get("data") or {}).get("rfc_cost")
+                if isinstance(rc, dict):
+                    cost_telemetry = rc
+                    break
+
     return {
         "tab": {**tab_summary, "shapes_xhtml": shapes_xhtml},
         "rfc_metadata": meta,
         "quality_assessment": qa,
+        "cost_telemetry": cost_telemetry,
         "verbatim_slice": verbatim_slice,
         "shapes_xhtml": shapes_xhtml,
         "attempts": attempts,
@@ -14183,7 +15642,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
 ### `src/visualizer/static/index.html`
 
-*sha256:`b8f91708f953` · 1979 lines · 72.6 KB (~18,593 tokens) · lang:`html`*
+*sha256:`1417a68828a9` · 2158 lines · 80.1 KB (~20,496 tokens) · lang:`html`*
 
 ```html
 <!DOCTYPE html>
@@ -14650,6 +16109,59 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       50% { opacity: 0.65; }
     }
 
+    /* Cost & Token Telemetry Strip */
+    .cost-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 4px 14px;
+      background: #11161e;
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .cost-roles {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+    }
+    .cost-totals {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+    .cost-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-muted);
+    }
+    .cost-val {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+    .cost-val.highlight {
+      color: var(--color-green);
+      background: #0e442955;
+      border: 1px solid #23863688;
+      padding: 1px 6px;
+    }
+    .cost-val.batch {
+      color: var(--color-blue);
+      background: #0c2d6b55;
+      border: 1px solid #1f6feb88;
+      padding: 1px 6px;
+    }
+    .cost-tok {
+      color: var(--text-muted);
+      font-size: 10px;
+    }
+
     /* Main Grid */
     .main-grid {
       display: flex;
@@ -14953,6 +16465,32 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     </div>
   </header>
 
+  <!-- Live & Per-RFC Cost & Token Telemetry Strip -->
+  <div class="cost-strip" id="cost-strip">
+    <div class="cost-roles">
+      <span class="cost-item" title="Stage 1b/1c Router & Applicability Gate Cost">
+        Router: <span class="cost-val" id="cost-router">$0.0000</span><span class="cost-tok" id="tok-router">(0 tok)</span>
+      </span>
+      <span class="cost-item" title="Stage 2 Initial Extraction & Schema Correction Cost">
+        Extraction: <span class="cost-val" id="cost-extraction">$0.0000</span><span class="cost-tok" id="tok-extraction">(0 tok)</span>
+      </span>
+      <span class="cost-item" title="Stage 5/6 Agentic CPSA KB Searcher Cost">
+        Query/Searcher: <span class="cost-val" id="cost-query">$0.0000</span><span class="cost-tok" id="tok-query">(0 tok)</span>
+      </span>
+      <span class="cost-item" title="Stage 5/6 Compiler & Solver Diagnostic Repair Cost">
+        Repair: <span class="cost-val" id="cost-repair">$0.0000</span><span class="cost-tok" id="tok-repair">(0 tok)</span>
+      </span>
+    </div>
+    <div class="cost-totals">
+      <span class="cost-item" title="Total USD Cost & Tokens for Currently Viewed RFC">
+        RFC Run Total: <span class="cost-val highlight" id="cost-rfc-total">$0.0000</span><span class="cost-tok" id="tok-rfc-total">(0 tok)</span>
+      </span>
+      <span class="cost-item" title="Cumulative USD Cost & Tokens Across Entire Batch">
+        Batch Total: <span class="cost-val batch" id="cost-batch-total">$0.0000</span><span class="cost-tok" id="tok-batch-total">(0 tok)</span>
+      </span>
+    </div>
+  </div>
+
   <!-- Virtualized Numbered Accepted-RFC Tab Strip (#1..#N) -->
   <div class="rfc-tabbar">
     <button class="live-pin-btn active" id="btn-live-follow" onclick="selectLiveFollow()">
@@ -15073,7 +16611,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     <!-- Left: Event Stream -->
     <div class="log-panel">
       <div class="panel-heading">
-        <span id="log-panel-title">Execution Diagnostics</span>
+        <span id="log-panel-title" style="display:inline-flex; align-items:center; gap:6px;"><span class="dot failed" style="box-shadow:0 0 6px var(--color-red);"></span>LIVE</span>
         <span id="event-counter" style="color:var(--text-muted); font-size:10px;">0 Events</span>
       </div>
       <div class="log-feed" id="log-feed"></div>
@@ -15178,6 +16716,44 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       repair_model: 'nous/google/gemini-3.8-flash',
       query_model: 'nous/anthropic/claude-haiku-5.5'
     };
+    let latestBatchCostTelemetry = null;
+
+    function formatUsd(val) {
+      const n = Number(val || 0);
+      return `$${n.toFixed(4)}`;
+    }
+
+    function formatTok(val) {
+      const n = Number(val || 0);
+      return `(${n.toLocaleString()} tok)`;
+    }
+
+    function renderCostTelemetry(rfcCost, batchCost) {
+      if (batchCost && typeof batchCost === 'object') {
+        latestBatchCostTelemetry = batchCost;
+      }
+      if (rfcCost && typeof rfcCost === 'object') {
+        const roles = rfcCost.roles || {};
+        ['router', 'extraction', 'query', 'repair'].forEach(roleKey => {
+          const rb = roles[roleKey] || {};
+          const costEl = document.getElementById(`cost-${roleKey}`);
+          const tokEl = document.getElementById(`tok-${roleKey}`);
+          if (costEl) costEl.innerText = formatUsd(rb.cost_usd);
+          if (tokEl) tokEl.innerText = formatTok(rb.total_tokens);
+        });
+        const rfcTotEl = document.getElementById('cost-rfc-total');
+        const rfcTokEl = document.getElementById('tok-rfc-total');
+        if (rfcTotEl) rfcTotEl.innerText = formatUsd(rfcCost.total_cost_usd);
+        if (rfcTokEl) rfcTokEl.innerText = formatTok(rfcCost.total_tokens);
+      }
+      const effBatch = latestBatchCostTelemetry || rfcCost;
+      if (effBatch && typeof effBatch === 'object') {
+        const bTotEl = document.getElementById('cost-batch-total');
+        const bTokEl = document.getElementById('tok-batch-total');
+        if (bTotEl) bTotEl.innerText = formatUsd(effBatch.total_cost_usd);
+        if (bTokEl) bTokEl.innerText = formatTok(effBatch.total_tokens);
+      }
+    }
 
     function lruGet(tabIdx) {
       if (!tabLruCache.has(tabIdx)) return null;
@@ -15261,13 +16837,14 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         const badgeText = (t.status === 'RUNNING') ? 'LIVE' : (t.quality_tier || t.status || '');
         const badgeClass = (t.status === 'RUNNING') ? 'RUNNING' : (t.quality_tier || t.status || '');
         const protoDisplay = t.protocol_name || t.rfc_title || t.rfc_id;
+        const tabCostStr = (typeof t.cost_usd === 'number' && t.cost_usd > 0) ? ` | $${t.cost_usd.toFixed(4)}` : '';
 
         btn.title = [
           `Tab #${t.tab_index} | ${t.rfc_id}`,
           `Protocol: ${protoDisplay}`,
           t.rfc_title && t.rfc_title !== protoDisplay ? `Title: ${t.rfc_title}` : null,
           `Status: ${t.status} | Tier: ${t.quality_tier}`,
-          `Repairs: ${t.total_attempts || 0} | Shapes: ${t.shapes_count || 0} | Time: ${t.duration_seconds || 0}s`
+          `Repairs: ${t.total_attempts || 0} | Shapes: ${t.shapes_count || 0} | Time: ${t.duration_seconds || 0}s${tabCostStr}`
         ].filter(Boolean).join('\n');
 
         const topDiv = document.createElement('div');
@@ -15286,7 +16863,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
         const protoDiv = document.createElement('div');
         protoDiv.className = 'rfc-vtab-proto';
-        protoDiv.innerText = protoDisplay;
+        protoDiv.innerText = `${protoDisplay}${tabCostStr}`;
 
         btn.appendChild(topDiv);
         btn.appendChild(protoDiv);
@@ -15384,7 +16961,12 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       showingRejectedScm = false;
 
       document.getElementById('event-counter').innerText = '0 Events';
-      document.getElementById('log-panel-title').innerText = headerTitle || 'Execution Diagnostics';
+      const titleEl = document.getElementById('log-panel-title');
+      if (!headerTitle || headerTitle === 'LIVE') {
+        titleEl.innerHTML = '<span class="dot failed" style="box-shadow:0 0 6px var(--color-red);"></span>LIVE';
+      } else {
+        titleEl.innerText = headerTitle;
+      }
       document.getElementById('log-feed').innerHTML = '';
       document.getElementById('rag-feed').innerHTML = `
         <div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
@@ -15418,7 +17000,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       selectedTabIndex = null;
       updateLivePinButton();
       renderVirtualTabs();
-      resetViewportDom('Live Execution Diagnostics');
+      resetViewportDom('LIVE');
 
       fetch('/api/active')
         .then(r => r.json())
@@ -15492,6 +17074,10 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
       if (payload.verbatim_slice) {
         document.getElementById('code-slice').innerText = payload.verbatim_slice;
+      }
+
+      if (payload.cost_telemetry || tab.cost_telemetry) {
+        renderCostTelemetry(payload.cost_telemetry || tab.cost_telemetry, latestBatchCostTelemetry);
       }
 
       if (Array.isArray(payload.events)) {
@@ -15765,13 +17351,31 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         }
         return;
       }
+      if (evt.event_type === 'cost_updated' && evt.data) {
+        if (evt.data.batch_cost) {
+          latestBatchCostTelemetry = evt.data.batch_cost;
+        }
+        if (evt.tab_index && acceptedTabsByIndex.has(evt.tab_index) && evt.data.rfc_cost) {
+          const existing = acceptedTabsByIndex.get(evt.tab_index);
+          existing.cost_usd = Number(evt.data.rfc_cost.total_cost_usd || 0);
+          existing.cost_telemetry = evt.data.rfc_cost;
+          renderVirtualTabs();
+        }
+        if (viewMode === 'live') {
+          renderCostTelemetry(evt.data.rfc_cost, evt.data.batch_cost);
+        } else if (evt.data.batch_cost) {
+          renderCostTelemetry(null, evt.data.batch_cost);
+        }
+        return;
+      }
       if (evt.event_type === 'pipeline_started') {
         liveActiveRfcId = (evt.data && (evt.data.rfc_id || evt.data.rfc_file)) || evt.rfc_id;
         liveActiveTabIndex = null;
         pipelineRunning = true;
         updateLivePinButton();
         if (viewMode === 'live') {
-          resetViewportDom('Live Execution Diagnostics');
+          resetViewportDom('LIVE');
+          renderCostTelemetry({ total_cost_usd: 0, total_tokens: 0, roles: {} }, latestBatchCostTelemetry);
         }
       }
       if (evt.event_type === 'pipeline_completed' || evt.event_type === 'pipeline_failed') {
@@ -15786,12 +17390,30 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     }
 
     function renderEventIntoViewport(evt, fetchLiveArtifacts) {
-      if (evt.event_type === 'tab_accepted' || evt.event_type === 'tab_updated' || evt.event_type === 'rfc_filtered') {
+      if (
+        evt.event_type === 'tab_accepted' ||
+        evt.event_type === 'tab_updated' ||
+        evt.event_type === 'rfc_filtered' ||
+        evt.event_type === 'cost_updated'
+      ) {
+        if (evt.event_type === 'cost_updated' && evt.data && evt.data.rfc_cost) {
+          renderCostTelemetry(evt.data.rfc_cost, evt.data.batch_cost || latestBatchCostTelemetry);
+        }
         return;
       }
       const key = `${evt.timestamp}_${evt.event_type}_${evt.stage || 0}`;
       if (seenEventKeys.has(key)) return;
       seenEventKeys.add(key);
+
+      // Route Agentic KB Search strictly to the RAG Knowledge tab (never into the LIVE feed)
+      if (evt.event_type === 'rag_retrieval') {
+        activeAttemptEpoch = evt.timestamp;
+        const ragMod = `${defaultModelCfg.query_model} (Agentic KB Searcher)`;
+        const badge = document.getElementById('active-model');
+        if (badge) badge.innerText = ragMod;
+        renderRagEvent(evt);
+        return;
+      }
 
       eventCount++;
       document.getElementById('event-counter').innerText = `${eventCount} Events`;
@@ -15802,7 +17424,9 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
       const timeStr = new Date(evt.timestamp * 1000).toLocaleTimeString([], { hour12: false });
       let typeLabel = evt.event_type;
-      let bodyText = JSON.stringify(evt.data, null, 2);
+      const safeData = Object.assign({}, evt.data || {});
+      delete safeData.ast;
+      let bodyText = Object.keys(safeData).length ? JSON.stringify(safeData) : '';
 
       const stageDefaultModels = {
         1: document.getElementById('step-1-model')?.innerText || defaultModelCfg.router_model,
@@ -15825,6 +17449,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
       if (evt.event_type === 'pipeline_started') {
         typeLabel = 'PIPELINE_INIT';
+        bodyText = `Target: ${evt.data.rfc_file || evt.data.rfc_id || ''}`;
         if (fetchLiveArtifacts) pipelineRunning = true;
         currentStageNum = 1;
         currentRepairAttempt = 0;
@@ -15849,6 +17474,8 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         setStepState(1, 'active', 'Started');
       } else if (evt.event_type === 'stage_started') {
         typeLabel = `STAGE_${evt.stage}_START`;
+        const stgModel = (evt.data && evt.data.model) || stageDefaultModels[evt.stage] || '';
+        bodyText = `${evt.stage_name || (evt.data && evt.data.stage_name) || `Stage ${evt.stage}`} | Model: ${stgModel}`;
         currentStageNum = evt.stage;
         activeAttemptEpoch = evt.timestamp;
         stageStartEpochs[evt.stage] = evt.timestamp;
@@ -15859,9 +17486,10 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           else if (evt.stage === 6) { currentActivityMode = 'solver'; setDiagnosisBadge('CPSA4 Compiling & Solving...', 'normal'); }
         }
         setStepState(evt.stage, 'active', 'Processing');
-        updateActiveModel((evt.data && evt.data.model) || stageDefaultModels[evt.stage], evt.stage);
+        updateActiveModel(stgModel, evt.stage);
       } else if (evt.event_type === 'compiler_check_started') {
         typeLabel = `COMPILER_RUN_${evt.data.attempt || 0}`;
+        bodyText = `Validator: ${evt.data.model || 'cpsa4'} | Attempt #${evt.data.attempt || 0}`;
         currentStageNum = evt.stage || 6;
         activeAttemptEpoch = evt.timestamp;
         currentActivityMode = (evt.stage === 6) ? 'solver' : 'roletran';
@@ -15870,6 +17498,19 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       } else if (evt.event_type === 'stage_completed') {
         typeLabel = `STAGE_${evt.stage}_OK`;
         setStepState(evt.stage, 'passed', 'Passed');
+        if (evt.stage === 1) {
+          bodyText = `Confirmed Protocol: ${evt.data.protocol_name || ''} (${evt.data.rfc_id || ''})`;
+        } else if (evt.stage === 2) {
+          const rCount = evt.data.roles_count ?? (evt.data.ast?.roles?.length || 0);
+          const sCount = evt.data.skeletons_count ?? (evt.data.ast?.skeletons?.length || 0);
+          bodyText = `Synthesized Pydantic AST (${rCount} roles, ${sCount} skeletons)`;
+        } else if (evt.stage === 3) {
+          const scmName = (evt.data.scm_path || '').split('/').pop() || 'protocol.scm';
+          const repTag = evt.data.repair_attempt ? ` (Repair #${evt.data.repair_attempt})` : '';
+          bodyText = `Emitted CPSA Scheme: ${scmName}${repTag}`;
+        } else if (evt.stage === 4 || evt.stage === 5) {
+          bodyText = `Roletran Executability Passed${evt.data.attempts !== undefined ? ` (${evt.data.attempts} repair attempts)` : ''}`;
+        }
         if (stageStartEpochs[evt.stage]) {
           const dur = Math.max(0, evt.timestamp - stageStartEpochs[evt.stage]);
           const timeEl = document.getElementById(`step-${evt.stage}-time`);
@@ -15893,16 +17534,6 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
             .then(txt => { document.getElementById('code-slice').innerText = txt; })
             .catch(() => {});
         }
-      } else if (evt.event_type === 'rag_retrieval') {
-        typeLabel = 'AGENTIC_KB_SEARCH';
-        activeAttemptEpoch = evt.timestamp;
-        const chkCount = (evt.data && evt.data.chunks) ? evt.data.chunks.length : 0;
-        const turnsCount = (evt.data && evt.data.searcher_turns) ? evt.data.searcher_turns.length : 1;
-        const ragMod = `${defaultModelCfg.query_model} (Agentic KB Searcher)`;
-        updateActiveModel(ragMod);
-        const diagSnippet = (evt.data && evt.data.searcher_diagnosis) ? `\n${evt.data.searcher_diagnosis}` : '';
-        bodyText = `Model: ${ragMod} (${turnsCount} turn${turnsCount > 1 ? 's' : ''})\nPurpose: ${evt.data.purpose || 'Agentic KB Search'}\nTools / Queries: ${evt.data.query || ''}\nRetrieved: ${chkCount} KB rules/examples${diagSnippet}`;
-        renderRagEvent(evt);
       } else if (evt.event_type === 'repair_attempt') {
         item.classList.add('repair');
         if (evt.data.cycle_detected) item.classList.add('cycle');
@@ -15922,6 +17553,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       } else if (evt.event_type === 'stage_failed') {
         item.classList.add('error');
         typeLabel = `STAGE_${evt.stage}_FAIL`;
+        bodyText = evt.data.error_message || evt.data.reason || 'Stage failed';
         setStepState(evt.stage, 'failed', 'Failed');
       } else if (evt.event_type === 'pipeline_completed') {
         item.classList.add('success');
@@ -15937,6 +17569,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           }
         }
         typeLabel = 'SYNTHESIS_VERIFIED';
+        bodyText = `Protocol: ${evt.data.protocol_name || ''} | Tier: ${evt.data.quality_tier || 'VERIFIED'} | Shapes: ${evt.data.shapes_count ?? 0}`;
         setStepState(6, 'passed', `Shapes: ${evt.data.shapes_count}`);
       } else if (evt.event_type === 'pipeline_failed') {
         item.classList.add('error');
@@ -15948,6 +17581,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           pill.innerText = 'FAILED';
         }
         typeLabel = 'PIPELINE_HALTED';
+        bodyText = evt.data.error_message || evt.data.reason || 'Pipeline halted';
       }
 
       item.innerHTML = `
@@ -16103,6 +17737,9 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
             acceptedTabsByIndex.set(t.tab_index, t);
           });
           acceptedTabs.sort((a, b) => a.tab_index - b.tab_index);
+          if (overview.batch_cost_telemetry && Object.keys(overview.batch_cost_telemetry).length > 0) {
+            renderCostTelemetry(null, overview.batch_cost_telemetry);
+          }
           updateFilteredButtonCount(overview.filtered_total || 0);
           recomputeVisibleTabs();
           updateLivePinButton();
@@ -16152,6 +17789,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       'tab_accepted',
       'tab_updated',
       'rfc_filtered',
+      'cost_updated',
       'message'
     ];
     SSE_EVENT_TYPES.forEach(evtName => {

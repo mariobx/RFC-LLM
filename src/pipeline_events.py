@@ -60,6 +60,7 @@ class PipelineEventBus:
         self._accepted_tabs: Dict[int, Dict[str, Any]] = {}
         self._tab_order: List[int] = []
         self._filtered_rfcs: List[Dict[str, Any]] = []
+        self._batch_cost_telemetry: Dict[str, Any] = {}
 
     def subscribe(self, callback: Callable[[PipelineEvent], None]):
         """Registers a listener callback."""
@@ -119,6 +120,8 @@ class PipelineEventBus:
                 "total_attempts": 0,
                 "shapes_count": 0,
                 "duration_seconds": 0.0,
+                "cost_usd": 0.0,
+                "cost_telemetry": {},
                 "rfc_dir": str(resolved_dir),
                 "events_jsonl": str(jsonl_path),
                 "slice_path": None,
@@ -203,6 +206,15 @@ class PipelineEventBus:
                 tab_index=tab_index,
                 data=kwargs,
             )
+            if event_type == "cost_updated":
+                if isinstance(kwargs.get("batch_cost"), dict):
+                    self._batch_cost_telemetry = kwargs["batch_cost"]
+                if tab_index and tab_index in self._accepted_tabs and isinstance(kwargs.get("rfc_cost"), dict):
+                    self._accepted_tabs[tab_index]["cost_telemetry"] = kwargs["rfc_cost"]
+                    self._accepted_tabs[tab_index]["cost_usd"] = round(
+                        float(kwargs["rfc_cost"].get("total_cost_usd", 0.0)), 6
+                    )
+
             # Meta-events for filtered RFCs don't need to bloat an accepted tab's buffer,
             # while active RFC progress events stay in the bounded buffer.
             if event_type != "rfc_filtered":
@@ -252,6 +264,7 @@ class PipelineEventBus:
                 "active_tab_index": self._current_tab_index,
                 "accepted_tabs": tabs,
                 "filtered_total": len(self._filtered_rfcs),
+                "batch_cost_telemetry": self._batch_cost_telemetry,
             }
 
     def get_tab_summary(self, tab_index: int) -> Optional[Dict[str, Any]]:
@@ -296,6 +309,7 @@ class PipelineEventBus:
             self._accepted_tabs.clear()
             self._tab_order.clear()
             self._filtered_rfcs.clear()
+            self._batch_cost_telemetry = {}
 
     def load_run_from_disk(self, target_path: Path) -> Dict[str, Any]:
         """Reconstructs numbered accepted tabs and filtered RFCs from an existing run directory,
@@ -338,6 +352,9 @@ class PipelineEventBus:
                     idx_data = json.loads(index_file.read_text(encoding="utf-8"))
                 except Exception:
                     idx_data = {}
+
+                if isinstance(idx_data.get("batch_cost_telemetry"), dict):
+                    self._batch_cost_telemetry = idx_data["batch_cost_telemetry"]
 
                 # 1. Restore filtered/rejected RFC list if persisted
                 for filt in idx_data.get("filtered_rfcs", []):
@@ -470,6 +487,13 @@ class PipelineEventBus:
         else:
             status = "FAILED"
 
+        cost_tel = traj.get("cost_telemetry") or fallback_entry.get("cost_telemetry") or {}
+        cost_usd = round(
+            float(cost_tel.get("total_cost_usd", fallback_entry.get("cost_usd", 0.0))), 6
+        )
+        if not self._batch_cost_telemetry and cost_tel:
+            self._batch_cost_telemetry = cost_tel
+
         tab_summary = {
             "tab_index": tab_idx,
             "rfc_id": rfc_id,
@@ -480,6 +504,8 @@ class PipelineEventBus:
             "total_attempts": total_attempts,
             "shapes_count": shapes_count,
             "duration_seconds": round(duration_sec, 2),
+            "cost_usd": cost_usd,
+            "cost_telemetry": cost_tel,
             "rfc_dir": str(rfc_dir),
             "events_jsonl": str(events_jsonl) if events_jsonl.exists() else None,
             "slice_path": str(slice_file) if slice_file.exists() else None,

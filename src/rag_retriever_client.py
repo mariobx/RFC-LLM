@@ -841,6 +841,13 @@ def run_agentic_cpsa_searcher(
                 timeout=searcher_spec.timeout,
                 num_retries=0,
             )
+            from src.cost_tracker import GLOBAL_COST_TRACKER
+            GLOBAL_COST_TRACKER.record_llm_call(
+                resp,
+                role="query",
+                model_name=searcher_model,
+                stage=5 if failure_stage == "roletran" else 6,
+            )
             raw_reply = (resp.choices[0].message.content or "").strip()
             if not raw_reply:
                 break
@@ -996,7 +1003,19 @@ def run_agentic_cpsa_searcher(
     except Exception as exc:
         logger.warning("Agentic CPSA searcher LLM step encountered exception (%s); using deterministic KB lookup", exc)
 
-    # Step 2: Always guarantee high-precision deterministic fallback / enrichment from the error string
+    # Step 2: If this is a Snowball State Error, always pin the authoritative CPSA 4.4.9
+    # Anti-Snowballing & Termination core rule section so the Repair LLM has exact mathematical guidance.
+    from src.verification_engine.snowball_autopsy import is_snowball_state_error
+    if is_snowball_state_error(error_diagnostic):
+        for sec in kb.search_cpsa_docs(
+            "state space snowballing non-termination encryption-test try-old-strands check-nonces domain separation tags neq",
+            category="01_core_rules",
+            top_k=2,
+        ):
+            if "06_termination_and_anti_snowballing" in sec.get("source_file", "") or not collected_sections:
+                collected_sections[sec["section_id"]] = sec
+
+    # Step 3: Always guarantee high-precision deterministic fallback / enrichment from the error string
     if not collected_sections:
         fallback_q = (
             fallback_query_fn(error_diagnostic, failure_stage)

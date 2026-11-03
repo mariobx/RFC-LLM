@@ -2,17 +2,41 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-02 20:54:28 UTC · Git: `main` @ `b4cd7635e6d6` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,863*
+*Generated: 2026-11-03 00:16:46 UTC · Git: `main` @ `5f64ca9aadef` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `b4cd7635e6d6` — chore(context): sync notebook_context bundles with CPSA 4.4.9 KB
-- No file changes detected since the previous sync.
-- **Added (0):** none
-- **Modified (0):** none
+- **Git commit:** `5f64ca9aadef` — chore(context): sync notebook_context bundles with CPSA 4.4.9 KB
+- **Added (2):**
+  - `src/cost_tracker.py`
+  - `src/verification_engine/snowball_autopsy.py`
+- **Modified (23):**
+  - `README.md`
+  - `docs/QUICKSTART_AND_OPERATIONS.md`
+  - `docs/VERIFICATION_AND_SELF_HEALING.md`
+  - `logs/pipeline_runs.csv`
+  - `prompts/03_protocol_extraction.md`
+  - `prompts/06_compiler_repair.md`
+  - `src/document_ingestion/handshake_section_router.py`
+  - `src/document_ingestion/protocol_applicability_gate.py`
+  - `src/intermediate_representation/protocol_syntax_tree.py`
+  - `src/logging_config.py`
+  - `src/main_pipeline_orchestrator.py`
+  - `src/pipeline.py`
+  - `src/pipeline_events.py`
+  - `src/rag_retriever_client.py`
+  - `src/semantic_extraction/constrained_protocol_extractor.py`
+  - `src/system_config.py`
+  - `src/verification_engine/compiler_diagnostic_repair.py`
+  - `src/verification_engine/mitre_build_orchestrator.py`
+  - `src/verification_engine/trajectory_metadata_exporter.py`
+  - `src/visualizer/server.py`
+  - `src/visualizer/static/index.html`
+  - `tests/test_cpsa_kb_and_agentic_searcher.py`
+  - `tests/test_trajectory_and_hardening.py`
 - **Deleted (0):** none
 
 ---
@@ -37,19 +61,19 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 
 | Bundle | Title | Files | Size | Estimated Tokens | Tier |
 |---|---|---|---|---|---|
-| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 116.9 KB | ~29,863 | Tier 1 — Architecture, Documentation & Project Configs |
-| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 46 | 675.8 KB | ~172,942 | Tier 2 — Core Source Code & CLI Entrypoints |
-| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 146.3 KB | ~37,218 | Tier 3 — Knowledge Base Index & Test Suites |
+| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 119.7 KB | ~30,592 | Tier 1 — Architecture, Documentation & Project Configs |
+| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 749.4 KB | ~191,804 | Tier 2 — Core Source Code & CLI Entrypoints |
+| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 161.3 KB | ~41,053 | Tier 3 — Knowledge Base Index & Test Suites |
 | `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 693.4 KB | ~175,802 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
 | `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files) | 155 | 915.3 KB | ~234,169 | Tier 3 — Domain Reference Code Corpus (.scm) |
 
-**Total Ingested Context Payload:** ~649,994 tokens across all bundles (65.0% of Gemini 1M context window)
+**Total Ingested Context Payload:** ~673,420 tokens across all bundles (67.3% of Gemini 1M context window)
 
 ---
 
 ## Symbol & Script Registry (automated AST introspection)
 
-44 Python modules introspected with the stdlib `ast` module.
+46 Python modules introspected with the stdlib `ast` module.
 
 | Module | Docstring | Classes | Top-level Functions | CLI Arguments |
 |---|---|---|---|---|
@@ -57,6 +81,7 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/code_generation/__init__.py` | Code Generation package for Stage 3 CPSA JSON serialization  | — | — | — |
 | `src/code_generation/cpsa_json_serializer.py` | CPSA JSON AST Serializer. | — | `serialize_to_cpsa_json`, `serialize_to_cpsa_json_string` | — |
 | `src/code_generation/cpsa_scheme_emitter.py` | CPSA Scheme S-Expression Emitter using cpsa4json. | `CPSAJsonCompilationError` | `emit_cpsa_scheme` | — |
+| `src/cost_tracker.py` | Real-Time Token & USD Cost Telemetry Tracker across Pipeline | `PipelineCostTracker` | `_empty_role_bucket`, `make_empty_cost_summary`, `_normalize_model_key`, `_safe_int` | — |
 | `src/document_ingestion/__init__.py` | Document Ingestion package for Stage 1 RFC filtering, TOC pa | — | — | — |
 | `src/document_ingestion/handshake_section_router.py` | Handshake Section Router for Navigating RFC Table of Content | `SectionRoutingDecision` | `route_handshake_sections`, `_heuristic_section_router` | — |
 | `src/document_ingestion/protocol_applicability_gate.py` | Protocol Applicability Gate (Tier 1 Gatekeeper). | `ProtocolApplicabilityReport` | `evaluate_protocol_applicability` | — |
@@ -73,7 +98,7 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/intermediate_representation/protocol_syntax_tree.py` | Strongly-Typed Intermediate Representation (AST) for MITRE C | `CPSAVariableDeclaration`, `CPSATraceEvent`, `CPSAProtocolRole`, `CPSAStrandInstance`, `CPSAPreskeleton`, `CPSAProtocolSpecification` | `_validate_cpsa_term`, `sanitize_cpsa_symbol`, `extract_term_tokens`, `normalize_cpsa_term`, `_validate_no_mesg_encryption_key`, `_is_valid_roletran_input_term` | — |
 | `src/logging_config.py` | Comprehensive Structured Logging Subsystem for RFC-LLM Pipel | `PipelineConsoleFormatter`, `PipelineMetricsCSVLogger` | `configure_pipeline_logging`, `get_pipeline_logger` | — |
 | `src/main_pipeline_orchestrator.py` | Main Pipeline Orchestrator for RFC-to-CPSA Synthesis. | `PipelineExecutionSummary` | `_extract_rfc_abstract`, `_read_scm_safe`, `_run_roletran_self_healing_loop`, `_run_mitre_solver_self_healing_loop`, `run_rfc_translation_pipeline` | — |
-| `src/pipeline.py` | Command-line interface for RFC-LLM synthesis pipeline suppor | — | `natural_rfc_sort_key`, `get_completed_rfc_ids`, `main` | `--view`, `--output-dir`, `-o`, `--model`, `-m`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, `--no-visualize` … |
+| `src/pipeline.py` | Command-line interface for RFC-LLM synthesis pipeline suppor | — | `_print_cost_breakdown`, `natural_rfc_sort_key`, `get_completed_rfc_ids`, `get_failed_rfc_ids`, `main` | `--view`, `--output-dir`, `-o`, `--model`, `-m`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, `--no-visualize` … |
 | `src/pipeline_events.py` | Bounded event bus, sequential tab registry, and disk telemet | `PipelineEvent`, `PipelineEventBus` | `_strip_bulky_event_fields` | — |
 | `src/prompt_loader.py` | Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LL | `PromptSpec` | `parse_prompt_frontmatter`, `load_prompt_spec`, `resolve_prompt_model`, `load_prompt`, `build_schema_system_prompt` | — |
 | `src/rag_retriever_client.py` | CPSA 4.4.9 Knowledge Base Indexer, `TOC.md` Flag Manager, an | `CPSAKnowledgeBase` | `tokenize_cpsa_dsl`, `_slugify_heading`, `parse_toc_rebuild_flag`, `_split_markdown_file_into_sections`, `_extract_scm_metadata_from_source`, `build_cpsa_kb_index` … | — |
@@ -84,12 +109,13 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/verification_engine/compiler_diagnostic_repair.py` | Compiler Diagnostic Repair Engine with RAG-Guided Self-Heali | — | `fallback_sanitize_diagnostic_query`, `formulate_rag_diagnostic_query`, `repair_protocol_specification` | — |
 | `src/verification_engine/mitre_build_orchestrator.py` | MITRE Build Orchestrator for CPSA Verification and Visualiza | `CPSABuildArtifacts`, `CPSABuildError` | `_run_make_with_hard_timeout`, `_ensure_cpsa_makefile`, `_count_shapes_in_file`, `execute_mitre_make_build` | — |
 | `src/verification_engine/roletran_executability_gate.py` | MITRE CPSA Roletran Pre-Flight Executability Gate (<15 ms). | `RoletranVerificationResult` | `verify_role_executability` | — |
+| `src/verification_engine/snowball_autopsy.py` | CPSA 4.4.9 State-Space Snowball Classifier, Herald Injector, | — | `is_snowball_state_error`, `inject_herald_options_into_scm`, `_extract_balanced_sexp`, `_normalize_primed_identifiers`, `_parse_skeleton_records`, `_extract_primed_variable_stats` … | — |
 | `src/verification_engine/trajectory_metadata_exporter.py` | Programmatic Trajectory & Formal Verification Metadata Expor | — | `split_top_level_sexprs`, `_extract_int_clause`, `_has_flag_clause`, `_extract_clause_block`, `_extract_root_deflistener`, `_extract_defstrands` … | — |
 | `src/visualizer/__init__.py` | RFC-LLM Live Visualization and Interactive Dashboard Module. | — | — | — |
 | `src/visualizer/server.py` | Asynchronous web server for live and offline multi-RFC synth | `VisualizerServer` | `_get_manual_chunk_lookup`, `_resolve_chunks_by_ids`, `hydrate_tab_payload`, `_synthesize_events_from_trajectory`, `run_visualizer_in_background` | — |
 | `tests/conftest.py` | Global pytest fixtures ensuring hermetic test execution with | — | `_hermetic_logs_directory` | — |
 | `tests/test_code_generation_and_verification.py` | Unit and Integration Tests for Code Generation and Verificat | — | `valid_unilateral_spec`, `unexecutable_spec`, `test_scheme_emitter_generates_valid_scm`, `test_roletran_gate_accepts_valid_protocol`, `test_roletran_gate_rejects_unexecutable_protocol`, `test_mitre_build_orchestrator_compiles_artifacts` … | — |
-| `tests/test_cpsa_kb_and_agentic_searcher.py` | Unit & Integration Tests for the CPSA 4.4.9 Knowledge Base,  | — | `_make_sample_spec`, `test_production_cpsa_kb_completeness_and_toc_flag`, `test_toc_rebuild_flag_lifecycle_in_isolated_kb`, `test_cpsa_kb_four_tools_precision`, `test_agentic_searcher_multi_tool_loop`, `test_two_speed_repair_trigger_skips_searcher_on_fast_attempt_and_escalates` | — |
+| `tests/test_cpsa_kb_and_agentic_searcher.py` | Unit & Integration Tests for the CPSA 4.4.9 Knowledge Base,  | — | `_make_sample_spec`, `test_production_cpsa_kb_completeness_and_toc_flag`, `test_toc_rebuild_flag_lifecycle_in_isolated_kb`, `test_cpsa_kb_four_tools_precision`, `test_agentic_searcher_multi_tool_loop`, `test_two_speed_repair_trigger_skips_searcher_on_fast_attempt_and_escalates` … | — |
 | `tests/test_cpsa_scoping_and_prompts.py` | Unit Tests for MITRE CPSA 4.4.9 Keyword/Sort Scoping and Ext | — | `test_externalized_prompts_load_frontmatter_strip_yaml_and_fallback`, `test_prompt_frontmatter_live_hot_reload_and_strata_routing`, `test_logic_only_sorts_forbidden_in_role_and_skeleton_vars`, `test_diffie_hellman_sorts_forbidden_under_basic_algebra`, `test_structural_keywords_forbidden_inside_message_terms`, `test_role_and_skeleton_keyword_scoping_separation` … | — |
 | `tests/test_document_ingestion.py` | Unit & Integration Tests for Document Ingestion Subsystem (S | — | `tls_rfc_text`, `kerberos_rfc_text`, `mib_rfc_text`, `test_header_filter_accepts_tls`, `test_header_filter_accepts_kerberos`, `test_header_filter_rejects_mib` … | — |
 | `tests/test_generate_think.py` | Unit and integration tests for Phase 3 Hindsight Reasoning ( | — | `_sample_trajectory_dict`, `test_deterministic_reasoning_compiler_and_hindsight_sanitizer`, `test_process_run_directory_creates_think_json_and_updates_metadata_index` | — |
@@ -106,13 +132,13 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 
 ### `logs/pipeline_runs.csv`
 
-*26.5 KB · excluded because: declared Tier 4 summarized asset*
+*7.9 KB · excluded because: declared Tier 4 summarized asset*
 
-- Header (13 cols): `timestamp, rfc_id, is_eligible, protocol_name, selected_sections, sliced_lines_count, role_count, preskeleton_count, roletran_passed, solver_passed, shapes_count, duration_seconds, error_message`
-- Sample row: `2026-09-23 14:46:04, RFC 5246, True, TLS 1.2, 7.3;7.4, 196, 2, 1, True, True, 1, 3.42, `
-- Sample row: `2026-09-23 16:47:29, RFC1, False, Information is transmitted from HOST ..., , 0, 0, 0, , , 0, 16.143, Ineligible: Heuristic determination: ...`
-- Sample row: `2026-09-23 16:48:15, RFC2, False, 2b1 Primary links are established by ..., , 0, 0, 0, , , 0, 45.675, Ineligible: Heuristic determination: ...`
-- Total rows (incl. header): 83
+- Header (48 cols): `timestamp, rfc_id, run_count, is_eligible, status, quality_tier, rejection_gate, protocol_name, message_algebra, selected_sections, sliced_lines_count, role_count, preskeleton_count, scm_lines_count, shapes_count, explored_skeletons_count, all_povs_multi_strand, secrecy_proved, zero_shot_passed, roletran_repairs, solver_repairs, total_repairs, searcher_invocations, herald_options, duration_seconds, router_model, router_calls, router_tokens, router_cost_usd, extraction_model, extraction_calls, extraction_tokens, extraction_cost_usd, query_model, query_calls, query_tokens, query_cost_usd, repair_model, repair_calls, repair_tokens, repair_cost_usd, total_calls, total_tokens, total_cost_usd, scm_path, shapes_xhtml_path, trajectory_json_path, error_message`
+- Sample row: `2026-11-02 19:12:07, RFC7486, 1, True, VERIFIED, SILVER, , HTTP Origin-Bound Authentication (HOBA), basic, 2;3, 207, 2, 2, 61, 2, 0, False, True, False, 2, 0, 2, 0, , 132.844, nous/anthropic/claude-haiku-5.5, 2, 4171, 0.000834, nous/openai/gpt-6.1-terra, 1, 15855, 0.029943, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/google/gemini-3.7-flash, 2, 43507, 0.072110, 5, 63533, 0.102888, /home/mario/Work/RFC-LLM/output/run_2..., /home/mario/Work/RFC-LLM/output/run_2..., /home/mario/Work/RFC-LLM/output/run_2..., `
+- Sample row: `2026-11-02 19:12:13, RFC9858, 1, False, INELIGIBLE, INELIGIBLE, Stage 1c Applicability Gate, HSS/LMS Hash-Based Signatures (Additi..., , , 0, 0, 0, 0, 0, 0, , , , 0, 0, 0, 0, , 5.579, nous/anthropic/claude-haiku-5.5, 1, 2726, 0.000584, nous/openai/gpt-6.1-terra, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/google/gemini-3.7-flash, 0, 0, 0.000000, 1, 2726, 0.000584, , , , Ineligible: RFC 9858 extends the HSS/...`
+- Sample row: `2026-11-02 19:12:14, RFC6791, 1, False, INELIGIBLE, INELIGIBLE, Stage 1c Applicability Gate, Stateless Source Address Mapping for ..., , , 0, 0, 0, 0, 0, 0, , , , 0, 0, 0, 0, , 1.907, nous/anthropic/claude-haiku-5.5, 1, 1793, 0.000296, nous/openai/gpt-6.1-terra, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/google/gemini-3.7-flash, 0, 0, 0.000000, 1, 1793, 0.000296, , , , Ineligible: RFC 6791 specifies a stat...`
+- Total rows (incl. header): 8
 
 ### `refrences/cpsa_kb/04_examples_catalog/batch1_meta.json`
 
@@ -509,7 +535,7 @@ SOFTWARE.
 
 ### `README.md`
 
-*sha256:`bc103f60bea3` · 157 lines · 15.6 KB (~3,982 tokens) · lang:`markdown`*
+*sha256:`409fe2748159` · 161 lines · 16.8 KB (~4,299 tokens) · lang:`markdown`*
 
 ````markdown
 # RFC-LLM: Formal Cryptographic Protocol Synthesis & MoE Post-Training Roadmap
@@ -535,7 +561,7 @@ flowchart LR
         A2 --> A3["Stage 3 & 4: CPSA4json -> scm\n& Roletran Check (15s)"]
         A3 -->|Compiler Reject| A4["Stage 5: Self-Healing Loop\n(SHA-256 Cycle Check + RAG)"]
         A4 --> A3
-        A3 -->|Compiler Pass| A5["Stage 6: CPSA Compilation (60s Cap)\nVerified .scm + Trajectory JSON"]
+        A3 -->|Compiler Pass| A5["Stage 6: CPSA Compilation (15s Cap)\n3-Tier Snowball Recovery + Trajectory JSON"]
     end
 
     subgraph P3["Phase 3: Hindsight Reasoning & Dataset Factory (Active)"]
@@ -580,11 +606,15 @@ Rather than prompting an LLM to emit raw, unconstrained Scheme strings, the synt
    - [`cpsa_json_serializer.py`](src/code_generation/cpsa_json_serializer.py) & [`cpsa_scheme_emitter.py`](src/code_generation/cpsa_scheme_emitter.py): Deterministically serializes the validated Pydantic AST into native CPSA JSON S-expression arrays and compiles them into canonical CPSA 4.4.9 `.scm` code via `cpsa4json`.
 4. **Stage 4 — Roletran Check ([`src/verification_engine/roletran_executability_gate.py`](src/verification_engine/roletran_executability_gate.py))**:
    - Runs `cpsa4roletran` (for `basic` algebra) or `cpsa4 -l 1` (for `diffie-hellman` algebra) under `ROLETRAN_TIMEOUT_SECONDS = 15` to verify role constructibility, destructibility, and variable origination before invoking full strand-space search.
-5. **Stage 5 — Self-Healing Loop ([`src/verification_engine/compiler_diagnostic_repair.py`](src/verification_engine/compiler_diagnostic_repair.py))**:
-   - Intercepts Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejections, tracks SHA-256 AST hashes to break repair oscillations, formulates conceptual RAG queries (`15s` timeout), retrieves authoritative MITRE CPSA manual rules, and patches the Pydantic AST for up to `MAX_REPAIR_ATTEMPTS = 50` iterations.
-6. **Stage 6 — CPSA Compilation ([`src/verification_engine/mitre_build_orchestrator.py`](src/verification_engine/mitre_build_orchestrator.py), [`src/verification_engine/trajectory_metadata_exporter.py`](src/verification_engine/trajectory_metadata_exporter.py))**:
-   - Executes `cpsa4init` and `make` (`cpsa4`, `cpsa4shapes`, `cpsa4graph`) under a hard 60-second process-group `SIGKILL` cap (`CPSA_TIMEOUT_SECONDS = 60`) to produce realized shapes and interactive XHTML/SVG strand-space diagrams.
-   - Scores deterministic verification quality tiers (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`), prepends structured MoE conditioning headers to `<protocol>.scm`, exports `<protocol>_trajectory.json`, and updates the run-level `output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`.
+5. **Stage 5 — Self-Healing Loop ([`src/verification_engine/compiler_diagnostic_repair.py`](src/verification_engine/compiler_diagnostic_repair.py), [`src/rag_retriever_client.py`](src/rag_retriever_client.py))**:
+   - Intercepts Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejections, tracks SHA-256 AST hashes to break repair oscillations, runs the Two-Speed Pinned Header + Agentic CPSA Knowledge Base Searcher (`refrences/cpsa_kb/`), and patches the Pydantic AST for up to `MAX_REPAIR_ATTEMPTS = 50` iterations while preserving strict 1-to-1 fidelity to the verbatim RFC.
+6. **Stage 6 — CPSA Compilation & 3-Tier Snowball State Recovery ([`src/verification_engine/mitre_build_orchestrator.py`](src/verification_engine/mitre_build_orchestrator.py), [`src/verification_engine/snowball_autopsy.py`](src/verification_engine/snowball_autopsy.py), [`src/verification_engine/trajectory_metadata_exporter.py`](src/verification_engine/trajectory_metadata_exporter.py))**:
+   - Executes `cpsa4init` and `make` (`cpsa4`, `cpsa4shapes`, `cpsa4graph`) under a hard 15-second process-group `SIGKILL` cap (`CPSA_TIMEOUT_SECONDS = 15`).
+   - **3-Tier Snowball State Recovery (Isolated Strictly to State-Space Snowball Errors)**:
+     1. *Tier 1 (Zero-Token Herald Search-Order Portfolio)*: Automatically tests `--try-old-strands`, `--try-old-strands --check-nonces`, and `--try-old-strands --check-nonces --reverse-nodes`, persisting winning herald flags into `<protocol>.scm` and `CPSAProtocolSpecification.herald_options` with 0 LLM calls if any search order converges.
+     2. *Tier 2 (Partial `.txt` Snowball Autopsy)*: If all Tier 1 search orders snowball, inspects `<stem>.txt` (or runs a `<0.4s` bounded `cpsa4 -l 120` probe) to extract the exact repeating `(operation ... (added-strand Role H) <critical-term>)` loop and cloned primed variables (`var-0..var-N`).
+     3. *Tier 3 (Targeted Structural Anti-Unification Repair)*: Feeds the Snowball Autopsy Report + pinned `06_termination_and_anti_snowballing.md` rules to the Repair LLM to domain-separate flights using actual RFC message headers/types, add `(facts (neq a b))`, and separate `data` vs. `text` sorts.
+   - Scores deterministic verification quality tiers (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`), records per-role and batch USD/token telemetry ([`src/cost_tracker.py`](src/cost_tracker.py)), upserts the 48-column deduplicated master ledger (`logs/pipeline_runs.csv`), and updates `output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`.
 
 #### YAML Frontmatter Model Routing & Live Hot-Reload (`prompts/*.md`)
 All 7 LLM prompt templates ([`prompts/01_applicability_gate.md`](prompts/01_applicability_gate.md) through [`prompts/07_think_token_synthesizer.md`](prompts/07_think_token_synthesizer.md)) define their per-stage `model`, HTTP `timeout` (`180s` default; `15s` for `05_rag_query_formulation.md`), and `temperature` directly in leading YAML frontmatter via [`src/prompt_loader.py`](src/prompt_loader.py):
@@ -1663,7 +1693,7 @@ sequenceDiagram
 
 ### `docs/QUICKSTART_AND_OPERATIONS.md`
 
-*sha256:`1a6b5b4a5e6f` · 180 lines · 11.7 KB (~3,002 tokens) · lang:`markdown`*
+*sha256:`3373592eff1f` · 181 lines · 12.1 KB (~3,092 tokens) · lang:`markdown`*
 
 ````markdown
 # Quickstart & Operations Runbook
@@ -1721,10 +1751,10 @@ STRATA_API_BASE=http://localhost:11435/v1
 Per-stage `model`, HTTP `timeout` (`180s` default; `15s` for `05_rag_query_formulation.md`), and `temperature` are configured directly in the YAML frontmatter at the top of [`prompts/01_applicability_gate.md`](../prompts/01_applicability_gate.md) through [`prompts/07_think_token_synthesizer.md`](../prompts/07_think_token_synthesizer.md) and **hot-reload live mid-batch** without restarting `./rfc-llm`.
 
 ### 1.4 Execution Limits & Compiler Caps ([`src/system_config.py`](../src/system_config.py))
-- **`CPSA_TIMEOUT_SECONDS = 60`**: Hard 60-second process-group `SIGKILL` cap on MITRE `make` / `cpsa4` compilation to contain state-space explosions.
+- **`CPSA_TIMEOUT_SECONDS = 15`**: Hard 15-second process-group `SIGKILL` cap per MITRE `make` / `cpsa4` compilation strategy, paired with the 3-Tier Snowball State Recovery engine ([`src/verification_engine/snowball_autopsy.py`](../src/verification_engine/snowball_autopsy.py)).
 - **`ROLETRAN_TIMEOUT_SECONDS = 15`**: 15-second cap on Stage 4 `cpsa4roletran` / `cpsa4 -l 1` pre-flight checks.
 - **`MAX_REPAIR_ATTEMPTS = 50`**: Maximum Stage 5/6 RAG self-healing iterations per verification loop.
-- **Per-Prompt LLM `timeout:`**: Configured in `prompts/*.md` YAML frontmatter (`180s` default, `15s` for `05_rag_query_formulation.md`).
+- **Per-Prompt LLM `timeout:`**: Configured in `prompts/*.md` YAML frontmatter (`180s` default, `25s` for `05_rag_query_formulation.md`).
 
 ---
 
@@ -1752,7 +1782,8 @@ Key batch flags:
 - `--limit N` (`-n N`): Scan at most `N` candidate RFC files.
 - `--target-eligible E` (`-e E`): Stop batch processing once `E` eligible cryptographic protocols have been synthesized.
 - `--tier0-eligible-only`: Pre-filter directory candidates using the deterministic <1ms Tier 0 header check before applying `--limit`.
-- `--skip-completed`: Skip RFC IDs already recorded in `logs/pipeline_runs.csv`.
+- `--skip-completed`: Skip RFC IDs already recorded in the 48-column deduplicated master ledger `logs/pipeline_runs.csv`.
+- `--retry-failed`: Filter batch processing strictly to RFC IDs in `logs/pipeline_runs.csv` whose latest status is `FAILED` or `PARTIAL`, overwriting their CSV rows in-place upon completion.
 - `--random`: Shuffle candidate RFCs randomly before applying `--limit`.
 - `--pattern "rfc*.txt"`: Custom glob pattern when scanning a directory.
 - `--output-dir <dir>` (`-o <dir>`): Custom parent output directory (or explicit `run_*` folder).
@@ -2031,7 +2062,7 @@ Non-LLM compiler execution bounds are enforced deterministically in [`src/system
 
 ### `docs/VERIFICATION_AND_SELF_HEALING.md`
 
-*sha256:`ca025320f864` · 113 lines · 10.1 KB (~2,589 tokens) · lang:`markdown`*
+*sha256:`ae94e3bb7f13` · 114 lines · 11.4 KB (~2,911 tokens) · lang:`markdown`*
 
 ````markdown
 # Verification Engine & Closed-Loop Self-Healing
@@ -2114,12 +2145,13 @@ Configured via `prompts/06_compiler_repair.md` (`timeout: 180`, overridable via 
 
 ## 3. Stage 6: CPSA Compilation & Quality Grading
 
-### 3.1 Hard 60-Second Process-Group Compilation Cap ([`src/verification_engine/mitre_build_orchestrator.py`](../src/verification_engine/mitre_build_orchestrator.py))
-Under-constrained preskeletons or unbounded Diffie-Hellman cohorts can trigger state-space explosions in `cpsa4`. Stage 6 enforces a strict 60-second compilation budget (`CPSA_TIMEOUT_SECONDS = 60`):
+### 3.1 Hard 15-Second Process-Group Compilation Cap & 3-Tier Snowball Recovery ([`src/verification_engine/mitre_build_orchestrator.py`](../src/verification_engine/mitre_build_orchestrator.py), [`src/verification_engine/snowball_autopsy.py`](../src/verification_engine/snowball_autopsy.py))
+Under-constrained preskeletons or self-unifying ciphertexts can trigger state-space explosions in `cpsa4`. Stage 6 enforces a 15-second compilation budget (`CPSA_TIMEOUT_SECONDS = 15`) and a dedicated **3-Tier Snowball State Recovery** pipeline that activates strictly on state-space snowball errors (`timed out`, `Step limit exceeded`, `Strand bound exceeded`, `Heap exhausted`), while routing all other compiler errors through the standard repair path:
 1. `_ensure_cpsa_makefile()` runs `~/.cabal/bin/cpsa4init` to initialize `Makefile` and `cpsa4.mk` in the RFC output directory and removes stale `.txt`/`.xhtml` artifacts prior to each attempt.
-2. `_run_make_with_hard_timeout()` launches `make -B <stem>_shapes.xhtml` (`cpsa4` -> `cpsa4shapes` -> `cpsa4graph`) in an isolated process group (`start_new_session=True`).
-3. If compilation exceeds `60` seconds, `os.killpg(os.getpgid(proc.pid), signal.SIGKILL)` immediately terminates `make` and all child `cpsa4` processes and raises `CPSABuildError`, feeding the timeout diagnostic back into Stage 5/6 self-healing.
-4. Any remaining budget within the 60-second window is used to render the full search tree graph (`make <stem>.xhtml`).
+2. `_run_make_with_hard_timeout()` launches `make -B <stem>_shapes.xhtml` (`cpsa4` -> `cpsa4shapes` -> `cpsa4graph`) in an isolated process group (`start_new_session=True`) with a 15-second hard `SIGKILL` cap.
+3. **Tier 1 — Deterministic Zero-Token Herald Search-Order Portfolio**: When Pass 0 fails with `is_snowball_state_error()`, `execute_mitre_make_build()` automatically tests CPSA 4.4.9's built-in non-default search orders (`--try-old-strands`, `--try-old-strands --check-nonces`, and `--try-old-strands --check-nonces --reverse-nodes`). If any strategy converges, `inject_herald_options_into_scm()` persists the winning flags into `<stem>.scm` and `CPSAProtocolSpecification.herald_options` with **0 LLM calls**.
+4. **Tier 2 — Automated Partial `.txt` Snowball Autopsy**: If all Tier 1 search orders also snowball, `generate_snowball_autopsy_report()` parses the partial `<stem>.txt` derivation tree (or runs a `<0.4s` bounded `cpsa4 -l 120` probe) to extract the exact repeating `(operation <test-type> (added-strand <Role> <Height>) <critical-term>)` loop and primed-variable histogram (`var-0..var-N`).
+5. **Tier 3 — Structural Anti-Unification Repair**: Feeds the `CPSA 4.4.9 SNOWBALL STATE AUTOPSY REPORT` and pinned `06_termination_and_anti_snowballing.md` rules into `repair_protocol_specification()` to domain-separate flights using actual RFC message headers/types, inject `(facts (neq a b))`, and separate `data` vs. `text` sorts.
 
 ### 3.2 Deterministic Verification Quality Tiers ([`src/verification_engine/trajectory_metadata_exporter.py`](../src/verification_engine/trajectory_metadata_exporter.py))
 After `cpsa4shapes` finishes, `analyze_shapes_txt()` and `compute_quality_assessment()` inspect every preskeleton outcome in `<stem>_shapes.txt` and `<stem>.txt` to assign a deterministic quality tier:

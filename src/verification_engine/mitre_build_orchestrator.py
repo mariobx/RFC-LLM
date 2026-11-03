@@ -12,6 +12,12 @@ from pydantic import BaseModel, Field
 
 from src.system_config import SYSTEM_CONFIG
 from src.logging_config import get_pipeline_logger
+from src.verification_engine.snowball_autopsy import (
+    SNOWBALL_HERALD_PORTFOLIO,
+    generate_snowball_autopsy_report,
+    inject_herald_options_into_scm,
+    is_snowball_state_error,
+)
 
 logger = get_pipeline_logger("build_orchestrator")
 
@@ -60,6 +66,10 @@ class CPSABuildArtifacts(BaseModel):
     full_graph_xhtml_path: Path = Field(..., description="Interactive SVG graph of all search steps (.xhtml)")
     shapes_graph_xhtml_path: Path = Field(..., description="Interactive SVG graph of proved shapes (.xhtml)")
     shapes_count: int = Field(default=0, description="Total number of realized shapes discovered")
+    winning_herald_options: List[str] = Field(
+        default_factory=list,
+        description="Search-order herald flags that deterministically resolved a state-space snowball in Tier 1",
+    )
 
 
 class CPSABuildError(Exception):
@@ -137,35 +147,142 @@ def execute_mitre_make_build(
     env["PATH"] = f"{cabal_bin_str}:{env.get('PATH', '')}"
 
     # Remove stale derived artifacts before running make so each attempt is fresh
-    for stale_name in (f"{stem}.txt", f"{stem}_shapes.txt", f"{stem}_shapes.xhtml", f"{stem}.xhtml"):
-        stale_file = build_dir / stale_name
-        if stale_file.exists():
-            stale_file.unlink()
+    def _clean_derived_artifacts() -> None:
+        for stale_name in (f"{stem}.txt", f"{stem}_shapes.txt", f"{stem}_shapes.xhtml", f"{stem}.xhtml"):
+            stale_file = build_dir / stale_name
+            if stale_file.exists():
+                stale_file.unlink()
 
-    max_budget_sec = min(60.0, float(getattr(SYSTEM_CONFIG, "CPSA_TIMEOUT_SECONDS", 60)))
+    _clean_derived_artifacts()
+
+    max_budget_sec = min(15.0, float(getattr(SYSTEM_CONFIG, "CPSA_TIMEOUT_SECONDS", 15)))
     start_ts = time.monotonic()
+    trace_txt = build_dir / f"{stem}.txt"
+    winning_herald_options: List[str] = []
 
     # Target 1: Minimal shapes graph (triggers cpsa4, cpsa4shapes, and cpsa4graph)
     target_shapes_xhtml = f"{stem}_shapes.xhtml"
-    rc_shapes, out_shapes, err_shapes = _run_make_with_hard_timeout(
-        ["make", "-B", target_shapes_xhtml],
-        cwd=build_dir,
-        env=env,
-        timeout_seconds=max_budget_sec,
-    )
+    initial_snowball_msg: Optional[str] = None
+    try:
+        rc_shapes, out_shapes, err_shapes = _run_make_with_hard_timeout(
+            ["make", "-B", target_shapes_xhtml],
+            cwd=build_dir,
+            env=env,
+            timeout_seconds=max_budget_sec,
+        )
+        if rc_shapes != 0:
+            err_msg = err_shapes.strip() or out_shapes.strip()
+            full_err = f"MITRE build failed for {target_shapes_xhtml}: {err_msg}"
+            if is_snowball_state_error(full_err):
+                initial_snowball_msg = full_err
+            else:
+                logger.error("Make build failed for %s: %s", target_shapes_xhtml, err_msg)
+                raise CPSABuildError(full_err)
+    except CPSABuildError as exc:
+        if is_snowball_state_error(str(exc)):
+            initial_snowball_msg = str(exc)
+        else:
+            raise
 
-    if rc_shapes != 0:
-        err_msg = err_shapes.strip() or out_shapes.strip()
-        logger.error("Make build failed for %s: %s", target_shapes_xhtml, err_msg)
-        raise CPSABuildError(f"MITRE build failed for {target_shapes_xhtml}: {err_msg}")
+    # -------------------------------------------------------------------------
+    # SNOWBALL-ONLY RECOVERY PATH (Tier 1 Search-Order Portfolio -> Tier 2 Autopsy)
+    # Every non-snowball error already raised above and follows the normal route.
+    # -------------------------------------------------------------------------
+    if initial_snowball_msg is not None:
+        partial_trace_snapshot = ""
+        if trace_txt.exists():
+            try:
+                partial_trace_snapshot = trace_txt.read_text(encoding="utf-8", errors="replace")
+            except Exception:
+                partial_trace_snapshot = ""
 
-    # Target 2 (Optional): Full derivation search graph (capped within remaining 60s budget)
+        logger.warning(
+            "Snowball state detected on default cpsa4 search for '%s' (%s). "
+            "Launching Tier 1 Deterministic Herald Search-Order Portfolio (0 LLM tokens)...",
+            stem,
+            initial_snowball_msg,
+        )
+
+        tier1_resolved = False
+        last_snowball_msg = initial_snowball_msg
+
+        for strategy_label, cli_flags, herald_opts in SNOWBALL_HERALD_PORTFOLIO:
+            _clean_derived_artifacts()
+            cpsa_flags_arg = f"CPSAFLAGS=+RTS -M512m -N -RTS {' '.join(cli_flags)}"
+            logger.info("Tier 1 Portfolio trying strategy [%s]: %s", strategy_label, cpsa_flags_arg)
+            try:
+                rc_strat, out_strat, err_strat = _run_make_with_hard_timeout(
+                    ["make", "-B", target_shapes_xhtml, cpsa_flags_arg],
+                    cwd=build_dir,
+                    env=env,
+                    timeout_seconds=max_budget_sec,
+                )
+                if rc_strat == 0:
+                    logger.info(
+                        "Tier 1 Search-Order Portfolio RESOLVED snowball for '%s' using [%s] (0 LLM tokens)!",
+                        stem,
+                        strategy_label,
+                    )
+                    winning_herald_options = list(herald_opts)
+                    tier1_resolved = True
+                    try:
+                        raw_scm = target_scm_in_build.read_text(encoding="utf-8")
+                        updated_scm = inject_herald_options_into_scm(raw_scm, winning_herald_options)
+                        target_scm_in_build.write_text(updated_scm, encoding="utf-8")
+                        if scm_path.exists() and scm_path.resolve() != target_scm_in_build.resolve():
+                            scm_path.write_text(updated_scm, encoding="utf-8")
+                        for built_name in (f"{stem}.txt", f"{stem}_shapes.txt", target_shapes_xhtml):
+                            built_file = build_dir / built_name
+                            if built_file.exists():
+                                os.utime(built_file, None)
+                    except Exception as inject_exc:
+                        logger.warning("Could not persist winning herald options into %s: %s", target_scm_in_build, inject_exc)
+                    break
+
+                strat_err = err_strat.strip() or out_strat.strip()
+                last_snowball_msg = f"MITRE build failed for {target_shapes_xhtml} [{strategy_label}]: {strat_err}"
+            except CPSABuildError as strat_exc:
+                last_snowball_msg = str(strat_exc)
+
+            if trace_txt.exists():
+                try:
+                    candidate_snap = trace_txt.read_text(encoding="utf-8", errors="replace")
+                    if candidate_snap.count("(defskeleton") > partial_trace_snapshot.count("(defskeleton"):
+                        partial_trace_snapshot = candidate_snap
+                except Exception:
+                    pass
+
+        if not tier1_resolved:
+            logger.warning(
+                "All Tier 1 search-order strategies snowballed for '%s'. "
+                "Running Tier 2 Partial .txt Snowball Autopsy...",
+                stem,
+            )
+            autopsy_report = generate_snowball_autopsy_report(
+                scm_path=target_scm_in_build,
+                build_dir=build_dir,
+                env=env,
+                partial_trace_text=partial_trace_snapshot,
+            )
+            portfolio_note = (
+                "Tier 1 Search-Order Portfolio (`--try-old-strands`, `--check-nonces`, `--reverse-nodes`) "
+                "also failed to terminate, confirming a true algebraic unification loop in the protocol roles."
+            )
+            if autopsy_report:
+                raise CPSABuildError(f"{initial_snowball_msg}\n{portfolio_note}\n\n{autopsy_report}")
+            raise CPSABuildError(f"{last_snowball_msg}\n{portfolio_note}")
+
+    # Target 2 (Optional): Full derivation search graph (capped within remaining 15s budget)
     if build_full_graph:
         remaining_sec = max(1.0, max_budget_sec - (time.monotonic() - start_ts))
         target_full_xhtml = f"{stem}.xhtml"
         try:
+            full_cmd = ["make", target_full_xhtml]
+            if winning_herald_options:
+                cli_flags = [f"--{opt}" for opt in winning_herald_options]
+                full_cmd.append(f"CPSAFLAGS=+RTS -M512m -N -RTS {' '.join(cli_flags)}")
             _run_make_with_hard_timeout(
-                ["make", target_full_xhtml],
+                full_cmd,
                 cwd=build_dir,
                 env=env,
                 timeout_seconds=remaining_sec,
@@ -174,7 +291,6 @@ def execute_mitre_make_build(
             logger.warning("Full derivation graph %s exceeded remaining budget; keeping shapes graph.", target_full_xhtml)
 
     # Verify generated artifact paths
-    trace_txt = build_dir / f"{stem}.txt"
     shapes_txt = build_dir / f"{stem}_shapes.txt"
     full_xhtml = build_dir / f"{stem}.xhtml"
     shapes_xhtml = build_dir / f"{stem}_shapes.xhtml"
@@ -194,4 +310,5 @@ def execute_mitre_make_build(
         full_graph_xhtml_path=full_xhtml if full_xhtml.exists() else shapes_xhtml,
         shapes_graph_xhtml_path=shapes_xhtml,
         shapes_count=shapes_count,
+        winning_herald_options=winning_herald_options,
     )

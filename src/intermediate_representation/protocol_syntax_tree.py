@@ -661,6 +661,13 @@ class CPSAProtocolSpecification(BaseModel):
         description="Analysis preskeletons / points of view",
     )
     herald_comment: Optional[str] = None
+    herald_options: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Optional CPSA 4.4.9 search-order herald flags persisted when non-default search order "
+            "resolves state-space snowballing (allowed: 'try-old-strands', 'check-nonces', 'reverse-nodes')."
+        ),
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -746,10 +753,13 @@ class CPSAProtocolSpecification(BaseModel):
 
         # Every SCM file MUST have a herald declaration as the first form per MITRE CPSA Table 10.1
         herald_text = self.herald_comment or f"{self.protocol_name} Protocol Verification Suite"
+        herald_form: List[Any] = ["herald", f'"{herald_text}"']
         if self.message_algebra == "diffie-hellman":
-            payload.append(["herald", f'"{herald_text}"', ["algebra", "diffie-hellman"]])
-        else:
-            payload.append(["herald", f'"{herald_text}"'])
+            herald_form.append(["algebra", "diffie-hellman"])
+        for opt in self.herald_options:
+            if opt in {"try-old-strands", "check-nonces", "reverse-nodes"}:
+                herald_form.append([opt])
+        payload.append(herald_form)
 
         clean_proto_name = sanitize_cpsa_symbol(self.protocol_name)
         protocol_form: List[Any] = ["defprotocol", clean_proto_name, self.message_algebra]

@@ -317,10 +317,20 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
         if xhtmls:
             shapes_xhtml = str(xhtmls[0])
 
+    cost_telemetry = traj.get("cost_telemetry") or tab_summary.get("cost_telemetry") or {}
+    if not cost_telemetry and events:
+        for evt in reversed(events):
+            if evt.get("event_type") == "cost_updated":
+                rc = (evt.get("data") or {}).get("rfc_cost")
+                if isinstance(rc, dict):
+                    cost_telemetry = rc
+                    break
+
     return {
         "tab": {**tab_summary, "shapes_xhtml": shapes_xhtml},
         "rfc_metadata": meta,
         "quality_assessment": qa,
+        "cost_telemetry": cost_telemetry,
         "verbatim_slice": verbatim_slice,
         "shapes_xhtml": shapes_xhtml,
         "attempts": attempts,

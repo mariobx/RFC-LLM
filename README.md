@@ -21,7 +21,7 @@ flowchart LR
         A2 --> A3["Stage 3 & 4: CPSA4json -> scm\n& Roletran Check (15s)"]
         A3 -->|Compiler Reject| A4["Stage 5: Self-Healing Loop\n(SHA-256 Cycle Check + RAG)"]
         A4 --> A3
-        A3 -->|Compiler Pass| A5["Stage 6: CPSA Compilation (60s Cap)\nVerified .scm + Trajectory JSON"]
+        A3 -->|Compiler Pass| A5["Stage 6: CPSA Compilation (15s Cap)\n3-Tier Snowball Recovery + Trajectory JSON"]
     end
 
     subgraph P3["Phase 3: Hindsight Reasoning & Dataset Factory (Active)"]
@@ -66,11 +66,15 @@ Rather than prompting an LLM to emit raw, unconstrained Scheme strings, the synt
    - [`cpsa_json_serializer.py`](src/code_generation/cpsa_json_serializer.py) & [`cpsa_scheme_emitter.py`](src/code_generation/cpsa_scheme_emitter.py): Deterministically serializes the validated Pydantic AST into native CPSA JSON S-expression arrays and compiles them into canonical CPSA 4.4.9 `.scm` code via `cpsa4json`.
 4. **Stage 4 — Roletran Check ([`src/verification_engine/roletran_executability_gate.py`](src/verification_engine/roletran_executability_gate.py))**:
    - Runs `cpsa4roletran` (for `basic` algebra) or `cpsa4 -l 1` (for `diffie-hellman` algebra) under `ROLETRAN_TIMEOUT_SECONDS = 15` to verify role constructibility, destructibility, and variable origination before invoking full strand-space search.
-5. **Stage 5 — Self-Healing Loop ([`src/verification_engine/compiler_diagnostic_repair.py`](src/verification_engine/compiler_diagnostic_repair.py))**:
-   - Intercepts Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejections, tracks SHA-256 AST hashes to break repair oscillations, formulates conceptual RAG queries (`15s` timeout), retrieves authoritative MITRE CPSA manual rules, and patches the Pydantic AST for up to `MAX_REPAIR_ATTEMPTS = 50` iterations.
-6. **Stage 6 — CPSA Compilation ([`src/verification_engine/mitre_build_orchestrator.py`](src/verification_engine/mitre_build_orchestrator.py), [`src/verification_engine/trajectory_metadata_exporter.py`](src/verification_engine/trajectory_metadata_exporter.py))**:
-   - Executes `cpsa4init` and `make` (`cpsa4`, `cpsa4shapes`, `cpsa4graph`) under a hard 60-second process-group `SIGKILL` cap (`CPSA_TIMEOUT_SECONDS = 60`) to produce realized shapes and interactive XHTML/SVG strand-space diagrams.
-   - Scores deterministic verification quality tiers (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`), prepends structured MoE conditioning headers to `<protocol>.scm`, exports `<protocol>_trajectory.json`, and updates the run-level `output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`.
+5. **Stage 5 — Self-Healing Loop ([`src/verification_engine/compiler_diagnostic_repair.py`](src/verification_engine/compiler_diagnostic_repair.py), [`src/rag_retriever_client.py`](src/rag_retriever_client.py))**:
+   - Intercepts Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejections, tracks SHA-256 AST hashes to break repair oscillations, runs the Two-Speed Pinned Header + Agentic CPSA Knowledge Base Searcher (`refrences/cpsa_kb/`), and patches the Pydantic AST for up to `MAX_REPAIR_ATTEMPTS = 50` iterations while preserving strict 1-to-1 fidelity to the verbatim RFC.
+6. **Stage 6 — CPSA Compilation & 3-Tier Snowball State Recovery ([`src/verification_engine/mitre_build_orchestrator.py`](src/verification_engine/mitre_build_orchestrator.py), [`src/verification_engine/snowball_autopsy.py`](src/verification_engine/snowball_autopsy.py), [`src/verification_engine/trajectory_metadata_exporter.py`](src/verification_engine/trajectory_metadata_exporter.py))**:
+   - Executes `cpsa4init` and `make` (`cpsa4`, `cpsa4shapes`, `cpsa4graph`) under a hard 15-second process-group `SIGKILL` cap (`CPSA_TIMEOUT_SECONDS = 15`).
+   - **3-Tier Snowball State Recovery (Isolated Strictly to State-Space Snowball Errors)**:
+     1. *Tier 1 (Zero-Token Herald Search-Order Portfolio)*: Automatically tests `--try-old-strands`, `--try-old-strands --check-nonces`, and `--try-old-strands --check-nonces --reverse-nodes`, persisting winning herald flags into `<protocol>.scm` and `CPSAProtocolSpecification.herald_options` with 0 LLM calls if any search order converges.
+     2. *Tier 2 (Partial `.txt` Snowball Autopsy)*: If all Tier 1 search orders snowball, inspects `<stem>.txt` (or runs a `<0.4s` bounded `cpsa4 -l 120` probe) to extract the exact repeating `(operation ... (added-strand Role H) <critical-term>)` loop and cloned primed variables (`var-0..var-N`).
+     3. *Tier 3 (Targeted Structural Anti-Unification Repair)*: Feeds the Snowball Autopsy Report + pinned `06_termination_and_anti_snowballing.md` rules to the Repair LLM to domain-separate flights using actual RFC message headers/types, add `(facts (neq a b))`, and separate `data` vs. `text` sorts.
+   - Scores deterministic verification quality tiers (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`), records per-role and batch USD/token telemetry ([`src/cost_tracker.py`](src/cost_tracker.py)), upserts the 48-column deduplicated master ledger (`logs/pipeline_runs.csv`), and updates `output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`.
 
 #### YAML Frontmatter Model Routing & Live Hot-Reload (`prompts/*.md`)
 All 7 LLM prompt templates ([`prompts/01_applicability_gate.md`](prompts/01_applicability_gate.md) through [`prompts/07_think_token_synthesizer.md`](prompts/07_think_token_synthesizer.md)) define their per-stage `model`, HTTP `timeout` (`180s` default; `15s` for `05_rag_query_formulation.md`), and `temperature` directly in leading YAML frontmatter via [`src/prompt_loader.py`](src/prompt_loader.py):

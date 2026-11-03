@@ -31,6 +31,7 @@ from src.semantic_extraction.constrained_protocol_extractor import (
     ensure_three_point_of_view_skeletons,
 )
 from src.system_config import SYSTEM_CONFIG
+from src.verification_engine.snowball_autopsy import is_snowball_state_error
 
 logger = get_pipeline_logger("diagnostic_repair")
 
@@ -84,6 +85,13 @@ def formulate_rag_diagnostic_query(
                 {"role": "user", "content": user_prompt},
             ],
             timeout=query_spec.timeout,
+        )
+        from src.cost_tracker import GLOBAL_COST_TRACKER
+        GLOBAL_COST_TRACKER.record_llm_call(
+            response,
+            role="query",
+            model_name=query_model,
+            stage=5 if failure_stage == "roletran" else 6,
         )
         raw_content = response.choices[0].message.content
         if raw_content:
@@ -157,6 +165,28 @@ def repair_protocol_specification(
             "or adjust preskeleton non-originating/unique-originating assumptions) to escape this cycle."
         )
 
+    snowball_directive = ""
+    if is_snowball_state_error(error_diagnostic):
+        snowball_directive = (
+            "\n\nMANDATORY TIER-3 SNOWBALL STATE RECOVERY PROTOCOL (Applies ONLY to State-Space Snowballing):\n"
+            "Tier 1 non-default search orders (`--try-old-strands`, `--check-nonces`, `--reverse-nodes`) already "
+            "failed to terminate on this specification, proving a structural unification cycle (`unify_0` / `cows` loop). "
+            "Inspect the `CPSA 4.4.9 SNOWBALL STATE AUTOPSY REPORT` in the diagnostic above and apply ALL of the following "
+            "structural fixes while preserving strict 1-to-1 fidelity to the RFC:\n"
+            "1. DOMAIN-SEPARATE EVERY `enc` AND `hash` TERM USING RFC MESSAGE HEADERS/TYPES: Distinguish request vs. "
+            "response `[\"enc\", ...]` and `[\"hash\", ...]` terms using the actual RFC message type, header, opcode, "
+            "or label fields from the Verbatim RFC Exchange Specification (and distinct prefix sorts `data` vs `text`) "
+            "so outgoing ciphertexts/hashes cannot unify with incoming receptions of the same key sort.\n"
+            "2. ADD PRINCIPAL INEQUALITY FACTS (`neq`): In every `CPSAPreskeleton` declaring two or more `name` variables "
+            "(e.g. `client_id`, `server_id`), add `[\"neq\", \"<name_a>\", \"<name_b>\"]` to `facts` to block `A = B` "
+            "symmetric key reflection.\n"
+            "3. ENFORCE `data` vs `text` SORT SEPARATION (CPSA Primer §16.2): Declare fresh `uniq-orig` nonces/challenges/secrets "
+            "with `\"sort\": \"data\"` and predictable RFC identifiers/headers/labels with `\"sort\": \"text\"`.\n"
+            "4. BIND PRINCIPAL IDENTITIES INSIDE ENCRYPTED FLIGHTS: Include the communicating `name` variables inside the "
+            "`[\"enc\", ...]` terms of the looping role identified in the autopsy so regular augmentation binds to existing "
+            "principals instead of spawning unbounded `*-0, *-1` strands."
+        )
+
     # Truncate verbatim slice to concise context to preserve token quota across multiple repair passes
     slice_snippet = verbatim_slice[:3000]
     if len(verbatim_slice) > 3000:
@@ -171,7 +201,7 @@ def repair_protocol_specification(
         "Verbatim RFC Exchange Specification (Excerpt for repair context):\n"
         f"{slice_snippet}\n\n"
         "Current Failing CPSA Specification (JSON):\n"
-        f"{failing_spec.model_dump_json(indent=2)}{cycle_warning}\n\n"
+        f"{failing_spec.model_dump_json(indent=2)}{cycle_warning}{snowball_directive}\n\n"
         "Provide the complete repaired CPSAProtocolSpecification resolving the error without inventing fictional protocol terms."
     )
 
@@ -196,6 +226,13 @@ def repair_protocol_specification(
                 response_format={"type": "json_object"},
                 timeout=repair_spec.timeout,
                 num_retries=0,
+            )
+            from src.cost_tracker import GLOBAL_COST_TRACKER
+            GLOBAL_COST_TRACKER.record_llm_call(
+                response,
+                role="repair",
+                model_name=model_name,
+                stage=5 if failure_stage == "roletran" else 6,
             )
             break
         except Exception as exc:

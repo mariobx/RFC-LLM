@@ -473,11 +473,15 @@ def write_trajectory_metadata_bundle(
     )
     trajectory_path = output_dir / f"{stem}_trajectory.json"
 
+    from src.cost_tracker import GLOBAL_COST_TRACKER
+    rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+
     payload: Dict[str, Any] = {
         "schema_version": "1.0.0",
         "run_id": f"{rfc_id.lower()}_{compact_ts}",
         "timestamp_utc": now_utc,
         "duration_seconds": round(duration_seconds, 2),
+        "cost_telemetry": rfc_cost_summary,
         "rfc_metadata": {
             "rfc_id": rfc_id,
             "rfc_title": rfc_title,
@@ -556,8 +560,13 @@ def update_run_metadata_index(
             "filtered_rfcs": [],
         }
 
+    from src.cost_tracker import GLOBAL_COST_TRACKER
+    rfc_cost = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+    batch_cost = GLOBAL_COST_TRACKER.get_batch_summary()
+
     index_data["updated_at_utc"] = now_utc
     index_data["total_rfcs_processed"] = int(index_data.get("total_rfcs_processed", 0)) + 1
+    index_data["batch_cost_telemetry"] = batch_cost
     index_data.setdefault("filtered_rfcs", [])
 
     if not is_eligible:
@@ -568,6 +577,7 @@ def update_run_metadata_index(
             "gate": rejection_gate or "Intake Gate",
             "reason": error_message or "Ineligible",
             "duration_seconds": round(float(duration_seconds), 2),
+            "cost_usd": round(float(rfc_cost.get("total_cost_usd", 0.0)), 6),
         })
         with open(index_path, "w", encoding="utf-8") as handle:
             json.dump(index_data, handle, indent=2)
@@ -599,6 +609,8 @@ def update_run_metadata_index(
         "scm_file": scm_str,
         "metadata_json_file": traj_str,
         "error_message": error_message,
+        "cost_usd": round(float(rfc_cost.get("total_cost_usd", 0.0)), 6),
+        "cost_telemetry": rfc_cost,
     })
 
     with open(index_path, "w", encoding="utf-8") as handle:

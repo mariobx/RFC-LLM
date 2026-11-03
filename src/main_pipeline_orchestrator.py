@@ -47,6 +47,7 @@ from src.verification_engine.mitre_build_orchestrator import (
     CPSABuildArtifacts,
     execute_mitre_make_build,
 )
+from src.verification_engine.snowball_autopsy import is_snowball_state_error
 from src.verification_engine.roletran_executability_gate import (
     RoletranVerificationResult,
     verify_role_executability,
@@ -73,6 +74,8 @@ class PipelineExecutionSummary(BaseModel):
     trajectory_json_path: Optional[Path] = Field(None, description="Path to the generated trajectory metadata JSON")
     quality_tier: Optional[str] = Field(None, description="Programmatic verification quality tier (GOLD/SILVER/BRONZE/REJECTED)")
     duration_seconds: float = Field(default=0.0, description="Total pipeline execution time")
+    cost_usd: float = Field(default=0.0, description="Total estimated LLM cost in USD for this RFC")
+    cost_telemetry: dict = Field(default_factory=dict, description="Per-role token and USD cost breakdown")
     error_message: Optional[str] = Field(None, description="Diagnostic error if pipeline halted")
 
 
@@ -293,6 +296,8 @@ def _run_mitre_solver_self_healing_loop(
                 model="cpsa4 + cpsa4graph",
             )
             artifacts = execute_mitre_make_build(scm_path, target_output_dir)
+            if artifacts.winning_herald_options:
+                protocol_ast.herald_options = list(artifacts.winning_herald_options)
             if solver_attempts_log:
                 solver_attempts_log[-1]["passed_after_repair"] = True
             break
@@ -306,8 +311,10 @@ def _run_mitre_solver_self_healing_loop(
 
                 rejected_ast_snapshot = protocol_ast.model_dump()
                 rejected_scm_snapshot = _read_scm_safe(scm_path)
+                snowball_detected = is_snowball_state_error(last_build_error)
                 use_searcher = bool(
-                    build_attempt >= 3
+                    snowball_detected
+                    or build_attempt >= 3
                     or cycle_detected
                     or (build_attempt == 2 and last_build_error and last_build_error == prev_solver_diag)
                 )
@@ -445,6 +452,14 @@ def run_rfc_translation_pipeline(
     logger.info("Starting RFC-LLM Synthesis Pipeline for: %s", rfc_file_path.name)
     logger.info("================================================================")
 
+    from src.cost_tracker import GLOBAL_COST_TRACKER
+    GLOBAL_COST_TRACKER.start_rfc(
+        rfc_id=rfc_id,
+        router_model=active_router_model,
+        extraction_model=active_extraction_model,
+        query_model=active_query_model,
+        repair_model=active_repair_model,
+    )
     GLOBAL_EVENT_BUS.set_run_directory(effective_run_root, is_live=True)
     GLOBAL_EVENT_BUS.start_rfc(rfc_id=rfc_id, rfc_file=rfc_file_path.name)
     GLOBAL_EVENT_BUS.emit(
@@ -478,11 +493,21 @@ def run_rfc_translation_pipeline(
     header_filter_result = filter_rfc_header(raw_rfc_text)
     if not header_filter_result.is_eligible:
         elapsed = time.time() - start_time
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=False,
-            error_message=header_filter_result.disqualification_reason,
+            status="INELIGIBLE",
+            quality_tier="INELIGIBLE",
+            rejection_gate="Tier 0 Header Filter",
+            protocol_name=header_filter_result.title,
             duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            error_message=header_filter_result.disqualification_reason,
         )
         update_run_metadata_index(
             run_root_dir=effective_run_root,
@@ -536,12 +561,21 @@ def run_rfc_translation_pipeline(
 
     if not applicability_report.is_cryptographic_protocol:
         elapsed = time.time() - start_time
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=False,
+            status="INELIGIBLE",
+            quality_tier="INELIGIBLE",
+            rejection_gate="Stage 1c Applicability Gate",
             protocol_name=applicability_report.protocol_name or protocol_title,
-            error_message=f"Ineligible: {applicability_report.rationale}",
             duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            error_message=f"Ineligible: {applicability_report.rationale}",
         )
         update_run_metadata_index(
             run_root_dir=effective_run_root,
@@ -565,11 +599,15 @@ def run_rfc_translation_pipeline(
             duration_seconds=elapsed,
         )
         GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=applicability_report.rationale)
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+        logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix="Ineligible RFC Cost"))
         return PipelineExecutionSummary(
             rfc_id=rfc_id,
             protocol_name=applicability_report.protocol_name or protocol_title,
             is_eligible=False,
             duration_seconds=elapsed,
+            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+            cost_telemetry=rfc_cost_summary,
             error_message=applicability_report.rationale,
         )
 
@@ -695,20 +733,32 @@ def run_rfc_translation_pipeline(
             error_message=error_msg,
             tab_index=tab_index,
         )
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=True,
+            status="FAILED",
+            quality_tier="REJECTED",
             protocol_name=final_protocol_name,
             selected_sections=target_sections,
             sliced_lines_count=slice_lines_count,
             duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            trajectory_json_path=trajectory_path,
             error_message=error_msg,
         )
+        logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix="RFC Run Cost"))
         GLOBAL_EVENT_BUS.update_accepted_tab(
             tab_index,
             status="FAILED",
             quality_tier="REJECTED",
             duration_seconds=round(elapsed, 2),
+            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+            cost_telemetry=rfc_cost_summary,
             trajectory_path=str(trajectory_path),
             error_message=error_msg,
         )
@@ -723,6 +773,8 @@ def run_rfc_translation_pipeline(
             trajectory_json_path=trajectory_path,
             quality_tier="REJECTED",
             duration_seconds=elapsed,
+            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+            cost_telemetry=rfc_cost_summary,
             error_message=error_msg,
         )
 
@@ -801,13 +853,34 @@ def run_rfc_translation_pipeline(
     )
 
     quality_tier = "REJECTED"
+    all_povs_multi_strand: Optional[bool] = None
+    secrecy_proved: Optional[bool] = None
+    explored_skeletons_count = 0
     try:
         traj_data = json.loads(trajectory_path.read_text(encoding="utf-8"))
-        quality_tier = traj_data.get("quality_assessment", {}).get("quality_tier", "REJECTED")
+        qa = traj_data.get("quality_assessment", {})
+        quality_tier = qa.get("quality_tier", "REJECTED")
+        all_povs_multi_strand = qa.get("all_participant_povs_multi_strand")
+        secrecy_proved = qa.get("all_secrecy_listeners_unrealized")
+        explored_skeletons_count = int(
+            traj_data.get("stage6_cpsa_solver_verification", {})
+            .get("exploration_telemetry_from_txt", {})
+            .get("total_explored_labels", 0)
+        )
     except Exception:
         pass
 
-    total_repairs = int(stage5_record.get("total_attempts", 0)) + int(stage6_record.get("total_attempts", 0))
+    roletran_repairs = int(stage5_record.get("total_attempts", 0))
+    solver_repairs = int(stage6_record.get("total_attempts", 0))
+    total_repairs = roletran_repairs + solver_repairs
+    all_repair_attempts = list(stage5_record.get("repair_attempts", [])) + list(
+        stage6_record.get("repair_attempts", [])
+    )
+    searcher_invocations = sum(
+        1
+        for att in all_repair_attempts
+        if att.get("rag_query") or att.get("retrieved_chunk_ids")
+    )
 
     if artifacts is None:
         error_msg = f"MITRE make build failed after {build_attempt} repair attempts: {last_build_error}"
@@ -825,19 +898,42 @@ def run_rfc_translation_pipeline(
             error_message=error_msg,
             tab_index=tab_index,
         )
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
         csv_recorder.log_run(
             rfc_id=rfc_id,
             is_eligible=True,
+            status="PARTIAL" if roletran_result.is_executable else "FAILED",
+            quality_tier=quality_tier,
             protocol_name=final_protocol_name,
+            message_algebra=protocol_ast.message_algebra,
             selected_sections=target_sections,
             sliced_lines_count=slice_lines_count,
             role_count=len(protocol_ast.roles),
             preskeleton_count=len(protocol_ast.skeletons),
             roletran_passed=roletran_result.is_executable,
             solver_passed=False,
+            shapes_count=0,
+            explored_skeletons_count=explored_skeletons_count,
+            all_povs_multi_strand=all_povs_multi_strand,
+            secrecy_proved=secrecy_proved,
+            zero_shot_passed=False,
+            roletran_repairs=roletran_repairs,
+            solver_repairs=solver_repairs,
+            total_repairs=total_repairs,
+            searcher_invocations=searcher_invocations,
+            herald_options=protocol_ast.herald_options,
             duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            scm_path=scm_path,
+            shapes_xhtml_path=None,
+            trajectory_json_path=trajectory_path,
             error_message=error_msg,
         )
+        logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix=f"Cost Summary ({rfc_id})"))
         GLOBAL_EVENT_BUS.update_accepted_tab(
             tab_index,
             protocol_name=protocol_ast.protocol_name or final_protocol_name,
@@ -845,6 +941,8 @@ def run_rfc_translation_pipeline(
             quality_tier=quality_tier,
             total_attempts=total_repairs,
             duration_seconds=round(elapsed, 2),
+            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+            cost_telemetry=rfc_cost_summary,
             scm_path=str(scm_path),
             trajectory_path=str(trajectory_path),
             error_message=error_msg,
@@ -862,6 +960,8 @@ def run_rfc_translation_pipeline(
             trajectory_json_path=trajectory_path,
             quality_tier=quality_tier,
             duration_seconds=elapsed,
+            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+            cost_telemetry=rfc_cost_summary,
             error_message=error_msg,
         )
 
@@ -879,6 +979,7 @@ def run_rfc_translation_pipeline(
         tab_index=tab_index,
     )
 
+    rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
     GLOBAL_EVENT_BUS.update_accepted_tab(
         tab_index,
         protocol_name=protocol_ast.protocol_name or final_protocol_name,
@@ -887,6 +988,8 @@ def run_rfc_translation_pipeline(
         total_attempts=total_repairs,
         shapes_count=artifacts.shapes_count,
         duration_seconds=round(elapsed, 2),
+        cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+        cost_telemetry=rfc_cost_summary,
         scm_path=str(scm_path),
         trajectory_path=str(trajectory_path),
         shapes_xhtml=str(artifacts.shapes_graph_xhtml_path),
@@ -896,7 +999,10 @@ def run_rfc_translation_pipeline(
     csv_recorder.log_run(
         rfc_id=rfc_id,
         is_eligible=True,
+        status="VERIFIED",
+        quality_tier=quality_tier,
         protocol_name=final_protocol_name,
+        message_algebra=protocol_ast.message_algebra,
         selected_sections=target_sections,
         sliced_lines_count=slice_lines_count,
         role_count=len(protocol_ast.roles),
@@ -904,12 +1010,30 @@ def run_rfc_translation_pipeline(
         roletran_passed=roletran_result.is_executable,
         solver_passed=True,
         shapes_count=artifacts.shapes_count,
+        explored_skeletons_count=explored_skeletons_count,
+        all_povs_multi_strand=all_povs_multi_strand,
+        secrecy_proved=secrecy_proved,
+        zero_shot_passed=(total_repairs == 0),
+        roletran_repairs=roletran_repairs,
+        solver_repairs=solver_repairs,
+        total_repairs=total_repairs,
+        searcher_invocations=searcher_invocations,
+        herald_options=protocol_ast.herald_options,
         duration_seconds=elapsed,
+        cost_telemetry=rfc_cost_summary,
+        router_model=active_router_model,
+        extraction_model=active_extraction_model,
+        query_model=active_query_model,
+        repair_model=active_repair_model,
+        scm_path=scm_path,
+        shapes_xhtml_path=artifacts.shapes_graph_xhtml_path,
+        trajectory_json_path=trajectory_path,
         error_message=None,
     )
 
     logger.info("================================================================")
     logger.info("Pipeline Complete for %s in %.2fs! (Quality Tier: %s)", rfc_id, elapsed, quality_tier)
+    logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix=f"Cost Summary ({rfc_id})"))
     logger.info("Generated: %s", artifacts.shapes_graph_xhtml_path)
     logger.info("Trajectory Metadata: %s", trajectory_path)
     logger.info("Master Run Index: %s", effective_run_root / "metadata_index.json")
@@ -922,6 +1046,8 @@ def run_rfc_translation_pipeline(
         duration_seconds=elapsed,
         shapes_count=artifacts.shapes_count,
         quality_tier=quality_tier,
+        cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+        cost_telemetry=rfc_cost_summary,
         trajectory_json=str(trajectory_path),
         shapes_xhtml=str(artifacts.shapes_graph_xhtml_path),
         shapes_txt=str(artifacts.shapes_txt_path),
@@ -940,4 +1066,6 @@ def run_rfc_translation_pipeline(
         trajectory_json_path=trajectory_path,
         quality_tier=quality_tier,
         duration_seconds=elapsed,
+        cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+        cost_telemetry=rfc_cost_summary,
     )
