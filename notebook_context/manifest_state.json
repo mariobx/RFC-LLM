@@ -4,23 +4,7 @@
     "added": [],
     "deleted": [],
     "modified": [
-      "logs/pipeline_runs.csv",
-      "prompts/01_applicability_gate.md",
-      "prompts/02_section_router.md",
-      "prompts/03_protocol_extraction.md",
-      "prompts/06_compiler_repair.md",
-      "src/code_generation/cpsa_scheme_emitter.py",
-      "src/document_ingestion/handshake_section_router.py",
-      "src/document_ingestion/protocol_applicability_gate.py",
-      "src/document_ingestion/rfc_toc_parser.py",
-      "src/document_ingestion/verbatim_section_slicer.py",
-      "src/intermediate_representation/protocol_syntax_tree.py",
-      "src/main_pipeline_orchestrator.py",
-      "src/prompt_loader.py",
-      "src/rag_retriever_client.py",
-      "src/semantic_extraction/constrained_protocol_extractor.py",
-      "src/verification_engine/trajectory_metadata_exporter.py",
-      "tests/test_trajectory_and_hardening.py"
+      "README.md"
     ]
   },
   "files": {
@@ -44,8 +28,8 @@
     },
     "README.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "c98b6e91421fb378ed3da8e940f3f5c364773b7c8d4f9b76db05d7b88dff3093",
-      "size_bytes": 17219,
+      "sha256": "14a33801a2747aaad0ad9f79d101db31d8c2ebd8c933a05d785793d37f6c2f2e",
+      "size_bytes": 9681,
       "status": "included"
     },
     "docs/ARCHITECTURE.md": {
@@ -1513,15 +1497,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-03 19:25:35 UTC",
+  "generated_at": "2026-11-03 19:45:16 UTC",
   "git": {
     "branch": "main",
-    "commit": "6e063b78b79fe1976edb09da98b2603c4f07d562",
-    "subject": "Harden Stage 1/2 false-positive gates, TOC/router unwrapping, searcher cache, and shape grading"
+    "commit": "101b107977b3568a2dbb7bb08a5a7c39a4f8a58c",
+    "subject": "Simplify README: remove roadmap and important callout, add concise top-level overview"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "78190bc800d09f7809d5ad0d64d82773482df8d3",
-    "subject": "Fix vacuous secrecy_proved on 0-listener RFCs and auto-bind skeleton strand variables"
+    "commit": "287dc3c6153beb0d6ad30643c1e62374ee65a417",
+    "subject": "Harden Stage 1/2 false-positive gates, TOC/router unwrapping, searcher cache, and shape grading"
   }
 }

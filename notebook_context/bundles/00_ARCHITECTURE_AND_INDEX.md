@@ -2,33 +2,17 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-03 19:25:35 UTC · Git: `main` @ `6e063b78b79f` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
+*Generated: 2026-11-03 19:45:16 UTC · Git: `main` @ `101b107977b3` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~28,709*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `6e063b78b79f` — Harden Stage 1/2 false-positive gates, TOC/router unwrapping, searcher cache, and shape grading
+- **Git commit:** `101b107977b3` — Simplify README: remove roadmap and important callout, add concise top-level overview
 - **Added (0):** none
-- **Modified (17):**
-  - `logs/pipeline_runs.csv`
-  - `prompts/01_applicability_gate.md`
-  - `prompts/02_section_router.md`
-  - `prompts/03_protocol_extraction.md`
-  - `prompts/06_compiler_repair.md`
-  - `src/code_generation/cpsa_scheme_emitter.py`
-  - `src/document_ingestion/handshake_section_router.py`
-  - `src/document_ingestion/protocol_applicability_gate.py`
-  - `src/document_ingestion/rfc_toc_parser.py`
-  - `src/document_ingestion/verbatim_section_slicer.py`
-  - `src/intermediate_representation/protocol_syntax_tree.py`
-  - `src/main_pipeline_orchestrator.py`
-  - `src/prompt_loader.py`
-  - `src/rag_retriever_client.py`
-  - `src/semantic_extraction/constrained_protocol_extractor.py`
-  - `src/verification_engine/trajectory_metadata_exporter.py`
-  - `tests/test_trajectory_and_hardening.py`
+- **Modified (1):**
+  - `README.md`
 - **Deleted (0):** none
 
 ---
@@ -53,13 +37,13 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 
 | Bundle | Title | Files | Size | Estimated Tokens | Tier |
 |---|---|---|---|---|---|
-| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 119.7 KB | ~30,592 | Tier 1 — Architecture, Documentation & Project Configs |
+| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 112.4 KB | ~28,709 | Tier 1 — Architecture, Documentation & Project Configs |
 | `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 783.4 KB | ~200,508 | Tier 2 — Core Source Code & CLI Entrypoints |
 | `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 174.3 KB | ~44,375 | Tier 3 — Knowledge Base Index & Test Suites |
 | `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 693.4 KB | ~175,802 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
 | `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files) | 155 | 915.3 KB | ~234,169 | Tier 3 — Domain Reference Code Corpus (.scm) |
 
-**Total Ingested Context Payload:** ~685,446 tokens across all bundles (68.5% of Gemini 1M context window)
+**Total Ingested Context Payload:** ~683,563 tokens across all bundles (68.4% of Gemini 1M context window)
 
 ---
 
@@ -527,136 +511,65 @@ SOFTWARE.
 
 ### `README.md`
 
-*sha256:`c98b6e91421f` · 161 lines · 16.8 KB (~4,299 tokens) · lang:`markdown`*
+*sha256:`14a33801a274` · 90 lines · 9.5 KB (~2,416 tokens) · lang:`markdown`*
 
 ````markdown
-# RFC-LLM: Formal Cryptographic Protocol Synthesis & MoE Post-Training Roadmap
+# RFC-LLM
 
-**RFC-LLM** is an end-to-end formal methods synthesis engine and synthetic training data factory. It translates informal IETF RFC security protocol specifications into mathematically verified **MITRE CPSA 4.4.9** (Cryptographic Protocol Shapes Analyzer) models, generating compiler-verified trajectories and `<think>` reasoning traces to post-train a Mixture-of-Experts (MoE) model using **AMD ROCm Megatron-LM**.
-
-> [!IMPORTANT]
-> **Living Roadmap Invariant**: Every retrieval mechanism, prompt template, and intermediate agentic loop in this repository is subject to iteration and replacement **except the core thesis**: using strictly structured, compiler-verified CPSA code and test trajectories generated from real RFCs to post-train an MoE model via **ROCm Megatron-LM** to natively master formal cryptographic protocol modeling.
+**RFC-LLM** is an automated pipeline that reads IETF RFC documents, identifies real cryptographic handshake protocols, extracts the exact message-exchange sections, and translates them into formally verified **MITRE CPSA 4.4.9** (Cryptographic Protocol Shapes Analyzer) models. It runs CPSA's compiler and strand-space solver (`cpsa4json`, `cpsa4roletran`, and `cpsa4`) in a self-healing repair loop to prove authentication shapes and secrecy properties, and packages the verified runs and `<think>` reasoning traces into training datasets (`sft_train.jsonl` and `dpo_pairs.jsonl`).
 
 ---
 
-## 1. Project Evolution & Master Roadmap
+## 1. Pipeline Overview
 
-```mermaid
-flowchart LR
-    subgraph P1["Phase 1: Context & Grounding (Built / Fluid)"]
-        R1["MITRE CPSA 4.4.9 Corpus\n(1,426 Enriched Chunks)"] --> R2["Hybrid RAG (BM25 + Dense + RRF)\n300-Query Golden Benchmark"]
-        R2 -. "Under Evaluation:\nFast Lookup / Prefix Cache / Weights?" .-> P2
-    end
-
-    subgraph P2["Phase 2: Agentic Synthesis & Verification Engine (Active)"]
-        A1["Stage 1: Document Intake\n(Filter + TOC + Verbatim Slicer)"] --> A2["Stage 2: JSON CPSA Generation\n(Scoped Pydantic AST)"]
-        A2 --> A3["Stage 3 & 4: CPSA4json -> scm\n& Roletran Check (15s)"]
-        A3 -->|Compiler Reject| A4["Stage 5: Self-Healing Loop\n(SHA-256 Cycle Check + RAG)"]
-        A4 --> A3
-        A3 -->|Compiler Pass| A5["Stage 6: CPSA Compilation (15s Cap)\n3-Tier Snowball Recovery + Trajectory JSON"]
-    end
-
-    subgraph P3["Phase 3: Hindsight Reasoning & Dataset Factory (Active)"]
-        A5 --> D1["./rfc-think Synthesizer:\n<protocol>_think.json + sft_train.jsonl"]
-        A4 --> D2["Contrastive DPO / RLVR Pairs:\ndpo_pairs.jsonl"]
-    end
-
-    subgraph P4["Phase 4: MoE Post-Training (Target)"]
-        D1 & D2 --> M1["AMD ROCm Megatron-LM\nMoE Post-Training (SFT + RLVR)"]
-        M1 --> M2["Domain-Specialized CPSA MoE\n(Zero-Shot Formal Verification)"]
-    end
-```
-
----
-
-## 2. Roadmap Phases & Current Status
-
-### Phase 1: Domain Knowledge & Context Retrieval `[BUILT — ARCHITECTURE SUBJECT TO CHANGE]`
-To bridge the gap between natural language RFCs and MITRE CPSA's order-sorted S-expression grammar, the repository includes a domain-specific Retrieval-Augmented Generation (RAG) pipeline and evaluation suite:
-- **Enriched Corpus ([`refrences/chunks/`](refrences/chunks/))**: 1,426 chunks combining 1,278 AST-enriched documentation sections (`cpsa4manual.pdf`, `cpsaspec.txt`, `cpsauser.md`, `cpsadesign.txt`, `cpsaprimer.txt`) and 148 official MITRE `.scm` protocol models.
-- **Hybrid Retrieval ([`src/rag_retriever_client.py`](src/rag_retriever_client.py), [`refrences/scripts/03_query_rag.py`](refrences/scripts/03_query_rag.py))**: Combines lexical BM25 with 768-dimensional dense vector embeddings (`ollama/nomic-embed-text`) via Reciprocal Rank Fusion (`RRF`).
-- **300-Query Golden Benchmark ([`refrences/reports/evaluate_rag.py`](refrences/reports/evaluate_rag.py))**: Evaluates retrieval precision across syntax, protocol models, strand space theory, and stateful channels/locations.
-
-> [!WARNING]
-> **Why RAG is Subject to Change**: Runtime vector/hybrid RAG adds latency and may not be the optimal way to surface formal compiler constraints fast. Alternatives under active consideration:
-> 1. **Deterministic Compiler Diagnostic Lookup**: Mapping `cpsa4roletran` and `cpsa4` Haskell error strings directly to curated grammar rules without embedding search.
-> 2. **Pinned KV-Cache Context**: Pre-loading the condensed CPSA 4.4.9 BNF grammar and operator tables ([`docs/CPSA_KEYWORD_REFERENCE.md`](docs/CPSA_KEYWORD_REFERENCE.md)) directly into a cached system prefix.
-> 3. **Weight Internalization (Phase 4)**: Post-training the MoE model directly on the CPSA corpus and synthetic trajectories so runtime RAG can be reduced or eliminated.
-
----
-
-### Phase 2: Agentic Constrained Synthesis & Formal Verification Loop `[ACTIVE BASELINE]`
-Rather than prompting an LLM to emit raw, unconstrained Scheme strings, the synthesis engine enforces formal correctness through a **6-stage compiler-in-the-loop architecture** orchestrated by [`src/main_pipeline_orchestrator.py`](src/main_pipeline_orchestrator.py):
+[`src/main_pipeline_orchestrator.py`](src/main_pipeline_orchestrator.py) executes a **6-stage compiler-in-the-loop pipeline**:
 
 1. **Stage 1 — Document Intake ([`src/document_ingestion/`](src/document_ingestion/))**:
-   - [`rfc_header_filter.py`](src/document_ingestion/rfc_header_filter.py) & [`protocol_applicability_gate.py`](src/document_ingestion/protocol_applicability_gate.py): Rejects non-protocol RFCs (informational memos, MIBs, administrative guidelines, static payload formats). Deferred directory creation ensures rejected RFCs never create empty folders on disk.
-   - [`rfc_toc_parser.py`](src/document_ingestion/rfc_toc_parser.py), [`handshake_section_router.py`](src/document_ingestion/handshake_section_router.py), & [`verbatim_section_slicer.py`](src/document_ingestion/verbatim_section_slicer.py): Slices 10,000+ line RFCs down to the verbatim 200-600 lines defining the cryptographic message exchange (`verbatim_slice.txt`).
+   - [`rfc_header_filter.py`](src/document_ingestion/rfc_header_filter.py) & [`protocol_applicability_gate.py`](src/document_ingestion/protocol_applicability_gate.py): Rejects non-protocol RFCs (informational memos, MIBs, administrative guidelines, static payload formats, and protocols that merely run over TLS/IPsec without defining their own cryptographic handshake).
+   - [`rfc_toc_parser.py`](src/document_ingestion/rfc_toc_parser.py), [`handshake_section_router.py`](src/document_ingestion/handshake_section_router.py), & [`verbatim_section_slicer.py`](src/document_ingestion/verbatim_section_slicer.py): Slices 10,000+ line RFCs down to the verbatim sections defining the cryptographic message exchange (`verbatim_slice.txt`).
 2. **Stage 2 — JSON CPSA Generation ([`src/intermediate_representation/`](src/intermediate_representation/), [`src/semantic_extraction/constrained_protocol_extractor.py`](src/semantic_extraction/constrained_protocol_extractor.py))**:
-   - Enforces MITRE CPSA 4.4.9 Tables 10.1-10.6, Equation 10.1 (`mesg` forbidden as encryption key in `enc`), and strict positional keyword scoping across [`algebraic_sorts.py`](src/intermediate_representation/algebraic_sorts.py), [`cpsa_grammar.py`](src/intermediate_representation/cpsa_grammar.py), and [`protocol_syntax_tree.py`](src/intermediate_representation/protocol_syntax_tree.py), backed by a 1-shot schema self-correction retry.
-   - Enforces the **3-POV Preskeleton Invariant**: Skeletons 1 and 2 model pure Initiator/Responder viewpoints with zero listeners; Skeleton 3 isolates `deflistener` secrecy probes so handshake shape realization is never prematurely pruned.
+   - Extracts a validated `CPSAProtocolSpecification` Pydantic AST enforcing MITRE CPSA 4.4.9 sort rules, positional keyword scoping, and the Stage 2 Verbatim Slice Bailout Gate (exiting immediately with 0 repair loops if the sliced RFC text defines no cryptographic message exchange).
+   - Enforces the **3-POV Preskeleton Architecture**: pure 1-strand `defstrandmax` Point-of-View skeletons for each role (with zero listeners) plus a dedicated `deflistener` secrecy probe skeleton.
 3. **Stage 3 — CPSA4json -> scm ([`src/code_generation/`](src/code_generation/))**:
-   - [`cpsa_json_serializer.py`](src/code_generation/cpsa_json_serializer.py) & [`cpsa_scheme_emitter.py`](src/code_generation/cpsa_scheme_emitter.py): Deterministically serializes the validated Pydantic AST into native CPSA JSON S-expression arrays and compiles them into canonical CPSA 4.4.9 `.scm` code via `cpsa4json`.
+   - [`cpsa_json_serializer.py`](src/code_generation/cpsa_json_serializer.py) & [`cpsa_scheme_emitter.py`](src/code_generation/cpsa_scheme_emitter.py): Serializes the validated Pydantic AST into native CPSA JSON S-expression arrays and compiles them into canonical CPSA 4.4.9 `.scm` code via `cpsa4json`.
 4. **Stage 4 — Roletran Check ([`src/verification_engine/roletran_executability_gate.py`](src/verification_engine/roletran_executability_gate.py))**:
    - Runs `cpsa4roletran` (for `basic` algebra) or `cpsa4 -l 1` (for `diffie-hellman` algebra) under `ROLETRAN_TIMEOUT_SECONDS = 15` to verify role constructibility, destructibility, and variable origination before invoking full strand-space search.
 5. **Stage 5 — Self-Healing Loop ([`src/verification_engine/compiler_diagnostic_repair.py`](src/verification_engine/compiler_diagnostic_repair.py), [`src/rag_retriever_client.py`](src/rag_retriever_client.py))**:
-   - Intercepts Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejections, tracks SHA-256 AST hashes to break repair oscillations, runs the Two-Speed Pinned Header + Agentic CPSA Knowledge Base Searcher (`refrences/cpsa_kb/`), and patches the Pydantic AST for up to `MAX_REPAIR_ATTEMPTS = 50` iterations while preserving strict 1-to-1 fidelity to the verbatim RFC.
+   - Intercepts Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejections, tracks canonical SHA-256 AST hashes to break repair oscillations, runs the Pinned CPSA Header + Agentic CPSA Knowledge Base Searcher (`refrences/cpsa_kb/`), and patches the Pydantic AST while preserving 1-to-1 fidelity to the verbatim RFC.
 6. **Stage 6 — CPSA Compilation & 3-Tier Snowball State Recovery ([`src/verification_engine/mitre_build_orchestrator.py`](src/verification_engine/mitre_build_orchestrator.py), [`src/verification_engine/snowball_autopsy.py`](src/verification_engine/snowball_autopsy.py), [`src/verification_engine/trajectory_metadata_exporter.py`](src/verification_engine/trajectory_metadata_exporter.py))**:
-   - Executes `cpsa4init` and `make` (`cpsa4`, `cpsa4shapes`, `cpsa4graph`) under a hard 15-second process-group `SIGKILL` cap (`CPSA_TIMEOUT_SECONDS = 15`).
-   - **3-Tier Snowball State Recovery (Isolated Strictly to State-Space Snowball Errors)**:
-     1. *Tier 1 (Zero-Token Herald Search-Order Portfolio)*: Automatically tests `--try-old-strands`, `--try-old-strands --check-nonces`, and `--try-old-strands --check-nonces --reverse-nodes`, persisting winning herald flags into `<protocol>.scm` and `CPSAProtocolSpecification.herald_options` with 0 LLM calls if any search order converges.
-     2. *Tier 2 (Partial `.txt` Snowball Autopsy)*: If all Tier 1 search orders snowball, inspects `<stem>.txt` (or runs a `<0.4s` bounded `cpsa4 -l 120` probe) to extract the exact repeating `(operation ... (added-strand Role H) <critical-term>)` loop and cloned primed variables (`var-0..var-N`).
-     3. *Tier 3 (Targeted Structural Anti-Unification Repair)*: Feeds the Snowball Autopsy Report + pinned `06_termination_and_anti_snowballing.md` rules to the Repair LLM to domain-separate flights using actual RFC message headers/types, add `(facts (neq a b))`, and separate `data` vs. `text` sorts.
-   - Scores deterministic verification quality tiers (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`), records per-role and batch USD/token telemetry ([`src/cost_tracker.py`](src/cost_tracker.py)), upserts the 50-column deduplicated master ledger (`logs/pipeline_runs.csv`), and updates `output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`.
+   - Executes `cpsa4init` and `make` (`cpsa4`, `cpsa4shapes`, `cpsa4graph`) under a hard 15-second process-group `SIGKILL` cap (`CPSA_TIMEOUT_SECONDS = 15`) with 3-tier snowball state recovery (Tier 1 herald search-order portfolio, Tier 2 partial `.txt` snowball autopsy, Tier 3 structural anti-unification repair).
+   - Scores deterministic verification quality tiers (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`), records per-role and batch USD/token telemetry ([`src/cost_tracker.py`](src/cost_tracker.py)), upserts the master ledger (`logs/pipeline_runs.csv`), and updates `output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`.
 
-#### YAML Frontmatter Model Routing & Live Hot-Reload (`prompts/*.md`)
-All 7 LLM prompt templates ([`prompts/01_applicability_gate.md`](prompts/01_applicability_gate.md) through [`prompts/07_think_token_synthesizer.md`](prompts/07_think_token_synthesizer.md)) define their per-stage `model`, HTTP `timeout` (`180s` default; `15s` for `05_rag_query_formulation.md`), and `temperature` directly in leading YAML frontmatter via [`src/prompt_loader.py`](src/prompt_loader.py):
+### YAML Frontmatter Model Routing & Live Hot-Reload (`prompts/*.md`)
+All 7 LLM prompt templates ([`prompts/01_applicability_gate.md`](prompts/01_applicability_gate.md) through [`prompts/07_think_token_synthesizer.md`](prompts/07_think_token_synthesizer.md)) define their per-stage `model`, HTTP `timeout`, `max_tokens`, and `temperature` directly in leading YAML frontmatter via [`src/prompt_loader.py`](src/prompt_loader.py):
 - **Zero-Restart Live Hot-Reload**: Edits to `model:`, `timeout:`, `temperature:`, or prompt text take effect on the very next LLM call—even mid-batch—without restarting `./rfc-llm`.
 - **Clean `.env`**: `.env` ([`.env.example`](.env.example)) holds **only** API credentials (`GEMINI_API_KEY`, `NOUS_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) and base endpoint URLs (`NOUS_API_BASE`, `OLLAMA_API_BASE`, `STRATA_API_BASE`).
 - **Provider Prefixes & CLI Overrides**: Supports `nous/<model>`, `strata/<model>`, `ollama/<model>`, `gemini/<model>`, `openai/<model>`, and `anthropic/<model>`, plus optional one-off CLI overrides (`--model`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`).
 
-#### Multi-RFC Virtualized Web Visualizer & Offline Replay (`--view`)
+### Multi-RFC Web Visualizer & Offline Replay (`--view`)
 [`src/visualizer/server.py`](src/visualizer/server.py), [`src/visualizer/static/index.html`](src/visualizer/static/index.html), and [`src/pipeline_events.py`](src/pipeline_events.py) provide real-time and offline multi-RFC inspection at `http://127.0.0.1:8080`:
-- **Virtualized `#1..#N` Tab Strip**: Allocates sequential `#1..#N` tabs for accepted RFCs showing tab number, RFC ID, quality tier, and protocol name with `O(1)` browser DOM nodes and `O(1)` server RAM across 5,000+ tabs (evicting completed RFC events to per-RFC `events.jsonl`).
-- **Collapsible `Filtered / Skipped` Drawer**: Paginated, searchable drawer recording Tier 0 and Stage 1c rejected RFCs without cluttering the accepted tab bar.
-- **Per-Attempt Time-Travel Stepper**: Inspect `Attempt 0 | Initial` -> `Attempt 1..K` -> `Final` with a rejected/repaired `.scm` toggle, Pydantic JSON AST, compiler diagnostics, RAG manual chunks, and SVG shape graphs.
+- **Virtualized `#1..#N` Tab Strip**: Allocates sequential `#1..#N` tabs for accepted RFCs showing tab number, RFC ID, quality tier, and protocol name.
+- **Collapsible `Filtered / Skipped` Drawer**: Paginated, searchable drawer recording Tier 0, Stage 1c, and Stage 2 rejected RFCs.
+- **Per-Attempt Time-Travel Stepper**: Inspect `Attempt 0 | Initial` -> `Attempt 1..K` -> `Final` with a rejected/repaired `.scm` toggle, Pydantic JSON AST, compiler diagnostics, KB rules, and SVG shape graphs.
 - **Offline Replay Mode**: Inspect any completed run folder without re-running synthesis via `./rfc-llm --view output/run_<timestamp>`.
 
----
-
-### Phase 3: Hindsight Reasoning (`<think>`) Synthesizer & Dataset Factory `[ACTIVE — ./rfc-think]`
-Implemented in [`./rfc-think`](rfc-think) ([`src/generate_think/`](src/generate_think/) and [`prompts/07_think_token_synthesizer.md`](prompts/07_think_token_synthesizer.md)), Phase 3 converts Phase 2 verification trajectories into structured post-training datasets:
-- **Hindsight Rationalization with Compiler Backtracking**: Reads timestamped run directories (`output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`) or individual `<protocol>_trajectory.json` bundles and synthesizes forward-looking, first-person 5-step `<think>...</think>` monologues (`auto`, `llm`, or zero-LLM `deterministic` mode) with zero hindsight leakage.
-- **Per-RFC & Consolidated Post-Training Artifacts**:
-  - Writes `<protocol>_think.json` alongside `<protocol>_trajectory.json` and `<protocol>.scm` for every protocol meeting `--min-tier` (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`).
-  - Exports consolidated `sft_train.jsonl` (3-turn `[system, user, assistant]` chat records combining `<think>...</think>` + verified `.scm`) and `dpo_pairs.jsonl` (chosen verified completions paired against compiler-rejected `.scm` attempts from Stages 4-6) at the root of the run directory.
+### Hindsight Reasoning (`<think>`) Synthesizer (`./rfc-think`)
+Implemented in [`./rfc-think`](rfc-think) ([`src/generate_think/`](src/generate_think/) and [`prompts/07_think_token_synthesizer.md`](prompts/07_think_token_synthesizer.md)), `./rfc-think` converts verification trajectories into post-training datasets (`<protocol>_think.json`, `sft_train.jsonl`, and `dpo_pairs.jsonl`).
 
 ---
 
-### Phase 4: MoE Post-Training via AMD ROCm Megatron-LM `[NORTH STAR TARGET]`
-The culmination of the project is post-training an open-weight **Mixture-of-Experts (MoE)** model on structured synthetic CPSA code, `<think>` traces, and compiler repair trajectories using **AMD ROCm Megatron-LM** (`ROCm/Megatron-LM`):
-
-- **Training Stack**: **AMD ROCm Megatron-LM** leveraging tensor, pipeline, and expert parallelism (`EP`) optimized for AMD Instinct / Strix Halo ROCm hardware.
-- **Why MoE for Formal Verification**:
-  - Cryptographic protocol synthesis requires simultaneous mastery of informal RFC prose comprehension, strict Pydantic/JSON structural formatting, order-sorted algebra (`basic` vs. `diffie-hellman`), and Dolev-Yao strand-space origination semantics (`uniq-orig` vs. `uniq-gen`).
-  - Post-training an MoE allows sparse expert specialization across syntax emission, algebraic sort checking, and compiler error repair without catastrophic forgetting of general reasoning.
-- **Two-Stage Post-Training Regimen**:
-  1. **Structured SFT in ROCm Megatron-LM**: Train on `sft_train.jsonl` (`RFC Slice -> <think> -> Verified .scm`) plus CPSA 4.4.9 specification chunks to internalize the grammar.
-  2. **Compiler-in-the-Loop Post-Training (DPO / GRPO)**: Optimize the MoE on `dpo_pairs.jsonl` contrastive repair trajectories and verifiable `cpsa4roletran` / `cpsa4` execution outcomes to maximize first-pass compilation pass@1 and realized shape soundness.
-
----
-
-## 3. Repository Structure & Documentation Map
+## 2. Repository Structure & Documentation Map
 
 | Directory / File | Purpose |
 | :--- | :--- |
-| [`rfc-llm`](rfc-llm) | Phase 2 synthesis & offline replay CLI (`./rfc-llm <rfc_or_dir>` / `./rfc-llm --view <run_dir>`) |
-| [`rfc-think`](rfc-think) | Phase 3 `<think>` reasoning & SFT/DPO dataset synthesizer CLI (`./rfc-think <run_dir>`) |
+| [`rfc-llm`](rfc-llm) | Synthesis & offline replay CLI (`./rfc-llm <rfc_or_dir>` / `./rfc-llm --view <run_dir>`) |
+| [`rfc-think`](rfc-think) | `<think>` reasoning & SFT/DPO dataset synthesizer CLI (`./rfc-think <run_dir>`) |
 | [`.env.example`](.env.example) | Credentials & base endpoint URLs template (`*_API_KEY`, `NOUS_API_BASE`, `OLLAMA_API_BASE`, `STRATA_API_BASE`) |
 | [`prompts/`](prompts/README.md) | 7 YAML-frontmatter prompt templates (`model`, `timeout`, `temperature`) with live mid-batch hot-reload |
-| [`src/`](src/) | Core 6-stage synthesis pipeline, Pydantic IR, verification engine, Phase 3 synthesizer, and web visualizer |
+| [`src/`](src/) | Core 6-stage synthesis pipeline, Pydantic IR, verification engine, `<think>` synthesizer, and web visualizer |
 | [`docs/`](docs/README.md) | Architecture specifications, CPSA 4.4.9 keyword reference, model routing, and operational runbooks |
 | [`tests/`](tests/) | Unit and integration test suite enforcing CPSA 4.4.9 scoping, visualizer tabs, and `<think>` synthesis |
-| [`refrences/`](refrences/) | MITRE CPSA 4.4.9 manuals, 148 `.scm` examples, hybrid RAG scripts, and 300-query golden benchmark |
+| [`refrences/`](refrences/) | MITRE CPSA 4.4.9 Knowledge Base (`cpsa_kb/`), 151 `.scm` examples, and manuals |
 | [`notebook_context/`](notebook_context/README.md) | Automated repository-to-Markdown context bundler for LLM Notebook ingestion |
 
 ### Core Technical Documentation (`docs/`)
@@ -670,7 +583,7 @@ The culmination of the project is post-training an open-weight **Mixture-of-Expe
 
 ---
 
-## 4. Quickstart
+## 3. Quickstart
 
 ```bash
 # 1. Copy the credentials & endpoints template and populate your API keys
@@ -685,7 +598,7 @@ cp .env.example .env
 # 4. Replay any completed run directory offline in the virtualized multi-RFC visualizer
 ./rfc-llm --view output/run_YYYY-MM-DD_HH-MM-SS
 
-# 5. Synthesize Phase 3 <think> traces plus sft_train.jsonl and dpo_pairs.jsonl
+# 5. Synthesize <think> traces plus sft_train.jsonl and dpo_pairs.jsonl
 ./rfc-think output/run_YYYY-MM-DD_HH-MM-SS
 
 # 6. Rebuild NotebookLM / Gemini markdown context bundles after edits
