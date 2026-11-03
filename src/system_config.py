@@ -47,6 +47,8 @@ class SystemEnvironmentConfig(BaseSettings):
     CPSA4SHAPES_BIN: Path = CABAL_BIN_DIR / "cpsa4shapes"
     CPSA4GRAPH_BIN: Path = CABAL_BIN_DIR / "cpsa4graph"
     CPSA4PROT_BIN: Path = CABAL_BIN_DIR / "cpsa4prot"
+    CPSA4SAS_BIN: Path = CABAL_BIN_DIR / "cpsa4sas"
+    CPSA4GOALSAT_BIN: Path = CABAL_BIN_DIR / "cpsa4goalsat"
 
     # API Keys & Base Endpoints (Loaded from .env)
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")

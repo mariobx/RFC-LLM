@@ -5,7 +5,7 @@ import datetime
 import logging
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from src.system_config import SYSTEM_CONFIG
 
@@ -220,6 +220,33 @@ class PipelineMetricsCSVLogger:
                 self._write_all_rows(list(deduped.values()))
         except Exception:
             pass
+
+    def prune_keep_ineligible_only(self) -> Tuple[int, int]:
+        """Deletes all rows in `logs/pipeline_runs.csv` EXCEPT ineligible RFCs (`is_eligible=False`).
+
+        Allows starting a fresh synthesis run over eligible protocols while preserving cached
+        Tier 0 / Stage 1 / Stage 2 ineligibility decisions so non-protocol RFCs are skipped in 0ms.
+
+        Returns:
+            Tuple of `(removed_eligible_rows_count, kept_ineligible_rows_count)`.
+        """
+        existing_rows = self._read_existing_rows()
+        kept_rows: List[dict] = []
+        removed_count = 0
+        seen_ids = set()
+        for row in existing_rows:
+            is_elig_str = (row.get("is_eligible") or "").strip().lower()
+            status_str = (row.get("status") or "").strip().upper()
+            if is_elig_str == "false" or status_str == "INELIGIBLE":
+                norm_id = self.normalize_rfc_id(row.get("rfc_id", ""))
+                if norm_id and norm_id not in seen_ids:
+                    seen_ids.add(norm_id)
+                    row["rfc_id"] = norm_id
+                    kept_rows.append(row)
+            else:
+                removed_count += 1
+        self._write_all_rows(kept_rows)
+        return removed_count, len(kept_rows)
 
     def log_run(
         self,

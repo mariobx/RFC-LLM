@@ -477,35 +477,40 @@ def test_ensure_three_pov_skeletons_replaces_preseeded_multistrand_and_adds_secr
 
 
 def test_quality_assessment_catches_self_reflection_and_preseeded_strands(tmp_path: Path):
-    """Verify `analyze_shapes_txt` and `compute_quality_assessment` downgrade:
-    - 1-strand self-reflection splits (`min_strands == 1, max_strands == 2` as in `RFC 5216` / `RFC 6786`) from GOLD to SILVER
-    - Pre-seeded multi-strand root skeletons (`max_strands == initial_strand_count` as in `RFC 7469`) to BRONZE
-    - Pure 1-strand unauthenticated models (`authenticated_pov_count == 0`) to BRONZE
-    while grading true mutual or unilateral server-authenticated KEX (`RFC 5656`) with proved secrecy as GOLD.
+    """Verify `analyze_shapes_txt`, `compute_security_findings`, and `compute_quality_assessment`:
+    - Decouple `quality_tier` (modeling & compilation fidelity) from `security_findings` (formal CPSA security verdict)
+    - Flag 1-strand/2-strand branched authentication (`RFC 5216` / `RFC 6786`) as `CONDITIONAL_BRANCHED_AUTHENTICATION` in `security_findings` while keeping `quality_tier == "GOLD"`
+    - Downgrade pre-seeded multi-strand root skeletons (`max_strands == initial_strand_count` as in `RFC 7469`) to `BRONZE`
+    - Grade unilateral server-authenticated KEX (`RFC 5656`) as `GOLD` with `UNILATERAL_AUTHENTICATED` and `SECRECY_PROVED`
+    - Detect Lowe MITM principal disagreement (`b` vs `b-0`), same-role reflection, and secrecy leaks in `security_findings` without punishing `quality_tier`.
     """
     from src.verification_engine.trajectory_metadata_exporter import (
         analyze_shapes_txt,
         compute_quality_assessment,
+        compute_security_findings,
     )
 
-    # 1. Self-reflection split (`RFC 5216` / `RFC 6786`): POV 1 has both a 1-strand shape and a 2-strand shape
+    # 1. Branched 1-strand/2-strand split (`RFC 5216` / `RFC 6786`): executable & multi-strand -> GOLD,
+    # while security_findings records CONDITIONAL_BRANCHED_AUTHENTICATION
     split_shapes_txt = tmp_path / "split_shapes.txt"
     split_shapes_txt.write_text(
-        "(defskeleton p (vars (a b name)) (defstrand init 2) (label 0))\n"
-        "(defskeleton p (vars (a name)) (defstrand init 2) (label 1) (parent 0) (shape))\n"
-        "(defskeleton p (vars (a b name)) (defstrand init 2) (defstrand resp 2) (label 2) (parent 0) (shape))\n"
-        "(defskeleton p (vars (a b name)) (defstrand resp 2) (label 3))\n"
-        "(defskeleton p (vars (a b name)) (defstrand resp 2) (defstrand init 2) (label 4) (parent 3) (shape))\n"
+        "(defskeleton p (vars (a b name)) (defstrand init 2 (a a) (b b)) (label 0))\n"
+        "(defskeleton p (vars (a name)) (defstrand init 2 (a a) (b a)) (label 1) (parent 0) (shape))\n"
+        "(defskeleton p (vars (a b name)) (defstrand init 2 (a a) (b b)) (defstrand resp 2 (a a) (b b)) (label 2) (parent 0) (shape))\n"
+        "(defskeleton p (vars (a b name)) (defstrand resp 2 (a a) (b b)) (label 3))\n"
+        "(defskeleton p (vars (a b name)) (defstrand resp 2 (a a) (b b)) (defstrand init 2 (a a) (b b)) (label 4) (parent 3) (shape))\n"
         "(defskeleton p (vars (k data)) (defstrand init 2) (deflistener k) (label 5))\n",
         encoding="utf-8",
     )
     split_analysis = analyze_shapes_txt(split_shapes_txt)
     assert split_analysis["per_preskeleton_outcomes"][0]["has_self_reflection_split"] is True
-    assert split_analysis["per_preskeleton_outcomes"][0]["verdict"] == "TRIVIAL_SINGLE_STRAND"
-    split_qa = compute_quality_assessment(True, split_analysis, 0, 0)
-    assert split_qa["quality_tier"] == "SILVER"
+    split_sec = compute_security_findings(split_analysis)
+    assert split_sec["authentication_profile"] == "CONDITIONAL_BRANCHED_AUTHENTICATION"
+    assert split_sec["parameter_agreement_status"] == "FULL_PARAMETER_AGREEMENT"
+    split_qa = compute_quality_assessment(True, split_analysis, 0, 0, security_findings=split_sec)
+    assert split_qa["quality_tier"] == "GOLD"
 
-    # 2. Pre-seeded 2-strand root skeleton (`RFC 7469`) where CPSA added 0 strands
+    # 2. Pre-seeded 2-strand root skeleton (`RFC 7469`) where CPSA added 0 strands -> BRONZE
     preseeded_txt = tmp_path / "preseeded_shapes.txt"
     preseeded_txt.write_text(
         "(defskeleton p (vars (a b name)) (defstrand init 1) (defstrand resp 1) (label 0) (shape))\n",
@@ -520,14 +525,61 @@ def test_quality_assessment_catches_self_reflection_and_preseeded_strands(tmp_pa
     # client POV is strictly 2-strand, server POV is 1-strand (unauthenticated client share), secrecy proved -> GOLD
     unilateral_txt = tmp_path / "unilateral_shapes.txt"
     unilateral_txt.write_text(
-        "(defskeleton ssh (vars (s name)) (defstrand client 2) (label 0))\n"
-        "(defskeleton ssh (vars (s name)) (defstrand client 2) (defstrand server 2) (label 1) (parent 0) (shape))\n"
-        "(defskeleton ssh (vars (s name)) (defstrand server 2) (label 2))\n"
-        "(defskeleton ssh (vars (s name)) (defstrand server 2) (label 3) (parent 2) (shape))\n"
+        "(defskeleton ssh (vars (s name)) (defstrand client 2 (s s)) (label 0))\n"
+        "(defskeleton ssh (vars (s name)) (defstrand client 2 (s s)) (defstrand server 2 (s s)) (label 1) (parent 0) (shape))\n"
+        "(defskeleton ssh (vars (s name)) (defstrand server 2 (s s)) (label 2))\n"
+        "(defskeleton ssh (vars (s name)) (defstrand server 2 (s s)) (label 3) (parent 2) (shape))\n"
         "(defskeleton ssh (vars (k skey)) (defstrand client 2) (deflistener k) (label 4))\n",
         encoding="utf-8",
     )
     unilateral_analysis = analyze_shapes_txt(unilateral_txt)
-    unilateral_qa = compute_quality_assessment(True, unilateral_analysis, 0, 0)
+    unilateral_sec = compute_security_findings(unilateral_analysis)
+    assert unilateral_sec["authentication_profile"] == "UNILATERAL_AUTHENTICATED"
+    assert unilateral_sec["secrecy_status"] == "SECRECY_PROVED"
+    unilateral_qa = compute_quality_assessment(True, unilateral_analysis, 0, 0, security_findings=unilateral_sec)
     assert unilateral_qa["quality_tier"] == "GOLD"
+
+    # 4. Vulnerable protocol (Needham-Schroeder Lowe MITM `b` vs `b-0` + same-role reflection + leaked secret `k`):
+    # Model is executable and faithful (`quality_tier == "GOLD"`), while `security_findings` captures all 3 vulnerabilities
+    vuln_txt = tmp_path / "vuln_shapes.txt"
+    vuln_txt.write_text(
+        "(defskeleton ns (vars (a b name) (k skey)) (defstrand init 2 (a a) (b b)) (label 0))\n"
+        "(defskeleton ns (vars (a b b-0 name) (k skey)) (defstrand init 2 (a a) (b b)) (defstrand resp 2 (a a) (b b-0)) (label 1) (parent 0) (shape))\n"
+        "(defskeleton ns (vars (a b name) (k skey)) (defstrand resp 2 (a a) (b b)) (label 2))\n"
+        "(defskeleton ns (vars (a b name) (k skey)) (defstrand resp 2 (a a) (b b)) (defstrand resp 2 (a b) (b a)) (label 3) (parent 2) (shape))\n"
+        "(defskeleton ns (vars (k skey)) (defstrand init 2) (deflistener k) (label 4))\n"
+        "(defskeleton ns (vars (k skey)) (defstrand init 2) (deflistener k) (label 5) (parent 4) (shape))\n",
+        encoding="utf-8",
+    )
+    vuln_analysis = analyze_shapes_txt(vuln_txt)
+    vuln_sec = compute_security_findings(vuln_analysis)
+    assert vuln_sec["parameter_agreement_status"] == "PRINCIPAL_DISAGREEMENT_MITM_OR_UKS"
+    assert vuln_sec["role_reflection_status"] == "SAME_ROLE_REFLECTION_DETECTED"
+    assert vuln_sec["secrecy_status"] == "SECRECY_LEAK_DETECTED"
+    assert vuln_sec["leaked_secrets"] == ["k"]
+    assert len(vuln_sec["vulnerabilities_and_anomalies"]) >= 3
+    vuln_qa = compute_quality_assessment(True, vuln_analysis, 0, 0, security_findings=vuln_sec)
+    assert vuln_qa["quality_tier"] == "GOLD"
+
+
+def test_prune_keep_ineligible_only(tmp_path: Path):
+    """Verify `PipelineMetricsCSVLogger.prune_keep_ineligible_only` deletes all rows EXCEPT `is_eligible=False`."""
+    from src.logging_config import PipelineMetricsCSVLogger
+
+    csv_path = tmp_path / "pipeline_runs.csv"
+    logger = PipelineMetricsCSVLogger(csv_path=csv_path)
+    logger.log_run(rfc_id="RFC1111", is_eligible=False, status="INELIGIBLE", rejection_gate="Tier 0 Header Filter")
+    logger.log_run(rfc_id="RFC4582", is_eligible=False, status="INELIGIBLE", rejection_gate="Stage 2 Verbatim Slice Gate")
+    logger.log_run(rfc_id="RFC5246", is_eligible=True, status="VERIFIED", quality_tier="GOLD", solver_passed=True)
+    logger.log_run(rfc_id="RFC5849", is_eligible=True, status="FAILED", quality_tier="REJECTED", solver_passed=False)
+
+    removed, kept = logger.prune_keep_ineligible_only()
+    assert removed == 2
+    assert kept == 2
+
+    remaining_rows = logger._read_existing_rows()
+    remaining_ids = [r["rfc_id"] for r in remaining_rows]
+    assert remaining_ids == ["RFC1111", "RFC4582"]
+    assert all(r["is_eligible"] == "False" for r in remaining_rows)
+
 

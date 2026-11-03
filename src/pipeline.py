@@ -14,6 +14,7 @@ from typing import List, Set
 
 from src.cost_tracker import GLOBAL_COST_TRACKER
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
+from src.logging_config import PipelineMetricsCSVLogger
 from src.main_pipeline_orchestrator import PipelineExecutionSummary, run_rfc_translation_pipeline
 from src.pipeline_events import GLOBAL_EVENT_BUS
 from src.system_config import SYSTEM_CONFIG
@@ -210,8 +211,26 @@ def main():
         action="store_true",
         help="Pre-filter directory candidates using deterministic Tier 0 frontmatter check before applying --limit",
     )
+    parser.add_argument(
+        "--keep-ineligible",
+        "--reset-eligible",
+        dest="keep_ineligible",
+        action="store_true",
+        help="Prune logs/pipeline_runs.csv by deleting all rows EXCEPT ineligible RFCs (is_eligible=False), and skip those ineligible RFCs when starting a new batch run",
+    )
 
     args = parser.parse_args()
+
+    if args.keep_ineligible:
+        csv_logger = PipelineMetricsCSVLogger()
+        removed_cnt, kept_cnt = csv_logger.prune_keep_ineligible_only()
+        print(
+            f"[CSV PRUNE] Updated {csv_logger.csv_path}: removed {removed_cnt} eligible row(s), "
+            f"retained {kept_cnt} INELIGIBLE row(s) (is_eligible=False)."
+        )
+        args.skip_completed = True
+        if not args.target_path and not args.view:
+            sys.exit(0)
 
     # Offline Replay Mode (--view <run_dir>)
     if args.view:
