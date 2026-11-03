@@ -2,22 +2,26 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-03 00:29:01 UTC · Git: `main` @ `1ef75fa80796` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
+*Generated: 2026-11-03 06:57:28 UTC · Git: `main` @ `29514aa88600` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `1ef75fa80796` — feat: add 3-tier snowball recovery, per-role USD cost telemetry, 48-col upsert CSV, and strict 1-to-1 RFC grounding
+- **Git commit:** `29514aa88600` — Surface total_completion_steps and per-stage repair step counts in Group A of pipeline_runs.csv
 - **Added (0):** none
-- **Modified (6):**
-  - `README.md`
-  - `docs/QUICKSTART_AND_OPERATIONS.md`
-  - `logs/pipeline_runs.csv`
-  - `src/logging_config.py`
-  - `src/main_pipeline_orchestrator.py`
-  - `tests/test_cpsa_kb_and_agentic_searcher.py`
+- **Modified (10):**
+  - `prompts/01_applicability_gate.md`
+  - `prompts/02_section_router.md`
+  - `prompts/03_protocol_extraction.md`
+  - `prompts/04_schema_self_correction.md`
+  - `prompts/05_rag_query_formulation.md`
+  - `prompts/06_compiler_repair.md`
+  - `prompts/07_think_token_synthesizer.md`
+  - `src/prompt_loader.py`
+  - `src/system_config.py`
+  - `tests/test_trajectory_and_hardening.py`
 - **Deleted (0):** none
 
 ---
@@ -43,12 +47,12 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | Bundle | Title | Files | Size | Estimated Tokens | Tier |
 |---|---|---|---|---|---|
 | `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 119.7 KB | ~30,592 | Tier 1 — Architecture, Documentation & Project Configs |
-| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 750.6 KB | ~192,104 | Tier 2 — Core Source Code & CLI Entrypoints |
+| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 750.8 KB | ~192,163 | Tier 2 — Core Source Code & CLI Entrypoints |
 | `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 161.5 KB | ~41,104 | Tier 3 — Knowledge Base Index & Test Suites |
 | `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 693.4 KB | ~175,802 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
 | `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files) | 155 | 915.3 KB | ~234,169 | Tier 3 — Domain Reference Code Corpus (.scm) |
 
-**Total Ingested Context Payload:** ~673,771 tokens across all bundles (67.4% of Gemini 1M context window)
+**Total Ingested Context Payload:** ~673,830 tokens across all bundles (67.4% of Gemini 1M context window)
 
 ---
 

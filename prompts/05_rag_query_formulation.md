@@ -2,7 +2,7 @@
 # Stage 5 & 6: Agentic CPSA Knowledge Base Investigator & Diagnostic Searcher
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: nous/anthropic/claude-haiku-5.5
-timeout: 25
+timeout: 360
 temperature: 0.0
 ---
 You are the Agentic CPSA 4.4.9 Knowledge Base Investigator for RFC-LLM.

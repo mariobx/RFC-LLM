@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-03 00:29:01 UTC · Git: `main` @ `1ef75fa80796` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~192,104*
+*Generated: 2026-11-03 06:57:28 UTC · Git: `main` @ `29514aa88600` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~192,163*
 
 ## Table of Contents
 
@@ -59,14 +59,14 @@
 
 ### `prompts/01_applicability_gate.md`
 
-*sha256:`6548f0c8f691` · 29 lines · 1.3 KB (~335 tokens) · lang:`markdown`*
+*sha256:`a4061fe6a3c2` · 29 lines · 1.3 KB (~335 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 1c: Protocol Applicability Gatekeeper
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: nous/z-ai/glm-5.3
-timeout: 180
+timeout: 360
 temperature: 0.0
 ---
 You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.
@@ -97,14 +97,14 @@ Example output format:
 
 ### `prompts/02_section_router.md`
 
-*sha256:`bd9a7ea25dc3` · 15 lines · 0.8 KB (~209 tokens) · lang:`markdown`*
+*sha256:`5e455b03e6c8` · 15 lines · 0.8 KB (~209 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 1d: Handshake & Exchange TOC Section Router
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: nous/z-ai/glm-5.3
-timeout: 180
+timeout: 360
 temperature: 0.0
 ---
 You are a protocol analyst reading an RFC's Table of Contents.
@@ -121,14 +121,14 @@ Guidelines:
 
 ### `prompts/03_protocol_extraction.md`
 
-*sha256:`30dd469ae6b7` · 94 lines · 8.7 KB (~2,224 tokens) · lang:`markdown`*
+*sha256:`6093d47e410c` · 94 lines · 8.7 KB (~2,224 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 2: JSON CPSA Generation (Constrained Protocol Semantic Extraction)
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: nous/google/gemini-4-argon
-timeout: 180
+timeout: 360
 temperature: 0.0
 ---
 You are a formal methods expert in cryptographic protocol specification for MITRE CPSA 4.4.9.
@@ -224,14 +224,14 @@ Return ONLY a valid JSON object matching the requested CPSAProtocolSpecification
 
 ### `prompts/04_schema_self_correction.md`
 
-*sha256:`d938ef1ebc8a` · 20 lines · 1.6 KB (~408 tokens) · lang:`markdown`*
+*sha256:`660f1567f925` · 20 lines · 1.6 KB (~408 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 2 (Retry): 1-Shot Schema & Grammar Self-Correction
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: nous/google/gemini-4-argon
-timeout: 180
+timeout: 360
 temperature: 0.0
 ---
 Your previous JSON output failed MITRE CPSA 4.4.9 schema and scoping validation with the following errors:
@@ -253,14 +253,14 @@ Return ONLY the corrected, fully valid JSON object.
 
 ### `prompts/05_rag_query_formulation.md`
 
-*sha256:`f84a9813fc63` · 36 lines · 2.8 KB (~707 tokens) · lang:`markdown`*
+*sha256:`6dde05810656` · 36 lines · 2.8 KB (~707 tokens) · lang:`markdown`*
 
 ````markdown
 ---
 # Stage 5 & 6: Agentic CPSA Knowledge Base Investigator & Diagnostic Searcher
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: nous/anthropic/claude-haiku-5.5
-timeout: 25
+timeout: 360
 temperature: 0.0
 ---
 You are the Agentic CPSA 4.4.9 Knowledge Base Investigator for RFC-LLM.
@@ -298,14 +298,14 @@ If you are only given a single compiler diagnostic without a TOC map (legacy sin
 
 ### `prompts/06_compiler_repair.md`
 
-*sha256:`dd84a9c332cd` · 59 lines · 6.8 KB (~1,747 tokens) · lang:`markdown`*
+*sha256:`72ed77ae5846` · 59 lines · 6.8 KB (~1,747 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 5 & 6: RAG-Guided Compiler Self-Healing Repair
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: nous/google/gemini-3.8-flash
-timeout: 180
+timeout: 360
 temperature: 0.0
 ---
 You are a formal methods expert in debugging and repairing MITRE CPSA 4.4.9 protocol specifications.
@@ -366,14 +366,14 @@ Return ONLY the repaired, valid CPSAProtocolSpecification matching the requested
 
 ### `prompts/07_think_token_synthesizer.md`
 
-*sha256:`8ce250c758a9` · 35 lines · 3.7 KB (~954 tokens) · lang:`markdown`*
+*sha256:`df9a95d66d5b` · 35 lines · 3.7 KB (~954 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Phase 3: Hindsight Reasoning (<think>) Synthesizer
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: gemini/gemini-3.5-flash-lite
-timeout: 180
+timeout: 360
 temperature: 0.2
 ---
 You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.
@@ -11341,7 +11341,7 @@ GLOBAL_EVENT_BUS = PipelineEventBus()
 
 ### `src/prompt_loader.py`
 
-*sha256:`4870b063cb1e` · 204 lines · 9.0 KB (~2,311 tokens) · lang:`python`*
+*sha256:`e5fb6b6edae3` · 204 lines · 9.0 KB (~2,312 tokens) · lang:`python`*
 
 ```python
 """Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LLM (prompts/ directory).
@@ -11386,13 +11386,13 @@ GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"
 
 # Built-in fallback models & timeouts when a `prompts/*.md` file omits frontmatter or is missing
 _FALLBACK_METADATA: Dict[str, Dict[str, Any]] = {
-    PROMPT_APPLICABILITY_GATE: {"model": "nous/z-ai/glm-5.3", "timeout": 180, "temperature": 0.0},
-    PROMPT_SECTION_ROUTER: {"model": "nous/z-ai/glm-5.3", "timeout": 180, "temperature": 0.0},
-    PROMPT_PROTOCOL_EXTRACTION: {"model": "nous/google/gemini-4-argon", "timeout": 180, "temperature": 0.0},
-    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "nous/google/gemini-4-argon", "timeout": 180, "temperature": 0.0},
-    PROMPT_RAG_QUERY_FORMULATION: {"model": "nous/anthropic/claude-haiku-5.5", "timeout": 15, "temperature": 0.0},
-    PROMPT_COMPILER_REPAIR: {"model": "nous/google/gemini-3.8-flash", "timeout": 180, "temperature": 0.0},
-    PROMPT_THINK_SYNTHESIZER: {"model": "gemini/gemini-3.5-flash-lite", "timeout": 180, "temperature": 0.2},
+    PROMPT_APPLICABILITY_GATE: {"model": "nous/z-ai/glm-5.3", "timeout": 360, "temperature": 0.0},
+    PROMPT_SECTION_ROUTER: {"model": "nous/z-ai/glm-5.3", "timeout": 360, "temperature": 0.0},
+    PROMPT_PROTOCOL_EXTRACTION: {"model": "nous/google/gemini-4-argon", "timeout": 360, "temperature": 0.0},
+    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "nous/google/gemini-4-argon", "timeout": 360, "temperature": 0.0},
+    PROMPT_RAG_QUERY_FORMULATION: {"model": "nous/anthropic/claude-haiku-5.5", "timeout": 360, "temperature": 0.0},
+    PROMPT_COMPILER_REPAIR: {"model": "nous/google/gemini-3.8-flash", "timeout": 360, "temperature": 0.0},
+    PROMPT_THINK_SYNTHESIZER: {"model": "gemini/gemini-3.5-flash-lite", "timeout": 360, "temperature": 0.2},
 }
 
 # Built-in fallback prompt bodies if a file in prompts/ is missing or empty
@@ -12980,7 +12980,7 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
 
 ### `src/system_config.py`
 
-*sha256:`1c897a59a3e6` · 136 lines · 6.0 KB (~1,544 tokens) · lang:`python`*
+*sha256:`02b5f06d71a1` · 139 lines · 6.3 KB (~1,602 tokens) · lang:`python`*
 
 ```python
 """Global environment, binary paths, execution limits, and provider configuration."""
@@ -13043,10 +13043,10 @@ class SystemEnvironmentConfig(BaseSettings):
     STRATA_API_KEY: str = os.getenv("STRATA_API_KEY", "local-strata")
 
     # Compiler & Harness Execution Limits
-    LLM_TIMEOUT_SECONDS: int = 180
+    LLM_TIMEOUT_SECONDS: int = 360
     CPSA_TIMEOUT_SECONDS: int = 15
     ROLETRAN_TIMEOUT_SECONDS: int = 15
-    MAX_REPAIR_ATTEMPTS: int = 50
+    MAX_REPAIR_ATTEMPTS: int = 10
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
@@ -13100,7 +13100,10 @@ class SystemEnvironmentConfig(BaseSettings):
             kwargs["api_base"] = self.STRATA_API_BASE
             kwargs["api_key"] = self.STRATA_API_KEY
         elif model_name.startswith("ollama/"):
-            kwargs["api_base"] = self.OLLAMA_API_BASE
+            ollama_base = os.getenv("OLLAMA_API_BASE") or os.getenv("OLLAMA_HOST") or self.OLLAMA_API_BASE
+            if ollama_base and not ollama_base.startswith("http"):
+                ollama_base = f"http://{ollama_base}"
+            kwargs["api_base"] = ollama_base.rstrip("/")
         elif model_name.startswith("gemini/"):
             if self.GEMINI_API_KEY:
                 kwargs["api_key"] = self.GEMINI_API_KEY

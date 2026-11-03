@@ -58,10 +58,10 @@ class SystemEnvironmentConfig(BaseSettings):
     STRATA_API_KEY: str = os.getenv("STRATA_API_KEY", "local-strata")
 
     # Compiler & Harness Execution Limits
-    LLM_TIMEOUT_SECONDS: int = 180
+    LLM_TIMEOUT_SECONDS: int = 360
     CPSA_TIMEOUT_SECONDS: int = 15
     ROLETRAN_TIMEOUT_SECONDS: int = 15
-    MAX_REPAIR_ATTEMPTS: int = 50
+    MAX_REPAIR_ATTEMPTS: int = 10
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
@@ -115,7 +115,10 @@ class SystemEnvironmentConfig(BaseSettings):
             kwargs["api_base"] = self.STRATA_API_BASE
             kwargs["api_key"] = self.STRATA_API_KEY
         elif model_name.startswith("ollama/"):
-            kwargs["api_base"] = self.OLLAMA_API_BASE
+            ollama_base = os.getenv("OLLAMA_API_BASE") or os.getenv("OLLAMA_HOST") or self.OLLAMA_API_BASE
+            if ollama_base and not ollama_base.startswith("http"):
+                ollama_base = f"http://{ollama_base}"
+            kwargs["api_base"] = ollama_base.rstrip("/")
         elif model_name.startswith("gemini/"):
             if self.GEMINI_API_KEY:
                 kwargs["api_key"] = self.GEMINI_API_KEY

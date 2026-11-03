@@ -75,7 +75,7 @@ def test_malformed_yaml_frontmatter_and_edge_cases(tmp_path: Path):
     )
     spec_scalars = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
     assert spec_scalars.model == "strata/unsloth-iq4_xs"
-    assert spec_scalars.timeout == 180
+    assert spec_scalars.timeout == 360
     assert spec_scalars.temperature == 0.0
 
     with pytest.raises(FileNotFoundError):

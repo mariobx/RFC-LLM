@@ -2,7 +2,7 @@
 # Stage 1d: Handshake & Exchange TOC Section Router
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: nous/z-ai/glm-5.3
-timeout: 180
+timeout: 360
 temperature: 0.0
 ---
 You are a protocol analyst reading an RFC's Table of Contents.

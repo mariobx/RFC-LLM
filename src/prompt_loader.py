@@ -40,13 +40,13 @@ GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"
 
 # Built-in fallback models & timeouts when a `prompts/*.md` file omits frontmatter or is missing
 _FALLBACK_METADATA: Dict[str, Dict[str, Any]] = {
-    PROMPT_APPLICABILITY_GATE: {"model": "nous/z-ai/glm-5.3", "timeout": 180, "temperature": 0.0},
-    PROMPT_SECTION_ROUTER: {"model": "nous/z-ai/glm-5.3", "timeout": 180, "temperature": 0.0},
-    PROMPT_PROTOCOL_EXTRACTION: {"model": "nous/google/gemini-4-argon", "timeout": 180, "temperature": 0.0},
-    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "nous/google/gemini-4-argon", "timeout": 180, "temperature": 0.0},
-    PROMPT_RAG_QUERY_FORMULATION: {"model": "nous/anthropic/claude-haiku-5.5", "timeout": 15, "temperature": 0.0},
-    PROMPT_COMPILER_REPAIR: {"model": "nous/google/gemini-3.8-flash", "timeout": 180, "temperature": 0.0},
-    PROMPT_THINK_SYNTHESIZER: {"model": "gemini/gemini-3.5-flash-lite", "timeout": 180, "temperature": 0.2},
+    PROMPT_APPLICABILITY_GATE: {"model": "nous/z-ai/glm-5.3", "timeout": 360, "temperature": 0.0},
+    PROMPT_SECTION_ROUTER: {"model": "nous/z-ai/glm-5.3", "timeout": 360, "temperature": 0.0},
+    PROMPT_PROTOCOL_EXTRACTION: {"model": "nous/google/gemini-4-argon", "timeout": 360, "temperature": 0.0},
+    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "nous/google/gemini-4-argon", "timeout": 360, "temperature": 0.0},
+    PROMPT_RAG_QUERY_FORMULATION: {"model": "nous/anthropic/claude-haiku-5.5", "timeout": 360, "temperature": 0.0},
+    PROMPT_COMPILER_REPAIR: {"model": "nous/google/gemini-3.8-flash", "timeout": 360, "temperature": 0.0},
+    PROMPT_THINK_SYNTHESIZER: {"model": "gemini/gemini-3.5-flash-lite", "timeout": 360, "temperature": 0.2},
 }
 
 # Built-in fallback prompt bodies if a file in prompts/ is missing or empty

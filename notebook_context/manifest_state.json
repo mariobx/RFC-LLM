@@ -4,12 +4,16 @@
     "added": [],
     "deleted": [],
     "modified": [
-      "README.md",
-      "docs/QUICKSTART_AND_OPERATIONS.md",
-      "logs/pipeline_runs.csv",
-      "src/logging_config.py",
-      "src/main_pipeline_orchestrator.py",
-      "tests/test_cpsa_kb_and_agentic_searcher.py"
+      "prompts/01_applicability_gate.md",
+      "prompts/02_section_router.md",
+      "prompts/03_protocol_extraction.md",
+      "prompts/04_schema_self_correction.md",
+      "prompts/05_rag_query_formulation.md",
+      "prompts/06_compiler_repair.md",
+      "prompts/07_think_token_synthesizer.md",
+      "src/prompt_loader.py",
+      "src/system_config.py",
+      "tests/test_trajectory_and_hardening.py"
     ]
   },
   "files": {
@@ -99,43 +103,43 @@
     },
     "prompts/01_applicability_gate.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "6548f0c8f6914259eb6ad3085f3bc0b3c490b0c9d8b6aade122fd67999122970",
+      "sha256": "a4061fe6a3c22dfa66b10c6650000cad2478b74febad30273ae38291d0e9b8e3",
       "size_bytes": 1342,
       "status": "included"
     },
     "prompts/02_section_router.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "bd9a7ea25dc302c0003c8c2b0a955ebc6275f7714121b1bd4cb0d00a16ddcab7",
+      "sha256": "5e455b03e6c825fb7d06bfdca8baed9fda2c6c558e3ea91a81b08e743ced84d2",
       "size_bytes": 839,
       "status": "included"
     },
     "prompts/03_protocol_extraction.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "30dd469ae6b721b6c7f82f0ce6296d99b9fedd2a9b30d0ead3a3077562421a2e",
+      "sha256": "6093d47e410cddd3ba50fbf8f93d4b0eb88cb550b15afe049bdac4f44c2e8964",
       "size_bytes": 8898,
       "status": "included"
     },
     "prompts/04_schema_self_correction.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "d938ef1ebc8a44fa11923d6010d8520e33ada7c26997036365c7447eef716fec",
+      "sha256": "660f1567f925d2d1dcf681eb01872686d473a456de55dd25f4324140cf1eb418",
       "size_bytes": 1635,
       "status": "included"
     },
     "prompts/05_rag_query_formulation.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "f84a9813fc63192713ea9d67925a6cbccd260476e6042758fb6a705d4886f466",
-      "size_bytes": 2830,
+      "sha256": "6dde05810656be250bc8abd5d1c4ad494eede0026910d2153117c7177ff26042",
+      "size_bytes": 2831,
       "status": "included"
     },
     "prompts/06_compiler_repair.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "dd84a9c332cdab48b09a4690c73c9528804df43d1ba4a66811f468045467f8b3",
+      "sha256": "72ed77ae5846de7e41774703508b183b171cca77092f6f4f74d1719b4fbe44ef",
       "size_bytes": 6993,
       "status": "included"
     },
     "prompts/07_think_token_synthesizer.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "8ce250c758a97b7fd386f9a868084da33b1547ee5efe1e69fb3a1979b3f349bf",
+      "sha256": "df9a95d66d5baa82c8473b91aef50dfa3099e41a883b7a954a4799f6240be6e4",
       "size_bytes": 3818,
       "status": "included"
     },
@@ -1359,8 +1363,8 @@
     },
     "src/prompt_loader.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "4870b063cb1e9a74e1345dfef7a5ec8770f6d56976ae5870913d8984b6c6a52d",
-      "size_bytes": 9247,
+      "sha256": "e5fb6b6edae35998151256130b1dfda5ff5eaf4a2987933611aff8b336663f12",
+      "size_bytes": 9248,
       "status": "included"
     },
     "src/rag_retriever_client.py": {
@@ -1383,8 +1387,8 @@
     },
     "src/system_config.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "1c897a59a3e65a3dd932a4436d3eb0edb5eb30cd93f13cdafeb748d4f1782bc0",
-      "size_bytes": 6177,
+      "sha256": "02b5f06d71a1deb384091851ccf91816e2b99eea4f41e91503d8448b5b17f07c",
+      "size_bytes": 6408,
       "status": "included"
     },
     "src/verification_engine/__init__.py": {
@@ -1485,7 +1489,7 @@
     },
     "tests/test_trajectory_and_hardening.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "4503060f3643cf404fd843da358e00fc39256aeafc7b47027e24e564206ec652",
+      "sha256": "e4e2bb48f12fb3fafafc81f79090d75e1eb10b4f6e29d4850d2c97708ddb77db",
       "size_bytes": 9749,
       "status": "included"
     },
@@ -1502,15 +1506,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-03 00:29:01 UTC",
+  "generated_at": "2026-11-03 06:57:28 UTC",
   "git": {
     "branch": "main",
-    "commit": "1ef75fa80796951a1c740b3511160da169618828",
-    "subject": "feat: add 3-tier snowball recovery, per-role USD cost telemetry, 48-col upsert CSV, and strict 1-to-1 RFC grounding"
+    "commit": "29514aa88600a70710d21e01ce59b6c858421a29",
+    "subject": "Surface total_completion_steps and per-stage repair step counts in Group A of pipeline_runs.csv"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "1ef75fa80796951a1c740b3511160da169618828",
-    "subject": "feat: add 3-tier snowball recovery, per-role USD cost telemetry, 48-col upsert CSV, and strict 1-to-1 RFC grounding"
+    "commit": "29514aa88600a70710d21e01ce59b6c858421a29",
+    "subject": "Surface total_completion_steps and per-stage repair step counts in Group A of pipeline_runs.csv"
   }
 }
