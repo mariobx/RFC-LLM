@@ -210,10 +210,47 @@ def build_schema_system_prompt(
     """Loads a stripped base system prompt from `prompts/` and appends the mandatory Pydantic JSON schema."""
     base_prompt = load_prompt(prompt_filename, prompts_dir=prompts_dir)
     schema_json = json.dumps(schema_model.model_json_schema(), indent=2)
-    return f"{base_prompt}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_json}"
+    return (
+        f"{base_prompt}\n\n"
+        "CRITICAL: Return a populated JSON instance object with the actual field values at the top level. "
+        "Do NOT return the JSON Schema definition itself, and do NOT wrap your answer inside a 'properties' key.\n"
+        f"Respond strictly with a valid JSON object matching this schema:\n{schema_json}"
+    )
 
 
 _THINK_TAG_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
+def _unwrap_schema_envelope(parsed: Any) -> Any:
+    """Unwraps 1-element list wrappers or JSON-Schema `'properties'` envelopes if an LLM echoes schema structure."""
+    if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
+        parsed = parsed[0]
+
+    if (
+        isinstance(parsed, dict)
+        and isinstance(parsed.get("properties"), dict)
+        and any(k in parsed for k in ("type", "title", "description", "required", "$defs"))
+        and "protocol_name" not in parsed
+        and "is_cryptographic_protocol" not in parsed
+        and "selected_section_ids" not in parsed
+    ):
+        props = parsed["properties"]
+        unwrapped = {}
+        for k, v in props.items():
+            if isinstance(v, dict) and set(v.keys()).issubset({"type", "description", "title", "items", "default", "value", "const", "anyOf"}):
+                if "value" in v:
+                    unwrapped[k] = v["value"]
+                elif "default" in v and v["default"] is not None:
+                    unwrapped[k] = v["default"]
+                elif "const" in v:
+                    unwrapped[k] = v["const"]
+                else:
+                    unwrapped[k] = v
+            else:
+                unwrapped[k] = v
+        return unwrapped
+
+    return parsed
 
 
 def parse_llm_json(raw_content: Optional[str]) -> Any:
@@ -241,7 +278,7 @@ def parse_llm_json(raw_content: Optional[str]) -> Any:
         cleaned = re.sub(r"\s*```$", "", cleaned).strip()
 
     try:
-        return json.loads(cleaned)
+        return _unwrap_schema_envelope(json.loads(cleaned))
     except Exception:
         # Extract from first '{' to last '}' if surrounded by prose
         first_brace = cleaned.find("{")
@@ -249,7 +286,7 @@ def parse_llm_json(raw_content: Optional[str]) -> Any:
         if first_brace != -1 and last_brace > first_brace:
             candidate = cleaned[first_brace : last_brace + 1]
             try:
-                return json.loads(candidate)
+                return _unwrap_schema_envelope(json.loads(candidate))
             except Exception:
-                return json_repair.loads(candidate)
-        return json_repair.loads(cleaned)
+                return _unwrap_schema_envelope(json_repair.loads(candidate))
+        return _unwrap_schema_envelope(json_repair.loads(cleaned))

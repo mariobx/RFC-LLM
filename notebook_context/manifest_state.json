@@ -4,20 +4,23 @@
     "added": [],
     "deleted": [],
     "modified": [
+      "logs/pipeline_runs.csv",
       "prompts/01_applicability_gate.md",
       "prompts/02_section_router.md",
       "prompts/03_protocol_extraction.md",
-      "prompts/04_schema_self_correction.md",
-      "prompts/05_rag_query_formulation.md",
       "prompts/06_compiler_repair.md",
-      "prompts/07_think_token_synthesizer.md",
+      "src/code_generation/cpsa_scheme_emitter.py",
       "src/document_ingestion/handshake_section_router.py",
       "src/document_ingestion/protocol_applicability_gate.py",
-      "src/generate_think/dspy_think_synthesizer.py",
+      "src/document_ingestion/rfc_toc_parser.py",
+      "src/document_ingestion/verbatim_section_slicer.py",
+      "src/intermediate_representation/protocol_syntax_tree.py",
+      "src/main_pipeline_orchestrator.py",
       "src/prompt_loader.py",
+      "src/rag_retriever_client.py",
       "src/semantic_extraction/constrained_protocol_extractor.py",
-      "src/system_config.py",
-      "src/verification_engine/compiler_diagnostic_repair.py"
+      "src/verification_engine/trajectory_metadata_exporter.py",
+      "tests/test_trajectory_and_hardening.py"
     ]
   },
   "files": {
@@ -101,26 +104,26 @@
     },
     "logs/pipeline_runs.csv": {
       "bundle": "(tier4)",
-      "sha256": "6b057dac819b64c879d991bf9929edc21762f2e00f5007095870e096d90c5c32",
-      "size_bytes": 754,
+      "sha256": "0083913ee4cde317e3e5e3b61371cc35ac5283fc3a9115d748f8845ac8e9aa36",
+      "size_bytes": 132854,
       "status": "summarized"
     },
     "prompts/01_applicability_gate.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "fd35ffbd8a049921fbc9af7d973b823e91914a0a55dd586599b5754ba7334ad6",
-      "size_bytes": 1365,
+      "sha256": "c63a448c849fd8a0919277a0b2e43e0cedaa413064e449b5c47436b1c6f02c67",
+      "size_bytes": 2739,
       "status": "included"
     },
     "prompts/02_section_router.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "e41822700a3aa940142510ededb10f13e24ea0e6016bd1d09423e6c2ca45784e",
-      "size_bytes": 862,
+      "sha256": "6073cacf8e4c1a79c35e2d91be476965f910944f2eab3ed86fb7878424d6373c",
+      "size_bytes": 1641,
       "status": "included"
     },
     "prompts/03_protocol_extraction.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "64c8ff063b2077870465ae78fbfb19eea5f427ee59f92aabb7ea02556633d897",
-      "size_bytes": 8912,
+      "sha256": "7a39ea35c74e7dc73de3f094eb149006043a5b9e35e4a6e645aaf94e4f01aed6",
+      "size_bytes": 11656,
       "status": "included"
     },
     "prompts/04_schema_self_correction.md": {
@@ -137,8 +140,8 @@
     },
     "prompts/06_compiler_repair.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "8ebae5ef633190890a13fea56740bbfee9815a6d5e49988939fee2a74b585048",
-      "size_bytes": 7005,
+      "sha256": "3c2a33b75aadcc8adcef550af0f4769532c2d40ee7897564a79fe40cc90d8b4f",
+      "size_bytes": 9448,
       "status": "included"
     },
     "prompts/07_think_token_synthesizer.md": {
@@ -1247,8 +1250,8 @@
     },
     "src/code_generation/cpsa_scheme_emitter.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "8bfaa6ad2157156e1de3f679a63dcdbbce1fd078c0a2f3c2d7fe0eb66a4d3364",
-      "size_bytes": 2570,
+      "sha256": "295e0a2becb0858646b18e2f9d0e99fa9c4a440bc0a2979714daa9c70a556a50",
+      "size_bytes": 2838,
       "status": "included"
     },
     "src/cost_tracker.py": {
@@ -1265,14 +1268,14 @@
     },
     "src/document_ingestion/handshake_section_router.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "f9a4e40897864a50ef90d2f17c544235de69bf5f4e74757845f3a58d120d3eb3",
-      "size_bytes": 5100,
+      "sha256": "23a4b284b4d4a323060623b823aa55a969bd83eb00f134637e63533a2b1190af",
+      "size_bytes": 5809,
       "status": "included"
     },
     "src/document_ingestion/protocol_applicability_gate.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "8a265756ad20dc6b8628b0d0f6903ad9d7f410f46992c63ab32dc31bf91d4fbd",
-      "size_bytes": 4917,
+      "sha256": "4c450d647a62a6600a632853b6776f2bfb872508bc9a0da4cf862d7db7ee5521",
+      "size_bytes": 5436,
       "status": "included"
     },
     "src/document_ingestion/rfc_header_filter.py": {
@@ -1283,14 +1286,14 @@
     },
     "src/document_ingestion/rfc_toc_parser.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "8171251e7f46d199abb9f71b9cbe2443af99907b9185bf0ce8ea9d0bceb31c5c",
-      "size_bytes": 5295,
+      "sha256": "b3d2e386a414af3be58c844299e6b45ef9bb592ac5574cfacb843448e26b9170",
+      "size_bytes": 5694,
       "status": "included"
     },
     "src/document_ingestion/verbatim_section_slicer.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "4725b54202814fa129c31b4ee7a715ecc9d736a1247df3f991afd57a4a3ce1eb",
-      "size_bytes": 4814,
+      "sha256": "d1d0163243a33f9b14a6a23ec567e1e444bddaf3fb24d5d19719cb796af620b3",
+      "size_bytes": 5683,
       "status": "included"
     },
     "src/generate_think/__init__.py": {
@@ -1337,8 +1340,8 @@
     },
     "src/intermediate_representation/protocol_syntax_tree.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "8837f5c57aab2f6e8b87ab17c301f019203478409c10ac8392ac491fd2ada378",
-      "size_bytes": 33544,
+      "sha256": "9bbce3796776cc812fd50637375917836942d7dcefcb235eaaccb6b7f7b66acc",
+      "size_bytes": 36623,
       "status": "included"
     },
     "src/logging_config.py": {
@@ -1349,8 +1352,8 @@
     },
     "src/main_pipeline_orchestrator.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "b0fda8b293803ade371016be777241e2437cfd05acde7d43587b5eb68e3b25c5",
-      "size_bytes": 48940,
+      "sha256": "b446685a40d8d868504ad1181db6949c92175f4a08a21e9ad6e2ecc9e6a1f356",
+      "size_bytes": 53823,
       "status": "included"
     },
     "src/pipeline.py": {
@@ -1367,14 +1370,14 @@
     },
     "src/prompt_loader.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "1808263b70a58dc5446c16f104be048bf5002b6397cc777bbc4606a01aac95c9",
-      "size_bytes": 11362,
+      "sha256": "667dc17983b9f92caa0d2f4609c3fe52a8bf9ab06403cd67b97bc803ffef7aad",
+      "size_bytes": 13004,
       "status": "included"
     },
     "src/rag_retriever_client.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "ef8c9bcfb011b9d0b395f890ef0298e9b19330ae29189c66cdb685f903480c17",
-      "size_bytes": 48964,
+      "sha256": "89a9564efef302402d23fd34257839cd1e3f5bded2b590848733eda5856914d7",
+      "size_bytes": 49677,
       "status": "included"
     },
     "src/semantic_extraction/__init__.py": {
@@ -1385,8 +1388,8 @@
     },
     "src/semantic_extraction/constrained_protocol_extractor.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "1771fa06b56622f85786fd8ab55096d2046f24f3fb47da18554ae43b0da749a4",
-      "size_bytes": 12899,
+      "sha256": "61484e869de2c430c76782b8db415c6e0abc689a2990e3beb4739d82a56832c4",
+      "size_bytes": 19979,
       "status": "included"
     },
     "src/system_config.py": {
@@ -1427,8 +1430,8 @@
     },
     "src/verification_engine/trajectory_metadata_exporter.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "0ff2a1fed79dac44a699305bb8ff4c81660be78b6e9877453c01efddf57b2a14",
-      "size_bytes": 24323,
+      "sha256": "a65465490ca89bf9fbb229ec4c328693dfdf10df20f31351a2c50f03bd0fd5a1",
+      "size_bytes": 26610,
       "status": "included"
     },
     "src/visualizer/__init__.py": {
@@ -1493,8 +1496,8 @@
     },
     "tests/test_trajectory_and_hardening.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "93a5bab7bd661113ba6a9b5fdd52e1f873a2fb94f53cf45c5da107bebf584aa3",
-      "size_bytes": 9750,
+      "sha256": "94e5047da8088025080ff0b7413adcd45410b8b8198d8f1ae5b849923ef9fd7c",
+      "size_bytes": 22834,
       "status": "included"
     },
     "tests/test_visualizer_and_events.py": {
@@ -1510,15 +1513,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-03 15:36:27 UTC",
+  "generated_at": "2026-11-03 19:25:35 UTC",
   "git": {
     "branch": "main",
-    "commit": "59dd1b43aaa5cb3a3c73e1dac18e771d7be368ee",
-    "subject": "Increase LLM timeout to 1500s and add per-stage max_tokens bounds for local models"
+    "commit": "6e063b78b79fe1976edb09da98b2603c4f07d562",
+    "subject": "Harden Stage 1/2 false-positive gates, TOC/router unwrapping, searcher cache, and shape grading"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "59dd1b43aaa5cb3a3c73e1dac18e771d7be368ee",
-    "subject": "Increase LLM timeout to 1500s and add per-stage max_tokens bounds for local models"
+    "commit": "78190bc800d09f7809d5ad0d64d82773482df8d3",
+    "subject": "Fix vacuous secrecy_proved on 0-listener RFCs and auto-bind skeleton strand variables"
   }
 }

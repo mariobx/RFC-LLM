@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-03 15:36:27 UTC · Git: `main` @ `59dd1b43aaa5` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~193,064*
+*Generated: 2026-11-03 19:25:35 UTC · Git: `main` @ `6e063b78b79f` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~200,508*
 
 ## Table of Contents
 
@@ -59,7 +59,7 @@
 
 ### `prompts/01_applicability_gate.md`
 
-*sha256:`fd35ffbd8a04` · 30 lines · 1.3 KB (~341 tokens) · lang:`markdown`*
+*sha256:`c63a448c849f` · 33 lines · 2.7 KB (~684 tokens) · lang:`markdown`*
 
 ```markdown
 ---
@@ -74,14 +74,17 @@ You are a formal methods expert in cryptographic protocol verification using MIT
 Your task is to analyze an IETF RFC's metadata and Table of Contents to determine if it specifies an interactive cryptographic security protocol.
 
 ELIGIBLE for CPSA:
-- Interactive protocols between two or more principals.
-- Employs cryptographic primitives: keys (symmetric or asymmetric), nonces, digital signatures, hashes, or Diffie-Hellman exponent groups.
+- Self-contained interactive protocols between two or more principals that define their own multi-message cryptographic exchange or handshake in this RFC.
+- Employs cryptographic primitives directly in the protocol flights defined by this document: keys (symmetric or asymmetric), nonces, digital signatures, MACs/hashes, or Diffie-Hellman exponent groups.
 - Focuses on authentication, secrecy, key establishment, or secure channel setup.
 
-INELIGIBLE for CPSA:
-- Network transport or routing protocols with no cryptographic mechanisms.
-- Static data formats, ASN.1 management information bases, XML schemas, or database definitions.
-- Administrative memos, requirements catalogs, problem statements, or surveys without message flows.
+INELIGIBLE for CPSA (Reject with `"is_cryptographic_protocol": false`):
+- Network transport, routing, mobility, or NAT/relay protocols (e.g., TURN/STUN TCP allocations, NEMO basic support, MIPv4 VPN traversal) with no cryptographic handshake defined in this document.
+- Application, conferencing, media, or HTTP-API protocols (e.g., BFCP floor control, HELD location dereference, HTTP SET polling) that merely rely on lower-layer TLS/DTLS/HTTPS/IPsec for transport security without defining their own cryptographic handshake.
+- Link/frame encryption formats or deployment profiles (e.g., radio link frame encryption, IPsec/IKE cipher profiles) that delegate interactive key management to an external specification (such as IKE [RFC2409] or TLS) without specifying the interactive handshake messages in this document.
+- Incremental parameter, flag, PRF/KDF-input tweaks, or declarative HTTP headers (e.g., TCP-AO NAT traversal flags, additional TLS master-secret inputs, HTTP Public Key Pinning headers) that modify local computation or caching without defining an interactive cryptographic exchange.
+- Cleartext password / UI prompt framing protocols (e.g., NNTP `AUTHINFO USER/PASS`, SSH `keyboard-interactive` prompt framing) that define zero cryptographic operations of their own.
+- Static data formats, ASN.1 management information bases, XML schemas, database definitions, administrative memos, requirements catalogs, problem statements, or surveys without self-contained cryptographic message flows.
 
 CRITICAL: Return a populated JSON instance, NOT the schema definition.
 Example output format:
@@ -98,7 +101,7 @@ Example output format:
 
 ### `prompts/02_section_router.md`
 
-*sha256:`e41822700a3a` · 16 lines · 0.8 KB (~215 tokens) · lang:`markdown`*
+*sha256:`6073cacf8e4c` · 23 lines · 1.6 KB (~409 tokens) · lang:`markdown`*
 
 ```markdown
 ---
@@ -110,20 +113,27 @@ max_tokens: 65536
 temperature: 0.0
 ---
 You are a protocol analyst reading an RFC's Table of Contents.
-Your task is to identify the EXACT section numbers that define the cryptographic message exchange or handshake between principals.
+Your task is to identify the EXACT section numbers that define the complete cryptographic message exchange, handshake flights, and cryptographic payload/key/MAC structures between principals.
 
 Guidelines:
-- Choose sections that contain the message sequence, trace flow (such as directional transmissions or sequence ladders), and message payload structures.
-- Do NOT select high-level requirements, introductory terminology, security considerations, or IANA registries.
-- Typically 1 to 3 consecutive or related sections contain the complete exchange.
-- Return ONLY a valid JSON object matching the requested schema.
+- Prefer selecting top-level or parent exchange sections (e.g. `"2"`, `"3"`, `"4"`) rather than cherry-picking 1 or 2 isolated leaf subsections—selecting a parent section automatically includes its introductory ladder diagram plus all nested subsections (`3.1`, `3.2`, etc.).
+- If a multi-party or multi-phase protocol splits its message flows across multiple sections (e.g., `3. Client-AS Communication` and `4. Client-RS Communication`, or `2. Operation` and `4. Packet Types`), include ALL sections that define the exchange flights!
+- ALWAYS include sections that define the cryptographic key derivation, signature/MAC calculation, or encrypted payload structure alongside the message flow sections.
+- Do NOT select introductory terminology, conventions, IANA registries, or acknowledgements.
+
+CRITICAL: Return a populated JSON instance object, NOT the JSON Schema definition and NOT wrapped inside a `"properties"` key.
+Example output format:
+{
+  "selected_section_ids": ["3", "4"],
+  "rationale": "Section 3 defines the Client-to-AS token exchange and Section 4 defines the Client-to-RS nonce and OSCORE setup exchange."
+}
 ```
 
 ---
 
 ### `prompts/03_protocol_extraction.md`
 
-*sha256:`64c8ff063b20` · 95 lines · 8.7 KB (~2,227 tokens) · lang:`markdown`*
+*sha256:`7a39ea35c74e` · 104 lines · 11.4 KB (~2,913 tokens) · lang:`markdown`*
 
 ```markdown
 ---
@@ -138,10 +148,19 @@ You are a formal methods expert in cryptographic protocol specification for MITR
 Your task is to analyze the provided verbatim RFC specification text and extract a complete, mathematically rigorous CPSAProtocolSpecification that is strictly 1-to-1 with the RFC.
 
 ABSOLUTE 1-TO-1 VERBATIM RFC GROUNDING MANDATE (ZERO HALLUCINATION):
+- STAGE 2 FALSE-POSITIVE / UNVERIFIABLE PROTOCOL BAILOUT (`"is_verifiable_protocol": false`):
+  Before extracting any roles, verify that the provided Verbatim RFC Exchange Specification actually defines a self-contained, interactive multi-message cryptographic or authenticated exchange between two or more principals.
+  If the provided RFC excerpt:
+  (a) contains NO interactive message flights (e.g., only terminology/scope, local flag/KDF tweaks like TCP-AO-NAT or TLS master-secret input tweaks, static HTTP response headers like HPKP, `[see PostScript]` figure placeholders, or 1-way link-layer frame bit layouts), OR
+  (b) delegates the entire key exchange / authentication handshake to an external specification (e.g., "use IKE [RFC2409]" or "use TLS [RFC5246]") without defining the interactive cryptographic flights in this excerpt, OR
+  (c) is a plaintext application, conferencing, relay, or UI-prompt protocol (e.g., BFCP floor control, TURN TCP allocations, HELD HTTP GET, HTTP SET polling, NNTP cleartext `AUTHINFO USER/PASS`, or SSH `keyboard-interactive` prompt framing) that defines zero cryptographic operations of its own,
+  then DO NOT invent or force a protocol! Immediately return:
+  `"is_verifiable_protocol": false`, `"ineligibility_reason": "<concise explanation>"`, `"roles": []`, `"skeletons": []`.
 - Every role (`defrole`), message flight (`send`/`recv`), variable (`vars`), and cryptographic operation (`enc`, `hash`, `ltk`, `pubk`, `privk`, `exp`) MUST correspond 1-to-1 to the provided Verbatim RFC Exchange Specification.
 - NEVER invent, assume, or hallucinate roles, message flights, nonces, keys, or secrets that are not explicitly specified in the provided RFC excerpt.
 - NEVER substitute generic textbook terms (do NOT inject `client_random`, `server_random`, or `premaster_secret` unless the RFC is literally TLS). Name every variable after the exact field, attribute, header, or key terminology used in the RFC text, and cite the exact RFC field name in `rfc_field`.
 - If the RFC specifies a 2-message exchange, model 2 messages; if it specifies 4 messages, model 4 messages. Do NOT add or remove protocol flights.
+- MANDATORY CRYPTOGRAPHIC STRUCTURE (NO DEGENERATE PLAINTEXT-ONLY PROTOCOLS): Whenever `"is_verifiable_protocol": true`, your specification MUST model the RFC's cryptographic flights (such as `CertificateVerify`, `Finished`, `ClientKeyExchange`, `Signature`, `MAC`, `HMAC`, `AUTH`, encrypted payloads, or Diffie-Hellman key agreement) using CPSA cryptographic operators (`["enc", ..., ["privk", ...]]`, `["enc", ..., ["pubk", ...]]`, `["enc", ..., ["ltk", ...]]`, `["hash", ...]`, `["exp", ...]`) and declare the corresponding uncompromised keys in `non_originating`. NEVER flatten cryptographic handshake flights into bare plaintext `data` variables—doing so allows the Dolev-Yao adversary to forge every flight by itself in a degenerate 1-strand shape!
 - If the RFC exchange only performs authentication (e.g., via keyed hash/MAC or digital signature) and does NOT transmit or establish a confidential secret or session key, set `primary_secrecy_goals: []` and do NOT create a `deflistener` skeleton. NEVER invent a fake secret variable or place a pre-shared `non-orig` key inside `deflistener`.
 
 CRITICAL MITRE CPSA 4.4.9 MANUAL GROUNDING (Chapters 2, 3, 4, 10 - Tables 10.1 through 10.6):
@@ -201,20 +220,20 @@ Every extracted construct must strictly obey the MITRE CPSA formal syntax:
 
 5. Point-of-View Preskeletons (Chapters 3 & 6):
    - POV Skeleton 1 (Initiator POV - Realized Handshake Shape):
-     * strands: [defstrandmax for initiator role]
+     * strands: [defstrandmax for initiator role, with `variable_bindings` explicitly mapping every role variable `(var -> var)`]
      * non_originating: uncompromised long-term/private keys from the RFC
-     * unique_originating: fresh nonces/tokens generated by initiator in the RFC
+     * unique_originating: ONLY unencrypted fresh nonces (do NOT repeat `unique_originating` atoms already declared in the role's `defrole`, or CPSA will reject encrypted secrets with `uniq-orig <var> not carried`)
      * listeners: [] (STRICTLY EMPTY: never include deflistener in pure POV skeletons, or CPSA cannot realize the bilateral shape)
    - POV Skeleton 2 (Responder POV - Mutual Authentication):
-     * strands: [defstrandmax for responder role]
+     * strands: [defstrandmax for responder role, with `variable_bindings` explicitly mapping every role variable `(var -> var)`]
      * non_originating: uncompromised long-term/private keys from the RFC
-     * unique_originating: fresh nonces/tokens generated by responder in the RFC
+     * unique_originating: [] (rely on the role's `unique_originating` declarations)
      * listeners: [] (STRICTLY EMPTY)
    - Secrecy Skeleton 3 (Confidentiality Proof — ONLY when the RFC establishes/transmits a confidential secret):
-     * strands: [defstrandmax for initiator or responder]
-     * listeners: [the confidential secret established/transmitted in the RFC]
+     * strands: [defstrandmax for the role that originates or holds the secret, with `variable_bindings` mapping every role variable `(var -> var)`]
+     * listeners: [the confidential secret established/transmitted in the RFC] (Yes: in MITRE CPSA, `(deflistener <secret>)` MUST reside inside the same Secrecy `defskeleton` alongside `(defstrandmax <Role> ...)` so that an honest strand originates the secret while CPSA tests whether the adversary can learn it!)
      * non_originating: uncompromised long-term/private keys (must NEVER overlap with `listeners`)
-     * unique_originating: fresh nonces/secrets
+     * unique_originating: [] (rely on the role's `unique_originating` declarations)
 
 6. State-Space Termination & Directional Separation (15s CPSA4 Limit):
    - NEVER give a Request `(enc ...)` / `(hash ...)` and a Response `(enc ...)` / `(hash ...)` the exact same untagged tuple arity and key structure!
@@ -303,7 +322,7 @@ If you are only given a single compiler diagnostic without a TOC map (legacy sin
 
 ### `prompts/06_compiler_repair.md`
 
-*sha256:`8ebae5ef6331` · 60 lines · 6.8 KB (~1,750 tokens) · lang:`markdown`*
+*sha256:`3c2a33b75aad` · 67 lines · 9.2 KB (~2,360 tokens) · lang:`markdown`*
 
 ```markdown
 ---
@@ -322,6 +341,7 @@ Your task is to identify the precise defect causing the compiler or solver failu
 STRICT 1-TO-1 RFC FIDELITY DURING REPAIR (ZERO HALLUCINATION):
 - NEVER invent fictional protocol messages, fake nonces, fake keys, or non-RFC roles to silence a compiler error.
 - NEVER delete real RFC handshake flights or collapse a multi-message RFC exchange into a 1-line stub.
+- NEVER strip out `non_originating` keys, `["enc", ...]` encryption wrappers, or legitimate `deflistener` secrecy skeletons just to silence a `Skeleton not well formed` error! Stripping `non_originating` or `["enc", ...]` allows the Dolev-Yao adversary to forge the entire protocol in a trivial 1-strand shape (`TRIVIAL_SINGLE_STRAND`).
 - Every variable, role, and trace event in your repaired specification MUST remain grounded 1-to-1 in the provided Verbatim RFC Exchange Specification.
 
 Common Diagnostics & Fixes:
@@ -334,7 +354,10 @@ Common Diagnostics & Fixes:
    - Fix: Change key sort to "skey". Add fresh originating terms to "unique_originating". Add known parameters or channels to "inputs".
 3. "Received term cannot be fully destructured":
    - A role receives an encrypted message or hash, but lacks the necessary decryption key or preimage in its "inputs".
-   - Fix: Ensure the role's "inputs" list includes the required key (e.g. held private key or shared secret) to decrypt the incoming payload.
+   - Fix:
+     * If the receiving role is the intended verifier/recipient of the encrypted message or MAC, ensure its `inputs` list includes the required key (e.g., `["ltk", "client_name", "server_name"]` or symmetric `skey` variable) and any public parameters needed to reconstruct a received `["hash", ...]`.
+     * NEVER replace the final verifier's encrypted term or MAC with an unchecked bare `mesg` variable (such as `["recv", "tesla_mac"]` where `tesla_mac` is sort `mesg`), and NEVER model an Authorization Server token to a Resource Server using only public-key encryption `["enc", ..., ["pubk", "rs_name"]]` without an authenticating key `["ltk", "as_name", "rs_name"]` or signature `["privk", "as_name"]`—anyone (including the adversary) knows `["pubk", "rs_name"]` and can forge an unsigned public-key encryption in 1 strand!
+     * If an intermediary role (such as an OAuth/Kerberos `Client`) receives an opaque ticket encrypted under `["ltk", "as_name", "rs_name"]` that the `Client` cannot decrypt and merely forwards to `ResourceServer`, declare `access_token` with sort `mesg` ONLY inside `Client` (`["recv", ["enc", "access_token", "session_key", ["ltk", "client_name", "as_name"]]]` -> `["send", ["cat", "access_token", ...]]`), while `AuthorizationServer` sends and `ResourceServer` receives the full `["enc", ..., ["ltk", "as_name", "rs_name"]]` structure! Never make the entire `AS -> Client` message a bare `mesg` variable.
 4. Preskeleton Architecture & "Skeleton not well formed: non-orig <key> carried":
    - CRITICAL: Never put 'deflistener' inside pure POV skeletons! A listener on an uncompromised secret causes CPSA to abort without displaying the completed bilateral protocol handshake shape.
    - Separate into pure POV skeletons + (only if the RFC establishes/transmits a confidential secret) a Secrecy POV skeleton:
@@ -342,6 +365,9 @@ Common Diagnostics & Fixes:
      * Skeleton 2: Responder / Server POV (defstrandmax responder, listeners: [])
      * Skeleton 3 (ONLY if the RFC transmits/establishes a confidential secret): Secrecy POV (defstrandmax + deflistener for that transmitted secret)
    - If CPSA reports `Skeleton not well formed: non-orig <key> carried`, it means `<key>` is listed in BOTH `non_originating` (or `pen_non_originating`) AND `listeners` (`deflistener <key>`), or `<key>` is transmitted in the clear! A pre-shared/long-term key in `non_originating` can NEVER be placed in `listeners`. Remove `<key>` from `listeners` and `primary_secrecy_goals` (and if the RFC has no other transmitted confidential session key, omit the listener skeleton altogether—never remove `non_originating` from a long-term key!).
+   - If CPSA reports `Skeleton not well formed: a variable in non-orig is not in some trace` or `uniq-orig <var> not carried`:
+     * Every `CPSAStrandInstance` in `strands` MUST bind all role variables in `variable_bindings` (`{"client_identity": "client_identity", ...}`) so skeleton-level `non_originating` keys (`["ltk", "client_identity", "server_identity"]`, `["privk", "client_identity"]`) map to variables that actually appear in the strand's trace!
+     * Do NOT repeat role-level `unique_originating` secrets inside the `defskeleton`'s `unique_originating` list when those secrets are transmitted under encryption—leave `unique_originating` on the `defrole` and set the `defskeleton`'s `unique_originating: []`. NEVER delete `non_originating` or `deflistener` to work around this error!
 5. "Expecting a name" or "Malformed pubk":
    - An asymmetric key constructor like ["pubk", key] or ["privk", key] was passed an asymmetric key variable (sort "akey") instead of a principal identifier (sort "name"), or 2-argument ["pubk", tag, name] had its arguments reversed.
    - Fix: In CPSA, if an asymmetric key variable 'k' is declared with sort "akey", use 'k' and ["invk", 'k'] directly without wrapping in "pubk" or "privk". "pubk" and "privk" only accept variables of sort "name" (or ["pubk", "tag", "name"]).
@@ -5264,11 +5290,12 @@ def serialize_to_cpsa_json_string(spec: CPSAProtocolSpecification) -> str:
 
 ### `src/code_generation/cpsa_scheme_emitter.py`
 
-*sha256:`8bfaa6ad2157` · 63 lines · 2.5 KB (~642 tokens) · lang:`python`*
+*sha256:`295e0a2becb0` · 70 lines · 2.8 KB (~709 tokens) · lang:`python`*
 
 ```python
 """CPSA Scheme S-Expression Emitter using cpsa4json."""
 
+import re
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -5286,6 +5313,12 @@ class CPSAJsonCompilationError(Exception):
     pass
 
 
+def sanitize_protocol_stem(raw_name: str) -> str:
+    """Sanitizes a protocol name or filename prefix into a filesystem-safe `.scm` stem."""
+    sanitized = re.sub(r"[^a-z0-9_-]+", "_", (raw_name or "").lower()).strip("_")
+    return sanitized or "protocol"
+
+
 def emit_cpsa_scheme(
     spec: CPSAProtocolSpecification,
     output_directory: Path,
@@ -5293,7 +5326,7 @@ def emit_cpsa_scheme(
 ) -> Path:
     """Compiles a CPSAProtocolSpecification into a verified MITRE Scheme (.scm) file via cpsa4json."""
     output_directory.mkdir(parents=True, exist_ok=True)
-    stem = filename_prefix or spec.protocol_name.replace(" ", "_").lower()
+    stem = sanitize_protocol_stem(filename_prefix or spec.protocol_name)
     target_scm_path = output_directory / f"{stem}.scm"
 
     logger.info("Emitting CPSA Scheme S-expressions for '%s' to %s", spec.protocol_name, target_scm_path)
@@ -5694,7 +5727,7 @@ __all__ = [
 
 ### `src/document_ingestion/handshake_section_router.py`
 
-*sha256:`f9a4e4089786` · 136 lines · 5.0 KB (~1,275 tokens) · lang:`python`*
+*sha256:`23a4b284b4d4` · 163 lines · 5.7 KB (~1,452 tokens) · lang:`python`*
 
 ```python
 """Handshake Section Router for Navigating RFC Table of Contents.
@@ -5803,43 +5836,70 @@ def route_handshake_sections(
 
 def _heuristic_section_router(toc_entries: List[TOCSectionEntry]) -> List[str]:
     """Deterministic keyword fallback for selecting exchange sections from TOC."""
+    excluded_titles = (
+        "introduction",
+        "terminology",
+        "conventions",
+        "requirements language",
+        "notation",
+        "definitions",
+        "scope",
+        "background",
+        "iana considerations",
+        "security considerations",
+        "references",
+        "normative references",
+        "informative references",
+        "acknowledgements",
+        "acknowledgments",
+    )
+
     exchange_keywords = [
-        "handshake protocol overview",
-        "handshake protocol",
+        "handshake",
         "message exchange",
-        "authentication service",
+        "protocol exchange",
+        "authentication",
+        "key exchange",
+        "key agreement",
+        "protocol overview",
         "protocol description",
+        "protocol operation",
+        "overview of operation",
+        "operation",
+        "communication",
+        "transactions",
+        "packet types",
+        "message format",
     ]
 
-    # First pass: Look for high-priority exact phrase matches
     selected_sections: List[str] = []
     for entry in toc_entries:
-        title_lower = entry.title.lower()
-        if any(keyword in title_lower for keyword in exchange_keywords):
+        title_lower = entry.title.lower().strip()
+        if any(title_lower == ex or title_lower.startswith(ex + " ") for ex in excluded_titles):
+            continue
+        # Prefer top-level or second-level sections matching exchange/crypto keywords
+        if entry.section_id.count(".") <= 1 and any(keyword in title_lower for keyword in exchange_keywords):
             selected_sections.append(entry.section_id)
 
-    # Second pass: If nothing matched, look for "handshake", "exchange", or "operation"
     if not selected_sections:
         for entry in toc_entries:
-            title_lower = entry.title.lower()
-            if any(term in title_lower for term in ["handshake", "exchange", "protocol operation"]):
+            title_lower = entry.title.lower().strip()
+            if any(title_lower == ex or title_lower.startswith(ex + " ") for ex in excluded_titles):
+                continue
+            if entry.section_id.count(".") == 0 and entry.section_id not in ("1",):
                 selected_sections.append(entry.section_id)
-
-    if not selected_sections and toc_entries:
-        # Final fallback: Pick Section 2 or 3
-        for entry in toc_entries:
-            if entry.section_id in ["2", "3", "3.1"]:
-                selected_sections.append(entry.section_id)
+                if len(selected_sections) >= 3:
+                    break
 
     logger.info("Heuristic router selected sections: %s", selected_sections)
-    return selected_sections or (["1"] if toc_entries else [])
+    return selected_sections or (["2"] if toc_entries else [])
 ```
 
 ---
 
 ### `src/document_ingestion/protocol_applicability_gate.py`
 
-*sha256:`8a265756ad20` · 129 lines · 4.8 KB (~1,229 tokens) · lang:`python`*
+*sha256:`4c450d647a62` · 141 lines · 5.3 KB (~1,359 tokens) · lang:`python`*
 
 ```python
 """Protocol Applicability Gate (Tier 1 Gatekeeper).
@@ -5939,6 +5999,18 @@ def evaluate_protocol_applicability(
         report_data = parse_llm_json(raw_content)
 
         report = ProtocolApplicabilityReport.model_validate(report_data)
+
+        if report.is_cryptographic_protocol and (
+            not report.has_keys_or_nonces or len(report.participating_principals) < 2
+        ):
+            logger.info(
+                "Tier 1 REJECT (Incomplete Crypto/Principals): %s had is_cryptographic_protocol=True "
+                "but has_keys_or_nonces=%s, principals=%s",
+                rfc_id,
+                report.has_keys_or_nonces,
+                report.participating_principals,
+            )
+            report.is_cryptographic_protocol = False
 
         if report.is_cryptographic_protocol:
             logger.info(
@@ -6156,7 +6228,7 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
 
 ### `src/document_ingestion/rfc_toc_parser.py`
 
-*sha256:`8171251e7f46` · 116 lines · 5.2 KB (~1,323 tokens) · lang:`python`*
+*sha256:`b3d2e386a414` · 125 lines · 5.6 KB (~1,423 tokens) · lang:`python`*
 
 ```python
 """RFC Table of Contents (TOC) Parser."""
@@ -6219,8 +6291,8 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
             # If we hit the actual start of Section 1 at column 0, TOC has ended
             if re.match(r"^1\.?\s+[A-Z]", line):
                 break
-            # Or if we hit 400 lines without stopping
-            if len(entries) > 150:
+            # Or if we hit 500 entries without stopping
+            if len(entries) > 500:
                 break
 
             match = TOC_LINE_PATTERN.match(line)
@@ -6254,8 +6326,17 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
                 dots_match = re.search(r"^(.*?)(?:\s*(?:\.{2,}|(?:\.\s+){2,})\s*([0-9]+))?$", stripped_line)
                 if dots_match:
                     sub_title = dots_match.group(1).strip()
-                    # Do not append if sub_title looks like a new unnumbered section or noise
-                    if sub_title and not re.search(r"(Normative References|Informative References|Author's Address|Acknowledgments)", sub_title, re.IGNORECASE):
+                    # Do not append if sub_title looks like a new unnumbered back-matter section
+                    if re.search(
+                        r"^(Security Considerations|IANA Considerations|References|Normative References|"
+                        r"Informative References|Acknowledg(?:e)?ments|(?:Author|Editor|Chair)[s']*\s*Address(?:es)?|"
+                        r"Full Copyright Statement|Intellectual Property|Appendix\b)",
+                        sub_title,
+                        re.IGNORECASE,
+                    ):
+                        current_entry = None
+                        continue
+                    if sub_title:
                         current_entry.title += f" {sub_title}"
                     if dots_match.group(2) and current_entry.page_number is None:
                         current_entry.page_number = int(dots_match.group(2))
@@ -6281,7 +6362,7 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
 
 ### `src/document_ingestion/verbatim_section_slicer.py`
 
-*sha256:`4725b5420281` · 124 lines · 4.7 KB (~1,203 tokens) · lang:`python`*
+*sha256:`d1d0163243a3` · 137 lines · 5.5 KB (~1,420 tokens) · lang:`python`*
 
 ```python
 """Verbatim RFC Section Boundary Slicer."""
@@ -6354,14 +6435,27 @@ def slice_verbatim_sections(
 
     # Step 1: Skip past the Table of Contents to avoid matching TOC entries as section starts
     toc_end_idx = 100
-    for idx, line in enumerate(lines[:350]):
-        if re.match(r"^1\.?\s+[A-Z]", line):
+    for idx, line in enumerate(lines[:800]):
+        if re.match(r"^1(?:\.0)?\.?\s+[A-Z]", line):
             toc_end_idx = idx
             break
 
     # Step 2: Resolve [start, end) line intervals for each requested section
     intervals: List[Tuple[int, int]] = []
+    seen_parent_preambles = set()
     for sec_id in target_section_ids:
+        # If a first subsection (e.g. "3.1") is requested without its parent ("3"),
+        # also include the parent section's introductory preamble ("3" -> "3.1")
+        if sec_id.endswith(".1") and sec_id.count(".") == 1:
+            parent_id = sec_id.split(".")[0]
+            if parent_id not in target_section_ids and parent_id not in seen_parent_preambles:
+                seen_parent_preambles.add(parent_id)
+                p_start = _find_section_start(lines, parent_id, search_from_line=toc_end_idx)
+                if p_start is not None:
+                    first_sub = _find_section_start(lines, f"{parent_id}.1", search_from_line=p_start + 1)
+                    if first_sub is not None and first_sub > p_start and (first_sub - p_start) <= 120:
+                        intervals.append((p_start, first_sub))
+
         start_idx = _find_section_start(lines, sec_id, search_from_line=toc_end_idx)
         if start_idx is None:
             start_idx = _find_section_start(lines, sec_id, search_from_line=0)
@@ -8018,7 +8112,7 @@ def validate_cpsa_term_syntax(
 
 ### `src/intermediate_representation/protocol_syntax_tree.py`
 
-*sha256:`8837f5c57aab` · 773 lines · 32.8 KB (~8,385 tokens) · lang:`python`*
+*sha256:`9bbce3796776` · 835 lines · 35.8 KB (~9,155 tokens) · lang:`python`*
 
 ```python
 """Strongly-Typed Intermediate Representation (AST) for MITRE CPSA 4.4.9 Protocols.
@@ -8667,11 +8761,27 @@ class CPSAProtocolSpecification(BaseModel):
     """Complete protocol specification and verification suite (defprotocol + defskeletons, Table 10.1)."""
 
     protocol_name: str = Field(..., description="Unique protocol identifier")
+    is_verifiable_protocol: bool = Field(
+        default=True,
+        description=(
+            "True if the provided RFC excerpt specifies an interactive multi-message cryptographic or "
+            "authenticated exchange that can be modeled in CPSA; False if this RFC is a false positive "
+            "(e.g., no message flights, delegates key exchange to an external RFC, only defines packet/frame "
+            "formats or local flags, or is a plaintext application protocol)."
+        ),
+    )
+    ineligibility_reason: Optional[str] = Field(
+        default=None,
+        description="If is_verifiable_protocol is False, concise explanation of why the RFC excerpt cannot be modeled as an interactive cryptographic protocol.",
+    )
     message_algebra: CPSAMessageAlgebra = Field(
         default="basic",
         description="CPSA message algebra selection: basic or diffie-hellman",
     )
-    roles: List[CPSAProtocolRole] = Field(..., description="Protocol participant role specifications")
+    roles: List[CPSAProtocolRole] = Field(
+        default_factory=list,
+        description="Protocol participant role specifications (empty ONLY when is_verifiable_protocol is False)",
+    )
     primary_secrecy_goals: List[CPSATerm] = Field(
         default_factory=list,
         description=(
@@ -8692,6 +8802,37 @@ class CPSAProtocolSpecification(BaseModel):
         ),
     )
 
+    def has_cryptographic_primitives(self) -> bool:
+        """Returns True if the specification uses at least one CPSA cryptographic operator, key sort, or secure channel."""
+        crypto_ops = {"enc", "hash", "ltk", "pubk", "privk", "invk", "bltk", "exp", "gen", "mul", "rec"}
+        crypto_sorts = {"skey", "akey", "rndx", "expt", "base"}
+
+        def _term_has_crypto(term: Any) -> bool:
+            if isinstance(term, list) and term:
+                if isinstance(term[0], str) and term[0] in crypto_ops:
+                    return True
+                return any(_term_has_crypto(sub) for sub in term[1:])
+            return False
+
+        for role in self.roles:
+            if role.confidential_channels or role.authenticated_channels:
+                return True
+            if role.non_originating or role.pen_non_originating or role.unique_generated:
+                return True
+            for v in role.variables:
+                if v.sort.value in crypto_sorts:
+                    return True
+            for ev in role.trace:
+                if _term_has_crypto(ev.message_term):
+                    return True
+            for t in role.inputs + role.outputs + role.unique_originating:
+                if _term_has_crypto(t):
+                    return True
+        for skel in self.skeletons:
+            if skel.non_originating or skel.pen_non_originating or skel.unique_generated:
+                return True
+        return False
+
     @model_validator(mode="before")
     @classmethod
     def forbid_scoped_keywords_at_top_level(cls, data: Any) -> Any:
@@ -8707,7 +8848,22 @@ class CPSAProtocolSpecification(BaseModel):
 
     @model_validator(mode="after")
     def validate_algebra_consistency(self) -> "CPSAProtocolSpecification":
-        """Ensures Diffie-Hellman sorts and operators are strictly forbidden under 'basic' message algebra."""
+        """Ensures role traces are non-empty and Diffie-Hellman sorts/operators are forbidden under 'basic' algebra."""
+        if not self.roles:
+            self.is_verifiable_protocol = False
+            if not self.ineligibility_reason:
+                self.ineligibility_reason = (
+                    self.herald_comment
+                    or "No interactive cryptographic protocol roles could be extracted from the provided RFC slice."
+                )
+        else:
+            for role in self.roles:
+                if not role.trace:
+                    raise ValueError(
+                        f"Role '{role.role_name}' has an empty trace: []. Every CPSA defrole must contain at least "
+                        "one send/recv trace event (or if this RFC does not specify a message exchange, set "
+                        "is_verifiable_protocol=False and roles=[])."
+                    )
         if self.message_algebra == "basic":
             for term in self.primary_secrecy_goals:
                 validate_cpsa_term_syntax(
@@ -9201,7 +9357,7 @@ class PipelineMetricsCSVLogger:
 
 ### `src/main_pipeline_orchestrator.py`
 
-*sha256:`b0fda8b29380` · 1081 lines · 47.8 KB (~12,235 tokens) · lang:`python`*
+*sha256:`b446685a40d8` · 1188 lines · 52.6 KB (~13,455 tokens) · lang:`python`*
 
 ```python
 """Main Pipeline Orchestrator for RFC-to-CPSA Synthesis.
@@ -9300,6 +9456,20 @@ def _read_scm_safe(scm_path: Optional[Path]) -> Optional[str]:
     return None
 
 
+def _compute_ast_hash(spec: CPSAProtocolSpecification) -> str:
+    """Computes a canonical SHA-256 hash of a protocol AST excluding cosmetic prose fields
+    (`herald_comment`, `ineligibility_reason`, `description`, `comment`) so text variations
+    across repair passes never mask an AST cycle.
+    """
+    payload = spec.model_dump(exclude={"herald_comment", "ineligibility_reason"})
+    for role in payload.get("roles", []):
+        role.pop("description", None)
+    for skel in payload.get("skeletons", []):
+        skel.pop("description", None)
+        skel.pop("comment", None)
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
+
+
 def _run_roletran_self_healing_loop(
     protocol_ast: CPSAProtocolSpecification,
     scm_path: Path,
@@ -9333,10 +9503,11 @@ def _run_roletran_self_healing_loop(
     prev_roletran_diag: Optional[str] = None
     max_attempts = SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS
     repair_attempts_log: List[dict] = []
+    stable_stem = scm_path.stem
 
     while not roletran_result.is_executable and attempt < max_attempts:
         attempt += 1
-        ast_hash = hashlib.sha256(protocol_ast.model_dump_json().encode()).hexdigest()
+        ast_hash = _compute_ast_hash(protocol_ast)
         cycle_detected = ast_hash in seen_roletran_hashes
         seen_roletran_hashes.add(ast_hash)
 
@@ -9383,7 +9554,7 @@ def _run_roletran_self_healing_loop(
                 cycle_detected=cycle_detected,
                 use_agentic_searcher=use_searcher,
             )
-            scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
+            scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir, filename_prefix=stable_stem)
             GLOBAL_EVENT_BUS.emit(
                 "stage_completed",
                 stage=3,
@@ -9483,8 +9654,12 @@ def _run_mitre_solver_self_healing_loop(
     last_build_error: Optional[str] = None
     prev_solver_diag: Optional[str] = None
     seen_solver_hashes = set()
-    max_attempts = SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS
+    # If Stage 5 already exhausted its full repair budget (`not roletran_result.is_executable`),
+    # try `execute_mitre_make_build` once on `build_attempt == 0` (since `cpsa4` is more permissive
+    # than `cpsa4roletran`), and do not run another 10 redundant LLM repair attempts if `cpsa4` also fails.
+    max_attempts = SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS if roletran_result.is_executable else 0
     solver_attempts_log: List[dict] = []
+    stable_stem = scm_path.stem
 
     while build_attempt <= max_attempts:
         try:
@@ -9511,7 +9686,7 @@ def _run_mitre_solver_self_healing_loop(
             last_build_error = str(build_exc)
             if build_attempt < max_attempts:
                 build_attempt += 1
-                ast_hash = hashlib.sha256(protocol_ast.model_dump_json().encode()).hexdigest()
+                ast_hash = _compute_ast_hash(protocol_ast)
                 cycle_detected = ast_hash in seen_solver_hashes
                 seen_solver_hashes.add(ast_hash)
 
@@ -9565,7 +9740,7 @@ def _run_mitre_solver_self_healing_loop(
                         cycle_detected=cycle_detected,
                         use_agentic_searcher=use_searcher,
                     )
-                    scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
+                    scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir, filename_prefix=stable_stem)
                     GLOBAL_EVENT_BUS.emit(
                         "stage_completed",
                         stage=3,
@@ -9989,6 +10164,94 @@ def run_rfc_translation_pipeline(
         )
 
     # -------------------------------------------------------------------------
+    # STAGE 2b: Verbatim Slice Verification Gate (False-Positive Bailout)
+    # -------------------------------------------------------------------------
+    if (
+        not protocol_ast.is_verifiable_protocol
+        or not protocol_ast.roles
+        or not protocol_ast.has_cryptographic_primitives()
+    ):
+        elapsed = time.time() - start_time
+        ineligible_reason = (
+            protocol_ast.ineligibility_reason
+            or "Stage 2 Verbatim Slice Gate: RFC slice contains no verifiable cryptographic message exchange."
+        )
+        logger.warning(
+            "Stage 2 Verbatim Slice Gate rejected '%s' (%s) with 0 repair loops: %s",
+            rfc_number_str,
+            final_protocol_name,
+            ineligible_reason,
+        )
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+        extraction_meta = constrained_protocol_extractor.LAST_EXTRACTION_METADATA
+        schema_repairs_stage2 = 1 if extraction_meta.get("schema_self_correction_triggered") else 0
+        csv_recorder.log_run(
+            rfc_id=rfc_id,
+            is_eligible=False,
+            status="INELIGIBLE",
+            quality_tier="INELIGIBLE",
+            rejection_gate="Stage 2 Verbatim Slice Gate",
+            protocol_name=final_protocol_name,
+            selected_sections=target_sections,
+            sliced_lines_count=slice_lines_count,
+            schema_repairs=schema_repairs_stage2,
+            total_repairs=schema_repairs_stage2,
+            total_completion_steps=1 + schema_repairs_stage2,
+            duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            error_message=ineligible_reason,
+        )
+        update_run_metadata_index(
+            run_root_dir=effective_run_root,
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            rfc_dir=target_output_dir,
+            scm_path=None,
+            trajectory_json_path=None,
+            quality_tier="INELIGIBLE",
+            is_eligible=False,
+            build_successful=False,
+            error_message=ineligible_reason,
+            tab_index=tab_index,
+            rejection_gate="Stage 2 Verbatim Slice Gate",
+            duration_seconds=elapsed,
+        )
+        GLOBAL_EVENT_BUS.register_filtered_rfc(
+            rfc_id=rfc_number_str,
+            title=final_protocol_name,
+            gate="Stage 2 Verbatim Slice Gate",
+            reason=ineligible_reason,
+            duration_seconds=elapsed,
+        )
+        GLOBAL_EVENT_BUS.update_accepted_tab(
+            tab_index,
+            status="INELIGIBLE",
+            quality_tier="INELIGIBLE",
+            duration_seconds=round(elapsed, 2),
+            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+            cost_telemetry=rfc_cost_summary,
+            error_message=ineligible_reason,
+        )
+        GLOBAL_EVENT_BUS.emit("stage_failed", stage=2, reason=ineligible_reason)
+        logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix="Stage 2 Filtered RFC Cost"))
+        return PipelineExecutionSummary(
+            rfc_id=rfc_id,
+            protocol_name=final_protocol_name,
+            is_eligible=False,
+            selected_sections=target_sections,
+            sliced_lines_count=slice_lines_count,
+            quality_tier="INELIGIBLE",
+            duration_seconds=elapsed,
+            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+            cost_telemetry=rfc_cost_summary,
+            error_message=ineligible_reason,
+        )
+
+    # -------------------------------------------------------------------------
     # STAGE 3: CPSA4json -> scm
     # -------------------------------------------------------------------------
     GLOBAL_EVENT_BUS.emit(
@@ -10073,7 +10336,7 @@ def run_rfc_translation_pipeline(
         all_povs_multi_strand = qa.get("all_participant_povs_multi_strand")
         secrecy_proved = qa.get("all_secrecy_listeners_unrealized")
         explored_skeletons_count = int(
-            traj_data.get("stage6_cpsa_solver_verification", {})
+            traj_data.get("stage6_cpsa4_solver", {})
             .get("exploration_telemetry_from_txt", {})
             .get("total_explored_labels", 0)
         )
@@ -11359,7 +11622,7 @@ GLOBAL_EVENT_BUS = PipelineEventBus()
 
 ### `src/prompt_loader.py`
 
-*sha256:`1808263b70a5` · 255 lines · 11.1 KB (~2,840 tokens) · lang:`python`*
+*sha256:`667dc17983b9` · 292 lines · 12.7 KB (~3,251 tokens) · lang:`python`*
 
 ````python
 """Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LLM (prompts/ directory).
@@ -11574,10 +11837,47 @@ def build_schema_system_prompt(
     """Loads a stripped base system prompt from `prompts/` and appends the mandatory Pydantic JSON schema."""
     base_prompt = load_prompt(prompt_filename, prompts_dir=prompts_dir)
     schema_json = json.dumps(schema_model.model_json_schema(), indent=2)
-    return f"{base_prompt}\n\nRespond strictly with a valid JSON object matching this schema:\n{schema_json}"
+    return (
+        f"{base_prompt}\n\n"
+        "CRITICAL: Return a populated JSON instance object with the actual field values at the top level. "
+        "Do NOT return the JSON Schema definition itself, and do NOT wrap your answer inside a 'properties' key.\n"
+        f"Respond strictly with a valid JSON object matching this schema:\n{schema_json}"
+    )
 
 
 _THINK_TAG_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
+def _unwrap_schema_envelope(parsed: Any) -> Any:
+    """Unwraps 1-element list wrappers or JSON-Schema `'properties'` envelopes if an LLM echoes schema structure."""
+    if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
+        parsed = parsed[0]
+
+    if (
+        isinstance(parsed, dict)
+        and isinstance(parsed.get("properties"), dict)
+        and any(k in parsed for k in ("type", "title", "description", "required", "$defs"))
+        and "protocol_name" not in parsed
+        and "is_cryptographic_protocol" not in parsed
+        and "selected_section_ids" not in parsed
+    ):
+        props = parsed["properties"]
+        unwrapped = {}
+        for k, v in props.items():
+            if isinstance(v, dict) and set(v.keys()).issubset({"type", "description", "title", "items", "default", "value", "const", "anyOf"}):
+                if "value" in v:
+                    unwrapped[k] = v["value"]
+                elif "default" in v and v["default"] is not None:
+                    unwrapped[k] = v["default"]
+                elif "const" in v:
+                    unwrapped[k] = v["const"]
+                else:
+                    unwrapped[k] = v
+            else:
+                unwrapped[k] = v
+        return unwrapped
+
+    return parsed
 
 
 def parse_llm_json(raw_content: Optional[str]) -> Any:
@@ -11605,7 +11905,7 @@ def parse_llm_json(raw_content: Optional[str]) -> Any:
         cleaned = re.sub(r"\s*```$", "", cleaned).strip()
 
     try:
-        return json.loads(cleaned)
+        return _unwrap_schema_envelope(json.loads(cleaned))
     except Exception:
         # Extract from first '{' to last '}' if surrounded by prose
         first_brace = cleaned.find("{")
@@ -11613,17 +11913,17 @@ def parse_llm_json(raw_content: Optional[str]) -> Any:
         if first_brace != -1 and last_brace > first_brace:
             candidate = cleaned[first_brace : last_brace + 1]
             try:
-                return json.loads(candidate)
+                return _unwrap_schema_envelope(json.loads(candidate))
             except Exception:
-                return json_repair.loads(candidate)
-        return json_repair.loads(cleaned)
+                return _unwrap_schema_envelope(json_repair.loads(candidate))
+        return _unwrap_schema_envelope(json_repair.loads(cleaned))
 ````
 
 ---
 
 ### `src/rag_retriever_client.py`
 
-*sha256:`ef8c9bcfb011` · 1097 lines · 47.8 KB (~12,240 tokens) · lang:`python`*
+*sha256:`89a9564efef3` · 1109 lines · 48.5 KB (~12,418 tokens) · lang:`python`*
 
 ```python
 """CPSA 4.4.9 Knowledge Base Indexer, `TOC.md` Flag Manager, and Agentic Searcher Client.
@@ -11648,6 +11948,7 @@ from __future__ import annotations
 
 from collections import Counter
 import datetime as dt
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -12373,8 +12674,8 @@ def retrieve_cpsa_manual_guidance(
 
 def _summarize_failing_ast_for_searcher(failing_spec: Any) -> str:
     """Produces a compact structural summary of the failing `CPSAProtocolSpecification`
-    so the Searcher LLM can inspect role variables, sorts, inputs/outputs/origination,
-    and skeleton declarations without 10KB of raw JSON noise.
+    so the Searcher LLM can inspect role variables, sorts, trace events (`send`/`recv`),
+    inputs/outputs/origination, and skeleton declarations without raw JSON noise.
     """
     try:
         data = failing_spec.model_dump() if hasattr(failing_spec, "model_dump") else dict(failing_spec)
@@ -12383,17 +12684,26 @@ def _summarize_failing_ast_for_searcher(failing_spec: Any) -> str:
         ]
         for r in data.get("roles", []):
             vars_str = ", ".join(f"{v['name']}:{v['sort']}" for v in r.get("variables", []))
+            trace_events = []
+            for ev in r.get("trace", []):
+                direction = ev.get("direction", "?")
+                ch = ev.get("channel")
+                msg_str = json.dumps(ev.get("message_term"))
+                if len(msg_str) > 120:
+                    msg_str = msg_str[:117] + "..."
+                trace_events.append(f"({direction}{f' {ch}' if ch else ''} {msg_str})")
             lines.append(
                 f"  Role '{r.get('role_name')}': vars=[{vars_str}] | "
-                f"inputs={r.get('inputs', [])} | outputs={r.get('outputs', [])} | "
-                f"uniq_orig={r.get('unique_originating', [])} | trace_len={len(r.get('trace', []))}"
+                f"roletran_inputs={r.get('inputs', [])} | procedural_outputs={r.get('outputs', [])} | "
+                f"uniq_orig={r.get('unique_originating', [])} | uniq_gen={r.get('unique_generated', [])} | "
+                f"non_orig={r.get('non_originating', [])} | trace=[{'; '.join(trace_events)}]"
             )
         for idx, sk in enumerate(data.get("skeletons", []), 1):
             strands_str = ", ".join(s.get("role_name", "?") for s in sk.get("strands", []))
             lines.append(
                 f"  Skeleton #{idx}: strands=[{strands_str}] | listeners={sk.get('listeners', [])} | "
                 f"non_orig={sk.get('non_originating', [])} | uniq_orig={sk.get('unique_originating', [])} | "
-                f"uniq_gen={sk.get('unique_generated', [])}"
+                f"uniq_gen={sk.get('unique_generated', [])} | facts={sk.get('facts', [])}"
             )
         return "\n".join(lines)
     except Exception:
@@ -12423,8 +12733,11 @@ def run_agentic_cpsa_searcher(
     if not kb:
         return "Review standard MITRE CPSA 4.4.9 executability and preskeleton assumption rules."
 
-    # Normalize error signature for caching across non-cycling attempts
-    norm_sig = f"{failure_stage}:{re.sub(r'[0-9]+', '#', error_diagnostic[:220])}"
+    ast_summary = _summarize_failing_ast_for_searcher(failing_spec) if failing_spec is not None else ""
+    ast_hash = hashlib.sha256(ast_summary.encode("utf-8")).hexdigest()[:16]
+
+    # Normalize error signature AND include AST hash so AST-specific diagnoses never bleed across RFCs
+    norm_sig = f"{failure_stage}:{ast_hash}:{re.sub(r'[0-9]+', '#', error_diagnostic[:220])}"
     if not cycle_detected and norm_sig in _SEARCH_CACHE:
         cached_query, cached_guidance, cached_ids, cached_diag, cached_trace = _SEARCH_CACHE[norm_sig]
         LAST_SEARCHER_QUERY = cached_query
@@ -12437,7 +12750,6 @@ def run_agentic_cpsa_searcher(
     searcher_model = model or searcher_spec.model
     sampling_temp = searcher_spec.temperature if searcher_spec.temperature is not None else 0.0
 
-    ast_summary = _summarize_failing_ast_for_searcher(failing_spec) if failing_spec is not None else ""
     algebra_hint = getattr(failing_spec, "message_algebra", "basic") if failing_spec is not None else "basic"
 
     collected_sections: Dict[str, Dict[str, Any]] = {}
@@ -12749,7 +13061,7 @@ __all__ = [
 
 ### `src/semantic_extraction/constrained_protocol_extractor.py`
 
-*sha256:`1771fa06b566` · 312 lines · 12.6 KB (~3,224 tokens) · lang:`python`*
+*sha256:`61484e869de2` · 443 lines · 19.5 KB (~4,993 tokens) · lang:`python`*
 
 ```python
 """Constrained Protocol Semantic Extractor with RAG Grounding.
@@ -12928,6 +13240,74 @@ def extract_protocol_specification(
             logger.error("Self-healing correction failed: %s. Raising validation error.", retry_error)
             raise validation_error from retry_error
 
+    # Stage 2 Cryptographic Primitive Gate: if the LLM extracted roles with zero CPSA cryptographic
+    # primitives (e.g., cleartext messages or bare variables), give it 1 self-correction pass to either
+    # bail out with `is_verifiable_protocol=False` or model the RFC's actual cryptographic operations.
+    if (
+        specification.is_verifiable_protocol
+        and specification.roles
+        and not specification.has_cryptographic_primitives()
+    ):
+        crypto_error = (
+            "Extracted specification contains zero CPSA cryptographic operators (`enc`, `hash`, `ltk`, `pubk`, "
+            "`privk`, `invk`, `akey`, `skey`, `exp`, `gen`) across all role traces and assumptions. "
+            "Either (a) the Verbatim RFC Exchange Specification defines a cleartext, transport-delegated, or "
+            "non-cryptographic exchange — in which case you MUST set `\"is_verifiable_protocol\": false`, "
+            "populate `\"ineligibility_reason\"`, and set `\"roles\": []` and `\"skeletons\": []`; OR "
+            "(b) you omitted the RFC's cryptographic operations — in which case you MUST model the RFC's "
+            "encryption, MAC/PRF (`hash`), signature (`enc` with `privk`), or Diffie-Hellman (`exp`/`gen`) "
+            "operations explicitly in the role traces."
+        )
+        LAST_EXTRACTION_METADATA["schema_self_correction_triggered"] = True
+        LAST_EXTRACTION_METADATA["schema_validation_error"] = crypto_error
+        logger.warning(
+            "Stage 2 extracted protocol '%s' has zero cryptographic primitives. Triggering 1-shot verification gate...",
+            protocol_name,
+        )
+        corr_spec = load_prompt_spec(PROMPT_SCHEMA_SELF_CORRECTION)
+        corr_model = model or corr_spec.model
+        corr_temp = corr_spec.temperature if corr_spec.temperature is not None else 0.0
+        corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            corr_model,
+            temperature=corr_temp,
+            max_tokens=corr_spec.max_tokens,
+            json_mode=True,
+        )
+        try:
+            correction_response = litellm.completion(
+                **corr_kwargs,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                    {"role": "assistant", "content": specification.model_dump_json()},
+                    {"role": "user", "content": crypto_error},
+                ],
+                timeout=corr_spec.timeout,
+                num_retries=0,
+            )
+            from src.cost_tracker import GLOBAL_COST_TRACKER
+            GLOBAL_COST_TRACKER.record_llm_call(correction_response, role="extraction", model_name=corr_model, stage=2)
+            corrected_content = correction_response.choices[0].message.content
+            corrected_data = parse_llm_json(corrected_content)
+            specification = CPSAProtocolSpecification.model_validate(corrected_data)
+        except Exception as exc:
+            logger.warning("Cryptographic primitive self-correction call failed (%s); marking unverifiable.", exc)
+
+        if specification.is_verifiable_protocol and not specification.has_cryptographic_primitives():
+            specification.is_verifiable_protocol = False
+            specification.ineligibility_reason = (
+                specification.ineligibility_reason
+                or "Extracted specification contains zero cryptographic primitives (cleartext or transport-delegated protocol)."
+            )
+
+    if not specification.is_verifiable_protocol or not specification.roles:
+        logger.info(
+            "Stage 2 determined '%s' is not a verifiable cryptographic protocol: %s",
+            protocol_name,
+            specification.ineligibility_reason,
+        )
+        return specification
+
     specification = ensure_three_point_of_view_skeletons(specification)
 
     logger.info(
@@ -12941,11 +13321,11 @@ def extract_protocol_specification(
 
 def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPSAProtocolSpecification:
     """Guarantees the standard MITRE CPSA 3-skeleton architecture:
-    1. Dedicated pure POV preskeleton for each communicating role with defstrandmax and NO listeners
-       (enabling CPSA to compute minimal realized bilateral handshake shapes).
+    1. Dedicated pure POV preskeleton for each communicating role with a single defstrandmax and NO listeners
+       (enabling CPSA to compute minimal realized bilateral handshake shapes without pre-seeded strands).
     2. A distinct secrecy preskeleton containing a deflistener for the primary confidential term.
     """
-    if not spec.roles:
+    if not spec.is_verifiable_protocol or not spec.roles:
         return spec
 
     # Collect existing secrecy listeners and non-originating assumptions
@@ -12989,10 +13369,14 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
         ]
         skel.listeners = valid_listeners
         if not skel.listeners:
-            pure_pov_skeletons.append(skel)
-            for strand in skel.strands:
-                roles_with_pure_pov.add(strand.role_name)
+            if len(skel.strands) == 1:
+                role_name = skel.strands[0].role_name
+                if role_name not in roles_with_pure_pov:
+                    roles_with_pure_pov.add(role_name)
+                    pure_pov_skeletons.append(skel)
         else:
+            if len(skel.strands) > 1:
+                skel.strands = [skel.strands[0]]
             secrecy_skeletons.append(skel)
 
     # Build pure POV skeletons for any roles that lack them
@@ -13063,6 +13447,65 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
             final_skeletons.append(secrecy_skeleton)
 
     spec.skeletons = final_skeletons
+
+    # Ensure every skeleton's strands explicitly bind role variables to skeleton variables
+    # (preventing `Skeleton not well formed: a variable in non-orig is not in some trace`),
+    # strip redundant skeleton-level `uniq-orig` atoms already declared in the strand's `defrole`
+    # (preventing `Skeleton not well formed: uniq-orig <var> not carried` when encrypted under a non-orig key),
+    # and add sort-disjointness `(neq secret other_var)` facts in secrecy skeletons so CPSA cannot
+    # alias a secret `data` variable with a cleartext `data` header/identifier in the same strand.
+    role_map = {r.role_name: r for r in spec.roles}
+    secret_atom_set = {
+        s for s in spec.primary_secrecy_goals if isinstance(s, str)
+    }
+    for skel in spec.skeletons:
+        existing_var_names = {v.name for v in skel.variables}
+        role_level_uniq_orig = set()
+        for strand in skel.strands:
+            matched_role = role_map.get(strand.role_name)
+            if not matched_role:
+                continue
+            for r_var in matched_role.variables:
+                if r_var.name not in existing_var_names:
+                    skel.variables.append(CPSAVariableDeclaration(name=r_var.name, sort=r_var.sort))
+                    existing_var_names.add(r_var.name)
+                if r_var.name not in strand.variable_bindings:
+                    strand.variable_bindings[r_var.name] = r_var.name
+            for uo in matched_role.unique_originating:
+                if isinstance(uo, str):
+                    role_level_uniq_orig.add(uo)
+        if role_level_uniq_orig and skel.unique_originating:
+            skel.unique_originating = [
+                uo for uo in skel.unique_originating
+                if not (isinstance(uo, str) and uo in role_level_uniq_orig)
+            ]
+        if skel.listeners:
+            var_sort_map = {v.name: v.sort for v in skel.variables}
+            existing_facts = {
+                (f[1], f[2])
+                for f in skel.facts
+                if isinstance(f, list) and len(f) == 3 and f[0] == "neq"
+            } | {
+                (f[2], f[1])
+                for f in skel.facts
+                if isinstance(f, list) and len(f) == 3 and f[0] == "neq"
+            }
+            listener_atoms = [l for l in skel.listeners if isinstance(l, str)]
+            for secret_var in listener_atoms:
+                secret_sort = var_sort_map.get(secret_var)
+                if not secret_sort:
+                    continue
+                for v in skel.variables:
+                    if (
+                        v.name != secret_var
+                        and v.sort == secret_sort
+                        and v.name not in secret_atom_set
+                        and v.name not in listener_atoms
+                        and (secret_var, v.name) not in existing_facts
+                    ):
+                        skel.facts.append(["neq", secret_var, v.name])
+                        existing_facts.add((secret_var, v.name))
+
     return spec
 ```
 
@@ -14502,7 +14945,7 @@ def generate_snowball_autopsy_report(
 
 ### `src/verification_engine/trajectory_metadata_exporter.py`
 
-*sha256:`0ff2a1fed79d` · 620 lines · 23.8 KB (~6,080 tokens) · lang:`python`*
+*sha256:`a65465490ca8` · 657 lines · 26.0 KB (~6,652 tokens) · lang:`python`*
 
 ```python
 """Programmatic Trajectory & Formal Verification Metadata Exporter.
@@ -14740,6 +15183,7 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
         if parent is None:
             listener_term = _extract_root_deflistener(block)
             has_listener = listener_term is not None
+            initial_strands = _extract_defstrands(block)
             group_idx = len(preskeleton_groups)
             if lbl is not None:
                 label_to_group_idx[lbl] = group_idx
@@ -14751,11 +15195,14 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
                 "comment": _extract_comment_string(block),
                 "has_deflistener": has_listener,
                 "listener_term": listener_term,
+                "initial_strand_count": len(initial_strands),
                 "realized_shape_labels": [],
                 "realized_shapes_count": 0,
+                "min_strands_in_realized_shape": 0,
                 "max_strands_in_realized_shape": 0,
                 "instantiated_roles_in_shape": [],
                 "is_trivial_single_strand_shape": False,
+                "has_self_reflection_split": False,
                 "goal_satisfied": _extract_goal_satisfaction(block),
                 "verdict": "UNREALIZED",
             }
@@ -14763,6 +15210,7 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
                 strands = _extract_defstrands(block)
                 group["realized_shape_labels"].append(lbl)
                 group["realized_shapes_count"] = 1
+                group["min_strands_in_realized_shape"] = len(strands)
                 group["max_strands_in_realized_shape"] = len(strands)
                 group["instantiated_roles_in_shape"] = strands
             preskeleton_groups.append(group)
@@ -14775,6 +15223,8 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
                 strands = _extract_defstrands(block)
                 group["realized_shape_labels"].append(lbl)
                 group["realized_shapes_count"] += 1
+                if group["min_strands_in_realized_shape"] == 0 or len(strands) < group["min_strands_in_realized_shape"]:
+                    group["min_strands_in_realized_shape"] = len(strands)
                 if len(strands) >= group["max_strands_in_realized_shape"]:
                     group["max_strands_in_realized_shape"] = len(strands)
                     group["instantiated_roles_in_shape"] = strands
@@ -14786,17 +15236,22 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
     for group in preskeleton_groups:
         shapes_cnt = group["realized_shapes_count"]
         total_shapes += shapes_cnt
+        init_strands = group.get("initial_strand_count", 1)
+        min_strands = group.get("min_strands_in_realized_shape", group["max_strands_in_realized_shape"])
         max_strands = group["max_strands_in_realized_shape"]
         if group["skeleton_type"] == "participant_pov":
             if shapes_cnt == 0:
                 group["verdict"] = "DEAD_HANDSHAKE"
                 group["is_trivial_single_strand_shape"] = False
-            elif max_strands >= 2:
+                group["has_self_reflection_split"] = False
+            elif min_strands >= 2 and max_strands > init_strands:
                 group["verdict"] = "AUTHENTICATED_MULTI_STRAND"
                 group["is_trivial_single_strand_shape"] = False
+                group["has_self_reflection_split"] = False
             else:
                 group["verdict"] = "TRIVIAL_SINGLE_STRAND"
                 group["is_trivial_single_strand_shape"] = True
+                group["has_self_reflection_split"] = bool(min_strands == 1 and max_strands >= 2)
         else:
             if shapes_cnt == 0:
                 group["verdict"] = "SECRECY_PROVED_UNREALIZED"
@@ -14841,16 +15296,40 @@ def compute_quality_assessment(
     all_povs_realized = bool(participant_povs) and all(
         o.get("realized_shapes_count", 0) > 0 for o in participant_povs
     )
-    all_povs_multi_strand = all_povs_realized and all(
-        o.get("max_strands_in_realized_shape", 0) >= 2 for o in participant_povs
+    def _is_pov_authenticated(pov: Dict[str, Any]) -> bool:
+        if pov.get("verdict") == "AUTHENTICATED_MULTI_STRAND":
+            return True
+        max_s = pov.get("max_strands_in_realized_shape", 0)
+        min_s = pov.get("min_strands_in_realized_shape", max_s)
+        init_s = pov.get("initial_strand_count", 1)
+        return bool(pov.get("realized_shapes_count", 0) > 0 and min_s >= 2 and max_s > init_s)
+
+    authenticated_pov_count = sum(1 for o in participant_povs if _is_pov_authenticated(o))
+    any_self_reflection_split = any(
+        bool(o.get("has_self_reflection_split"))
+        or (
+            o.get("min_strands_in_realized_shape", o.get("max_strands_in_realized_shape", 0)) == 1
+            and o.get("max_strands_in_realized_shape", 0) >= 2
+        )
+        for o in participant_povs
     )
-    all_listeners_unrealized = all(
+    all_povs_multi_strand = all_povs_realized and (authenticated_pov_count == len(participant_povs))
+    # Support both mutual-auth protocols (all POVs multi-strand) and unilateral server-auth / 3-party KDC
+    # protocols where all relying-party POVs (>= N-1 and >= 1) are strictly multi-strand without any
+    # 1-strand self-reflection split.
+    sufficient_povs_authenticated = (
+        all_povs_realized
+        and not any_self_reflection_split
+        and authenticated_pov_count >= 1
+        and authenticated_pov_count >= max(1, len(participant_povs) - 1)
+    )
+    all_listeners_unrealized = bool(listener_povs) and all(
         o.get("realized_shapes_count", 0) == 0 for o in listener_povs
     )
 
-    if not all_povs_realized:
+    if not all_povs_realized or authenticated_pov_count == 0:
         tier = "BRONZE"
-    elif all_povs_multi_strand and all_listeners_unrealized:
+    elif sufficient_povs_authenticated and all_listeners_unrealized:
         tier = "GOLD"
     else:
         tier = "SILVER"
@@ -14973,11 +15452,12 @@ def write_trajectory_metadata_bundle(
     if shapes_txt_path and shapes_txt_path.exists():
         distilled_shapes_content = shapes_txt_path.read_text(encoding="utf-8", errors="replace")
 
-    stem = (
+    raw_stem = (
         final_scm_path.stem
         if final_scm_path
-        else (final_spec.protocol_name if final_spec else rfc_id).replace(" ", "_").lower()
+        else (final_spec.protocol_name if final_spec else rfc_id)
     )
+    stem = re.sub(r"[^a-z0-9_-]+", "_", (raw_stem or rfc_id).lower()).strip("_") or "protocol"
     trajectory_path = output_dir / f"{stem}_trajectory.json"
 
     from src.cost_tracker import GLOBAL_COST_TRACKER

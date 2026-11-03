@@ -27,7 +27,10 @@ Common Diagnostics & Fixes:
    - Fix: Change key sort to "skey". Add fresh originating terms to "unique_originating". Add known parameters or channels to "inputs".
 3. "Received term cannot be fully destructured":
    - A role receives an encrypted message or hash, but lacks the necessary decryption key or preimage in its "inputs".
-   - Fix: Ensure the role's "inputs" list includes the required key (e.g. held private key or shared secret) to decrypt the incoming payload.
+   - Fix:
+     * If the receiving role is the intended verifier/recipient of the encrypted message or MAC, ensure its `inputs` list includes the required key (e.g., `["ltk", "client_name", "server_name"]` or symmetric `skey` variable) and any public parameters needed to reconstruct a received `["hash", ...]`.
+     * NEVER replace the final verifier's encrypted term or MAC with an unchecked bare `mesg` variable (such as `["recv", "tesla_mac"]` where `tesla_mac` is sort `mesg`), and NEVER model an Authorization Server token to a Resource Server using only public-key encryption `["enc", ..., ["pubk", "rs_name"]]` without an authenticating key `["ltk", "as_name", "rs_name"]` or signature `["privk", "as_name"]`—anyone (including the adversary) knows `["pubk", "rs_name"]` and can forge an unsigned public-key encryption in 1 strand!
+     * If an intermediary role (such as an OAuth/Kerberos `Client`) receives an opaque ticket encrypted under `["ltk", "as_name", "rs_name"]` that the `Client` cannot decrypt and merely forwards to `ResourceServer`, declare `access_token` with sort `mesg` ONLY inside `Client` (`["recv", ["enc", "access_token", "session_key", ["ltk", "client_name", "as_name"]]]` -> `["send", ["cat", "access_token", ...]]`), while `AuthorizationServer` sends and `ResourceServer` receives the full `["enc", ..., ["ltk", "as_name", "rs_name"]]` structure! Never make the entire `AS -> Client` message a bare `mesg` variable.
 4. Preskeleton Architecture & "Skeleton not well formed: non-orig <key> carried":
    - CRITICAL: Never put 'deflistener' inside pure POV skeletons! A listener on an uncompromised secret causes CPSA to abort without displaying the completed bilateral protocol handshake shape.
    - Separate into pure POV skeletons + (only if the RFC establishes/transmits a confidential secret) a Secrecy POV skeleton:

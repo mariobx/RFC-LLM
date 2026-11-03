@@ -245,3 +245,289 @@ def test_visualizer_artifact_endpoint_blocks_path_traversal_and_dotfiles(tmp_pat
         assert "router_model" in models_payload
 
     asyncio.run(_exercise())
+
+
+def test_parse_llm_json_unwraps_schema_properties_and_single_element_lists():
+    """Verify `parse_llm_json` unwraps `{"properties": {...}}` schema-echo envelopes and `[{...}]` wrappers."""
+    from src.prompt_loader import parse_llm_json
+
+    wrapped_schema = json.dumps({
+        "type": "object",
+        "properties": {
+            "selected_sections": ["3.1", "3.2"],
+            "selection_rationale": "Defines the challenge-response exchange.",
+        },
+    })
+    unwrapped = parse_llm_json(wrapped_schema)
+    assert unwrapped["selected_sections"] == ["3.1", "3.2"]
+    assert "selection_rationale" in unwrapped
+
+    list_wrapped = json.dumps([
+        {
+            "selected_sections": ["4"],
+            "selection_rationale": "Main handshake section.",
+        }
+    ])
+    unwrapped_list = parse_llm_json(list_wrapped)
+    assert unwrapped_list["selected_sections"] == ["4"]
+
+
+def test_toc_parser_stops_at_unnumbered_back_matter_and_supports_large_tocs():
+    """Verify TOC parser does not glue unnumbered Security/IANA/References onto the last section title."""
+    from src.document_ingestion.rfc_toc_parser import parse_table_of_contents
+    from src.document_ingestion.handshake_section_router import _heuristic_section_router
+    from src.document_ingestion.verbatim_section_slicer import slice_verbatim_sections
+
+    sample_rfc = (
+        "Table of Contents\n\n"
+        "   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . .  1\n"
+        "   2.  Terminology  . . . . . . . . . . . . . . . . . . . . . . . .  2\n"
+        "   3.  Scope  . . . . . . . . . . . . . . . . . . . . . . . . . . .  3\n"
+        "   4.  Protocol Message Exchange  . . . . . . . . . . . . . . . . .  4\n"
+        "   4.1.  Initial Request  . . . . . . . . . . . . . . . . . . . . .  5\n"
+        "   Security Considerations  . . . . . . . . . . . . . . . . . . . .  8\n"
+        "   IANA Considerations  . . . . . . . . . . . . . . . . . . . . . .  9\n"
+        "   References . . . . . . . . . . . . . . . . . . . . . . . . . . . 10\n"
+        "   Author's Address . . . . . . . . . . . . . . . . . . . . . . . . 11\n\n"
+        "1.  Introduction\n"
+        "Intro text.\n\n"
+        "4.  Protocol Message Exchange\n"
+        "Parent overview ladder diagram: Alice -> Bob.\n\n"
+        "4.1.  Initial Request\n"
+        "Alice sends enc(n, k).\n\n"
+        "5.  IANA Considerations\n"
+    )
+    entries = parse_table_of_contents(sample_rfc)
+    sec_map = {e.section_id: e.title for e in entries}
+    assert sec_map["4.1"] == "Initial Request"
+    assert "Security Considerations" not in sec_map["4.1"]
+    assert "References" not in sec_map["4.1"]
+
+    # Heuristic router must skip Terminology ("2") and Scope ("3") and select "4" / "4.1"
+    routed = _heuristic_section_router(entries)
+    assert "2" not in routed
+    assert "3" not in routed
+    assert "4" in routed or "4.1" in routed
+
+    # Slicing "4.1" without "4" automatically includes the short parent preamble ("4" -> "4.1")
+    sliced = slice_verbatim_sections(sample_rfc, ["4.1"])
+    assert "Parent overview ladder diagram: Alice -> Bob." in sliced
+    assert "Alice sends enc(n, k)." in sliced
+
+
+def test_stage2_bailout_and_cryptographic_primitive_check():
+    """Verify `CPSAProtocolSpecification` supports `is_verifiable_protocol=False` bailout and detects missing crypto."""
+    from src.intermediate_representation.protocol_syntax_tree import (
+        CPSAProtocolRole,
+        CPSAProtocolSpecification,
+        CPSASortEnum,
+        CPSATraceEvent,
+        CPSAVariableDeclaration,
+    )
+
+    bailout_spec = CPSAProtocolSpecification(
+        protocol_name="BFCP",
+        is_verifiable_protocol=False,
+        ineligibility_reason="RFC 4582 defines floor control signaling over TLS with no native cryptographic handshake.",
+        roles=[],
+        skeletons=[],
+    )
+    assert not bailout_spec.is_verifiable_protocol
+    assert not bailout_spec.has_cryptographic_primitives()
+
+    cleartext_spec = CPSAProtocolSpecification(
+        protocol_name="NNTP_AUTHINFO",
+        roles=[
+            CPSAProtocolRole(
+                role_name="client",
+                variables=[
+                    CPSAVariableDeclaration(name="u", sort=CPSASortEnum.TEXT),
+                    CPSAVariableDeclaration(name="p", sort=CPSASortEnum.DATA),
+                ],
+                trace=[CPSATraceEvent(direction="send", message_term=["cat", "u", "p"])],
+            )
+        ],
+    )
+    assert not cleartext_spec.has_cryptographic_primitives()
+
+    crypto_spec = CPSAProtocolSpecification(
+        protocol_name="CHALLENGE_AUTH",
+        roles=[
+            CPSAProtocolRole(
+                role_name="client",
+                variables=[
+                    CPSAVariableDeclaration(name="a", sort=CPSASortEnum.NAME),
+                    CPSAVariableDeclaration(name="b", sort=CPSASortEnum.NAME),
+                    CPSAVariableDeclaration(name="n", sort=CPSASortEnum.DATA),
+                ],
+                trace=[
+                    CPSATraceEvent(
+                        direction="send",
+                        message_term=["enc", "n", ["ltk", "a", "b"]],
+                    )
+                ],
+            )
+        ],
+    )
+    assert crypto_spec.has_cryptographic_primitives()
+
+
+def test_sanitize_protocol_stem_and_ast_hash_ignores_herald_comment():
+    """Verify `/` and parens in `protocol_name` are sanitized (`RFC 2636`) and `_compute_ast_hash` ignores `herald_comment`."""
+    from src.code_generation.cpsa_scheme_emitter import sanitize_protocol_stem
+    from src.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
+    from src.main_pipeline_orchestrator import _compute_ast_hash
+
+    stem = sanitize_protocol_stem("Wireless Device Configuration (OTASP/OTAPA) via ACAP")
+    assert "/" not in stem
+    assert "(" not in stem
+    assert stem == "wireless_device_configuration_otasp_otapa_via_acap"
+
+    spec1 = CPSAProtocolSpecification(
+        protocol_name="TCP_AO_NAT",
+        herald_comment="Attempt 1 comment",
+        roles=[],
+        is_verifiable_protocol=False,
+    )
+    spec2 = CPSAProtocolSpecification(
+        protocol_name="TCP_AO_NAT",
+        herald_comment="Attempt 2 different comment",
+        roles=[],
+        is_verifiable_protocol=False,
+    )
+    assert _compute_ast_hash(spec1) == _compute_ast_hash(spec2)
+
+
+def test_ensure_three_pov_skeletons_replaces_preseeded_multistrand_and_adds_secret_neq():
+    """Verify `ensure_three_point_of_view_skeletons` replaces pre-seeded multi-strand root skeletons (`RFC 7469`)
+    with 1-strand pure POVs and adds `(neq secret other_var)` in secrecy skeletons (`RFC 5197` / `RFC 2138`).
+    """
+    from src.intermediate_representation.protocol_syntax_tree import (
+        CPSAPreskeleton,
+        CPSAProtocolRole,
+        CPSAProtocolSpecification,
+        CPSASortEnum,
+        CPSAStrandInstance,
+        CPSATraceEvent,
+        CPSAVariableDeclaration,
+    )
+    from src.semantic_extraction.constrained_protocol_extractor import (
+        ensure_three_point_of_view_skeletons,
+    )
+
+    spec = CPSAProtocolSpecification(
+        protocol_name="mikey_iba_test",
+        primary_secrecy_goals=["tgk"],
+        roles=[
+            CPSAProtocolRole(
+                role_name="initiator",
+                variables=[
+                    CPSAVariableDeclaration(name="i", sort=CPSASortEnum.NAME),
+                    CPSAVariableDeclaration(name="r", sort=CPSASortEnum.NAME),
+                    CPSAVariableDeclaration(name="hdr", sort=CPSASortEnum.DATA),
+                    CPSAVariableDeclaration(name="tgk", sort=CPSASortEnum.DATA),
+                ],
+                trace=[
+                    CPSATraceEvent(
+                        direction="send",
+                        message_term=["cat", "hdr", ["enc", "tgk", ["ltk", "i", "r"]]],
+                    )
+                ],
+                unique_originating=["tgk"],
+            ),
+            CPSAProtocolRole(
+                role_name="responder",
+                variables=[
+                    CPSAVariableDeclaration(name="i", sort=CPSASortEnum.NAME),
+                    CPSAVariableDeclaration(name="r", sort=CPSASortEnum.NAME),
+                    CPSAVariableDeclaration(name="hdr", sort=CPSASortEnum.DATA),
+                    CPSAVariableDeclaration(name="tgk", sort=CPSASortEnum.DATA),
+                ],
+                trace=[
+                    CPSATraceEvent(
+                        direction="recv",
+                        message_term=["cat", "hdr", ["enc", "tgk", ["ltk", "i", "r"]]],
+                    )
+                ],
+            ),
+        ],
+        skeletons=[
+            # Pre-seeded 2-strand root skeleton (as in RFC 7469)
+            CPSAPreskeleton(
+                protocol_name="mikey_iba_test",
+                strands=[
+                    CPSAStrandInstance(role_name="initiator"),
+                    CPSAStrandInstance(role_name="responder"),
+                ],
+            )
+        ],
+    )
+
+    normalized = ensure_three_point_of_view_skeletons(spec)
+    assert len(normalized.skeletons) == 3
+    # First 2 skeletons are pure 1-strand POVs
+    assert len(normalized.skeletons[0].strands) == 1
+    assert normalized.skeletons[0].strands[0].role_name == "initiator"
+    assert len(normalized.skeletons[1].strands) == 1
+    assert normalized.skeletons[1].strands[0].role_name == "responder"
+    # 3rd skeleton is the secrecy listener with `(neq tgk hdr)` automatically added
+    sec_skel = normalized.skeletons[2]
+    assert sec_skel.listeners == ["tgk"]
+    assert ["neq", "tgk", "hdr"] in sec_skel.facts
+
+
+def test_quality_assessment_catches_self_reflection_and_preseeded_strands(tmp_path: Path):
+    """Verify `analyze_shapes_txt` and `compute_quality_assessment` downgrade:
+    - 1-strand self-reflection splits (`min_strands == 1, max_strands == 2` as in `RFC 5216` / `RFC 6786`) from GOLD to SILVER
+    - Pre-seeded multi-strand root skeletons (`max_strands == initial_strand_count` as in `RFC 7469`) to BRONZE
+    - Pure 1-strand unauthenticated models (`authenticated_pov_count == 0`) to BRONZE
+    while grading true mutual or unilateral server-authenticated KEX (`RFC 5656`) with proved secrecy as GOLD.
+    """
+    from src.verification_engine.trajectory_metadata_exporter import (
+        analyze_shapes_txt,
+        compute_quality_assessment,
+    )
+
+    # 1. Self-reflection split (`RFC 5216` / `RFC 6786`): POV 1 has both a 1-strand shape and a 2-strand shape
+    split_shapes_txt = tmp_path / "split_shapes.txt"
+    split_shapes_txt.write_text(
+        "(defskeleton p (vars (a b name)) (defstrand init 2) (label 0))\n"
+        "(defskeleton p (vars (a name)) (defstrand init 2) (label 1) (parent 0) (shape))\n"
+        "(defskeleton p (vars (a b name)) (defstrand init 2) (defstrand resp 2) (label 2) (parent 0) (shape))\n"
+        "(defskeleton p (vars (a b name)) (defstrand resp 2) (label 3))\n"
+        "(defskeleton p (vars (a b name)) (defstrand resp 2) (defstrand init 2) (label 4) (parent 3) (shape))\n"
+        "(defskeleton p (vars (k data)) (defstrand init 2) (deflistener k) (label 5))\n",
+        encoding="utf-8",
+    )
+    split_analysis = analyze_shapes_txt(split_shapes_txt)
+    assert split_analysis["per_preskeleton_outcomes"][0]["has_self_reflection_split"] is True
+    assert split_analysis["per_preskeleton_outcomes"][0]["verdict"] == "TRIVIAL_SINGLE_STRAND"
+    split_qa = compute_quality_assessment(True, split_analysis, 0, 0)
+    assert split_qa["quality_tier"] == "SILVER"
+
+    # 2. Pre-seeded 2-strand root skeleton (`RFC 7469`) where CPSA added 0 strands
+    preseeded_txt = tmp_path / "preseeded_shapes.txt"
+    preseeded_txt.write_text(
+        "(defskeleton p (vars (a b name)) (defstrand init 1) (defstrand resp 1) (label 0) (shape))\n",
+        encoding="utf-8",
+    )
+    preseeded_analysis = analyze_shapes_txt(preseeded_txt)
+    assert preseeded_analysis["per_preskeleton_outcomes"][0]["verdict"] == "TRIVIAL_SINGLE_STRAND"
+    preseeded_qa = compute_quality_assessment(True, preseeded_analysis, 0, 0)
+    assert preseeded_qa["quality_tier"] == "BRONZE"
+
+    # 3. Unilateral server-authenticated KEX (`RFC 5656` SSH ECDSA KEX):
+    # client POV is strictly 2-strand, server POV is 1-strand (unauthenticated client share), secrecy proved -> GOLD
+    unilateral_txt = tmp_path / "unilateral_shapes.txt"
+    unilateral_txt.write_text(
+        "(defskeleton ssh (vars (s name)) (defstrand client 2) (label 0))\n"
+        "(defskeleton ssh (vars (s name)) (defstrand client 2) (defstrand server 2) (label 1) (parent 0) (shape))\n"
+        "(defskeleton ssh (vars (s name)) (defstrand server 2) (label 2))\n"
+        "(defskeleton ssh (vars (s name)) (defstrand server 2) (label 3) (parent 2) (shape))\n"
+        "(defskeleton ssh (vars (k skey)) (defstrand client 2) (deflistener k) (label 4))\n",
+        encoding="utf-8",
+    )
+    unilateral_analysis = analyze_shapes_txt(unilateral_txt)
+    unilateral_qa = compute_quality_assessment(True, unilateral_analysis, 0, 0)
+    assert unilateral_qa["quality_tier"] == "GOLD"
+

@@ -68,14 +68,27 @@ def slice_verbatim_sections(
 
     # Step 1: Skip past the Table of Contents to avoid matching TOC entries as section starts
     toc_end_idx = 100
-    for idx, line in enumerate(lines[:350]):
-        if re.match(r"^1\.?\s+[A-Z]", line):
+    for idx, line in enumerate(lines[:800]):
+        if re.match(r"^1(?:\.0)?\.?\s+[A-Z]", line):
             toc_end_idx = idx
             break
 
     # Step 2: Resolve [start, end) line intervals for each requested section
     intervals: List[Tuple[int, int]] = []
+    seen_parent_preambles = set()
     for sec_id in target_section_ids:
+        # If a first subsection (e.g. "3.1") is requested without its parent ("3"),
+        # also include the parent section's introductory preamble ("3" -> "3.1")
+        if sec_id.endswith(".1") and sec_id.count(".") == 1:
+            parent_id = sec_id.split(".")[0]
+            if parent_id not in target_section_ids and parent_id not in seen_parent_preambles:
+                seen_parent_preambles.add(parent_id)
+                p_start = _find_section_start(lines, parent_id, search_from_line=toc_end_idx)
+                if p_start is not None:
+                    first_sub = _find_section_start(lines, f"{parent_id}.1", search_from_line=p_start + 1)
+                    if first_sub is not None and first_sub > p_start and (first_sub - p_start) <= 120:
+                        intervals.append((p_start, first_sub))
+
         start_idx = _find_section_start(lines, sec_id, search_from_line=toc_end_idx)
         if start_idx is None:
             start_idx = _find_section_start(lines, sec_id, search_from_line=0)

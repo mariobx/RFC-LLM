@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from collections import Counter
 import datetime as dt
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -745,8 +746,8 @@ def retrieve_cpsa_manual_guidance(
 
 def _summarize_failing_ast_for_searcher(failing_spec: Any) -> str:
     """Produces a compact structural summary of the failing `CPSAProtocolSpecification`
-    so the Searcher LLM can inspect role variables, sorts, inputs/outputs/origination,
-    and skeleton declarations without 10KB of raw JSON noise.
+    so the Searcher LLM can inspect role variables, sorts, trace events (`send`/`recv`),
+    inputs/outputs/origination, and skeleton declarations without raw JSON noise.
     """
     try:
         data = failing_spec.model_dump() if hasattr(failing_spec, "model_dump") else dict(failing_spec)
@@ -755,17 +756,26 @@ def _summarize_failing_ast_for_searcher(failing_spec: Any) -> str:
         ]
         for r in data.get("roles", []):
             vars_str = ", ".join(f"{v['name']}:{v['sort']}" for v in r.get("variables", []))
+            trace_events = []
+            for ev in r.get("trace", []):
+                direction = ev.get("direction", "?")
+                ch = ev.get("channel")
+                msg_str = json.dumps(ev.get("message_term"))
+                if len(msg_str) > 120:
+                    msg_str = msg_str[:117] + "..."
+                trace_events.append(f"({direction}{f' {ch}' if ch else ''} {msg_str})")
             lines.append(
                 f"  Role '{r.get('role_name')}': vars=[{vars_str}] | "
-                f"inputs={r.get('inputs', [])} | outputs={r.get('outputs', [])} | "
-                f"uniq_orig={r.get('unique_originating', [])} | trace_len={len(r.get('trace', []))}"
+                f"roletran_inputs={r.get('inputs', [])} | procedural_outputs={r.get('outputs', [])} | "
+                f"uniq_orig={r.get('unique_originating', [])} | uniq_gen={r.get('unique_generated', [])} | "
+                f"non_orig={r.get('non_originating', [])} | trace=[{'; '.join(trace_events)}]"
             )
         for idx, sk in enumerate(data.get("skeletons", []), 1):
             strands_str = ", ".join(s.get("role_name", "?") for s in sk.get("strands", []))
             lines.append(
                 f"  Skeleton #{idx}: strands=[{strands_str}] | listeners={sk.get('listeners', [])} | "
                 f"non_orig={sk.get('non_originating', [])} | uniq_orig={sk.get('unique_originating', [])} | "
-                f"uniq_gen={sk.get('unique_generated', [])}"
+                f"uniq_gen={sk.get('unique_generated', [])} | facts={sk.get('facts', [])}"
             )
         return "\n".join(lines)
     except Exception:
@@ -795,8 +805,11 @@ def run_agentic_cpsa_searcher(
     if not kb:
         return "Review standard MITRE CPSA 4.4.9 executability and preskeleton assumption rules."
 
-    # Normalize error signature for caching across non-cycling attempts
-    norm_sig = f"{failure_stage}:{re.sub(r'[0-9]+', '#', error_diagnostic[:220])}"
+    ast_summary = _summarize_failing_ast_for_searcher(failing_spec) if failing_spec is not None else ""
+    ast_hash = hashlib.sha256(ast_summary.encode("utf-8")).hexdigest()[:16]
+
+    # Normalize error signature AND include AST hash so AST-specific diagnoses never bleed across RFCs
+    norm_sig = f"{failure_stage}:{ast_hash}:{re.sub(r'[0-9]+', '#', error_diagnostic[:220])}"
     if not cycle_detected and norm_sig in _SEARCH_CACHE:
         cached_query, cached_guidance, cached_ids, cached_diag, cached_trace = _SEARCH_CACHE[norm_sig]
         LAST_SEARCHER_QUERY = cached_query
@@ -809,7 +822,6 @@ def run_agentic_cpsa_searcher(
     searcher_model = model or searcher_spec.model
     sampling_temp = searcher_spec.temperature if searcher_spec.temperature is not None else 0.0
 
-    ast_summary = _summarize_failing_ast_for_searcher(failing_spec) if failing_spec is not None else ""
     algebra_hint = getattr(failing_spec, "message_algebra", "basic") if failing_spec is not None else "basic"
 
     collected_sections: Dict[str, Dict[str, Any]] = {}

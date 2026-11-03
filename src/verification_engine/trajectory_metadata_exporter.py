@@ -233,6 +233,7 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
         if parent is None:
             listener_term = _extract_root_deflistener(block)
             has_listener = listener_term is not None
+            initial_strands = _extract_defstrands(block)
             group_idx = len(preskeleton_groups)
             if lbl is not None:
                 label_to_group_idx[lbl] = group_idx
@@ -244,11 +245,14 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
                 "comment": _extract_comment_string(block),
                 "has_deflistener": has_listener,
                 "listener_term": listener_term,
+                "initial_strand_count": len(initial_strands),
                 "realized_shape_labels": [],
                 "realized_shapes_count": 0,
+                "min_strands_in_realized_shape": 0,
                 "max_strands_in_realized_shape": 0,
                 "instantiated_roles_in_shape": [],
                 "is_trivial_single_strand_shape": False,
+                "has_self_reflection_split": False,
                 "goal_satisfied": _extract_goal_satisfaction(block),
                 "verdict": "UNREALIZED",
             }
@@ -256,6 +260,7 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
                 strands = _extract_defstrands(block)
                 group["realized_shape_labels"].append(lbl)
                 group["realized_shapes_count"] = 1
+                group["min_strands_in_realized_shape"] = len(strands)
                 group["max_strands_in_realized_shape"] = len(strands)
                 group["instantiated_roles_in_shape"] = strands
             preskeleton_groups.append(group)
@@ -268,6 +273,8 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
                 strands = _extract_defstrands(block)
                 group["realized_shape_labels"].append(lbl)
                 group["realized_shapes_count"] += 1
+                if group["min_strands_in_realized_shape"] == 0 or len(strands) < group["min_strands_in_realized_shape"]:
+                    group["min_strands_in_realized_shape"] = len(strands)
                 if len(strands) >= group["max_strands_in_realized_shape"]:
                     group["max_strands_in_realized_shape"] = len(strands)
                     group["instantiated_roles_in_shape"] = strands
@@ -279,17 +286,22 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
     for group in preskeleton_groups:
         shapes_cnt = group["realized_shapes_count"]
         total_shapes += shapes_cnt
+        init_strands = group.get("initial_strand_count", 1)
+        min_strands = group.get("min_strands_in_realized_shape", group["max_strands_in_realized_shape"])
         max_strands = group["max_strands_in_realized_shape"]
         if group["skeleton_type"] == "participant_pov":
             if shapes_cnt == 0:
                 group["verdict"] = "DEAD_HANDSHAKE"
                 group["is_trivial_single_strand_shape"] = False
-            elif max_strands >= 2:
+                group["has_self_reflection_split"] = False
+            elif min_strands >= 2 and max_strands > init_strands:
                 group["verdict"] = "AUTHENTICATED_MULTI_STRAND"
                 group["is_trivial_single_strand_shape"] = False
+                group["has_self_reflection_split"] = False
             else:
                 group["verdict"] = "TRIVIAL_SINGLE_STRAND"
                 group["is_trivial_single_strand_shape"] = True
+                group["has_self_reflection_split"] = bool(min_strands == 1 and max_strands >= 2)
         else:
             if shapes_cnt == 0:
                 group["verdict"] = "SECRECY_PROVED_UNREALIZED"
@@ -334,16 +346,40 @@ def compute_quality_assessment(
     all_povs_realized = bool(participant_povs) and all(
         o.get("realized_shapes_count", 0) > 0 for o in participant_povs
     )
-    all_povs_multi_strand = all_povs_realized and all(
-        o.get("max_strands_in_realized_shape", 0) >= 2 for o in participant_povs
+    def _is_pov_authenticated(pov: Dict[str, Any]) -> bool:
+        if pov.get("verdict") == "AUTHENTICATED_MULTI_STRAND":
+            return True
+        max_s = pov.get("max_strands_in_realized_shape", 0)
+        min_s = pov.get("min_strands_in_realized_shape", max_s)
+        init_s = pov.get("initial_strand_count", 1)
+        return bool(pov.get("realized_shapes_count", 0) > 0 and min_s >= 2 and max_s > init_s)
+
+    authenticated_pov_count = sum(1 for o in participant_povs if _is_pov_authenticated(o))
+    any_self_reflection_split = any(
+        bool(o.get("has_self_reflection_split"))
+        or (
+            o.get("min_strands_in_realized_shape", o.get("max_strands_in_realized_shape", 0)) == 1
+            and o.get("max_strands_in_realized_shape", 0) >= 2
+        )
+        for o in participant_povs
+    )
+    all_povs_multi_strand = all_povs_realized and (authenticated_pov_count == len(participant_povs))
+    # Support both mutual-auth protocols (all POVs multi-strand) and unilateral server-auth / 3-party KDC
+    # protocols where all relying-party POVs (>= N-1 and >= 1) are strictly multi-strand without any
+    # 1-strand self-reflection split.
+    sufficient_povs_authenticated = (
+        all_povs_realized
+        and not any_self_reflection_split
+        and authenticated_pov_count >= 1
+        and authenticated_pov_count >= max(1, len(participant_povs) - 1)
     )
     all_listeners_unrealized = bool(listener_povs) and all(
         o.get("realized_shapes_count", 0) == 0 for o in listener_povs
     )
 
-    if not all_povs_realized:
+    if not all_povs_realized or authenticated_pov_count == 0:
         tier = "BRONZE"
-    elif all_povs_multi_strand and all_listeners_unrealized:
+    elif sufficient_povs_authenticated and all_listeners_unrealized:
         tier = "GOLD"
     else:
         tier = "SILVER"
@@ -466,11 +502,12 @@ def write_trajectory_metadata_bundle(
     if shapes_txt_path and shapes_txt_path.exists():
         distilled_shapes_content = shapes_txt_path.read_text(encoding="utf-8", errors="replace")
 
-    stem = (
+    raw_stem = (
         final_scm_path.stem
         if final_scm_path
-        else (final_spec.protocol_name if final_spec else rfc_id).replace(" ", "_").lower()
+        else (final_spec.protocol_name if final_spec else rfc_id)
     )
+    stem = re.sub(r"[^a-z0-9_-]+", "_", (raw_stem or rfc_id).lower()).strip("_") or "protocol"
     trajectory_path = output_dir / f"{stem}_trajectory.json"
 
     from src.cost_tracker import GLOBAL_COST_TRACKER

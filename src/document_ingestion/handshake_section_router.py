@@ -104,33 +104,60 @@ def route_handshake_sections(
 
 def _heuristic_section_router(toc_entries: List[TOCSectionEntry]) -> List[str]:
     """Deterministic keyword fallback for selecting exchange sections from TOC."""
+    excluded_titles = (
+        "introduction",
+        "terminology",
+        "conventions",
+        "requirements language",
+        "notation",
+        "definitions",
+        "scope",
+        "background",
+        "iana considerations",
+        "security considerations",
+        "references",
+        "normative references",
+        "informative references",
+        "acknowledgements",
+        "acknowledgments",
+    )
+
     exchange_keywords = [
-        "handshake protocol overview",
-        "handshake protocol",
+        "handshake",
         "message exchange",
-        "authentication service",
+        "protocol exchange",
+        "authentication",
+        "key exchange",
+        "key agreement",
+        "protocol overview",
         "protocol description",
+        "protocol operation",
+        "overview of operation",
+        "operation",
+        "communication",
+        "transactions",
+        "packet types",
+        "message format",
     ]
 
-    # First pass: Look for high-priority exact phrase matches
     selected_sections: List[str] = []
     for entry in toc_entries:
-        title_lower = entry.title.lower()
-        if any(keyword in title_lower for keyword in exchange_keywords):
+        title_lower = entry.title.lower().strip()
+        if any(title_lower == ex or title_lower.startswith(ex + " ") for ex in excluded_titles):
+            continue
+        # Prefer top-level or second-level sections matching exchange/crypto keywords
+        if entry.section_id.count(".") <= 1 and any(keyword in title_lower for keyword in exchange_keywords):
             selected_sections.append(entry.section_id)
 
-    # Second pass: If nothing matched, look for "handshake", "exchange", or "operation"
     if not selected_sections:
         for entry in toc_entries:
-            title_lower = entry.title.lower()
-            if any(term in title_lower for term in ["handshake", "exchange", "protocol operation"]):
+            title_lower = entry.title.lower().strip()
+            if any(title_lower == ex or title_lower.startswith(ex + " ") for ex in excluded_titles):
+                continue
+            if entry.section_id.count(".") == 0 and entry.section_id not in ("1",):
                 selected_sections.append(entry.section_id)
-
-    if not selected_sections and toc_entries:
-        # Final fallback: Pick Section 2 or 3
-        for entry in toc_entries:
-            if entry.section_id in ["2", "3", "3.1"]:
-                selected_sections.append(entry.section_id)
+                if len(selected_sections) >= 3:
+                    break
 
     logger.info("Heuristic router selected sections: %s", selected_sections)
-    return selected_sections or (["1"] if toc_entries else [])
+    return selected_sections or (["2"] if toc_entries else [])

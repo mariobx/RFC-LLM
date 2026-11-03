@@ -58,8 +58,8 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
             # If we hit the actual start of Section 1 at column 0, TOC has ended
             if re.match(r"^1\.?\s+[A-Z]", line):
                 break
-            # Or if we hit 400 lines without stopping
-            if len(entries) > 150:
+            # Or if we hit 500 entries without stopping
+            if len(entries) > 500:
                 break
 
             match = TOC_LINE_PATTERN.match(line)
@@ -93,8 +93,17 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
                 dots_match = re.search(r"^(.*?)(?:\s*(?:\.{2,}|(?:\.\s+){2,})\s*([0-9]+))?$", stripped_line)
                 if dots_match:
                     sub_title = dots_match.group(1).strip()
-                    # Do not append if sub_title looks like a new unnumbered section or noise
-                    if sub_title and not re.search(r"(Normative References|Informative References|Author's Address|Acknowledgments)", sub_title, re.IGNORECASE):
+                    # Do not append if sub_title looks like a new unnumbered back-matter section
+                    if re.search(
+                        r"^(Security Considerations|IANA Considerations|References|Normative References|"
+                        r"Informative References|Acknowledg(?:e)?ments|(?:Author|Editor|Chair)[s']*\s*Address(?:es)?|"
+                        r"Full Copyright Statement|Intellectual Property|Appendix\b)",
+                        sub_title,
+                        re.IGNORECASE,
+                    ):
+                        current_entry = None
+                        continue
+                    if sub_title:
                         current_entry.title += f" {sub_title}"
                     if dots_match.group(2) and current_entry.page_number is None:
                         current_entry.page_number = int(dots_match.group(2))

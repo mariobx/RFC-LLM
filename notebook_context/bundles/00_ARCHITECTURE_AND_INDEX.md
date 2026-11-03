@@ -2,30 +2,33 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-03 15:36:27 UTC · Git: `main` @ `59dd1b43aaa5` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
+*Generated: 2026-11-03 19:25:35 UTC · Git: `main` @ `6e063b78b79f` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~30,592*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `59dd1b43aaa5` — Increase LLM timeout to 1500s and add per-stage max_tokens bounds for local models
+- **Git commit:** `6e063b78b79f` — Harden Stage 1/2 false-positive gates, TOC/router unwrapping, searcher cache, and shape grading
 - **Added (0):** none
-- **Modified (14):**
+- **Modified (17):**
+  - `logs/pipeline_runs.csv`
   - `prompts/01_applicability_gate.md`
   - `prompts/02_section_router.md`
   - `prompts/03_protocol_extraction.md`
-  - `prompts/04_schema_self_correction.md`
-  - `prompts/05_rag_query_formulation.md`
   - `prompts/06_compiler_repair.md`
-  - `prompts/07_think_token_synthesizer.md`
+  - `src/code_generation/cpsa_scheme_emitter.py`
   - `src/document_ingestion/handshake_section_router.py`
   - `src/document_ingestion/protocol_applicability_gate.py`
-  - `src/generate_think/dspy_think_synthesizer.py`
+  - `src/document_ingestion/rfc_toc_parser.py`
+  - `src/document_ingestion/verbatim_section_slicer.py`
+  - `src/intermediate_representation/protocol_syntax_tree.py`
+  - `src/main_pipeline_orchestrator.py`
   - `src/prompt_loader.py`
+  - `src/rag_retriever_client.py`
   - `src/semantic_extraction/constrained_protocol_extractor.py`
-  - `src/system_config.py`
-  - `src/verification_engine/compiler_diagnostic_repair.py`
+  - `src/verification_engine/trajectory_metadata_exporter.py`
+  - `tests/test_trajectory_and_hardening.py`
 - **Deleted (0):** none
 
 ---
@@ -51,12 +54,12 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | Bundle | Title | Files | Size | Estimated Tokens | Tier |
 |---|---|---|---|---|---|
 | `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 119.7 KB | ~30,592 | Tier 1 — Architecture, Documentation & Project Configs |
-| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 754.4 KB | ~193,064 | Tier 2 — Core Source Code & CLI Entrypoints |
-| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 161.5 KB | ~41,104 | Tier 3 — Knowledge Base Index & Test Suites |
+| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 783.4 KB | ~200,508 | Tier 2 — Core Source Code & CLI Entrypoints |
+| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 174.3 KB | ~44,375 | Tier 3 — Knowledge Base Index & Test Suites |
 | `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 693.4 KB | ~175,802 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
 | `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files) | 155 | 915.3 KB | ~234,169 | Tier 3 — Domain Reference Code Corpus (.scm) |
 
-**Total Ingested Context Payload:** ~674,731 tokens across all bundles (67.5% of Gemini 1M context window)
+**Total Ingested Context Payload:** ~685,446 tokens across all bundles (68.5% of Gemini 1M context window)
 
 ---
 
@@ -69,7 +72,7 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/__init__.py` | RFC-LLM: End-to-End Synthesis of Formally Verified MITRE CPS | — | — | — |
 | `src/code_generation/__init__.py` | Code Generation package for Stage 3 CPSA JSON serialization  | — | — | — |
 | `src/code_generation/cpsa_json_serializer.py` | CPSA JSON AST Serializer. | — | `serialize_to_cpsa_json`, `serialize_to_cpsa_json_string` | — |
-| `src/code_generation/cpsa_scheme_emitter.py` | CPSA Scheme S-Expression Emitter using cpsa4json. | `CPSAJsonCompilationError` | `emit_cpsa_scheme` | — |
+| `src/code_generation/cpsa_scheme_emitter.py` | CPSA Scheme S-Expression Emitter using cpsa4json. | `CPSAJsonCompilationError` | `sanitize_protocol_stem`, `emit_cpsa_scheme` | — |
 | `src/cost_tracker.py` | Real-Time Token & USD Cost Telemetry Tracker across Pipeline | `PipelineCostTracker` | `_empty_role_bucket`, `make_empty_cost_summary`, `_normalize_model_key`, `_safe_int` | — |
 | `src/document_ingestion/__init__.py` | Document Ingestion package for Stage 1 RFC filtering, TOC pa | — | — | — |
 | `src/document_ingestion/handshake_section_router.py` | Handshake Section Router for Navigating RFC Table of Content | `SectionRoutingDecision` | `route_handshake_sections`, `_heuristic_section_router` | — |
@@ -86,10 +89,10 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/intermediate_representation/cpsa_grammar.py` | MITRE CPSA 4.4.9 Formal Grammar, Scoped Keywords, and Arity  | — | `desugar_term_tree`, `validate_cpsa_term_syntax` | — |
 | `src/intermediate_representation/protocol_syntax_tree.py` | Strongly-Typed Intermediate Representation (AST) for MITRE C | `CPSAVariableDeclaration`, `CPSATraceEvent`, `CPSAProtocolRole`, `CPSAStrandInstance`, `CPSAPreskeleton`, `CPSAProtocolSpecification` | `_validate_cpsa_term`, `sanitize_cpsa_symbol`, `extract_term_tokens`, `normalize_cpsa_term`, `_validate_no_mesg_encryption_key`, `_is_valid_roletran_input_term` | — |
 | `src/logging_config.py` | Comprehensive Structured Logging Subsystem for RFC-LLM Pipel | `PipelineConsoleFormatter`, `PipelineMetricsCSVLogger` | `configure_pipeline_logging`, `get_pipeline_logger` | — |
-| `src/main_pipeline_orchestrator.py` | Main Pipeline Orchestrator for RFC-to-CPSA Synthesis. | `PipelineExecutionSummary` | `_extract_rfc_abstract`, `_read_scm_safe`, `_run_roletran_self_healing_loop`, `_run_mitre_solver_self_healing_loop`, `run_rfc_translation_pipeline` | — |
+| `src/main_pipeline_orchestrator.py` | Main Pipeline Orchestrator for RFC-to-CPSA Synthesis. | `PipelineExecutionSummary` | `_extract_rfc_abstract`, `_read_scm_safe`, `_compute_ast_hash`, `_run_roletran_self_healing_loop`, `_run_mitre_solver_self_healing_loop`, `run_rfc_translation_pipeline` | — |
 | `src/pipeline.py` | Command-line interface for RFC-LLM synthesis pipeline suppor | — | `_print_cost_breakdown`, `natural_rfc_sort_key`, `get_completed_rfc_ids`, `get_failed_rfc_ids`, `main` | `--view`, `--output-dir`, `-o`, `--model`, `-m`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, `--no-visualize` … |
 | `src/pipeline_events.py` | Bounded event bus, sequential tab registry, and disk telemet | `PipelineEvent`, `PipelineEventBus` | `_strip_bulky_event_fields` | — |
-| `src/prompt_loader.py` | Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LL | `PromptSpec` | `parse_prompt_frontmatter`, `load_prompt_spec`, `resolve_prompt_model`, `load_prompt`, `build_schema_system_prompt`, `parse_llm_json` | — |
+| `src/prompt_loader.py` | Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LL | `PromptSpec` | `parse_prompt_frontmatter`, `load_prompt_spec`, `resolve_prompt_model`, `load_prompt`, `build_schema_system_prompt`, `_unwrap_schema_envelope` … | — |
 | `src/rag_retriever_client.py` | CPSA 4.4.9 Knowledge Base Indexer, `TOC.md` Flag Manager, an | `CPSAKnowledgeBase` | `tokenize_cpsa_dsl`, `_slugify_heading`, `parse_toc_rebuild_flag`, `_split_markdown_file_into_sections`, `_extract_scm_metadata_from_source`, `build_cpsa_kb_index` … | — |
 | `src/semantic_extraction/__init__.py` | Semantic Extraction package for Stage 2 constrained CPSA pro | — | — | — |
 | `src/semantic_extraction/constrained_protocol_extractor.py` | Constrained Protocol Semantic Extractor with RAG Grounding. | — | `extract_protocol_specification`, `ensure_three_point_of_view_skeletons` | — |
@@ -109,7 +112,7 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `tests/test_document_ingestion.py` | Unit & Integration Tests for Document Ingestion Subsystem (S | — | `tls_rfc_text`, `kerberos_rfc_text`, `mib_rfc_text`, `test_header_filter_accepts_tls`, `test_header_filter_accepts_kerberos`, `test_header_filter_rejects_mib` … | — |
 | `tests/test_generate_think.py` | Unit and integration tests for Phase 3 Hindsight Reasoning ( | — | `_sample_trajectory_dict`, `test_deterministic_reasoning_compiler_and_hindsight_sanitizer`, `test_process_run_directory_creates_think_json_and_updates_metadata_index` | — |
 | `tests/test_main_pipeline_orchestrator.py` | Integration tests for Main Pipeline Orchestrator. | — | `mock_valid_spec`, `test_pipeline_rejects_ineligible_rfc`, `test_pipeline_e2e_successful_synthesis_and_build` | — |
-| `tests/test_trajectory_and_hardening.py` | Hardening and edge-case tests for 60s process-group SIGKILL, | — | `test_hard_timeout_kills_entire_process_group_including_grandchild`, `test_malformed_yaml_frontmatter_and_edge_cases`, `test_split_top_level_sexprs_ignores_parens_in_comments_and_strings`, `test_offline_load_run_from_disk_discovery_modes`, `test_visualizer_artifact_endpoint_blocks_path_traversal_and_dotfiles` | — |
+| `tests/test_trajectory_and_hardening.py` | Hardening and edge-case tests for 60s process-group SIGKILL, | — | `test_hard_timeout_kills_entire_process_group_including_grandchild`, `test_malformed_yaml_frontmatter_and_edge_cases`, `test_split_top_level_sexprs_ignores_parens_in_comments_and_strings`, `test_offline_load_run_from_disk_discovery_modes`, `test_visualizer_artifact_endpoint_blocks_path_traversal_and_dotfiles`, `test_parse_llm_json_unwraps_schema_properties_and_single_element_lists` … | — |
 | `tests/test_visualizer_and_events.py` | Unit and integration tests for Pipeline Event Bus, Cycle Det | — | `sample_spec`, `test_pipeline_event_bus_emission_and_subscription`, `test_compiler_repair_cycle_detection_triggers_warning_and_jitter`, `test_visualizer_server_endpoints` | — |
 | `tests/test_visualizer_tabs.py` | Tests for scalable numbered multi-RFC tabs, filtered RFC dra | — | `test_sequential_tab_numbering_and_filtered_separation`, `test_per_attempt_hydration_and_offline_replay`, `test_5000_accepted_tabs_scalability_benchmark` | — |
 
@@ -117,14 +120,17 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 
 ## Excluded & Heavy Assets Inventory (Tier 4)
 
-6 assets (1.8 MB total) were **excluded from raw text dumping** and summarized below with metadata and lightweight schema previews, so the downstream LLM is aware of every dataset, embedding matrix, manual, figure and log in the repository without ingesting their bulk.
+6 assets (1.9 MB total) were **excluded from raw text dumping** and summarized below with metadata and lightweight schema previews, so the downstream LLM is aware of every dataset, embedding matrix, manual, figure and log in the repository without ingesting their bulk.
 
 ### `logs/pipeline_runs.csv`
 
-*0.7 KB · excluded because: declared Tier 4 summarized asset*
+*129.7 KB · excluded because: declared Tier 4 summarized asset*
 
 - Header (50 cols): `timestamp, rfc_id, run_count, is_eligible, status, quality_tier, total_completion_steps, zero_shot_passed, schema_repairs, roletran_repairs, solver_repairs, total_repairs, rejection_gate, protocol_name, message_algebra, selected_sections, sliced_lines_count, role_count, preskeleton_count, scm_lines_count, shapes_count, explored_skeletons_count, all_povs_multi_strand, secrecy_proved, searcher_invocations, herald_options, duration_seconds, router_model, router_calls, router_tokens, router_cost_usd, extraction_model, extraction_calls, extraction_tokens, extraction_cost_usd, query_model, query_calls, query_tokens, query_cost_usd, repair_model, repair_calls, repair_tokens, repair_cost_usd, total_calls, total_tokens, total_cost_usd, scm_path, shapes_xhtml_path, trajectory_json_path, error_message`
-- Total rows (incl. header): 1
+- Sample row: `2026-11-03 12:38:26, RFC5606, 1, False, INELIGIBLE, INELIGIBLE, 0, , 0, 0, 0, 0, Stage 1c Applicability Gate, Implications of 'retransmission-allow..., , , 0, 0, 0, 0, 0, 0, , , 0, , 7.172, nous/anthropic/claude-haiku-5.5, 1, 2685, 0.000626, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, 1, 2685, 0.000626, , , , Ineligible: RFC 5606 is an Informatio...`
+- Sample row: `2026-11-03 12:38:31, RFC7432, 1, False, INELIGIBLE, INELIGIBLE, 0, , 0, 0, 0, 0, Stage 1c Applicability Gate, BGP MPLS-Based Ethernet VPN (EVPN), , , 0, 0, 0, 0, 0, 0, , , 0, , 4.562, nous/anthropic/claude-haiku-5.5, 1, 3400, 0.000634, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, 1, 3400, 0.000634, , , , Ineligible: RFC 7432 specifies a BGP-...`
+- Sample row: `2026-11-03 12:38:35, RFC6468, 1, False, INELIGIBLE, INELIGIBLE, 0, , 0, 0, 0, 0, Stage 1c Applicability Gate, Sieve Notification Mechanism: SIP MES..., , , 0, 0, 0, 0, 0, 0, , , 0, , 3.59, nous/anthropic/claude-haiku-5.5, 1, 2366, 0.000481, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, 1, 2366, 0.000481, , , , Ineligible: RFC 6468 is a profile of ...`
+- Total rows (incl. header): 131
 
 ### `refrences/cpsa_kb/04_examples_catalog/batch1_meta.json`
 

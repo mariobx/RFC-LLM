@@ -174,6 +174,74 @@ def extract_protocol_specification(
             logger.error("Self-healing correction failed: %s. Raising validation error.", retry_error)
             raise validation_error from retry_error
 
+    # Stage 2 Cryptographic Primitive Gate: if the LLM extracted roles with zero CPSA cryptographic
+    # primitives (e.g., cleartext messages or bare variables), give it 1 self-correction pass to either
+    # bail out with `is_verifiable_protocol=False` or model the RFC's actual cryptographic operations.
+    if (
+        specification.is_verifiable_protocol
+        and specification.roles
+        and not specification.has_cryptographic_primitives()
+    ):
+        crypto_error = (
+            "Extracted specification contains zero CPSA cryptographic operators (`enc`, `hash`, `ltk`, `pubk`, "
+            "`privk`, `invk`, `akey`, `skey`, `exp`, `gen`) across all role traces and assumptions. "
+            "Either (a) the Verbatim RFC Exchange Specification defines a cleartext, transport-delegated, or "
+            "non-cryptographic exchange — in which case you MUST set `\"is_verifiable_protocol\": false`, "
+            "populate `\"ineligibility_reason\"`, and set `\"roles\": []` and `\"skeletons\": []`; OR "
+            "(b) you omitted the RFC's cryptographic operations — in which case you MUST model the RFC's "
+            "encryption, MAC/PRF (`hash`), signature (`enc` with `privk`), or Diffie-Hellman (`exp`/`gen`) "
+            "operations explicitly in the role traces."
+        )
+        LAST_EXTRACTION_METADATA["schema_self_correction_triggered"] = True
+        LAST_EXTRACTION_METADATA["schema_validation_error"] = crypto_error
+        logger.warning(
+            "Stage 2 extracted protocol '%s' has zero cryptographic primitives. Triggering 1-shot verification gate...",
+            protocol_name,
+        )
+        corr_spec = load_prompt_spec(PROMPT_SCHEMA_SELF_CORRECTION)
+        corr_model = model or corr_spec.model
+        corr_temp = corr_spec.temperature if corr_spec.temperature is not None else 0.0
+        corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            corr_model,
+            temperature=corr_temp,
+            max_tokens=corr_spec.max_tokens,
+            json_mode=True,
+        )
+        try:
+            correction_response = litellm.completion(
+                **corr_kwargs,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                    {"role": "assistant", "content": specification.model_dump_json()},
+                    {"role": "user", "content": crypto_error},
+                ],
+                timeout=corr_spec.timeout,
+                num_retries=0,
+            )
+            from src.cost_tracker import GLOBAL_COST_TRACKER
+            GLOBAL_COST_TRACKER.record_llm_call(correction_response, role="extraction", model_name=corr_model, stage=2)
+            corrected_content = correction_response.choices[0].message.content
+            corrected_data = parse_llm_json(corrected_content)
+            specification = CPSAProtocolSpecification.model_validate(corrected_data)
+        except Exception as exc:
+            logger.warning("Cryptographic primitive self-correction call failed (%s); marking unverifiable.", exc)
+
+        if specification.is_verifiable_protocol and not specification.has_cryptographic_primitives():
+            specification.is_verifiable_protocol = False
+            specification.ineligibility_reason = (
+                specification.ineligibility_reason
+                or "Extracted specification contains zero cryptographic primitives (cleartext or transport-delegated protocol)."
+            )
+
+    if not specification.is_verifiable_protocol or not specification.roles:
+        logger.info(
+            "Stage 2 determined '%s' is not a verifiable cryptographic protocol: %s",
+            protocol_name,
+            specification.ineligibility_reason,
+        )
+        return specification
+
     specification = ensure_three_point_of_view_skeletons(specification)
 
     logger.info(
@@ -187,11 +255,11 @@ def extract_protocol_specification(
 
 def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPSAProtocolSpecification:
     """Guarantees the standard MITRE CPSA 3-skeleton architecture:
-    1. Dedicated pure POV preskeleton for each communicating role with defstrandmax and NO listeners
-       (enabling CPSA to compute minimal realized bilateral handshake shapes).
+    1. Dedicated pure POV preskeleton for each communicating role with a single defstrandmax and NO listeners
+       (enabling CPSA to compute minimal realized bilateral handshake shapes without pre-seeded strands).
     2. A distinct secrecy preskeleton containing a deflistener for the primary confidential term.
     """
-    if not spec.roles:
+    if not spec.is_verifiable_protocol or not spec.roles:
         return spec
 
     # Collect existing secrecy listeners and non-originating assumptions
@@ -235,10 +303,14 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
         ]
         skel.listeners = valid_listeners
         if not skel.listeners:
-            pure_pov_skeletons.append(skel)
-            for strand in skel.strands:
-                roles_with_pure_pov.add(strand.role_name)
+            if len(skel.strands) == 1:
+                role_name = skel.strands[0].role_name
+                if role_name not in roles_with_pure_pov:
+                    roles_with_pure_pov.add(role_name)
+                    pure_pov_skeletons.append(skel)
         else:
+            if len(skel.strands) > 1:
+                skel.strands = [skel.strands[0]]
             secrecy_skeletons.append(skel)
 
     # Build pure POV skeletons for any roles that lack them
@@ -311,10 +383,15 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
     spec.skeletons = final_skeletons
 
     # Ensure every skeleton's strands explicitly bind role variables to skeleton variables
-    # (preventing `Skeleton not well formed: a variable in non-orig is not in some trace`)
-    # and strip redundant skeleton-level `uniq-orig` atoms already declared in the strand's `defrole`
-    # (preventing `Skeleton not well formed: uniq-orig <var> not carried` when encrypted under a non-orig key).
+    # (preventing `Skeleton not well formed: a variable in non-orig is not in some trace`),
+    # strip redundant skeleton-level `uniq-orig` atoms already declared in the strand's `defrole`
+    # (preventing `Skeleton not well formed: uniq-orig <var> not carried` when encrypted under a non-orig key),
+    # and add sort-disjointness `(neq secret other_var)` facts in secrecy skeletons so CPSA cannot
+    # alias a secret `data` variable with a cleartext `data` header/identifier in the same strand.
     role_map = {r.role_name: r for r in spec.roles}
+    secret_atom_set = {
+        s for s in spec.primary_secrecy_goals if isinstance(s, str)
+    }
     for skel in spec.skeletons:
         existing_var_names = {v.name for v in skel.variables}
         role_level_uniq_orig = set()
@@ -336,5 +413,31 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
                 uo for uo in skel.unique_originating
                 if not (isinstance(uo, str) and uo in role_level_uniq_orig)
             ]
+        if skel.listeners:
+            var_sort_map = {v.name: v.sort for v in skel.variables}
+            existing_facts = {
+                (f[1], f[2])
+                for f in skel.facts
+                if isinstance(f, list) and len(f) == 3 and f[0] == "neq"
+            } | {
+                (f[2], f[1])
+                for f in skel.facts
+                if isinstance(f, list) and len(f) == 3 and f[0] == "neq"
+            }
+            listener_atoms = [l for l in skel.listeners if isinstance(l, str)]
+            for secret_var in listener_atoms:
+                secret_sort = var_sort_map.get(secret_var)
+                if not secret_sort:
+                    continue
+                for v in skel.variables:
+                    if (
+                        v.name != secret_var
+                        and v.sort == secret_sort
+                        and v.name not in secret_atom_set
+                        and v.name not in listener_atoms
+                        and (secret_var, v.name) not in existing_facts
+                    ):
+                        skel.facts.append(["neq", secret_var, v.name])
+                        existing_facts.add((secret_var, v.name))
 
     return spec

@@ -644,11 +644,27 @@ class CPSAProtocolSpecification(BaseModel):
     """Complete protocol specification and verification suite (defprotocol + defskeletons, Table 10.1)."""
 
     protocol_name: str = Field(..., description="Unique protocol identifier")
+    is_verifiable_protocol: bool = Field(
+        default=True,
+        description=(
+            "True if the provided RFC excerpt specifies an interactive multi-message cryptographic or "
+            "authenticated exchange that can be modeled in CPSA; False if this RFC is a false positive "
+            "(e.g., no message flights, delegates key exchange to an external RFC, only defines packet/frame "
+            "formats or local flags, or is a plaintext application protocol)."
+        ),
+    )
+    ineligibility_reason: Optional[str] = Field(
+        default=None,
+        description="If is_verifiable_protocol is False, concise explanation of why the RFC excerpt cannot be modeled as an interactive cryptographic protocol.",
+    )
     message_algebra: CPSAMessageAlgebra = Field(
         default="basic",
         description="CPSA message algebra selection: basic or diffie-hellman",
     )
-    roles: List[CPSAProtocolRole] = Field(..., description="Protocol participant role specifications")
+    roles: List[CPSAProtocolRole] = Field(
+        default_factory=list,
+        description="Protocol participant role specifications (empty ONLY when is_verifiable_protocol is False)",
+    )
     primary_secrecy_goals: List[CPSATerm] = Field(
         default_factory=list,
         description=(
@@ -669,6 +685,37 @@ class CPSAProtocolSpecification(BaseModel):
         ),
     )
 
+    def has_cryptographic_primitives(self) -> bool:
+        """Returns True if the specification uses at least one CPSA cryptographic operator, key sort, or secure channel."""
+        crypto_ops = {"enc", "hash", "ltk", "pubk", "privk", "invk", "bltk", "exp", "gen", "mul", "rec"}
+        crypto_sorts = {"skey", "akey", "rndx", "expt", "base"}
+
+        def _term_has_crypto(term: Any) -> bool:
+            if isinstance(term, list) and term:
+                if isinstance(term[0], str) and term[0] in crypto_ops:
+                    return True
+                return any(_term_has_crypto(sub) for sub in term[1:])
+            return False
+
+        for role in self.roles:
+            if role.confidential_channels or role.authenticated_channels:
+                return True
+            if role.non_originating or role.pen_non_originating or role.unique_generated:
+                return True
+            for v in role.variables:
+                if v.sort.value in crypto_sorts:
+                    return True
+            for ev in role.trace:
+                if _term_has_crypto(ev.message_term):
+                    return True
+            for t in role.inputs + role.outputs + role.unique_originating:
+                if _term_has_crypto(t):
+                    return True
+        for skel in self.skeletons:
+            if skel.non_originating or skel.pen_non_originating or skel.unique_generated:
+                return True
+        return False
+
     @model_validator(mode="before")
     @classmethod
     def forbid_scoped_keywords_at_top_level(cls, data: Any) -> Any:
@@ -684,7 +731,22 @@ class CPSAProtocolSpecification(BaseModel):
 
     @model_validator(mode="after")
     def validate_algebra_consistency(self) -> "CPSAProtocolSpecification":
-        """Ensures Diffie-Hellman sorts and operators are strictly forbidden under 'basic' message algebra."""
+        """Ensures role traces are non-empty and Diffie-Hellman sorts/operators are forbidden under 'basic' algebra."""
+        if not self.roles:
+            self.is_verifiable_protocol = False
+            if not self.ineligibility_reason:
+                self.ineligibility_reason = (
+                    self.herald_comment
+                    or "No interactive cryptographic protocol roles could be extracted from the provided RFC slice."
+                )
+        else:
+            for role in self.roles:
+                if not role.trace:
+                    raise ValueError(
+                        f"Role '{role.role_name}' has an empty trace: []. Every CPSA defrole must contain at least "
+                        "one send/recv trace event (or if this RFC does not specify a message exchange, set "
+                        "is_verifiable_protocol=False and roles=[])."
+                    )
         if self.message_algebra == "basic":
             for term in self.primary_secrecy_goals:
                 validate_cpsa_term_syntax(

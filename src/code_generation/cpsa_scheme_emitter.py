@@ -1,5 +1,6 @@
 """CPSA Scheme S-Expression Emitter using cpsa4json."""
 
+import re
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -17,6 +18,12 @@ class CPSAJsonCompilationError(Exception):
     pass
 
 
+def sanitize_protocol_stem(raw_name: str) -> str:
+    """Sanitizes a protocol name or filename prefix into a filesystem-safe `.scm` stem."""
+    sanitized = re.sub(r"[^a-z0-9_-]+", "_", (raw_name or "").lower()).strip("_")
+    return sanitized or "protocol"
+
+
 def emit_cpsa_scheme(
     spec: CPSAProtocolSpecification,
     output_directory: Path,
@@ -24,7 +31,7 @@ def emit_cpsa_scheme(
 ) -> Path:
     """Compiles a CPSAProtocolSpecification into a verified MITRE Scheme (.scm) file via cpsa4json."""
     output_directory.mkdir(parents=True, exist_ok=True)
-    stem = filename_prefix or spec.protocol_name.replace(" ", "_").lower()
+    stem = sanitize_protocol_stem(filename_prefix or spec.protocol_name)
     target_scm_path = output_directory / f"{stem}.scm"
 
     logger.info("Emitting CPSA Scheme S-expressions for '%s' to %s", spec.protocol_name, target_scm_path)

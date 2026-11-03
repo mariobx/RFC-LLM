@@ -94,6 +94,20 @@ def _read_scm_safe(scm_path: Optional[Path]) -> Optional[str]:
     return None
 
 
+def _compute_ast_hash(spec: CPSAProtocolSpecification) -> str:
+    """Computes a canonical SHA-256 hash of a protocol AST excluding cosmetic prose fields
+    (`herald_comment`, `ineligibility_reason`, `description`, `comment`) so text variations
+    across repair passes never mask an AST cycle.
+    """
+    payload = spec.model_dump(exclude={"herald_comment", "ineligibility_reason"})
+    for role in payload.get("roles", []):
+        role.pop("description", None)
+    for skel in payload.get("skeletons", []):
+        skel.pop("description", None)
+        skel.pop("comment", None)
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
+
+
 def _run_roletran_self_healing_loop(
     protocol_ast: CPSAProtocolSpecification,
     scm_path: Path,
@@ -127,10 +141,11 @@ def _run_roletran_self_healing_loop(
     prev_roletran_diag: Optional[str] = None
     max_attempts = SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS
     repair_attempts_log: List[dict] = []
+    stable_stem = scm_path.stem
 
     while not roletran_result.is_executable and attempt < max_attempts:
         attempt += 1
-        ast_hash = hashlib.sha256(protocol_ast.model_dump_json().encode()).hexdigest()
+        ast_hash = _compute_ast_hash(protocol_ast)
         cycle_detected = ast_hash in seen_roletran_hashes
         seen_roletran_hashes.add(ast_hash)
 
@@ -177,7 +192,7 @@ def _run_roletran_self_healing_loop(
                 cycle_detected=cycle_detected,
                 use_agentic_searcher=use_searcher,
             )
-            scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
+            scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir, filename_prefix=stable_stem)
             GLOBAL_EVENT_BUS.emit(
                 "stage_completed",
                 stage=3,
@@ -277,8 +292,12 @@ def _run_mitre_solver_self_healing_loop(
     last_build_error: Optional[str] = None
     prev_solver_diag: Optional[str] = None
     seen_solver_hashes = set()
-    max_attempts = SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS
+    # If Stage 5 already exhausted its full repair budget (`not roletran_result.is_executable`),
+    # try `execute_mitre_make_build` once on `build_attempt == 0` (since `cpsa4` is more permissive
+    # than `cpsa4roletran`), and do not run another 10 redundant LLM repair attempts if `cpsa4` also fails.
+    max_attempts = SYSTEM_CONFIG.MAX_REPAIR_ATTEMPTS if roletran_result.is_executable else 0
     solver_attempts_log: List[dict] = []
+    stable_stem = scm_path.stem
 
     while build_attempt <= max_attempts:
         try:
@@ -305,7 +324,7 @@ def _run_mitre_solver_self_healing_loop(
             last_build_error = str(build_exc)
             if build_attempt < max_attempts:
                 build_attempt += 1
-                ast_hash = hashlib.sha256(protocol_ast.model_dump_json().encode()).hexdigest()
+                ast_hash = _compute_ast_hash(protocol_ast)
                 cycle_detected = ast_hash in seen_solver_hashes
                 seen_solver_hashes.add(ast_hash)
 
@@ -359,7 +378,7 @@ def _run_mitre_solver_self_healing_loop(
                         cycle_detected=cycle_detected,
                         use_agentic_searcher=use_searcher,
                     )
-                    scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
+                    scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir, filename_prefix=stable_stem)
                     GLOBAL_EVENT_BUS.emit(
                         "stage_completed",
                         stage=3,
@@ -783,6 +802,94 @@ def run_rfc_translation_pipeline(
         )
 
     # -------------------------------------------------------------------------
+    # STAGE 2b: Verbatim Slice Verification Gate (False-Positive Bailout)
+    # -------------------------------------------------------------------------
+    if (
+        not protocol_ast.is_verifiable_protocol
+        or not protocol_ast.roles
+        or not protocol_ast.has_cryptographic_primitives()
+    ):
+        elapsed = time.time() - start_time
+        ineligible_reason = (
+            protocol_ast.ineligibility_reason
+            or "Stage 2 Verbatim Slice Gate: RFC slice contains no verifiable cryptographic message exchange."
+        )
+        logger.warning(
+            "Stage 2 Verbatim Slice Gate rejected '%s' (%s) with 0 repair loops: %s",
+            rfc_number_str,
+            final_protocol_name,
+            ineligible_reason,
+        )
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+        extraction_meta = constrained_protocol_extractor.LAST_EXTRACTION_METADATA
+        schema_repairs_stage2 = 1 if extraction_meta.get("schema_self_correction_triggered") else 0
+        csv_recorder.log_run(
+            rfc_id=rfc_id,
+            is_eligible=False,
+            status="INELIGIBLE",
+            quality_tier="INELIGIBLE",
+            rejection_gate="Stage 2 Verbatim Slice Gate",
+            protocol_name=final_protocol_name,
+            selected_sections=target_sections,
+            sliced_lines_count=slice_lines_count,
+            schema_repairs=schema_repairs_stage2,
+            total_repairs=schema_repairs_stage2,
+            total_completion_steps=1 + schema_repairs_stage2,
+            duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            error_message=ineligible_reason,
+        )
+        update_run_metadata_index(
+            run_root_dir=effective_run_root,
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            rfc_dir=target_output_dir,
+            scm_path=None,
+            trajectory_json_path=None,
+            quality_tier="INELIGIBLE",
+            is_eligible=False,
+            build_successful=False,
+            error_message=ineligible_reason,
+            tab_index=tab_index,
+            rejection_gate="Stage 2 Verbatim Slice Gate",
+            duration_seconds=elapsed,
+        )
+        GLOBAL_EVENT_BUS.register_filtered_rfc(
+            rfc_id=rfc_number_str,
+            title=final_protocol_name,
+            gate="Stage 2 Verbatim Slice Gate",
+            reason=ineligible_reason,
+            duration_seconds=elapsed,
+        )
+        GLOBAL_EVENT_BUS.update_accepted_tab(
+            tab_index,
+            status="INELIGIBLE",
+            quality_tier="INELIGIBLE",
+            duration_seconds=round(elapsed, 2),
+            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+            cost_telemetry=rfc_cost_summary,
+            error_message=ineligible_reason,
+        )
+        GLOBAL_EVENT_BUS.emit("stage_failed", stage=2, reason=ineligible_reason)
+        logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix="Stage 2 Filtered RFC Cost"))
+        return PipelineExecutionSummary(
+            rfc_id=rfc_id,
+            protocol_name=final_protocol_name,
+            is_eligible=False,
+            selected_sections=target_sections,
+            sliced_lines_count=slice_lines_count,
+            quality_tier="INELIGIBLE",
+            duration_seconds=elapsed,
+            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+            cost_telemetry=rfc_cost_summary,
+            error_message=ineligible_reason,
+        )
+
+    # -------------------------------------------------------------------------
     # STAGE 3: CPSA4json -> scm
     # -------------------------------------------------------------------------
     GLOBAL_EVENT_BUS.emit(
@@ -867,7 +974,7 @@ def run_rfc_translation_pipeline(
         all_povs_multi_strand = qa.get("all_participant_povs_multi_strand")
         secrecy_proved = qa.get("all_secrecy_listeners_unrealized")
         explored_skeletons_count = int(
-            traj_data.get("stage6_cpsa_solver_verification", {})
+            traj_data.get("stage6_cpsa4_solver", {})
             .get("exploration_telemetry_from_txt", {})
             .get("total_explored_labels", 0)
         )

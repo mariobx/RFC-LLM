@@ -96,6 +96,18 @@ def evaluate_protocol_applicability(
 
         report = ProtocolApplicabilityReport.model_validate(report_data)
 
+        if report.is_cryptographic_protocol and (
+            not report.has_keys_or_nonces or len(report.participating_principals) < 2
+        ):
+            logger.info(
+                "Tier 1 REJECT (Incomplete Crypto/Principals): %s had is_cryptographic_protocol=True "
+                "but has_keys_or_nonces=%s, principals=%s",
+                rfc_id,
+                report.has_keys_or_nonces,
+                report.participating_principals,
+            )
+            report.is_cryptographic_protocol = False
+
         if report.is_cryptographic_protocol:
             logger.info(
                 "Tier 1 ACCEPT: %s is eligible (Protocol: '%s', Principals: %s)",
