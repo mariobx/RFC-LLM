@@ -1,10 +1,11 @@
 """Global environment, binary paths, execution limits, and provider configuration."""
 
 import os
+import shutil
 import warnings
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
 import litellm
 from pydantic_settings import BaseSettings
@@ -13,7 +14,7 @@ from pydantic_settings import BaseSettings
 litellm.suppress_debug_info = True
 litellm.set_verbose = False
 litellm.drop_params = True
-litellm.request_timeout = 1500
+litellm.request_timeout = 2700
 for _logger_name in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router"):
     logging.getLogger(_logger_name).setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=".*litellm.*")
@@ -61,12 +62,33 @@ class SystemEnvironmentConfig(BaseSettings):
     STRATA_API_KEY: str = os.getenv("STRATA_API_KEY", "local-strata")
 
     # Compiler & Harness Execution Limits
-    LLM_TIMEOUT_SECONDS: int = 1500
+    LLM_TIMEOUT_SECONDS: int = 2700
     CPSA_TIMEOUT_SECONDS: int = 15
     ROLETRAN_TIMEOUT_SECONDS: int = 15
     MAX_REPAIR_ATTEMPTS: int = 10
 
     model_config = {"env_file": ".env", "extra": "ignore"}
+
+    def verify_cpsa_toolchain(self) -> List[str]:
+        """Verifies that required MITRE CPSA 4.4.9 binaries exist on disk or PATH.
+        Returns a list of missing binary names (empty list if all are present).
+        """
+        required_bins = [
+            ("cpsa4", self.CPSA4_BIN),
+            ("cpsa4json", self.CPSA4JSON_BIN),
+            ("cpsa4roletran", self.CPSA4ROLETRAN_BIN),
+            ("cpsa4shapes", self.CPSA4SHAPES_BIN),
+            ("cpsa4graph", self.CPSA4GRAPH_BIN),
+        ]
+        missing: List[str] = []
+        for bin_name, bin_path in required_bins:
+            if bin_path.exists() and os.access(bin_path, os.X_OK):
+                continue
+            found_on_path = shutil.which(bin_name)
+            if found_on_path:
+                continue
+            missing.append(f"{bin_name} (expected at {bin_path})")
+        return missing
 
     # Live model properties backed directly by `prompts/*.md` YAML frontmatter
     @property
@@ -115,6 +137,8 @@ class SystemEnvironmentConfig(BaseSettings):
         kwargs: Dict[str, Any] = {"model": model_name}
         effective_max_tokens = int(max_tokens) if (max_tokens is not None and max_tokens > 0) else 65536
         kwargs["max_tokens"] = effective_max_tokens
+        if temperature is not None:
+            kwargs["temperature"] = float(temperature)
 
         is_local_provider = model_name.startswith("strata/") or model_name.startswith("ollama/")
         if json_mode and not is_local_provider:
@@ -144,9 +168,6 @@ class SystemEnvironmentConfig(BaseSettings):
             if self.ANTHROPIC_API_KEY:
                 kwargs["api_key"] = self.ANTHROPIC_API_KEY
 
-        # Omit `temperature` from outbound API requests: modern reasoning & frontier models
-        # (gpt-5/6, gemini-3/4, claude, glm-5, deepseek) either reject temperature != 1.0
-        # when reasoning is active or perform best at their provider-native default.
         return kwargs
 
 

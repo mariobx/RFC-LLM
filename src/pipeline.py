@@ -318,6 +318,17 @@ def main():
         print(f"Error: Source --csv path does not exist: {args.csv}", file=sys.stderr)
         sys.exit(1)
 
+    # Pre-flight verification of MITRE CPSA 4.4.9 compiler binaries before starting LLM synthesis
+    missing_cpsa_bins = SYSTEM_CONFIG.verify_cpsa_toolchain()
+    if missing_cpsa_bins:
+        print(
+            "Error: MITRE CPSA 4.4.9 compiler toolchain is missing required binaries:\n"
+            + "\n".join(f"  - {b}" for b in missing_cpsa_bins)
+            + "\nInstall CPSA 4.4.9 (`cabal update && cabal install cpsa`) or ensure ~/.cabal/bin is populated before running synthesis.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     # 1. Create Unique Timestamped Run Directory & Per-Run CSV Ledger
     run_timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     base_dir = Path(args.output_dir) if args.output_dir else SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR

@@ -2,7 +2,7 @@
 # Phase 3: Hindsight Reasoning (<think>) Synthesizer
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: strata/unsloth-iq4_xs
-timeout: 1500
+timeout: 2700
 max_tokens: 65536
 temperature: 0.2
 ---

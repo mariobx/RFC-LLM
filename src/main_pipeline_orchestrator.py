@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from pydantic import BaseModel, Field
 
-from src.code_generation.cpsa_scheme_emitter import emit_cpsa_scheme
+from src.code_generation.cpsa_scheme_emitter import emit_cpsa_scheme, sanitize_protocol_stem
 from src.document_ingestion.handshake_section_router import route_handshake_sections
 from src.document_ingestion.protocol_applicability_gate import evaluate_protocol_applicability
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
@@ -675,7 +675,116 @@ def run_rfc_translation_pipeline(
         model=router_model,
     )
 
-    verbatim_slice = slice_verbatim_sections(raw_rfc_text, target_sections)
+    try:
+        verbatim_slice = slice_verbatim_sections(raw_rfc_text, target_sections)
+        if not verbatim_slice.strip():
+            raise ValueError(f"Verbatim section slice for {target_sections} produced 0 non-empty lines")
+    except Exception as slice_exc:
+        elapsed = time.time() - start_time
+        error_msg = f"Section slicing failed: {slice_exc}"
+        csv_error_msg = f"{error_msg} | {eligible_rationale_msg}" if eligible_rationale_msg else error_msg
+        logger.error(error_msg)
+        empty_stage2 = {
+            "schema_self_correction_triggered": False,
+            "schema_validation_error": error_msg,
+            "initial_ast": None,
+            "initial_scm": None,
+        }
+        empty_stage5 = {
+            "validator_binary": "cpsa4roletran",
+            "roletran_algebra_supported": True,
+            "initial_passed": False,
+            "final_passed": False,
+            "total_attempts": 0,
+            "compiled_defproc_output": None,
+            "repair_attempts": [],
+        }
+        empty_stage6 = {
+            "validator_binary": "cpsa4",
+            "initial_passed": False,
+            "final_passed": False,
+            "total_attempts": 0,
+            "repair_attempts": [],
+        }
+        trajectory_path = write_trajectory_metadata_bundle(
+            output_dir=target_output_dir,
+            rfc_id=rfc_number_str,
+            rfc_title=protocol_title,
+            protocol_name=final_protocol_name,
+            participating_principals=applicability_report.participating_principals,
+            selected_sections=target_sections,
+            verbatim_slice="",
+            duration_seconds=elapsed,
+            stage2_record=empty_stage2,
+            stage5_record=empty_stage5,
+            stage6_record=empty_stage6,
+            final_spec=None,
+            final_scm_path=None,
+            trace_txt_path=None,
+            shapes_txt_path=None,
+            solver_passed=False,
+            intake_rationale=intake_rationale,
+        )
+        update_run_metadata_index(
+            run_root_dir=effective_run_root,
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            rfc_dir=target_output_dir,
+            scm_path=None,
+            trajectory_json_path=trajectory_path,
+            quality_tier="REJECTED",
+            is_eligible=True,
+            build_successful=False,
+            error_message=csv_error_msg,
+            tab_index=tab_index,
+            intake_rationale=intake_rationale,
+        )
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+        csv_recorder.log_run(
+            rfc_id=rfc_id,
+            is_eligible=True,
+            status="FAILED",
+            quality_tier="REJECTED",
+            protocol_name=final_protocol_name,
+            selected_sections=target_sections,
+            sliced_lines_count=0,
+            duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            trajectory_json_path=trajectory_path,
+            error_message=csv_error_msg,
+        )
+        GLOBAL_EVENT_BUS.update_accepted_tab(
+            tab_index,
+            status="FAILED",
+            quality_tier="REJECTED",
+            duration_seconds=round(elapsed, 2),
+            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+            cost_telemetry=rfc_cost_summary,
+            trajectory_path=str(trajectory_path),
+            error_message=error_msg,
+            intake_rationale=intake_rationale,
+        )
+        GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, error_message=error_msg)
+        GLOBAL_EVENT_BUS.emit("pipeline_failed", error_message=error_msg)
+        return PipelineExecutionSummary(
+            rfc_id=rfc_id,
+            protocol_name=final_protocol_name,
+            is_eligible=True,
+            selected_sections=target_sections,
+            sliced_lines_count=0,
+            trajectory_json_path=trajectory_path,
+            quality_tier="REJECTED",
+            intake_rationale=intake_rationale,
+            duration_seconds=elapsed,
+            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+            cost_telemetry=rfc_cost_summary,
+            error_message=error_msg,
+        )
+
     slice_lines_count = len(verbatim_slice.splitlines())
 
     slice_file = target_output_dir / "verbatim_slice.txt"
@@ -706,6 +815,9 @@ def run_rfc_translation_pipeline(
             principals=applicability_report.participating_principals,
             model=extraction_model,
         )
+        # Immediately persist Stage 2 AST checkpoint to disk before Stage 3 (cpsa4json) runs
+        initial_ast_path = target_output_dir / "initial_ast.json"
+        initial_ast_path.write_text(protocol_ast.model_dump_json(indent=2), encoding="utf-8")
         GLOBAL_EVENT_BUS.emit(
             "stage_completed",
             stage=2,
@@ -921,55 +1033,81 @@ def run_rfc_translation_pipeline(
     # -------------------------------------------------------------------------
     # STAGE 3: CPSA4json -> scm
     # -------------------------------------------------------------------------
+    extraction_meta = constrained_protocol_extractor.LAST_EXTRACTION_METADATA
+    stage2_record = {
+        "schema_self_correction_triggered": bool(extraction_meta.get("schema_self_correction_triggered", False)),
+        "schema_validation_error": extraction_meta.get("schema_validation_error"),
+        "initial_ast": protocol_ast.model_dump(),
+        "initial_scm": None,
+    }
+    stage5_record = {
+        "validator_binary": "cpsa4roletran",
+        "roletran_algebra_supported": True,
+        "initial_passed": False,
+        "final_passed": False,
+        "total_attempts": 0,
+        "compiled_defproc_output": None,
+        "repair_attempts": [],
+    }
+    stage6_record = {
+        "validator_binary": "cpsa4",
+        "initial_passed": False,
+        "final_passed": False,
+        "total_attempts": 0,
+        "repair_attempts": [],
+    }
+    scm_path: Optional[Path] = None
+    artifacts: Optional[CPSABuildArtifacts] = None
+    build_attempt = 0
+    last_build_error = "Unknown compilation failure"
+
     GLOBAL_EVENT_BUS.emit(
         "stage_started",
         stage=3,
         stage_name="CPSA4json -> scm",
         model="cpsa_scheme_emitter.py",
     )
-    scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
-    GLOBAL_EVENT_BUS.update_accepted_tab(
-        tab_index,
-        protocol_name=protocol_ast.protocol_name or final_protocol_name,
-        scm_path=str(scm_path),
-    )
-    GLOBAL_EVENT_BUS.emit("stage_completed", stage=3, scm_path=str(scm_path))
+    try:
+        scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
+        stage2_record["initial_scm"] = _read_scm_safe(scm_path)
+        GLOBAL_EVENT_BUS.update_accepted_tab(
+            tab_index,
+            protocol_name=protocol_ast.protocol_name or final_protocol_name,
+            scm_path=str(scm_path),
+        )
+        GLOBAL_EVENT_BUS.emit("stage_completed", stage=3, scm_path=str(scm_path))
 
-    extraction_meta = constrained_protocol_extractor.LAST_EXTRACTION_METADATA
-    stage2_record = {
-        "schema_self_correction_triggered": bool(extraction_meta.get("schema_self_correction_triggered", False)),
-        "schema_validation_error": extraction_meta.get("schema_validation_error"),
-        "initial_ast": protocol_ast.model_dump(),
-        "initial_scm": _read_scm_safe(scm_path),
-    }
+        # -------------------------------------------------------------------------
+        # STAGE 4 & 5: Roletran Check (<15 ms) & Self-Healing Loop
+        # -------------------------------------------------------------------------
+        protocol_ast, scm_path, roletran_result, stage5_record = _run_roletran_self_healing_loop(
+            protocol_ast=protocol_ast,
+            scm_path=scm_path,
+            target_output_dir=target_output_dir,
+            verbatim_slice=verbatim_slice,
+            repair_model_override=repair_override,
+            query_model_override=query_model,
+        )
 
-    # -------------------------------------------------------------------------
-    # STAGE 4 & 5: Roletran Check (<15 ms) & Self-Healing Loop
-    # -------------------------------------------------------------------------
-    protocol_ast, scm_path, roletran_result, stage5_record = _run_roletran_self_healing_loop(
-        protocol_ast=protocol_ast,
-        scm_path=scm_path,
-        target_output_dir=target_output_dir,
-        verbatim_slice=verbatim_slice,
-        repair_model_override=repair_override,
-        query_model_override=query_model,
-    )
-
-    # -------------------------------------------------------------------------
-    # STAGE 6: CPSA Compilation (60s cap) with RAG Self-Healing Loop
-    # -------------------------------------------------------------------------
-    protocol_ast, scm_path, artifacts, build_attempt, last_build_error, stage6_record = _run_mitre_solver_self_healing_loop(
-        protocol_ast=protocol_ast,
-        scm_path=scm_path,
-        target_output_dir=target_output_dir,
-        verbatim_slice=verbatim_slice,
-        roletran_result=roletran_result,
-        repair_model_override=repair_override,
-        query_model_override=query_model,
-    )
+        # -------------------------------------------------------------------------
+        # STAGE 6: CPSA Compilation (60s cap) with RAG Self-Healing Loop
+        # -------------------------------------------------------------------------
+        protocol_ast, scm_path, artifacts, build_attempt, last_build_error, stage6_record = _run_mitre_solver_self_healing_loop(
+            protocol_ast=protocol_ast,
+            scm_path=scm_path,
+            target_output_dir=target_output_dir,
+            verbatim_slice=verbatim_slice,
+            roletran_result=roletran_result,
+            repair_model_override=repair_override,
+            query_model_override=query_model,
+        )
+    except Exception as downstream_exc:
+        last_build_error = f"Stage 3-6 toolchain error: {downstream_exc}"
+        logger.error("Unhandled Stage 3-6 error for %s (%s): %s", rfc_number_str, final_protocol_name, downstream_exc)
+        GLOBAL_EVENT_BUS.emit("stage_failed", stage=3, error_message=last_build_error)
 
     elapsed = time.time() - start_time
-    stem = scm_path.stem
+    stem = scm_path.stem if scm_path is not None else sanitize_protocol_stem(protocol_ast.protocol_name or final_protocol_name)
     trace_txt_candidate = artifacts.trace_txt_path if artifacts else (target_output_dir / f"{stem}.txt")
     shapes_txt_candidate = artifacts.shapes_txt_path if artifacts else (target_output_dir / f"{stem}_shapes.txt")
 

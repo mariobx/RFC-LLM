@@ -75,8 +75,8 @@ def test_malformed_yaml_frontmatter_and_edge_cases(tmp_path: Path):
     )
     spec_scalars = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
     assert spec_scalars.model == "strata/unsloth-iq4_xs"
-    assert spec_scalars.timeout == 1500
-    assert spec_scalars.temperature == 0.0
+    assert spec_scalars.timeout == 900
+    assert spec_scalars.temperature is None
 
     with pytest.raises(FileNotFoundError):
         load_prompt_spec("99_nonexistent_prompt.md", prompts_dir=tmp_path)
@@ -710,6 +710,109 @@ def test_compact_diagnostic_headline_strips_snowball_autopsy_and_csv_api_works(t
         assert payload["rows"][0]["error_message"].startswith("Eligible:")
 
     asyncio.run(_check_csv_endpoint())
+
+
+def test_section_router_normalizes_hash_prefixes_and_section_labels():
+    """Verify `_match_valid_toc_id` and `normalize_section_id_token` normalize `#7.1.1` (RFC 6143), `Section 3.2.`, and `Appendix A`."""
+    from src.document_ingestion.handshake_section_router import (
+        SectionRoutingDecision,
+        _match_valid_toc_id,
+        normalize_section_id_token,
+    )
+
+    assert normalize_section_id_token("#7.1.1") == "7.1.1"
+    assert normalize_section_id_token("Section 3.2.") == "3.2"
+    assert normalize_section_id_token("§4.1 Handshake Protocol") == "4.1"
+    assert normalize_section_id_token("Appendix A.") == "App-A"
+
+    valid_ids = {"3", "3.2", "7.1.1", "7.1.2", "App-A"}
+    assert _match_valid_toc_id("#7.1.1", valid_ids) == "7.1.1"
+    assert _match_valid_toc_id("Section 3.2.", valid_ids) == "3.2"
+    assert _match_valid_toc_id("Appendix A", valid_ids) == "App-A"
+    assert _match_valid_toc_id("#99.9", valid_ids) is None
+
+    # Schema description must never suggest '#.#'
+    schema_desc = SectionRoutingDecision.model_json_schema()["properties"]["selected_section_ids"]["description"]
+    assert "#.#" not in schema_desc
+
+
+def test_verbatim_slicer_handles_hex_titles_parent_fallback_and_short_unnumbered_rfcs():
+    """Verify `slice_verbatim_sections` slices `6.7.2.  0x0002 - AUTHENTICATION_TYPE` (RFC 7868),
+    falls back to parent `6.7` if a leaf subsection is missing, and handles short unnumbered RFCs (RFC 3268).
+    """
+    from src.document_ingestion.verbatim_section_slicer import slice_verbatim_sections
+
+    rfc7868_excerpt = (
+        "Table of Contents\n\n"
+        "   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . .  1\n"
+        "   6.7.  EIGRP Packet TLVs  . . . . . . . . . . . . . . . . . . . . 52\n"
+        "   6.7.2.  0x0002 - AUTHENTICATION_TYPE . . . . . . . . . . . . . . 53\n\n"
+        "1.  Introduction\n"
+        "Intro text.\n\n"
+        "6.7.  EIGRP Packet TLVs\n"
+        "Parent TLV section overview.\n\n"
+        "6.7.2.  0x0002 - AUTHENTICATION_TYPE\n"
+        "This TLV conveys authentication type and MD5/SHA256 data.\n\n"
+        "6.8.  Next Section\n"
+        "Trailing text.\n"
+    )
+    sliced_hex = slice_verbatim_sections(rfc7868_excerpt, ["#6.7.2"])
+    assert "0x0002 - AUTHENTICATION_TYPE" in sliced_hex
+    assert "MD5/SHA256 data" in sliced_hex
+    assert "Trailing text." not in sliced_hex
+
+    # Parent fallback if leaf '6.7.99' is missing in body
+    sliced_parent = slice_verbatim_sections(rfc7868_excerpt, ["6.7.99"])
+    assert "Parent TLV section overview." in sliced_parent
+
+    # Short unnumbered RFC (like RFC 3268)
+    rfc3268_short = (
+        "Network Working Group\n"
+        "Request for Comments: 3268\n\n"
+        "Overview\n\n"
+        "This document proposes AES ciphersuites for TLS.\n\n"
+        "Cipher Usage\n\n"
+        "TLS_RSA_WITH_AES_128_CBC_SHA\n\n"
+        "References\n\n"
+        "[TLS] Dierks, T., RFC 2246.\n"
+    )
+    sliced_unnumbered = slice_verbatim_sections(rfc3268_short, ["FULL_BODY"])
+    assert "TLS_RSA_WITH_AES_128_CBC_SHA" in sliced_unnumbered
+    assert "[TLS] Dierks" not in sliced_unnumbered
+
+
+def test_temperature_forwarding_on_cycle_detected_and_default_omission():
+    """Verify `SYSTEM_CONFIG.get_llm_kwargs` omits `temperature` when `None` and forwards `temperature` when set."""
+    from src.prompt_loader import PROMPT_COMPILER_REPAIR, PROMPT_PROTOCOL_EXTRACTION, load_prompt_spec
+
+    ext_spec = load_prompt_spec(PROMPT_PROTOCOL_EXTRACTION)
+    rep_spec = load_prompt_spec(PROMPT_COMPILER_REPAIR)
+    assert ext_spec.timeout == 2700
+    assert rep_spec.timeout == 2700
+    assert ext_spec.temperature is None
+    assert rep_spec.temperature is None
+
+    kwargs_default = SYSTEM_CONFIG.get_llm_kwargs("strata/unsloth-iq4_xs", temperature=None, max_tokens=65536)
+    assert "temperature" not in kwargs_default
+
+    kwargs_cycle = SYSTEM_CONFIG.get_llm_kwargs("nous/anthropic/claude-haiku-5.5", temperature=0.5, max_tokens=65536)
+    assert kwargs_cycle["temperature"] == 0.5
+
+
+def test_cpsa_toolchain_preflight_verification(monkeypatch, tmp_path: Path):
+    """Verify `SYSTEM_CONFIG.verify_cpsa_toolchain` detects missing CPSA binaries."""
+    import shutil
+
+    # Normally all binaries exist on this machine
+    assert SYSTEM_CONFIG.verify_cpsa_toolchain() == []
+
+    # Simulate missing cpsa4json binary and not on PATH
+    monkeypatch.setattr(SYSTEM_CONFIG, "CPSA4JSON_BIN", tmp_path / "nonexistent_cpsa4json")
+    monkeypatch.setattr(shutil, "which", lambda name: None if name == "cpsa4json" else f"/usr/bin/{name}")
+    missing = SYSTEM_CONFIG.verify_cpsa_toolchain()
+    assert len(missing) == 1
+    assert "cpsa4json" in missing[0]
+
 
 
 

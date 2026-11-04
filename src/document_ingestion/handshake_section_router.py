@@ -5,7 +5,8 @@ the cryptographic message exchange or handshake flow.
 """
 
 import json
-from typing import List, Optional
+import re
+from typing import List, Optional, Set
 import json_repair
 import litellm
 from pydantic import BaseModel, Field
@@ -28,9 +29,46 @@ class SectionRoutingDecision(BaseModel):
 
     selected_section_ids: List[str] = Field(
         ...,
-        description="List of section IDs containing the protocol message traces (such as ['#.#', '#.#.#'])",
+        description=(
+            "List of bare numerical and dotted section IDs from the Table of Contents "
+            "containing the protocol message traces (e.g., ['3', '4'] or ['7.1.1', '7.2.2', 'App-A']). "
+            "Use ONLY digits and dots (or 'App-X' for appendices)—NEVER include '#', 'Section', or section titles."
+        ),
     )
     rationale: str = Field(..., description="Explanation of why these sections were selected")
+
+
+def normalize_section_id_token(raw_id: str) -> str:
+    """Normalizes a section ID string into a bare numerical/dotted token (e.g. '#7.1.1.' -> '7.1.1')."""
+    if not raw_id:
+        return ""
+    s = str(raw_id).strip().strip("`'\"")
+    # Strip leading '#' or '§' or 'Section' / 'Sec.'
+    s = re.sub(r"^[#§]+\s*", "", s)
+    s = re.sub(r"^(?:Section|Sec\.?)\s+", "", s, flags=re.IGNORECASE)
+    # Normalize 'Appendix A' -> 'App-A'
+    s = re.sub(r"^Appendix\s+([A-Za-z0-9]+(?:\.[0-9]+)*)", r"App-\1", s, flags=re.IGNORECASE)
+    # If the model included a title after the section number (e.g. "7.1.1 Handshake"), keep only the leading ID token
+    token_match = re.match(r"^((?:App-[A-Za-z0-9]+(?:\.[0-9]+)*)|(?:[A-Za-z]\.[0-9]+(?:\.[0-9]+)*)|(?:\d+(?:\.\d+)*))", s, flags=re.IGNORECASE)
+    if token_match:
+        s = token_match.group(1)
+    return s.rstrip(".")
+
+
+def _match_valid_toc_id(raw_id: str, valid_toc_ids: Set[str]) -> Optional[str]:
+    """Matches a raw LLM section ID against `valid_toc_ids` after normalization."""
+    if raw_id in valid_toc_ids:
+        return raw_id
+    norm = normalize_section_id_token(raw_id)
+    if not norm:
+        return None
+    if norm in valid_toc_ids:
+        return norm
+    norm_lower = norm.lower()
+    for valid_id in valid_toc_ids:
+        if valid_id.lower() == norm_lower or valid_id.rstrip(".").lower() == norm_lower:
+            return valid_id
+    return None
 
 
 def route_handshake_sections(
@@ -40,9 +78,13 @@ def route_handshake_sections(
     model: Optional[str] = None,
 ) -> List[str]:
     """Uses a structured LLM call to select the exchange section IDs from the TOC."""
+    if not toc_entries:
+        logger.info("No numbered TOC entries found for %s; routing to full body fallback.", rfc_id)
+        return ["FULL_BODY"]
+
     prompt_spec = load_prompt_spec(PROMPT_SECTION_ROUTER)
     model_name = model or prompt_spec.model
-    sampling_temp = prompt_spec.temperature if prompt_spec.temperature is not None else 0.0
+    sampling_temp = prompt_spec.temperature
     logger.info("Routing exchange sections for %s ('%s') using %s", rfc_id, protocol_name, model_name)
 
     toc_formatted = "\n".join(f"{entry.section_id} {entry.title}" for entry in toc_entries)
@@ -51,7 +93,8 @@ def route_handshake_sections(
         f"Protocol Name: {protocol_name}\n"
         f"RFC: {rfc_id}\n\n"
         f"Table of Contents:\n{toc_formatted}\n\n"
-        "Select the section IDs containing the primary cryptographic message exchange or handshake."
+        "Select the section IDs containing the primary cryptographic message exchange or handshake. "
+        "Output ONLY bare numerical and dotted section IDs (e.g., \"3\", \"4.1\", \"7.1.2\") without '#' or 'Section'."
     )
 
     system_prompt = build_schema_system_prompt(
@@ -83,9 +126,11 @@ def route_handshake_sections(
         decision = SectionRoutingDecision.model_validate(decision_data)
 
         valid_toc_ids = {entry.section_id for entry in toc_entries}
-        filtered_section_ids = [
-            section_id for section_id in decision.selected_section_ids if section_id in valid_toc_ids
-        ]
+        filtered_section_ids: List[str] = []
+        for raw_sec_id in decision.selected_section_ids:
+            matched_id = _match_valid_toc_id(raw_sec_id, valid_toc_ids)
+            if matched_id and matched_id not in filtered_section_ids:
+                filtered_section_ids.append(matched_id)
 
         if not filtered_section_ids:
             logger.warning(

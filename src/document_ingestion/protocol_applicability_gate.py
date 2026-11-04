@@ -54,7 +54,7 @@ def evaluate_protocol_applicability(
     """Evaluates an RFC using its frontmatter and entire TOC to determine CPSA eligibility."""
     prompt_spec = load_prompt_spec(PROMPT_APPLICABILITY_GATE)
     model_name = model or prompt_spec.model
-    sampling_temp = prompt_spec.temperature if prompt_spec.temperature is not None else 0.0
+    sampling_temp = prompt_spec.temperature
     logger.info("Evaluating protocol applicability for %s: '%s' using model %s", rfc_id, title, model_name)
 
     toc_summary = "\n".join(f"{entry.section_id} {entry.title}" for entry in toc_entries)

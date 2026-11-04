@@ -51,7 +51,7 @@ def extract_protocol_specification(
     }
     extraction_spec = load_prompt_spec(PROMPT_PROTOCOL_EXTRACTION)
     model_name = model or extraction_spec.model
-    sampling_temp = extraction_spec.temperature if extraction_spec.temperature is not None else 0.0
+    sampling_temp = extraction_spec.temperature
     logger.info("Extracting CPSAProtocolSpecification for '%s' using %s", protocol_name, model_name)
 
     principals_hint = f"Expected Principals: {', '.join(principals)}" if principals else ""
@@ -72,14 +72,19 @@ def extract_protocol_specification(
         CPSAProtocolSpecification,
     )
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
-        model_name,
-        temperature=sampling_temp,
-        max_tokens=extraction_spec.max_tokens,
-        json_mode=True,
-    )
     response = None
     for retry_idx in range(3):
+        effective_temp = (
+            max(0.5, sampling_temp or 0.0)
+            if retry_idx > 0
+            else sampling_temp
+        )
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            model_name,
+            temperature=effective_temp,
+            max_tokens=extraction_spec.max_tokens,
+            json_mode=True,
+        )
         try:
             response = litellm.completion(
                 **llm_kwargs,
@@ -144,7 +149,7 @@ def extract_protocol_specification(
             correction_prompt = f"{correction_template}\n\nValidation Errors:\n{validation_error}"
 
         corr_model = model or corr_spec.model
-        corr_temp = corr_spec.temperature if corr_spec.temperature is not None else 0.0
+        corr_temp = corr_spec.temperature
         corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
             corr_model,
             temperature=corr_temp,
@@ -200,7 +205,7 @@ def extract_protocol_specification(
         )
         corr_spec = load_prompt_spec(PROMPT_SCHEMA_SELF_CORRECTION)
         corr_model = model or corr_spec.model
-        corr_temp = corr_spec.temperature if corr_spec.temperature is not None else 0.0
+        corr_temp = corr_spec.temperature
         corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
             corr_model,
             temperature=corr_temp,

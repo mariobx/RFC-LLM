@@ -112,12 +112,13 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
     if not entries:
         logger.info("No explicit TOC block found. Scanning body headings for synthetic TOC...")
         body_heading_pattern = re.compile(
-            r"^(?P<sec_id>(?:[0-9]+(?:\.[0-9]+)*)|(?:[A-Z]\.[0-9]+))\.?\s+(?P<title>[A-Z][A-Za-z0-9\s\-_,:()'\"]{3,60})$"
+            r"^(?P<sec_id>(?:[0-9]+\.[0-9]+(?:\.[0-9]+)*\.?)|(?:[0-9]+\.)|(?:[A-Z]\.[0-9]+\.?))\s+"
+            r"(?P<title>[A-Za-z0-9][A-Za-z0-9\s\-_,:()'\"/]{2,70})$"
         )
         for line in lines:
             match = body_heading_pattern.match(line)
             if match:
-                sec_id = match.group("sec_id").strip()
+                sec_id = match.group("sec_id").strip().rstrip(".")
                 title = match.group("title").strip()
                 entries.append(TOCSectionEntry(section_id=sec_id, title=title, page_number=None, indent_level=0))
 

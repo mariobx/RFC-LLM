@@ -820,7 +820,7 @@ def run_agentic_cpsa_searcher(
 
     searcher_spec = load_prompt_spec(PROMPT_RAG_QUERY_FORMULATION)
     searcher_model = model or searcher_spec.model
-    sampling_temp = searcher_spec.temperature if searcher_spec.temperature is not None else 0.0
+    sampling_temp = searcher_spec.temperature
 
     algebra_hint = getattr(failing_spec, "message_algebra", "basic") if failing_spec is not None else "basic"
 

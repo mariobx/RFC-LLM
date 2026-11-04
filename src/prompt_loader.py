@@ -40,13 +40,13 @@ GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"
 
 # Built-in fallback models & timeouts when a `prompts/*.md` file omits frontmatter or is missing
 _FALLBACK_METADATA: Dict[str, Dict[str, Any]] = {
-    PROMPT_APPLICABILITY_GATE: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_SECTION_ROUTER: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_PROTOCOL_EXTRACTION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_RAG_QUERY_FORMULATION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_COMPILER_REPAIR: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_THINK_SYNTHESIZER: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.2},
+    PROMPT_APPLICABILITY_GATE: {"model": "strata/unsloth-iq4_xs", "timeout": 900, "max_tokens": 16384, "temperature": None},
+    PROMPT_SECTION_ROUTER: {"model": "strata/unsloth-iq4_xs", "timeout": 900, "max_tokens": 16384, "temperature": None},
+    PROMPT_PROTOCOL_EXTRACTION: {"model": "strata/unsloth-iq4_xs", "timeout": 2700, "max_tokens": 65536, "temperature": None},
+    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "strata/unsloth-iq4_xs", "timeout": 2700, "max_tokens": 65536, "temperature": None},
+    PROMPT_RAG_QUERY_FORMULATION: {"model": "strata/unsloth-iq4_xs", "timeout": 900, "max_tokens": 16384, "temperature": None},
+    PROMPT_COMPILER_REPAIR: {"model": "strata/unsloth-iq4_xs", "timeout": 2700, "max_tokens": 65536, "temperature": None},
+    PROMPT_THINK_SYNTHESIZER: {"model": "strata/unsloth-iq4_xs", "timeout": 2700, "max_tokens": 65536, "temperature": 0.2},
 }
 
 # Built-in fallback prompt bodies if a file in prompts/ is missing or empty

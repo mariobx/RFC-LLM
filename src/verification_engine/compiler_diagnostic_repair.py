@@ -206,22 +206,27 @@ def repair_protocol_specification(
         "Provide the complete repaired CPSAProtocolSpecification resolving the error without inventing fictional protocol terms."
     )
 
-    # Use higher temperature if cycle detected to break greedy minimum
-    base_temp = repair_spec.temperature if repair_spec.temperature is not None else 0.0
-    sampling_temperature = max(0.4, base_temp) if cycle_detected else base_temp
+    # Use higher temperature if cycle detected or on timeout retry to break out of repetitive token loops
+    base_temp = repair_spec.temperature
+    sampling_temperature = max(0.5, base_temp or 0.0) if cycle_detected else base_temp
     system_prompt = build_schema_system_prompt(
         PROMPT_COMPILER_REPAIR,
         CPSAProtocolSpecification,
     )
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
-        model_name,
-        temperature=sampling_temperature,
-        max_tokens=repair_spec.max_tokens,
-        json_mode=True,
-    )
     response = None
     for retry_idx in range(4):
+        effective_temp = (
+            max(0.5, sampling_temperature or 0.0)
+            if retry_idx > 0
+            else sampling_temperature
+        )
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            model_name,
+            temperature=effective_temp,
+            max_tokens=repair_spec.max_tokens,
+            json_mode=True,
+        )
         try:
             response = litellm.completion(
                 **llm_kwargs,
