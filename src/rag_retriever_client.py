@@ -744,6 +744,13 @@ def retrieve_cpsa_manual_guidance(
     return fallback_message
 
 
+def _term_to_compact_sexpr(term: Any) -> str:
+    """Formats a JSON prefix term tree as a compact S-expression string for Searcher inspection."""
+    if isinstance(term, list):
+        return "(" + " ".join(_term_to_compact_sexpr(sub) for sub in term) + ")"
+    return str(term)
+
+
 def _summarize_failing_ast_for_searcher(failing_spec: Any) -> str:
     """Produces a compact structural summary of the failing `CPSAProtocolSpecification`
     so the Searcher LLM can inspect role variables, sorts, trace events (`send`/`recv`),
@@ -760,9 +767,9 @@ def _summarize_failing_ast_for_searcher(failing_spec: Any) -> str:
             for ev in r.get("trace", []):
                 direction = ev.get("direction", "?")
                 ch = ev.get("channel")
-                msg_str = json.dumps(ev.get("message_term"))
-                if len(msg_str) > 120:
-                    msg_str = msg_str[:117] + "..."
+                msg_str = _term_to_compact_sexpr(ev.get("message_term"))
+                if len(msg_str) > 600:
+                    msg_str = msg_str[:597] + "..."
                 trace_events.append(f"({direction}{f' {ch}' if ch else ''} {msg_str})")
             lines.append(
                 f"  Role '{r.get('role_name')}': vars=[{vars_str}] | "
@@ -806,10 +813,18 @@ def run_agentic_cpsa_searcher(
         return "Review standard MITRE CPSA 4.4.9 executability and preskeleton assumption rules."
 
     ast_summary = _summarize_failing_ast_for_searcher(failing_spec) if failing_spec is not None else ""
-    ast_hash = hashlib.sha256(ast_summary.encode("utf-8")).hexdigest()[:16]
+    proto_name = getattr(failing_spec, "protocol_name", "") if failing_spec is not None else ""
+    diag_for_key = re.sub(r"\(at \.scm line.*?\)", "", error_diagnostic[:220]).strip()
+    diag_for_key = re.sub(r"Undeclared variable\s+\S+", "Undeclared variable <VAR>", diag_for_key)
+    diag_for_key = re.sub(r"[0-9]+", "#", diag_for_key)
+    ast_hash = (
+        hashlib.sha256(proto_name.encode("utf-8")).hexdigest()[:16]
+        if "Undeclared variable <VAR>" in diag_for_key
+        else hashlib.sha256(ast_summary.encode("utf-8")).hexdigest()[:16]
+    )
 
     # Normalize error signature AND include AST hash so AST-specific diagnoses never bleed across RFCs
-    norm_sig = f"{failure_stage}:{ast_hash}:{re.sub(r'[0-9]+', '#', error_diagnostic[:220])}"
+    norm_sig = f"{failure_stage}:{ast_hash}:{diag_for_key}"
     if not cycle_detected and norm_sig in _SEARCH_CACHE:
         cached_query, cached_guidance, cached_ids, cached_diag, cached_trace = _SEARCH_CACHE[norm_sig]
         LAST_SEARCHER_QUERY = cached_query

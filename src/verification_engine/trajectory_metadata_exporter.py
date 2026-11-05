@@ -85,15 +85,29 @@ def _extract_clause_block(sexpr: str, keyword: str) -> Optional[str]:
     return blocks[0] if blocks else None
 
 
-def _extract_root_deflistener(sexpr: str) -> Optional[str]:
-    """Extracts the listener term from a root preskeleton if `(deflistener ...)` is present outside `(operation ...)`."""
+def _extract_root_deflisteners(sexpr: str) -> List[str]:
+    """Extracts all listener terms from a root preskeleton if `(deflistener ...)` clauses are present outside `(operation ...)`."""
     op_block = _extract_clause_block(sexpr, "operation")
     cleaned = sexpr.replace(op_block, "") if op_block else sexpr
-    dl_block = _extract_clause_block(cleaned, "deflistener")
-    if not dl_block:
-        return None
-    inner = re.sub(r"^\(\s*deflistener\s+", "", dl_block[:-1]).strip()
-    return inner
+    stripped = cleaned.strip()
+    inner_body = (
+        stripped[1:-1]
+        if (stripped.startswith("(") and stripped.endswith(")"))
+        else stripped
+    )
+    terms: List[str] = []
+    for sub in split_top_level_sexprs(inner_body):
+        if re.match(r"^\(\s*deflistener\b", sub):
+            inner = re.sub(r"^\(\s*deflistener\s+", "", sub[:-1]).strip()
+            if inner:
+                terms.append(inner)
+    return terms
+
+
+def _extract_root_deflistener(sexpr: str) -> Optional[str]:
+    """Extracts the first listener term from a root preskeleton if `(deflistener ...)` is present outside `(operation ...)`."""
+    terms = _extract_root_deflisteners(sexpr)
+    return terms[0] if terms else None
 
 
 def _extract_skeleton_vars_sorts(sexpr: str) -> Dict[str, str]:
@@ -412,8 +426,9 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
         is_shape = _has_flag_clause(block, "shape")
 
         if parent is None:
-            listener_term = _extract_root_deflistener(block)
-            has_listener = listener_term is not None
+            listener_terms = _extract_root_deflisteners(block)
+            listener_term = listener_terms[0] if listener_terms else None
+            has_listener = bool(listener_terms)
             initial_strands = _extract_defstrands(block)
             group_idx = len(preskeleton_groups)
             if lbl is not None:
@@ -426,6 +441,7 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
                 "comment": _extract_comment_string(block),
                 "has_deflistener": has_listener,
                 "listener_term": listener_term,
+                "listener_terms": listener_terms,
                 "initial_strand_count": len(initial_strands),
                 "realized_shape_labels": [],
                 "realized_shapes_count": 0,
@@ -608,13 +624,19 @@ def compute_security_findings(
     protected_secrets: List[str] = []
     leaked_secrets: List[str] = []
     for l_pov in listener_povs:
-        term = l_pov.get("listener_term") or f"listener_label_{l_pov.get('root_label')}"
+        terms = l_pov.get("listener_terms") or (
+            [l_pov["listener_term"]]
+            if l_pov.get("listener_term")
+            else [f"listener_label_{l_pov.get('root_label')}"]
+        )
         if l_pov.get("realized_shapes_count", 0) == 0:
-            if term not in protected_secrets:
-                protected_secrets.append(term)
+            for term in terms:
+                if term not in protected_secrets:
+                    protected_secrets.append(term)
         else:
-            if term not in leaked_secrets:
-                leaked_secrets.append(term)
+            for term in terms:
+                if term not in leaked_secrets:
+                    leaked_secrets.append(term)
 
     if not listener_povs:
         secrecy_status = "NOT_APPLICABLE_NO_LISTENER"
@@ -703,6 +725,7 @@ def compute_quality_assessment(
     roletran_passed: bool = True,
     has_cryptographic_primitives: bool = True,
     security_findings: Optional[Dict[str, Any]] = None,
+    final_spec: Optional[CPSAProtocolSpecification] = None,
 ) -> Dict[str, Any]:
     """Computes the deterministic 4-tier translation & modeling quality grade (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`).
 
@@ -761,9 +784,32 @@ def compute_quality_assessment(
         o.get("realized_shapes_count", 0) == 0 for o in listener_povs
     )
 
+    # Detect truncated initiator trace where responder sends a reply that no role ever receives (e.g. RFC 3971)
+    has_dangling_response_flight = False
+    if final_spec and len(final_spec.roles) >= 2:
+        total_sends = sum(1 for r in final_spec.roles for ev in r.trace if ev.direction == "send")
+        total_recvs = sum(1 for r in final_spec.roles for ev in r.trace if ev.direction == "recv")
+        has_send_only_role = any(
+            len(r.trace) == 1 and r.trace[0].direction == "send" for r in final_spec.roles
+        )
+        has_recv_and_send_role = any(
+            any(ev.direction == "recv" for ev in r.trace) and any(ev.direction == "send" for ev in r.trace)
+            for r in final_spec.roles
+        )
+        any_trivial_pov = any(bool(o.get("is_trivial_single_strand_shape")) for o in participant_povs)
+        if has_send_only_role and has_recv_and_send_role and total_sends > total_recvs and any_trivial_pov:
+            has_dangling_response_flight = True
+            anomaly_msg = (
+                "INCOMPLETE_INITIATOR_TRACE: Responder sends a reply flight that no role receives, "
+                "leaving the initiator POV as a 1-strand trivial shape."
+            )
+            if anomaly_msg not in sec_report.get("vulnerabilities_and_anomalies", []):
+                sec_report.setdefault("vulnerabilities_and_anomalies", []).append(anomaly_msg)
+                sec_report["anomalies_count"] = len(sec_report["vulnerabilities_and_anomalies"])
+
     if not all_povs_realized or not has_cryptographic_primitives or any_preseeded_no_progress:
         tier = "BRONZE"
-    elif roletran_passed and causal_multi_pov_count >= 1:
+    elif roletran_passed and causal_multi_pov_count >= 1 and not has_dangling_response_flight:
         tier = "GOLD"
     else:
         tier = "SILVER"
@@ -866,6 +912,7 @@ def write_trajectory_metadata_bundle(
         roletran_passed=roletran_passed,
         has_cryptographic_primitives=has_crypto,
         security_findings=security_findings,
+        final_spec=final_spec,
     )
 
     stage6_full = {

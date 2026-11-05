@@ -2,7 +2,7 @@
 # Stage 5 & 6: RAG-Guided Compiler Self-Healing Repair
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: strata/unsloth-iq4_xs
-timeout: 2700
+timeout: 3600
 max_tokens: 65536
 ---
 You are a formal methods expert in debugging and repairing MITRE CPSA 4.4.9 protocol specifications.
@@ -17,19 +17,19 @@ STRICT 1-TO-1 RFC FIDELITY DURING REPAIR (ZERO HALLUCINATION):
 - Every variable, role, and trace event in your repaired specification MUST remain grounded 1-to-1 in the provided Verbatim RFC Exchange Specification.
 
 Common Diagnostics & Fixes:
-1. "Undeclared variable <var>":
-   - A variable is declared in "inputs", "outputs", or "unique_originating", but does NOT occur anywhere in the role's trace events!
-   - Fix: Remove the variable from "inputs", "outputs", and "unique_originating". In CPSA roletran, every variable in inputs/outputs/uniq-orig must actually appear in a trace send or recv.
+1. "Undeclared variable <var>" or "Malformed term":
+   - Either `<var>` is declared in `inputs`, `outputs`, or `unique_originating` without appearing in the role's `trace`, OR `<var>` is used in `trace` without being declared in `variables`.
+   - Fix: If `<var>` is a genuine protocol variable (nonce, key, identity, parameter), declare it in `variables` with its proper CPSA sort (`name`, `text`, `data`, `skey`, `akey`, `mesg`). If `<var>` is a fixed message-type constant or domain-separation label, keep it as a quoted tag literal `"\"<var>\""`—NEVER delete domain-separation labels and NEVER convert distinct message-type constants (like `CHALLENGE` vs `CONFIRM`) into unconstrained `text` variables (which allows CPSA to unify them and create false replay shapes!).
 2. "Cannot build <term>":
    - A role attempts to send a term before it has been generated ("unique_originating"), received, or passed as an input ("inputs").
    - Or, a symmetric encryption key in ["enc", payload, key] was mistakenly declared as "data" instead of "skey".
-   - Fix: Change key sort to "skey". Add fresh originating terms to "unique_originating". Add known parameters or channels to "inputs".
+   - Fix: Change key sort to "skey". Add fresh originating terms to "unique_originating". Add known parameters, keys (`["ltk", ...]`, `["pubk", ...]`, `["privk", ...]`), or channels to "inputs".
 3. "Received term cannot be fully destructured":
-   - A role receives an encrypted message or hash, but lacks the necessary decryption key or preimage in its "inputs".
+   - A role receives an encrypted message or hash, but lacks the necessary decryption key or preimage in its "inputs", OR a role is trying to pattern-match inside `["enc", ..., ["pubk", "peer_name"]]` / `["enc", ..., ["ltk", "a", "b"]]` without owning the decryption key!
    - Fix:
-     * If the receiving role is the intended verifier/recipient of the encrypted message or MAC, ensure its `inputs` list includes the required key (e.g., `["ltk", "client_name", "server_name"]` or symmetric `skey` variable) and any public parameters needed to reconstruct a received `["hash", ...]`.
+     * If the receiving role is the intended verifier/recipient of the encrypted message or MAC, ensure its `inputs` list includes the required key (e.g., `["ltk", "client_name", "server_name"]`, `["pubk", "signer_name"]` to verify `["enc", ..., ["privk", "signer_name"]]`, `["privk", "recipient_name"]` to decrypt `["enc", ..., ["pubk", "recipient_name"]]`, or symmetric `skey` variable) and any public parameters needed to reconstruct a received `["hash", ...]`.
+     * CRITICAL (`cpsa4roletran` `loopEncr` Rule): If a role (such as a `Client` or an `IntermediateRouter` in a multi-hop protocol) receives an encrypted subterm `["enc", ..., ["pubk", "other_principal"]]` or `["enc", ..., ["ltk", "a", "b"]]` for which it does NOT possess `["privk", "other_principal"]` or `["ltk", "a", "b"]`, `cpsa4roletran` CANNOT equality-check or open that `["enc", ...]` inside `recv`! Replace that undecryptable encrypted subterm in that role's `recv` (and subsequent forwarding `send`) with an opaque variable of sort `"mesg"` (e.g. `encrypted_token: mesg`), while keeping the full `["enc", ...]` term in the originating and final decrypting roles!
      * NEVER replace the final verifier's encrypted term or MAC with an unchecked bare `mesg` variable (such as `["recv", "tesla_mac"]` where `tesla_mac` is sort `mesg`), and NEVER model an Authorization Server token to a Resource Server using only public-key encryption `["enc", ..., ["pubk", "rs_name"]]` without an authenticating key `["ltk", "as_name", "rs_name"]` or signature `["privk", "as_name"]`—anyone (including the adversary) knows `["pubk", "rs_name"]` and can forge an unsigned public-key encryption in 1 strand!
-     * If an intermediary role (such as an OAuth/Kerberos `Client`) receives an opaque ticket encrypted under `["ltk", "as_name", "rs_name"]` that the `Client` cannot decrypt and merely forwards to `ResourceServer`, declare `access_token` with sort `mesg` ONLY inside `Client` (`["recv", ["enc", "access_token", "session_key", ["ltk", "client_name", "as_name"]]]` -> `["send", ["cat", "access_token", ...]]`), while `AuthorizationServer` sends and `ResourceServer` receives the full `["enc", ..., ["ltk", "as_name", "rs_name"]]` structure! Never make the entire `AS -> Client` message a bare `mesg` variable.
 4. Preskeleton Architecture & "Skeleton not well formed: non-orig <key> carried":
    - CRITICAL: Never put 'deflistener' inside pure POV skeletons! A listener on an uncompromised secret causes CPSA to abort without displaying the completed bilateral protocol handshake shape.
    - Separate into pure POV skeletons + (only if the RFC establishes/transmits a confidential secret) a Secrecy POV skeleton:

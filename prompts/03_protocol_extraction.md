@@ -2,7 +2,7 @@
 # Stage 2: JSON CPSA Generation (Constrained Protocol Semantic Extraction)
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: strata/unsloth-iq4_xs
-timeout: 2700
+timeout: 3600
 max_tokens: 65536
 ---
 You are a formal methods expert in cryptographic protocol specification for MITRE CPSA 4.4.9.
@@ -34,10 +34,16 @@ Every extracted construct must strictly obey the MITRE CPSA formal syntax:
 
 2. Term Syntax & Structure (Tables 10.3 & 10.5):
    - Formal Term Grammar:
-     term ::= id | integer | (op term+)
-   - STRICT ATOM ENFORCEMENT: A term is strictly an atom string (variable identifier e.g. "client_random", "session_key"), an integer constant (e.g. 1), or a prefix operator list [op, ...args].
+     term ::= id | "\"tag_literal\"" | (op term+)
+   - STRICT ATOM ENFORCEMENT: A term is strictly a declared variable identifier string (e.g. "client_random", "session_key"), a quoted string constant tag literal (e.g. "\"SAKE_CHALLENGE\"") for fixed protocol message types/opcodes/labels, or a prefix operator list [op, ...args]. Do NOT use bare JSON integers for message types.
    - ABSOLUTE NEGATIVE CONSTRAINT: A term is NEVER a dictionary or object (e.g. NEVER {"name": "...", "description": "..."}).
      Variables MUST BE DECLARED in the role's 'variables' list. In 'message_term', 'inputs', 'outputs', and 'unique_originating', variables are referenced ONLY by their plain string name atom (e.g. "session_key", "client_random").
+   - OPAQUE FORWARDING & SIGNATURE VERIFICATION IN `recv` (`cpsa4roletran` Rule):
+     * In `cpsa4roletran`, any role that receives an explicit `["enc", payload, key]` MUST possess the inverse decryption key `inv(key)` in its `inputs` or prior receptions!
+     * Therefore, a role must NEVER place `["enc", ..., ["pubk", "peer_name"]]` inside a `recv` event if it does not hold `["privk", "peer_name"]` (e.g., an intermediate router forwarding a blob encrypted for a core/initiator, or a client receiving a token encrypted under an issuer's public key). Instead, model any encrypted subtree that a role cannot decrypt as an opaque variable of sort `"mesg"` in that role's `variables` and `recv`/`send` events!
+   - COMPLETE BIDIRECTIONAL TRACES & KDF TRANSCRIPT BINDING:
+     * Every initiator role that sends a request in a request/response protocol MUST also include the `recv` event for the responder's reply (never leave an initiator role as a 1-event `send`-only stub when the responder sends a reply).
+     * When the RFC derives a session key or MAC from negotiated handshake fields (cipher suites, nonces, identities), bind those fields inside `["hash", ...]` rather than replacing the derived key with an unbound static `skey` variable.
    - Authorized Operator Signatures:
      * ["enc", term1, ..., termN, encryption_key] (Table 10.3): One or more payload terms followed by the encryption key as the LAST element. By Equation 10.1, the encryption_key must NEVER be a variable of sort "mesg".
      * ["hash", term1, ...] (Table 10.3): One-way hash digest.

@@ -9,6 +9,15 @@ from unittest.mock import MagicMock
 from aiohttp import web
 import pytest
 
+from src.intermediate_representation.protocol_syntax_tree import (
+    CPSAPreskeleton,
+    CPSAProtocolRole,
+    CPSAProtocolSpecification,
+    CPSASortEnum,
+    CPSAStrandInstance,
+    CPSATraceEvent,
+    CPSAVariableDeclaration,
+)
 from src.pipeline_events import GLOBAL_EVENT_BUS, PipelineEventBus
 from src.prompt_loader import (
     PROMPT_APPLICABILITY_GATE,
@@ -787,8 +796,8 @@ def test_temperature_forwarding_on_cycle_detected_and_default_omission():
 
     ext_spec = load_prompt_spec(PROMPT_PROTOCOL_EXTRACTION)
     rep_spec = load_prompt_spec(PROMPT_COMPILER_REPAIR)
-    assert ext_spec.timeout == 2700
-    assert rep_spec.timeout == 2700
+    assert ext_spec.timeout == 3600
+    assert rep_spec.timeout == 3600
     assert ext_spec.temperature is None
     assert rep_spec.temperature is None
 
@@ -812,6 +821,250 @@ def test_cpsa_toolchain_preflight_verification(monkeypatch, tmp_path: Path):
     missing = SYSTEM_CONFIG.verify_cpsa_toolchain()
     assert len(missing) == 1
     assert "cpsa4json" in missing[0]
+
+
+def test_deterministic_ast_prenormalizer_quotes_tags_infers_names_and_inputs(tmp_path: Path):
+    """Verify integer constants, undeclared string tags, implied ltk/pubk names, and roletran inputs auto-normalize."""
+    from src.code_generation.cpsa_scheme_emitter import emit_cpsa_scheme
+    from src.verification_engine.roletran_executability_gate import verify_role_executability
+
+    spec = CPSAProtocolSpecification(
+        protocol_name="sake_like_proto",
+        message_algebra="basic",
+        roles=[
+            CPSAProtocolRole(
+                role_name="Server",
+                variables=[
+                    CPSAVariableDeclaration(name="ch", sort=CPSASortEnum.CHAN),
+                    CPSAVariableDeclaration(name="rand_s", sort=CPSASortEnum.DATA),
+                    CPSAVariableDeclaration(name="rand_p", sort=CPSASortEnum.DATA),
+                ],
+                trace=[
+                    CPSATraceEvent(
+                        direction="send",
+                        channel="ch",
+                        # 1 is an integer constant, "SAKE_CHALLENGE" is an undeclared tag,
+                        # and server_id / peer_id are implied 'name' variables from ltk
+                        message_term=["cat", 1, "SAKE_CHALLENGE", "rand_s"],
+                    ),
+                    CPSATraceEvent(
+                        direction="recv",
+                        channel="ch",
+                        message_term=[
+                            "cat",
+                            2,
+                            "SAKE_CONFIRM",
+                            "rand_p",
+                            ["hash", 2, "rand_s", "rand_p", ["ltk", "server_id", "peer_id"]],
+                        ],
+                    ),
+                ],
+                unique_originating=["rand_s"],
+                inputs=["ch"],
+            )
+        ],
+        skeletons=[
+            CPSAPreskeleton(
+                protocol_name="sake_like_proto",
+                variables=[
+                    CPSAVariableDeclaration(name="rand_s", sort=CPSASortEnum.DATA),
+                ],
+                strands=[
+                    CPSAStrandInstance(role_name="Server", variable_bindings={"rand_s": "rand_s"}),
+                ],
+                non_originating=[["ltk", "server_id", "peer_id"]],
+            )
+        ],
+    )
+
+    scm_path = emit_cpsa_scheme(spec, tmp_path)
+    scm_text = scm_path.read_text(encoding="utf-8")
+    assert '"1"' in scm_text
+    assert '"SAKE_CHALLENGE"' in scm_text
+    assert "server_id peer_id name" in scm_text
+    assert "(ltk server_id peer_id)" in scm_text
+
+    rt_res = verify_role_executability(scm_path)
+    assert rt_res.is_executable, f"Expected roletran PASS, got: {rt_res.raw_stderr}"
+
+
+def test_compute_ast_hash_ignores_role_comment_and_descriptions():
+    """Verify `_compute_ast_hash` produces identical hashes when only role.comment or variable/event descriptions differ."""
+    from src.main_pipeline_orchestrator import _compute_ast_hash
+
+    spec_a = CPSAProtocolSpecification(
+        protocol_name="ping_pong_proto",
+        roles=[
+            CPSAProtocolRole(
+                role_name="Initiator",
+                comment="Attempt 1 comment",
+                variables=[
+                    CPSAVariableDeclaration(name="ch", sort=CPSASortEnum.CHAN, description="desc A", rfc_field="Sec 3"),
+                    CPSAVariableDeclaration(name="n", sort=CPSASortEnum.DATA, description="nonce A", rfc_field="Sec 3.1"),
+                ],
+                trace=[
+                    CPSATraceEvent(direction="send", channel="ch", message_term="n", description="send A"),
+                ],
+                unique_originating=["n"],
+                inputs=["ch"],
+            )
+        ],
+    )
+    spec_b = spec_a.model_copy(deep=True)
+    spec_b.roles[0].comment = "Attempt 3 different comment"
+    spec_b.roles[0].variables[0].description = "different var description"
+    spec_b.roles[0].variables[0].rfc_field = "Section 4.2"
+    spec_b.roles[0].trace[0].description = "different trace event description"
+
+    assert _compute_ast_hash(spec_a) == _compute_ast_hash(spec_b)
+
+
+def test_hyphenated_headings_bare_appendices_and_legacy_rfc_header():
+    """Verify RFC 3007 hyphenated headings, RFC 3957 bare appendices, and pre-RFC-2223 title extraction."""
+    from src.document_ingestion.handshake_section_router import _heuristic_section_router
+    from src.document_ingestion.rfc_header_filter import filter_rfc_header
+    from src.document_ingestion.rfc_toc_parser import parse_table_of_contents
+    from src.document_ingestion.verbatim_section_slicer import slice_verbatim_sections
+
+    # 1. RFC 3007 style hyphenated body headings + Full Copyright Statement
+    rfc3007_text = (
+        "Network Working Group                                      B. Wellington\n"
+        "Request for Comments: 3007                                Nominum, Inc.\n"
+        "Category: Standards Track                                  November 2000\n\n"
+        "              Secure Domain Name System (DNS) Dynamic Update\n\n"
+        "Status of this Memo\n"
+        "   Standards Track.\n\n"
+        "1 - Introduction\n"
+        "   Intro text.\n\n"
+        "2 - Authentication\n"
+        "   DNS dynamic update authentication message exchange details.\n\n"
+        "9. Full Copyright Statement\n"
+        "   Copyright (C) The Internet Society (2000).\n"
+    )
+    toc = parse_table_of_contents(rfc3007_text)
+    sec_ids = [e.section_id for e in toc]
+    assert "1" in sec_ids and "2" in sec_ids
+    routed = _heuristic_section_router(toc)
+    assert "2" in routed
+    assert "9" not in routed
+    sliced = slice_verbatim_sections(rfc3007_text, ["2"])
+    assert "DNS dynamic update authentication" in sliced
+    assert "Copyright (C)" not in sliced
+
+    # 2. Pre-RFC-2223 header without "Status of This Memo" or "Abstract"
+    legacy_rfc = (
+        "Network Working Group                                          R. Thomas\n"
+        "Request for Comments: 644                                           BBN\n"
+        "NIC #30879                                                    July 1974\n\n"
+        "         On the Problem of Signature Authentication for Network Mail\n\n"
+        "1. Introduction\n"
+        "   This note describes a protocol for authenticated network mail.\n"
+        + "\n".join(f"   Body line {i} discussing mail signatures." for i in range(60))
+    )
+    hdr = filter_rfc_header(legacy_rfc)
+    assert hdr.title == "On the Problem of Signature Authentication for Network Mail"
+
+
+def test_multi_deflistener_telemetry_and_dangling_response_quality_cap(tmp_path: Path):
+    """Verify multi-deflistener secrets extraction (`RFC 3957`) and dangling response cap (`RFC 3971`)."""
+    from src.verification_engine.trajectory_metadata_exporter import (
+        analyze_shapes_txt,
+        compute_quality_assessment,
+        compute_security_findings,
+    )
+
+    shapes_file = tmp_path / "mipv4_shapes.txt"
+    shapes_file.write_text(
+        '(defskeleton mipv4\n'
+        '  (vars (k_ha k_fa skey) (mn fa name) (ch chan))\n'
+        '  (defstrandmax ForeignAgent (ch ch))\n'
+        '  (deflistener k_ha)\n'
+        '  (deflistener k_fa)\n'
+        '  (label 0)\n'
+        '  (comment "Secrecy POV"))\n'
+        '(defskeleton mipv4\n'
+        '  (vars (mn fa name) (ch chan))\n'
+        '  (defstrand Initiator 1 (ch ch))\n'
+        '  (label 1)\n'
+        '  (parent 0)\n'
+        '  (shape))\n',
+        encoding="utf-8",
+    )
+    # Test multi-deflistener extraction on unrealized secrecy skeleton
+    shapes_file_unrealized = tmp_path / "mipv4_unrealized_shapes.txt"
+    shapes_file_unrealized.write_text(
+        '(defskeleton mipv4\n'
+        '  (vars (mn fa name) (ch chan))\n'
+        '  (defstrand Initiator 1 (ch ch))\n'
+        '  (label 0))\n'
+        '(defskeleton mipv4\n'
+        '  (vars (mn fa name) (ch chan))\n'
+        '  (defstrand Initiator 1 (ch ch))\n'
+        '  (label 1)\n'
+        '  (parent 0)\n'
+        '  (shape))\n'
+        '(defskeleton mipv4\n'
+        '  (vars (mn fa name) (ch chan))\n'
+        '  (defstrand Responder 2 (ch ch))\n'
+        '  (label 2))\n'
+        '(defskeleton mipv4\n'
+        '  (vars (mn fa name) (ch chan))\n'
+        '  (defstrand Responder 2 (ch ch))\n'
+        '  (defstrand Initiator 1 (ch ch))\n'
+        '  (label 3)\n'
+        '  (parent 2)\n'
+        '  (shape))\n'
+        '(defskeleton mipv4\n'
+        '  (vars (k_ha k_fa skey) (mn fa name) (ch chan))\n'
+        '  (defstrandmax Responder (ch ch))\n'
+        '  (deflistener k_ha)\n'
+        '  (deflistener k_fa)\n'
+        '  (label 4))\n',
+        encoding="utf-8",
+    )
+    sa = analyze_shapes_txt(shapes_file_unrealized)
+    sec = compute_security_findings(sa)
+    assert "k_ha" in sec["protected_secrets"]
+    assert "k_fa" in sec["protected_secrets"]
+
+    # Truncated initiator role (send only) while Responder has recv + send -> capped at SILVER
+    truncated_spec = CPSAProtocolSpecification(
+        protocol_name="send_proto",
+        roles=[
+            CPSAProtocolRole(
+                role_name="Initiator",
+                variables=[
+                    CPSAVariableDeclaration(name="ch", sort=CPSASortEnum.CHAN),
+                    CPSAVariableDeclaration(name="n", sort=CPSASortEnum.DATA),
+                ],
+                trace=[CPSATraceEvent(direction="send", channel="ch", message_term="n")],
+            ),
+            CPSAProtocolRole(
+                role_name="Responder",
+                variables=[
+                    CPSAVariableDeclaration(name="ch", sort=CPSASortEnum.CHAN),
+                    CPSAVariableDeclaration(name="n", sort=CPSASortEnum.DATA),
+                ],
+                trace=[
+                    CPSATraceEvent(direction="recv", channel="ch", message_term="n"),
+                    CPSATraceEvent(direction="send", channel="ch", message_term="n"),
+                ],
+            ),
+        ],
+    )
+    qa = compute_quality_assessment(
+        solver_passed=True,
+        shapes_analysis=sa,
+        stage5_attempts_count=0,
+        stage6_attempts_count=0,
+        roletran_passed=True,
+        has_cryptographic_primitives=True,
+        security_findings=sec,
+        final_spec=truncated_spec,
+    )
+    assert qa["quality_tier"] == "SILVER"
+    assert any("INCOMPLETE_INITIATOR_TRACE" in a for a in qa["security_findings"]["vulnerabilities_and_anomalies"])
+
 
 
 

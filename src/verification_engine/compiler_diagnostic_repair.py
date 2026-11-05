@@ -114,6 +114,7 @@ def repair_protocol_specification(
     query_model: Optional[str] = None,
     cycle_detected: bool = False,
     use_agentic_searcher: bool = True,
+    prior_attempts: Optional[list] = None,
 ) -> CPSAProtocolSpecification:
     """Uses Two-Speed Pinned Header + Agentic CPSA Knowledge Base Searcher to patch a failing CPSAProtocolSpecification."""
     repair_spec = load_prompt_spec(PROMPT_COMPILER_REPAIR)
@@ -193,10 +194,18 @@ def repair_protocol_specification(
     if len(verbatim_slice) > 3000:
         slice_snippet += "\n... [Remaining RFC specification text truncated for compiler repair pass] ..."
 
+    prior_history_block = ""
+    if prior_attempts:
+        joined_history = "\n".join(f"- {item}" for item in prior_attempts)
+        prior_history_block = (
+            f"\n\nPrior Failed Repair Attempts on This Specification (Do NOT repeat edits that caused these errors):\n"
+            f"{joined_history}"
+        )
+
     user_prompt = (
         f"Failing Protocol: {failing_spec.protocol_name}\n"
         f"Failure Stage: {failure_stage}\n"
-        f"Compiler Diagnostic / Error:\n{error_diagnostic}\n\n"
+        f"Compiler Diagnostic / Error:\n{error_diagnostic}{prior_history_block}\n\n"
         "MITRE CPSA Reference Guidance (Helper Only - Explains syntax rules and failure mechanisms):\n"
         f"{guidance_text}\n\n"
         "Verbatim RFC Exchange Specification (Excerpt for repair context):\n"

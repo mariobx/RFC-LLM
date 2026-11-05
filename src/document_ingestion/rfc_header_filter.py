@@ -105,28 +105,41 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
                 disqualification_reason=f"Category '{category}' is not a protocol specification",
             )
 
-    # 4. Extract Title: lines between author/category block and "Status of This Memo"
+    # 4. Extract Title: lines between author/category block and "Status of This Memo" (or top header fallback for pre-RFC-2223 RFCs)
     title: Optional[str] = None
     status_idx = next(
-        (i for i, l in enumerate(lines) if re.search(r"(Status of [Tt]his Memo|Abstract)", l, re.IGNORECASE)),
-        len(lines),
+        (i for i, l in enumerate(lines) if re.search(r"^\s*(Status of [Tt]his Memo|Abstract)\b", l, re.IGNORECASE)),
+        None,
     )
 
-    # Search backwards from Status of This Memo for consecutive non-empty lines
     title_candidate_lines = []
-    idx = status_idx - 1
-    # Skip any trailing blank lines right before "Status of This Memo"
-    while idx >= 0 and not lines[idx].strip():
-        idx -= 1
-
-    # Now collect all consecutive non-empty lines belonging to the title
-    while idx >= 0 and lines[idx].strip():
-        line_str = lines[idx].strip()
-        # If we reached the header block (Category, Date, RFC, etc.), stop
-        if re.search(r"(Category:|Updates:|Obsoletes:|Request for Comments|Network Working Group|ISSN:)", line_str, re.IGNORECASE):
-            break
-        title_candidate_lines.insert(0, line_str)
-        idx -= 1
+    if status_idx is not None:
+        # Search backwards from Status of This Memo for consecutive non-empty lines
+        idx = status_idx - 1
+        while idx >= 0 and not lines[idx].strip():
+            idx -= 1
+        while idx >= 0 and lines[idx].strip():
+            line_str = lines[idx].strip()
+            if re.search(r"(Category:|Updates:|Obsoletes:|Request for Comments|Network Working Group|ISSN:)", line_str, re.IGNORECASE):
+                break
+            title_candidate_lines.insert(0, line_str)
+            idx -= 1
+    else:
+        # Legacy pre-RFC-2223 format (no "Status of This Memo" or "Abstract"):
+        # Find the end of the top header block within the first 30 lines, then take the first centered/indented title block.
+        header_end_idx = 0
+        for i, l in enumerate(lines[:25]):
+            if re.search(r"(Request for Comments|Network Working Group|RFC\s*#?\s*\d+|NIC\s*#?\s*\d+|Category:|Obsoletes:|Updates:)", l, re.IGNORECASE):
+                header_end_idx = i + 1
+        idx = header_end_idx
+        while idx < min(len(lines), 45) and not lines[idx].strip():
+            idx += 1
+        while idx < min(len(lines), 45) and lines[idx].strip():
+            line_str = lines[idx].strip()
+            if re.match(r"^(?:1(?:\.|\s+-)?\s+|Introduction\b)", line_str, re.IGNORECASE):
+                break
+            title_candidate_lines.append(line_str)
+            idx += 1
 
     if title_candidate_lines:
         title = " ".join(title_candidate_lines)

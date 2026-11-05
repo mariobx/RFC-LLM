@@ -2,7 +2,7 @@
 
 > Tier 3 — Master CPSA 4.4.9 Knowledge Base Table of Contents (`refrences/cpsa_kb/TOC.md`) with `rebuild_toc` YAML flag, and the complete pytest unit and integration test suite (`tests/`).
 
-*Generated: 2026-11-03 21:53:56 UTC · Git: `main` @ `8b5b88a14002` · Tier: Tier 3 — Knowledge Base Index & Test Suites · Files: 11 · Estimated Tokens: ~46,700*
+*Generated: 2026-11-05 18:27:58 UTC · Git: `main` @ `955b498002b7` · Tier: Tier 3 — Knowledge Base Index & Test Suites · Files: 11 · Estimated Tokens: ~50,538*
 
 ## Table of Contents
 
@@ -2290,7 +2290,7 @@ def test_pipeline_e2e_successful_synthesis_and_build(tmp_path: Path, mock_valid_
 
 ### `tests/test_trajectory_and_hardening.py`
 
-*sha256:`fe62a412bb13` · 715 lines · 31.4 KB (~8,033 tokens) · lang:`python`*
+*sha256:`308276de7a8e` · 1071 lines · 46.4 KB (~11,869 tokens) · lang:`python`*
 
 ```python
 """Hardening and edge-case tests for 60s process-group SIGKILL, malformed YAML frontmatter, S-expr splitting, artifact containment, and offline discovery."""
@@ -2304,6 +2304,15 @@ from unittest.mock import MagicMock
 from aiohttp import web
 import pytest
 
+from src.intermediate_representation.protocol_syntax_tree import (
+    CPSAPreskeleton,
+    CPSAProtocolRole,
+    CPSAProtocolSpecification,
+    CPSASortEnum,
+    CPSAStrandInstance,
+    CPSATraceEvent,
+    CPSAVariableDeclaration,
+)
 from src.pipeline_events import GLOBAL_EVENT_BUS, PipelineEventBus
 from src.prompt_loader import (
     PROMPT_APPLICABILITY_GATE,
@@ -2370,8 +2379,8 @@ def test_malformed_yaml_frontmatter_and_edge_cases(tmp_path: Path):
     )
     spec_scalars = load_prompt_spec(PROMPT_APPLICABILITY_GATE, prompts_dir=tmp_path)
     assert spec_scalars.model == "strata/unsloth-iq4_xs"
-    assert spec_scalars.timeout == 1500
-    assert spec_scalars.temperature == 0.0
+    assert spec_scalars.timeout == 900
+    assert spec_scalars.temperature is None
 
     with pytest.raises(FileNotFoundError):
         load_prompt_spec("99_nonexistent_prompt.md", prompts_dir=tmp_path)
@@ -3005,13 +3014,358 @@ def test_compact_diagnostic_headline_strips_snowball_autopsy_and_csv_api_works(t
         assert payload["rows"][0]["error_message"].startswith("Eligible:")
 
     asyncio.run(_check_csv_endpoint())
+
+
+def test_section_router_normalizes_hash_prefixes_and_section_labels():
+    """Verify `_match_valid_toc_id` and `normalize_section_id_token` normalize `#7.1.1` (RFC 6143), `Section 3.2.`, and `Appendix A`."""
+    from src.document_ingestion.handshake_section_router import (
+        SectionRoutingDecision,
+        _match_valid_toc_id,
+        normalize_section_id_token,
+    )
+
+    assert normalize_section_id_token("#7.1.1") == "7.1.1"
+    assert normalize_section_id_token("Section 3.2.") == "3.2"
+    assert normalize_section_id_token("§4.1 Handshake Protocol") == "4.1"
+    assert normalize_section_id_token("Appendix A.") == "App-A"
+
+    valid_ids = {"3", "3.2", "7.1.1", "7.1.2", "App-A"}
+    assert _match_valid_toc_id("#7.1.1", valid_ids) == "7.1.1"
+    assert _match_valid_toc_id("Section 3.2.", valid_ids) == "3.2"
+    assert _match_valid_toc_id("Appendix A", valid_ids) == "App-A"
+    assert _match_valid_toc_id("#99.9", valid_ids) is None
+
+    # Schema description must never suggest '#.#'
+    schema_desc = SectionRoutingDecision.model_json_schema()["properties"]["selected_section_ids"]["description"]
+    assert "#.#" not in schema_desc
+
+
+def test_verbatim_slicer_handles_hex_titles_parent_fallback_and_short_unnumbered_rfcs():
+    """Verify `slice_verbatim_sections` slices `6.7.2.  0x0002 - AUTHENTICATION_TYPE` (RFC 7868),
+    falls back to parent `6.7` if a leaf subsection is missing, and handles short unnumbered RFCs (RFC 3268).
+    """
+    from src.document_ingestion.verbatim_section_slicer import slice_verbatim_sections
+
+    rfc7868_excerpt = (
+        "Table of Contents\n\n"
+        "   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . .  1\n"
+        "   6.7.  EIGRP Packet TLVs  . . . . . . . . . . . . . . . . . . . . 52\n"
+        "   6.7.2.  0x0002 - AUTHENTICATION_TYPE . . . . . . . . . . . . . . 53\n\n"
+        "1.  Introduction\n"
+        "Intro text.\n\n"
+        "6.7.  EIGRP Packet TLVs\n"
+        "Parent TLV section overview.\n\n"
+        "6.7.2.  0x0002 - AUTHENTICATION_TYPE\n"
+        "This TLV conveys authentication type and MD5/SHA256 data.\n\n"
+        "6.8.  Next Section\n"
+        "Trailing text.\n"
+    )
+    sliced_hex = slice_verbatim_sections(rfc7868_excerpt, ["#6.7.2"])
+    assert "0x0002 - AUTHENTICATION_TYPE" in sliced_hex
+    assert "MD5/SHA256 data" in sliced_hex
+    assert "Trailing text." not in sliced_hex
+
+    # Parent fallback if leaf '6.7.99' is missing in body
+    sliced_parent = slice_verbatim_sections(rfc7868_excerpt, ["6.7.99"])
+    assert "Parent TLV section overview." in sliced_parent
+
+    # Short unnumbered RFC (like RFC 3268)
+    rfc3268_short = (
+        "Network Working Group\n"
+        "Request for Comments: 3268\n\n"
+        "Overview\n\n"
+        "This document proposes AES ciphersuites for TLS.\n\n"
+        "Cipher Usage\n\n"
+        "TLS_RSA_WITH_AES_128_CBC_SHA\n\n"
+        "References\n\n"
+        "[TLS] Dierks, T., RFC 2246.\n"
+    )
+    sliced_unnumbered = slice_verbatim_sections(rfc3268_short, ["FULL_BODY"])
+    assert "TLS_RSA_WITH_AES_128_CBC_SHA" in sliced_unnumbered
+    assert "[TLS] Dierks" not in sliced_unnumbered
+
+
+def test_temperature_forwarding_on_cycle_detected_and_default_omission():
+    """Verify `SYSTEM_CONFIG.get_llm_kwargs` omits `temperature` when `None` and forwards `temperature` when set."""
+    from src.prompt_loader import PROMPT_COMPILER_REPAIR, PROMPT_PROTOCOL_EXTRACTION, load_prompt_spec
+
+    ext_spec = load_prompt_spec(PROMPT_PROTOCOL_EXTRACTION)
+    rep_spec = load_prompt_spec(PROMPT_COMPILER_REPAIR)
+    assert ext_spec.timeout == 3600
+    assert rep_spec.timeout == 3600
+    assert ext_spec.temperature is None
+    assert rep_spec.temperature is None
+
+    kwargs_default = SYSTEM_CONFIG.get_llm_kwargs("strata/unsloth-iq4_xs", temperature=None, max_tokens=65536)
+    assert "temperature" not in kwargs_default
+
+    kwargs_cycle = SYSTEM_CONFIG.get_llm_kwargs("nous/anthropic/claude-haiku-5.5", temperature=0.5, max_tokens=65536)
+    assert kwargs_cycle["temperature"] == 0.5
+
+
+def test_cpsa_toolchain_preflight_verification(monkeypatch, tmp_path: Path):
+    """Verify `SYSTEM_CONFIG.verify_cpsa_toolchain` detects missing CPSA binaries."""
+    import shutil
+
+    # Normally all binaries exist on this machine
+    assert SYSTEM_CONFIG.verify_cpsa_toolchain() == []
+
+    # Simulate missing cpsa4json binary and not on PATH
+    monkeypatch.setattr(SYSTEM_CONFIG, "CPSA4JSON_BIN", tmp_path / "nonexistent_cpsa4json")
+    monkeypatch.setattr(shutil, "which", lambda name: None if name == "cpsa4json" else f"/usr/bin/{name}")
+    missing = SYSTEM_CONFIG.verify_cpsa_toolchain()
+    assert len(missing) == 1
+    assert "cpsa4json" in missing[0]
+
+
+def test_deterministic_ast_prenormalizer_quotes_tags_infers_names_and_inputs(tmp_path: Path):
+    """Verify integer constants, undeclared string tags, implied ltk/pubk names, and roletran inputs auto-normalize."""
+    from src.code_generation.cpsa_scheme_emitter import emit_cpsa_scheme
+    from src.verification_engine.roletran_executability_gate import verify_role_executability
+
+    spec = CPSAProtocolSpecification(
+        protocol_name="sake_like_proto",
+        message_algebra="basic",
+        roles=[
+            CPSAProtocolRole(
+                role_name="Server",
+                variables=[
+                    CPSAVariableDeclaration(name="ch", sort=CPSASortEnum.CHAN),
+                    CPSAVariableDeclaration(name="rand_s", sort=CPSASortEnum.DATA),
+                    CPSAVariableDeclaration(name="rand_p", sort=CPSASortEnum.DATA),
+                ],
+                trace=[
+                    CPSATraceEvent(
+                        direction="send",
+                        channel="ch",
+                        # 1 is an integer constant, "SAKE_CHALLENGE" is an undeclared tag,
+                        # and server_id / peer_id are implied 'name' variables from ltk
+                        message_term=["cat", 1, "SAKE_CHALLENGE", "rand_s"],
+                    ),
+                    CPSATraceEvent(
+                        direction="recv",
+                        channel="ch",
+                        message_term=[
+                            "cat",
+                            2,
+                            "SAKE_CONFIRM",
+                            "rand_p",
+                            ["hash", 2, "rand_s", "rand_p", ["ltk", "server_id", "peer_id"]],
+                        ],
+                    ),
+                ],
+                unique_originating=["rand_s"],
+                inputs=["ch"],
+            )
+        ],
+        skeletons=[
+            CPSAPreskeleton(
+                protocol_name="sake_like_proto",
+                variables=[
+                    CPSAVariableDeclaration(name="rand_s", sort=CPSASortEnum.DATA),
+                ],
+                strands=[
+                    CPSAStrandInstance(role_name="Server", variable_bindings={"rand_s": "rand_s"}),
+                ],
+                non_originating=[["ltk", "server_id", "peer_id"]],
+            )
+        ],
+    )
+
+    scm_path = emit_cpsa_scheme(spec, tmp_path)
+    scm_text = scm_path.read_text(encoding="utf-8")
+    assert '"1"' in scm_text
+    assert '"SAKE_CHALLENGE"' in scm_text
+    assert "server_id peer_id name" in scm_text
+    assert "(ltk server_id peer_id)" in scm_text
+
+    rt_res = verify_role_executability(scm_path)
+    assert rt_res.is_executable, f"Expected roletran PASS, got: {rt_res.raw_stderr}"
+
+
+def test_compute_ast_hash_ignores_role_comment_and_descriptions():
+    """Verify `_compute_ast_hash` produces identical hashes when only role.comment or variable/event descriptions differ."""
+    from src.main_pipeline_orchestrator import _compute_ast_hash
+
+    spec_a = CPSAProtocolSpecification(
+        protocol_name="ping_pong_proto",
+        roles=[
+            CPSAProtocolRole(
+                role_name="Initiator",
+                comment="Attempt 1 comment",
+                variables=[
+                    CPSAVariableDeclaration(name="ch", sort=CPSASortEnum.CHAN, description="desc A", rfc_field="Sec 3"),
+                    CPSAVariableDeclaration(name="n", sort=CPSASortEnum.DATA, description="nonce A", rfc_field="Sec 3.1"),
+                ],
+                trace=[
+                    CPSATraceEvent(direction="send", channel="ch", message_term="n", description="send A"),
+                ],
+                unique_originating=["n"],
+                inputs=["ch"],
+            )
+        ],
+    )
+    spec_b = spec_a.model_copy(deep=True)
+    spec_b.roles[0].comment = "Attempt 3 different comment"
+    spec_b.roles[0].variables[0].description = "different var description"
+    spec_b.roles[0].variables[0].rfc_field = "Section 4.2"
+    spec_b.roles[0].trace[0].description = "different trace event description"
+
+    assert _compute_ast_hash(spec_a) == _compute_ast_hash(spec_b)
+
+
+def test_hyphenated_headings_bare_appendices_and_legacy_rfc_header():
+    """Verify RFC 3007 hyphenated headings, RFC 3957 bare appendices, and pre-RFC-2223 title extraction."""
+    from src.document_ingestion.handshake_section_router import _heuristic_section_router
+    from src.document_ingestion.rfc_header_filter import filter_rfc_header
+    from src.document_ingestion.rfc_toc_parser import parse_table_of_contents
+    from src.document_ingestion.verbatim_section_slicer import slice_verbatim_sections
+
+    # 1. RFC 3007 style hyphenated body headings + Full Copyright Statement
+    rfc3007_text = (
+        "Network Working Group                                      B. Wellington\n"
+        "Request for Comments: 3007                                Nominum, Inc.\n"
+        "Category: Standards Track                                  November 2000\n\n"
+        "              Secure Domain Name System (DNS) Dynamic Update\n\n"
+        "Status of this Memo\n"
+        "   Standards Track.\n\n"
+        "1 - Introduction\n"
+        "   Intro text.\n\n"
+        "2 - Authentication\n"
+        "   DNS dynamic update authentication message exchange details.\n\n"
+        "9. Full Copyright Statement\n"
+        "   Copyright (C) The Internet Society (2000).\n"
+    )
+    toc = parse_table_of_contents(rfc3007_text)
+    sec_ids = [e.section_id for e in toc]
+    assert "1" in sec_ids and "2" in sec_ids
+    routed = _heuristic_section_router(toc)
+    assert "2" in routed
+    assert "9" not in routed
+    sliced = slice_verbatim_sections(rfc3007_text, ["2"])
+    assert "DNS dynamic update authentication" in sliced
+    assert "Copyright (C)" not in sliced
+
+    # 2. Pre-RFC-2223 header without "Status of This Memo" or "Abstract"
+    legacy_rfc = (
+        "Network Working Group                                          R. Thomas\n"
+        "Request for Comments: 644                                           BBN\n"
+        "NIC #30879                                                    July 1974\n\n"
+        "         On the Problem of Signature Authentication for Network Mail\n\n"
+        "1. Introduction\n"
+        "   This note describes a protocol for authenticated network mail.\n"
+        + "\n".join(f"   Body line {i} discussing mail signatures." for i in range(60))
+    )
+    hdr = filter_rfc_header(legacy_rfc)
+    assert hdr.title == "On the Problem of Signature Authentication for Network Mail"
+
+
+def test_multi_deflistener_telemetry_and_dangling_response_quality_cap(tmp_path: Path):
+    """Verify multi-deflistener secrets extraction (`RFC 3957`) and dangling response cap (`RFC 3971`)."""
+    from src.verification_engine.trajectory_metadata_exporter import (
+        analyze_shapes_txt,
+        compute_quality_assessment,
+        compute_security_findings,
+    )
+
+    shapes_file = tmp_path / "mipv4_shapes.txt"
+    shapes_file.write_text(
+        '(defskeleton mipv4\n'
+        '  (vars (k_ha k_fa skey) (mn fa name) (ch chan))\n'
+        '  (defstrandmax ForeignAgent (ch ch))\n'
+        '  (deflistener k_ha)\n'
+        '  (deflistener k_fa)\n'
+        '  (label 0)\n'
+        '  (comment "Secrecy POV"))\n'
+        '(defskeleton mipv4\n'
+        '  (vars (mn fa name) (ch chan))\n'
+        '  (defstrand Initiator 1 (ch ch))\n'
+        '  (label 1)\n'
+        '  (parent 0)\n'
+        '  (shape))\n',
+        encoding="utf-8",
+    )
+    # Test multi-deflistener extraction on unrealized secrecy skeleton
+    shapes_file_unrealized = tmp_path / "mipv4_unrealized_shapes.txt"
+    shapes_file_unrealized.write_text(
+        '(defskeleton mipv4\n'
+        '  (vars (mn fa name) (ch chan))\n'
+        '  (defstrand Initiator 1 (ch ch))\n'
+        '  (label 0))\n'
+        '(defskeleton mipv4\n'
+        '  (vars (mn fa name) (ch chan))\n'
+        '  (defstrand Initiator 1 (ch ch))\n'
+        '  (label 1)\n'
+        '  (parent 0)\n'
+        '  (shape))\n'
+        '(defskeleton mipv4\n'
+        '  (vars (mn fa name) (ch chan))\n'
+        '  (defstrand Responder 2 (ch ch))\n'
+        '  (label 2))\n'
+        '(defskeleton mipv4\n'
+        '  (vars (mn fa name) (ch chan))\n'
+        '  (defstrand Responder 2 (ch ch))\n'
+        '  (defstrand Initiator 1 (ch ch))\n'
+        '  (label 3)\n'
+        '  (parent 2)\n'
+        '  (shape))\n'
+        '(defskeleton mipv4\n'
+        '  (vars (k_ha k_fa skey) (mn fa name) (ch chan))\n'
+        '  (defstrandmax Responder (ch ch))\n'
+        '  (deflistener k_ha)\n'
+        '  (deflistener k_fa)\n'
+        '  (label 4))\n',
+        encoding="utf-8",
+    )
+    sa = analyze_shapes_txt(shapes_file_unrealized)
+    sec = compute_security_findings(sa)
+    assert "k_ha" in sec["protected_secrets"]
+    assert "k_fa" in sec["protected_secrets"]
+
+    # Truncated initiator role (send only) while Responder has recv + send -> capped at SILVER
+    truncated_spec = CPSAProtocolSpecification(
+        protocol_name="send_proto",
+        roles=[
+            CPSAProtocolRole(
+                role_name="Initiator",
+                variables=[
+                    CPSAVariableDeclaration(name="ch", sort=CPSASortEnum.CHAN),
+                    CPSAVariableDeclaration(name="n", sort=CPSASortEnum.DATA),
+                ],
+                trace=[CPSATraceEvent(direction="send", channel="ch", message_term="n")],
+            ),
+            CPSAProtocolRole(
+                role_name="Responder",
+                variables=[
+                    CPSAVariableDeclaration(name="ch", sort=CPSASortEnum.CHAN),
+                    CPSAVariableDeclaration(name="n", sort=CPSASortEnum.DATA),
+                ],
+                trace=[
+                    CPSATraceEvent(direction="recv", channel="ch", message_term="n"),
+                    CPSATraceEvent(direction="send", channel="ch", message_term="n"),
+                ],
+            ),
+        ],
+    )
+    qa = compute_quality_assessment(
+        solver_passed=True,
+        shapes_analysis=sa,
+        stage5_attempts_count=0,
+        stage6_attempts_count=0,
+        roletran_passed=True,
+        has_cryptographic_primitives=True,
+        security_findings=sec,
+        final_spec=truncated_spec,
+    )
+    assert qa["quality_tier"] == "SILVER"
+    assert any("INCOMPLETE_INITIATOR_TRACE" in a for a in qa["security_findings"]["vulnerabilities_and_anomalies"])
 ```
 
 ---
 
 ### `tests/test_visualizer_and_events.py`
 
-*sha256:`6b9941f8ef42` · 110 lines · 3.7 KB (~951 tokens) · lang:`python`*
+*sha256:`7084325acf2a` · 110 lines · 3.7 KB (~953 tokens) · lang:`python`*
 
 ```python
 """Unit and integration tests for Pipeline Event Bus, Cycle Detection, and Visualizer Server."""
@@ -3102,7 +3456,7 @@ def test_compiler_repair_cycle_detection_triggers_warning_and_jitter(monkeypatch
     )
 
     assert repaired is not None
-    assert "temperature" not in captured_kwargs
+    assert captured_kwargs.get("temperature", 0.0) >= 0.4
     prompt_content = captured_kwargs["messages"][1]["content"]
     assert "CRITICAL WARNING: An oscillation/cycle was detected" in prompt_content
 

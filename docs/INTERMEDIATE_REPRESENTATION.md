@@ -57,11 +57,11 @@ CPSA defines two order-sorted message algebras:
 
 ### 3.1 Term Definition (Tables 10.3 & 10.5)
 
-$$term \leftarrow id \mid integer \mid string \mid (op\ term^+)$$
+$$term \leftarrow id \mid \text{"\"tag\""} \mid (op\ term^+)$$
 
 In the JSON intermediate representation (`CPSATerm`):
-- Atoms are strings: `"client_random"`, `"server_identity"`, `"session_key"`.
-- Integers are constants: `1`.
+- Declared variables are string identifiers: `"client_random"`, `"server_identity"`, `"session_key"`.
+- Fixed protocol message types, opcodes, or domain-separation labels are quoted tag strings: `"\"SAKE_CHALLENGE\""` (any undeclared leaf constant string or integer is automatically normalized to a quoted CPSA tag literal `"\"...\""` by `normalize_cpsa_term()`).
 - Operators are prefix lists: `["enc", "payload", "key"]`, `["exp", ["gen"], "x"]`.
 
 ### 3.2 The Dict-In-Term Failure Mode
@@ -132,10 +132,11 @@ class CPSAProtocolRole(BaseModel):
 - **Equation 10.1 Enforcement**: Variables declared with top sort `mesg` are rejected as the encryption key (last argument) in `["enc", ..., key]`.
 - **Roletran Serialization Normalization (`to_cpsa_json()`)**:
   1. Variables of sort `rndx` or `expt` placed in `unique_originating` are automatically migrated to `unique_generated` (`uniq-gen`).
-  2. Channel variables used in `send`/`recv` events are automatically declared with sort `chan` and added to `inputs`.
-  3. Uniquely originating/generated values (`uniq-orig` / `uniq-gen`) and compound non-key terms (`cat`, `enc`, `hash`) are stripped from `inputs`.
-  4. Any parameter in `inputs` is stripped from `outputs` so no input is repeated as an output.
-  5. Every variable in `inputs`, `outputs`, and `unique_originating` is verified to appear in `trace`.
+  2. Implied principal `name` variables from `ltk`/`bltk`/`pubk`/`privk`, channel variables (`chan`) from `send`/`recv`, and memory locations (`locn`) from `load`/`stor` are automatically declared in `(vars ...)`.
+  3. Undeclared constant strings or integers in trace events are deterministically quoted as CPSA tag literals (`"\"tag\""`) so fixed message types and domain-separation labels compile cleanly without turning into unconstrained variables.
+  4. Procedural `(inputs ...)` are deterministically synthesized by abstractly interpreting the role trace in order (`recv`/`load` bindings vs. `send`/`stor`/`hash` build requirements), stripping `uniq-orig`/`uniq-gen` values and compound non-key terms (`cat`, `enc`, `hash`).
+  5. Any parameter in `inputs` is stripped from `outputs` so no input is repeated as an output.
+  6. Every variable in `inputs`, `outputs`, `unique_originating`, and `non_originating` is verified to appear in `trace`.
 
 ### 4.4 `CPSAPreskeleton`
 Defines a point-of-view analysis scenario (`defskeleton`, Tables 10.1 & 10.6):

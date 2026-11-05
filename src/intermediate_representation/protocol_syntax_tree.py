@@ -78,6 +78,81 @@ def sanitize_cpsa_symbol(symbol: str) -> str:
     return sanitized.strip("-") or "prot"
 
 
+def _quote_cpsa_tag_literal(val: str) -> str:
+    """Formats an undeclared constant atom or number as a quoted CPSA 4.4.9 tag literal."""
+    inner = val.strip()
+    if len(inner) >= 2 and inner.startswith('"') and inner.endswith('"'):
+        inner = inner[1:-1]
+    inner = inner.replace("\\", "/").replace('"', "'")
+    return f'"{inner}"'
+
+
+def _is_quoted_tag_literal(term: Any) -> bool:
+    """Returns True if `term` is a quoted CPSA string tag literal (`\"...\"`)."""
+    return isinstance(term, str) and len(term) >= 2 and term.startswith('"') and term.endswith('"')
+
+
+def _collect_implied_variable_sorts(
+    term: Any,
+    implied_sorts: Dict[str, str],
+    akey_vars: Set[str],
+    name_vars: Set[str],
+) -> None:
+    """Infers mandatory CPSA 4.4.9 variable sorts from operator positions (e.g. `ltk`/`pubk`/`privk` -> `name`)."""
+    desugared = desugar_term_tree(term)
+    if not isinstance(desugared, list) or not desugared:
+        return
+    op = desugared[0]
+    if op in ("ltk", "bltk") and len(desugared) == 3:
+        for arg in desugared[1:]:
+            if isinstance(arg, str) and not _is_quoted_tag_literal(arg) and arg not in CPSA_ALL_OPERATORS:
+                implied_sorts.setdefault(arg, CPSASortEnum.NAME.value)
+    elif op in ("pubk", "privk"):
+        if len(desugared) == 2:
+            arg = desugared[1]
+            if (
+                isinstance(arg, str)
+                and not _is_quoted_tag_literal(arg)
+                and arg not in akey_vars
+                and arg not in CPSA_ALL_OPERATORS
+            ):
+                implied_sorts.setdefault(arg, CPSASortEnum.NAME.value)
+        elif len(desugared) == 3:
+            a1, a2 = desugared[1], desugared[2]
+            if isinstance(a1, str) and isinstance(a2, str):
+                if a1 in name_vars and a2 not in name_vars:
+                    pass
+                elif not _is_quoted_tag_literal(a2) and a2 not in CPSA_ALL_OPERATORS:
+                    implied_sorts.setdefault(a2, CPSASortEnum.NAME.value)
+    elif op == "invk" and len(desugared) == 2:
+        arg = desugared[1]
+        if isinstance(arg, str) and not _is_quoted_tag_literal(arg) and arg not in CPSA_ALL_OPERATORS:
+            implied_sorts.setdefault(arg, CPSASortEnum.AKEY.value)
+    elif op == "enc" and len(desugared) >= 2:
+        key_arg = desugared[-1]
+        if isinstance(key_arg, str) and not _is_quoted_tag_literal(key_arg) and key_arg not in CPSA_ALL_OPERATORS:
+            implied_sorts.setdefault(key_arg, CPSASortEnum.SKEY.value)
+
+    for sub in desugared[1:]:
+        _collect_implied_variable_sorts(sub, implied_sorts, akey_vars, name_vars)
+
+
+def _invert_cpsa_key(key_term: Any, akey_vars: Set[str]) -> Any:
+    """Returns the inverse key term required to decrypt/verify `(enc ... key_term)` in `cpsa4roletran`."""
+    if isinstance(key_term, list) and key_term:
+        op = key_term[0]
+        if op == "pubk":
+            return ["privk"] + key_term[1:]
+        if op == "privk":
+            return ["pubk"] + key_term[1:]
+        if op == "invk" and len(key_term) == 2:
+            return key_term[1]
+        return key_term
+    if isinstance(key_term, str) and key_term in akey_vars:
+        return ["invk", key_term]
+    return key_term
+
+
 def extract_term_tokens(item: Any, token_set: Set[str]) -> None:
     """Recursively extracts all string tokens from an S-expression tree."""
     if isinstance(item, str):
@@ -95,13 +170,15 @@ def normalize_cpsa_term(
     akey_vars: Optional[Set[str]] = None,
     name_vars: Optional[Set[str]] = None,
     declared_vars: Optional[Set[str]] = None,
+    quote_undeclared: bool = False,
 ) -> Any:
     """Recursively validates and normalizes message terms into valid CPSA 4.4.9 forms.
 
     Handles:
     1. Unwrapping (pubk k) -> k and (privk k) -> (invk k) when k has sort 'akey'.
-    2. Repairing reversed 2-arg (pubk name tag) -> (pubk "tag" name) per Table 10.3.
+    2. Repairing reversed 2-arg (pubk name tag) -> (pubk "tag" name) and quoting 2-arg tags per Table 10.3.
     3. Expanding bare 'gen' or 'one' in DH expressions to ['gen'] / ['one'] when not declared as variables.
+    4. Auto-quoting undeclared constant atoms/numbers as CPSA string tag literals when `quote_undeclared=True`.
     """
     desugared = desugar_term_tree(term)
     if isinstance(desugared, list):
@@ -115,26 +192,29 @@ def normalize_cpsa_term(
             akey_vars
             and len(normalized_list) == 2
             and isinstance(normalized_list[1], str)
-            and normalized_list[1] in akey_vars
+            and (normalized_list[1] in akey_vars or sanitize_cpsa_symbol(normalized_list[1]) in akey_vars)
         ):
+            clean_k = sanitize_cpsa_symbol(normalized_list[1]) if quote_undeclared else normalized_list[1]
             if operator == "pubk":
-                return normalized_list[1]
+                return clean_k
             if operator == "privk":
-                return ["invk", normalized_list[1]]
+                return ["invk", clean_k]
 
         # 2. 2-argument pubk/privk: Table 10.3 requires (pubk string_tag name_id)
         if (
             operator in ("pubk", "privk")
             and len(normalized_list) == 3
-            and name_vars
             and isinstance(normalized_list[1], str)
             and isinstance(normalized_list[2], str)
         ):
             first_arg, second_arg = normalized_list[1], normalized_list[2]
-            if first_arg in name_vars and second_arg not in name_vars:
-                tag_str = second_arg if second_arg.startswith('"') else f'"{second_arg}"'
-                normalized_list[1] = tag_str
-                normalized_list[2] = first_arg
+            if name_vars and (first_arg in name_vars or sanitize_cpsa_symbol(first_arg) in name_vars) and second_arg not in name_vars:
+                tag_str = _quote_cpsa_tag_literal(second_arg)
+                clean_name = sanitize_cpsa_symbol(first_arg) if quote_undeclared else first_arg
+                return [operator, tag_str, clean_name]
+            tag_str = _quote_cpsa_tag_literal(first_arg)
+            clean_name = sanitize_cpsa_symbol(second_arg) if quote_undeclared else second_arg
+            return [operator, tag_str, clean_name]
 
         # 3. Bare 'gen' or 'one' inside Diffie-Hellman operators (exp, mul, rec)
         if operator in ("exp", "mul", "rec"):
@@ -145,10 +225,27 @@ def normalize_cpsa_term(
                 elif arg == "one" and (not declared_vars or "one" not in declared_vars):
                     normalized_list[idx] = ["one"]
 
-        return [
-            normalize_cpsa_term(subterm, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars)
-            for subterm in normalized_list
+        return [normalized_list[0]] + [
+            normalize_cpsa_term(
+                subterm,
+                akey_vars=akey_vars,
+                name_vars=name_vars,
+                declared_vars=declared_vars,
+                quote_undeclared=quote_undeclared,
+            )
+            for subterm in normalized_list[1:]
         ]
+
+    if isinstance(desugared, str):
+        if _is_quoted_tag_literal(desugared):
+            return _quote_cpsa_tag_literal(desugared)
+        if quote_undeclared and declared_vars is not None:
+            clean_sym = sanitize_cpsa_symbol(desugared)
+            if desugared in declared_vars or clean_sym in declared_vars:
+                return clean_sym
+            if desugared in ("gen", "one"):
+                return desugared
+            return _quote_cpsa_tag_literal(desugared)
     return desugared
 
 
@@ -174,7 +271,11 @@ def _is_valid_roletran_input_term(term: Any) -> bool:
     if isinstance(term, str):
         return True
     if isinstance(term, list) and term:
-        return term[0] in CPSA_KEY_CONSTRUCTOR_OPERATORS
+        op = term[0]
+        if op in ("pubk", "privk", "invk"):
+            return len(term) == 2
+        if op in ("ltk", "bltk"):
+            return len(term) == 3
     return False
 
 
@@ -326,14 +427,70 @@ class CPSAProtocolRole(BaseModel):
                 )
         return self
 
-    def to_cpsa_json(self) -> List[Any]:
-        akey_vars = {var.name for var in self.variables if var.sort == CPSASortEnum.AKEY}
-        name_vars = {var.name for var in self.variables if var.sort == CPSASortEnum.NAME}
-        declared_vars = {var.name for var in self.variables}
+    def get_sanitized_var_sorts(self) -> Dict[str, str]:
+        """Returns the complete map of sanitized variable names to CPSA sort strings for this role,
+        including variables implied by key constructors (`ltk`, `bltk`, `pubk`, `privk`, `invk`),
+        channels (`chan`), and memory locations (`locn`).
+        """
+        akey_vars = {var.name for var in self.variables if var.sort == CPSASortEnum.AKEY} | {
+            sanitize_cpsa_symbol(var.name) for var in self.variables if var.sort == CPSASortEnum.AKEY
+        }
+        name_vars = {var.name for var in self.variables if var.sort == CPSASortEnum.NAME} | {
+            sanitize_cpsa_symbol(var.name) for var in self.variables if var.sort == CPSASortEnum.NAME
+        }
+        implied_sorts: Dict[str, str] = {}
+        for event in self.trace:
+            _collect_implied_variable_sorts(event.message_term, implied_sorts, akey_vars, name_vars)
+        for term in (
+            self.unique_originating
+            + self.unique_generated
+            + self.non_originating
+            + self.pen_non_originating
+            + self.inputs
+            + self.outputs
+            + self.gen_st
+        ):
+            _collect_implied_variable_sorts(term, implied_sorts, akey_vars, name_vars)
+        for fact in self.facts:
+            for ft in fact[1:] if isinstance(fact, list) and len(fact) > 1 else []:
+                _collect_implied_variable_sorts(ft, implied_sorts, akey_vars, name_vars)
 
-        # Normalize trace events and collect all channels used in send/recv events
+        var_sorts: Dict[str, str] = {}
+        for var_decl in self.variables:
+            clean_name = sanitize_cpsa_symbol(var_decl.name)
+            if clean_name not in var_sorts:
+                var_sorts[clean_name] = var_decl.sort.value
+
+        for raw_name, sort_val in implied_sorts.items():
+            clean_name = sanitize_cpsa_symbol(raw_name)
+            if clean_name not in var_sorts:
+                var_sorts[clean_name] = sort_val
+
+        for event in self.trace:
+            if event.direction in ("send", "recv") and event.channel:
+                clean_chan = sanitize_cpsa_symbol(event.channel)
+                var_sorts.setdefault(clean_chan, CPSASortEnum.CHAN.value)
+            elif event.direction in ("load", "stor"):
+                loc_var = event.location or (event.channel if event.channel and event.channel != "ch" else None)
+                if loc_var:
+                    clean_loc = sanitize_cpsa_symbol(loc_var)
+                    var_sorts.setdefault(clean_loc, CPSASortEnum.LOCN.value)
+        return var_sorts
+
+    def to_cpsa_json(self) -> List[Any]:
+        var_sorts_map = self.get_sanitized_var_sorts()
+        akey_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.AKEY.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.AKEY
+        }
+        name_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.NAME.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.NAME
+        }
+        declared_vars = set(var_sorts_map.keys()) | {var.name for var in self.variables}
+
+        # Normalize trace events and collect all channels and locations used in trace events
         normalized_events: List[List[Any]] = []
         used_channels: List[str] = []
+        used_locations: List[str] = []
         for event in self.trace:
             event_sexpr = event.to_cpsa_json()
             if len(event_sexpr) >= 2:
@@ -342,54 +499,70 @@ class CPSAProtocolRole(BaseModel):
                     akey_vars=akey_vars,
                     name_vars=name_vars,
                     declared_vars=declared_vars,
+                    quote_undeclared=True,
                 )
             if event.direction in ("send", "recv") and event.channel:
                 clean_chan = sanitize_cpsa_symbol(event.channel)
                 if clean_chan not in used_channels:
                     used_channels.append(clean_chan)
+            elif event.direction in ("load", "stor"):
+                loc_var = event.location or (event.channel if event.channel and event.channel != "ch" else None)
+                if loc_var:
+                    clean_loc = sanitize_cpsa_symbol(loc_var)
+                    if clean_loc not in used_locations:
+                        used_locations.append(clean_loc)
             normalized_events.append(event_sexpr)
 
         trace_form = ["trace"] + normalized_events
 
-        # Group declared variables by sort, ensuring any channel used in trace is declared as 'chan'
+        trace_tokens: Set[str] = set()
+        extract_term_tokens(trace_form, trace_tokens)
+        reserved_operators = {
+            "pubk", "privk", "invk", "ltk", "cat", "enc", "hash", "trace", "send", "recv", "load", "stor"
+        } | CPSA_ALL_OPERATORS
+
+        # Group declared variables by sort, keeping all declared variables and any implied variables that occur in trace
         sort_to_vars: Dict[str, List[str]] = {}
         declared_sanitized: Set[str] = set()
-        for var_decl in self.variables:
-            clean_var_name = sanitize_cpsa_symbol(var_decl.name)
+        explicit_sanitized = {sanitize_cpsa_symbol(v.name) for v in self.variables}
+        for clean_var_name, sort_val in var_sorts_map.items():
+            if clean_var_name not in explicit_sanitized and clean_var_name not in trace_tokens:
+                continue
             if clean_var_name not in declared_sanitized:
                 declared_sanitized.add(clean_var_name)
-                sort_to_vars.setdefault(var_decl.sort.value, []).append(clean_var_name)
-
-        for chan_name in used_channels:
-            if chan_name not in declared_sanitized:
-                declared_sanitized.add(chan_name)
-                sort_to_vars.setdefault(CPSASortEnum.CHAN.value, []).append(chan_name)
+                sort_to_vars.setdefault(sort_val, []).append(clean_var_name)
 
         vars_form: List[Any] = ["vars"]
         for sort_value, var_names in sort_to_vars.items():
             vars_form.append(var_names + [sort_value])
 
-        trace_tokens: Set[str] = set()
-        extract_term_tokens(trace_form, trace_tokens)
-        reserved_operators = {"pubk", "privk", "invk", "ltk", "cat", "enc", "hash", "trace", "send", "recv", "load", "stor"} | CPSA_ALL_OPERATORS
-
         def _term_vars_in_trace(term: Any) -> bool:
+            if _is_quoted_tag_literal(term):
+                return False
             if isinstance(term, str):
-                return term in trace_tokens
+                return term in trace_tokens and term in declared_sanitized
             if isinstance(term, (list, tuple)):
                 term_tokens: Set[str] = set()
                 extract_term_tokens(term, term_tokens)
-                var_tokens = term_tokens - reserved_operators
-                return bool(var_tokens and var_tokens.issubset(trace_tokens))
-            return True
+                var_tokens = {
+                    t for t in (term_tokens - reserved_operators) if not _is_quoted_tag_literal(t)
+                }
+                return bool(var_tokens and var_tokens.issubset(trace_tokens) and var_tokens.issubset(declared_sanitized))
+            return False
 
         role_form: List[Any] = ["defrole", sanitize_cpsa_symbol(self.role_name), vars_form, trace_form]
 
         # Enforce Section 4.2 & Table 10.6: rndx/expt variables must be in uniq-gen, never uniq-orig
-        dh_exponent_vars = {var.name for var in self.variables if var.sort.value in ("rndx", "expt")}
+        dh_exponent_vars = {k for k, v in var_sorts_map.items() if v in ("rndx", "expt")}
         effective_uniq_orig: List[Any] = []
-        effective_uniq_gen: List[Any] = list(self.unique_generated)
-        for term in self.unique_originating:
+        effective_uniq_gen: List[Any] = [
+            normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True)
+            for t in self.unique_generated
+        ]
+        for raw_term in self.unique_originating:
+            term = normalize_cpsa_term(
+                raw_term, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+            )
             if isinstance(term, str) and term in dh_exponent_vars:
                 if term not in effective_uniq_gen:
                     effective_uniq_gen.append(term)
@@ -404,38 +577,71 @@ class CPSAProtocolRole(BaseModel):
         if valid_uniq_gen:
             role_form.append(["uniq-gen"] + valid_uniq_gen)
 
-        if self.non_originating:
-            role_form.append(["non-orig"] + [
-                normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars)
-                for t in self.non_originating
-            ])
-        if self.pen_non_originating:
-            role_form.append(["pen-non-orig"] + [
-                normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars)
-                for t in self.pen_non_originating
-            ])
+        normalized_non_orig = [
+            normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True)
+            for t in self.non_originating
+        ]
+        valid_non_orig = [t for t in normalized_non_orig if _term_vars_in_trace(t)]
+        if valid_non_orig:
+            role_form.append(["non-orig"] + valid_non_orig)
+
+        normalized_pen_non_orig = [
+            normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True)
+            for t in self.pen_non_originating
+        ]
+        valid_pen_non_orig = [t for t in normalized_pen_non_orig if _term_vars_in_trace(t)]
+        if valid_pen_non_orig:
+            role_form.append(["pen-non-orig"] + valid_pen_non_orig)
+
         if self.confidential_channels:
-            role_form.append(["conf"] + self.confidential_channels)
+            role_form.append(["conf"] + [sanitize_cpsa_symbol(c) for c in self.confidential_channels])
         if self.authenticated_channels:
-            role_form.append(["auth"] + self.authenticated_channels)
+            role_form.append(["auth"] + [sanitize_cpsa_symbol(c) for c in self.authenticated_channels])
         if self.gen_st:
-            role_form.append(["gen-st"] + self.gen_st)
+            valid_gen_st = [
+                normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True)
+                for t in self.gen_st
+            ]
+            valid_gen_st = [t for t in valid_gen_st if _term_vars_in_trace(t)]
+            if valid_gen_st:
+                role_form.append(["gen-st"] + valid_gen_st)
         if self.facts:
             role_form.append(["facts"] + self.facts)
 
-        # Procedural cpsa4roletran annotations:
+        # Deterministic cpsa4roletran procedural inputs synthesis:
         # 1. Every input/output variable must occur in trace.
-        # 2. All trace channels must be included in inputs.
+        # 2. All trace channels and locations must be included in inputs.
         # 3. No uniq-orig or uniq-gen value may appear in inputs (cpsa4roletran.md).
-        # 4. Each input must be a basic value or channel (no compound cat/enc/hash).
-        # 5. No input value may appear in outputs (cpsa4roletran.md).
+        # 4. Each input must be a basic value or channel/locn (no compound cat/enc/hash).
+        # 5. Any variable or key constructor needed before being bound by recv/load must be in inputs.
         orig_set = {str(t) for t in (valid_uniq_orig + valid_uniq_gen)}
+        non_orig_set = {str(t) for t in (valid_non_orig + valid_pen_non_orig)}
 
         valid_inputs: List[Any] = []
-        if self.inputs or self.outputs:
-            for chan_name in used_channels:
-                if chan_name not in valid_inputs:
-                    valid_inputs.append(chan_name)
+        known_vars: Set[str] = {
+            t for t in (valid_uniq_orig + valid_uniq_gen) if isinstance(t, str)
+        } | set(used_channels) | set(used_locations)
+
+        for chan_name in used_channels:
+            if chan_name not in valid_inputs:
+                valid_inputs.append(chan_name)
+        for loc_name in used_locations:
+            if loc_name not in valid_inputs and loc_name not in orig_set:
+                valid_inputs.append(loc_name)
+
+        def _add_required_input(candidate: Any) -> None:
+            if _is_quoted_tag_literal(candidate):
+                return
+            if str(candidate) in orig_set:
+                return
+            if not _is_valid_roletran_input_term(candidate):
+                return
+            if not _term_vars_in_trace(candidate):
+                return
+            if candidate not in valid_inputs:
+                valid_inputs.append(candidate)
+            if isinstance(candidate, str):
+                known_vars.add(candidate)
 
         for input_term in self.inputs:
             normalized_input = normalize_cpsa_term(
@@ -443,16 +649,77 @@ class CPSAProtocolRole(BaseModel):
                 akey_vars=akey_vars,
                 name_vars=name_vars,
                 declared_vars=declared_vars,
+                quote_undeclared=True,
             )
-            if str(normalized_input) in orig_set:
+            _add_required_input(normalized_input)
+
+        def _require_buildable(term: Any) -> None:
+            if isinstance(term, str):
+                if not _is_quoted_tag_literal(term) and term in declared_sanitized and term not in known_vars:
+                    _add_required_input(term)
+            elif isinstance(term, list) and term:
+                op = term[0]
+                if op in CPSA_KEY_CONSTRUCTOR_OPERATORS:
+                    _add_required_input(term)
+                else:
+                    for sub in term[1:]:
+                        _require_buildable(sub)
+
+        def _process_recv_term(term: Any) -> None:
+            if isinstance(term, str):
+                if not _is_quoted_tag_literal(term) and term in declared_sanitized:
+                    known_vars.add(term)
+            elif isinstance(term, list) and term:
+                op = term[0]
+                if op == "cat":
+                    for sub in term[1:]:
+                        _process_recv_term(sub)
+                elif op == "enc" and len(term) >= 2:
+                    key_term = term[-1]
+                    dec_key = _invert_cpsa_key(key_term, akey_vars)
+                    payload_tokens: Set[str] = set()
+                    for p in term[1:-1]:
+                        extract_term_tokens(p, payload_tokens)
+                    payload_vars = {
+                        t
+                        for t in (payload_tokens - reserved_operators)
+                        if not _is_quoted_tag_literal(t) and t in declared_sanitized
+                    }
+                    has_unbound_payload = bool(payload_vars - known_vars)
+                    if _is_valid_roletran_input_term(dec_key):
+                        is_unprovided_invk = isinstance(dec_key, list) and dec_key and dec_key[0] == "invk"
+                        is_peer_secret_key = (
+                            isinstance(dec_key, list)
+                            and dec_key
+                            and dec_key[0] in ("privk", "invk")
+                            and str(dec_key) in non_orig_set
+                            and not has_unbound_payload
+                        )
+                        if not is_peer_secret_key and not is_unprovided_invk:
+                            if isinstance(dec_key, str):
+                                if dec_key not in known_vars:
+                                    _add_required_input(dec_key)
+                            else:
+                                _add_required_input(dec_key)
+                    else:
+                        _require_buildable(dec_key)
+                    for p in term[1:-1]:
+                        _process_recv_term(p)
+                elif op in CPSA_KEY_CONSTRUCTOR_OPERATORS:
+                    _add_required_input(term)
+                else:
+                    for sub in term[1:]:
+                        _require_buildable(sub)
+
+        for event_sexpr in normalized_events:
+            if len(event_sexpr) < 2:
                 continue
-            if not _is_valid_roletran_input_term(normalized_input):
-                continue
-            input_tokens: Set[str] = set()
-            extract_term_tokens(normalized_input, input_tokens)
-            var_tokens = input_tokens - reserved_operators
-            if var_tokens and var_tokens.issubset(trace_tokens) and normalized_input not in valid_inputs:
-                valid_inputs.append(normalized_input)
+            ev_dir = event_sexpr[0]
+            ev_msg = event_sexpr[-1]
+            if ev_dir in ("send", "stor"):
+                _require_buildable(ev_msg)
+            elif ev_dir in ("recv", "load"):
+                _process_recv_term(ev_msg)
 
         if valid_inputs:
             role_form.append(["inputs"] + valid_inputs)
@@ -466,13 +733,13 @@ class CPSAProtocolRole(BaseModel):
                     akey_vars=akey_vars,
                     name_vars=name_vars,
                     declared_vars=declared_vars,
+                    quote_undeclared=True,
                 )
                 if str(normalized_output) in input_set:
                     continue
-                output_tokens: Set[str] = set()
-                extract_term_tokens(normalized_output, output_tokens)
-                var_tokens = output_tokens - reserved_operators
-                if var_tokens and var_tokens.issubset(trace_tokens) and normalized_output not in valid_outputs:
+                if not _term_vars_in_trace(normalized_output):
+                    continue
+                if normalized_output not in valid_outputs:
                     valid_outputs.append(normalized_output)
             if valid_outputs:
                 role_form.append(["outputs"] + valid_outputs)
@@ -496,10 +763,36 @@ class CPSAStrandInstance(BaseModel):
         description="Mapping from role variable identifier to instantiated skeleton term conforming to CPSA grammar",
     )
 
-    def to_cpsa_json(self) -> List[Any]:
+    def to_cpsa_json(
+        self,
+        akey_vars: Optional[Set[str]] = None,
+        name_vars: Optional[Set[str]] = None,
+        declared_vars: Optional[Set[str]] = None,
+        valid_role_vars: Optional[Set[str]] = None,
+        auto_bind_vars: Optional[Set[str]] = None,
+    ) -> List[Any]:
         strand_form: List[Any] = ["defstrandmax", sanitize_cpsa_symbol(self.role_name)]
+        bound_role_vars: Set[str] = set()
         for role_var, term_val in self.variable_bindings.items():
-            strand_form.append([sanitize_cpsa_symbol(role_var), term_val])
+            clean_role_var = sanitize_cpsa_symbol(role_var)
+            if valid_role_vars is not None and clean_role_var not in valid_role_vars:
+                continue
+            norm_val = normalize_cpsa_term(
+                term_val,
+                akey_vars=akey_vars,
+                name_vars=name_vars,
+                declared_vars=declared_vars,
+                quote_undeclared=declared_vars is not None,
+            )
+            strand_form.append([clean_role_var, norm_val])
+            bound_role_vars.add(clean_role_var)
+
+        if valid_role_vars and auto_bind_vars:
+            for extra_var in sorted(valid_role_vars & auto_bind_vars):
+                if extra_var not in bound_role_vars:
+                    strand_form.append([extra_var, extra_var])
+                    bound_role_vars.add(extra_var)
+
         return strand_form
 
 
@@ -579,37 +872,158 @@ class CPSAPreskeleton(BaseModel):
                 )
         return self
 
-    def to_cpsa_json(self) -> List[Any]:
+    def to_cpsa_json(
+        self,
+        role_var_sorts_by_role: Optional[Dict[str, Dict[str, str]]] = None,
+    ) -> List[Any]:
         skel_form: List[Any] = ["defskeleton", sanitize_cpsa_symbol(self.protocol_name)]
 
-        if self.variables:
+        var_sorts_map: Dict[str, str] = {}
+        for var_decl in self.variables:
+            clean_var_name = sanitize_cpsa_symbol(var_decl.name)
+            if clean_var_name not in var_sorts_map:
+                var_sorts_map[clean_var_name] = var_decl.sort.value
+
+        # Infer sorts from strand variable bindings if role_var_sorts_by_role is provided
+        if role_var_sorts_by_role:
+            for strand in self.strands:
+                clean_role = sanitize_cpsa_symbol(strand.role_name)
+                role_sorts = role_var_sorts_by_role.get(clean_role, {})
+                for role_var, bound_val in strand.variable_bindings.items():
+                    clean_rv = sanitize_cpsa_symbol(role_var)
+                    rv_sort = role_sorts.get(clean_rv)
+                    if rv_sort and isinstance(bound_val, str) and not _is_quoted_tag_literal(bound_val):
+                        clean_bv = sanitize_cpsa_symbol(bound_val)
+                        var_sorts_map.setdefault(clean_bv, rv_sort)
+
+        akey_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.AKEY.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.AKEY
+        }
+        name_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.NAME.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.NAME
+        }
+
+        implied_sorts: Dict[str, str] = {}
+        for strand in self.strands:
+            for bound_val in strand.variable_bindings.values():
+                _collect_implied_variable_sorts(bound_val, implied_sorts, akey_vars, name_vars)
+        for term in (
+            self.listeners
+            + self.non_originating
+            + self.pen_non_originating
+            + self.unique_originating
+            + self.unique_generated
+        ):
+            _collect_implied_variable_sorts(term, implied_sorts, akey_vars, name_vars)
+        for fact in self.facts:
+            for ft in fact[1:] if isinstance(fact, list) and len(fact) > 1 else []:
+                _collect_implied_variable_sorts(ft, implied_sorts, akey_vars, name_vars)
+
+        for raw_name, sort_val in implied_sorts.items():
+            clean_name = sanitize_cpsa_symbol(raw_name)
+            var_sorts_map.setdefault(clean_name, sort_val)
+
+        akey_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.AKEY.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.AKEY
+        }
+        name_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.NAME.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.NAME
+        }
+        declared_vars = set(var_sorts_map.keys()) | {var.name for var in self.variables}
+
+        if var_sorts_map:
             sort_to_vars: Dict[str, List[str]] = {}
-            declared_sanitized: Set[str] = set()
-            for var_decl in self.variables:
-                clean_var_name = sanitize_cpsa_symbol(var_decl.name)
-                if clean_var_name not in declared_sanitized:
-                    declared_sanitized.add(clean_var_name)
-                    sort_to_vars.setdefault(var_decl.sort.value, []).append(clean_var_name)
+            for clean_var_name, sort_val in var_sorts_map.items():
+                sort_to_vars.setdefault(sort_val, []).append(clean_var_name)
             vars_form: List[Any] = ["vars"]
             for sort_value, var_names in sort_to_vars.items():
                 vars_form.append(var_names + [sort_value])
             skel_form.append(vars_form)
 
+        strand_forms: List[List[Any]] = []
+        skel_trace_tokens: Set[str] = set()
         for strand in self.strands:
-            skel_form.append(strand.to_cpsa_json())
+            clean_role = sanitize_cpsa_symbol(strand.role_name)
+            valid_role_vars = (
+                set(role_var_sorts_by_role[clean_role].keys())
+                if role_var_sorts_by_role and clean_role in role_var_sorts_by_role
+                else None
+            )
+            s_form = strand.to_cpsa_json(
+                akey_vars=akey_vars,
+                name_vars=name_vars,
+                declared_vars=declared_vars,
+                valid_role_vars=valid_role_vars,
+                auto_bind_vars=set(var_sorts_map.keys()) if valid_role_vars is not None else None,
+            )
+            strand_forms.append(s_form)
+            for maplet in s_form[2:]:
+                if isinstance(maplet, list) and len(maplet) == 2:
+                    extract_term_tokens(maplet[1], skel_trace_tokens)
+
+        skel_form.extend(strand_forms)
 
         for listener in self.listeners:
-            skel_form.append(["deflistener", listener])
+            norm_listener = normalize_cpsa_term(
+                listener, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+            )
+            extract_term_tokens(norm_listener, skel_trace_tokens)
+            skel_form.append(["deflistener", norm_listener])
+
+        reserved_operators = {
+            "pubk", "privk", "invk", "ltk", "cat", "enc", "hash", "trace", "send", "recv", "load", "stor"
+        } | CPSA_ALL_OPERATORS
+
+        def _skel_term_in_trace(term: Any) -> bool:
+            if _is_quoted_tag_literal(term):
+                return False
+            if not skel_trace_tokens:
+                return True
+            if isinstance(term, str):
+                return term in skel_trace_tokens
+            if isinstance(term, (list, tuple)):
+                toks: Set[str] = set()
+                extract_term_tokens(term, toks)
+                var_toks = {t for t in (toks - reserved_operators) if not _is_quoted_tag_literal(t)}
+                return bool(var_toks and var_toks.issubset(skel_trace_tokens))
+            return False
 
         if self.non_originating:
-            skel_form.append(["non-orig"] + self.non_originating)
+            norm_non_orig = [
+                normalize_cpsa_term(
+                    t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+                )
+                for t in self.non_originating
+            ]
+            norm_non_orig = [t for t in norm_non_orig if _skel_term_in_trace(t)]
+            if norm_non_orig:
+                skel_form.append(["non-orig"] + norm_non_orig)
         if self.pen_non_originating:
-            skel_form.append(["pen-non-orig"] + self.pen_non_originating)
+            norm_pen_non_orig = [
+                normalize_cpsa_term(
+                    t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+                )
+                for t in self.pen_non_originating
+            ]
+            norm_pen_non_orig = [t for t in norm_pen_non_orig if _skel_term_in_trace(t)]
+            if norm_pen_non_orig:
+                skel_form.append(["pen-non-orig"] + norm_pen_non_orig)
 
-        skel_dh_vars = {var.name for var in self.variables if var.sort.value in ("rndx", "expt")}
+        skel_dh_vars = {k for k, v in var_sorts_map.items() if v in ("rndx", "expt")}
         effective_skel_uniq_orig: List[Any] = []
-        effective_skel_uniq_gen: List[Any] = list(self.unique_generated)
-        for term in self.unique_originating:
+        effective_skel_uniq_gen: List[Any] = [
+            normalize_cpsa_term(
+                t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+            )
+            for t in self.unique_generated
+        ]
+        effective_skel_uniq_gen = [t for t in effective_skel_uniq_gen if _skel_term_in_trace(t)]
+        for raw_term in self.unique_originating:
+            term = normalize_cpsa_term(
+                raw_term, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+            )
+            if not _skel_term_in_trace(term):
+                continue
             if isinstance(term, str) and (
                 term in skel_dh_vars
                 or "exponent" in term.lower()
@@ -825,11 +1239,14 @@ class CPSAProtocolSpecification(BaseModel):
 
         clean_proto_name = sanitize_cpsa_symbol(self.protocol_name)
         protocol_form: List[Any] = ["defprotocol", clean_proto_name, self.message_algebra]
+        role_var_sorts_by_role: Dict[str, Dict[str, str]] = {}
         for role in self.roles:
+            clean_role_name = sanitize_cpsa_symbol(role.role_name)
+            role_var_sorts_by_role[clean_role_name] = role.get_sanitized_var_sorts()
             protocol_form.append(role.to_cpsa_json())
         payload.append(protocol_form)
 
         for skel in self.skeletons:
-            payload.append(skel.to_cpsa_json())
+            payload.append(skel.to_cpsa_json(role_var_sorts_by_role=role_var_sorts_by_role))
 
         return payload

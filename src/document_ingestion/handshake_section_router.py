@@ -165,6 +165,15 @@ def _heuristic_section_router(toc_entries: List[TOCSectionEntry]) -> List[str]:
         "informative references",
         "acknowledgements",
         "acknowledgments",
+        "full copyright statement",
+        "copyright notice",
+        "intellectual property",
+        "author's address",
+        "authors' addresses",
+        "editor's address",
+        "status of this memo",
+        "abstract",
+        "table of contents",
     )
 
     exchange_keywords = [

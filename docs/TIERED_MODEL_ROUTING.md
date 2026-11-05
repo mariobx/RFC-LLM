@@ -28,15 +28,15 @@ You are a formal methods expert in cryptographic protocol specification for MITR
 
 ### 2.1 Per-Stage Prompt & Routing Catalog
 
-| Prompt File | Stage / Task | Default Frontmatter `model` | `timeout` | `temperature` | CLI Override Flag |
-|---|---|---|---|---|---|
-| [`prompts/01_applicability_gate.md`](../prompts/01_applicability_gate.md) | **Stage 1c**: Document Intake (Applicability Gate) | `nous/z-ai/glm-5.3` | `180` | `0.0` | `--router-model` / `--model` |
-| [`prompts/02_section_router.md`](../prompts/02_section_router.md) | **Stage 1d**: Document Intake (Section Router) | `nous/z-ai/glm-5.3` | `180` | `0.0` | `--router-model` / `--model` |
-| [`prompts/03_protocol_extraction.md`](../prompts/03_protocol_extraction.md) | **Stage 2**: JSON CPSA Generation | `nous/google/gemini-4-argon` | `180` | `0.0` | `--extraction-model` / `--model` |
-| [`prompts/04_schema_self_correction.md`](../prompts/04_schema_self_correction.md) | **Stage 2 (Retry)**: 1-Shot Schema Self-Correction | `nous/google/gemini-4-argon` | `180` | `0.0` | `--extraction-model` / `--model` |
-| [`prompts/05_rag_query_formulation.md`](../prompts/05_rag_query_formulation.md) | **Stage 5 & 6**: RAG Diagnostic Query Formulation | `nous/anthropic/claude-haiku-5.5` | `15` | `0.0` | `--query-model` / `--model` |
-| [`prompts/06_compiler_repair.md`](../prompts/06_compiler_repair.md) | **Stage 5 & 6**: Self-Healing Compiler Repair | `nous/google/gemini-3.8-flash` | `180` | `0.0` | `--repair-model` / `--model` |
-| [`prompts/07_think_token_synthesizer.md`](../prompts/07_think_token_synthesizer.md) | **Phase 3**: Hindsight Reasoning (`<think>`) Synthesizer | `gemini/gemini-3.5-flash-lite` | `180` | `0.2` | `./rfc-think --model` |
+| Prompt File | Stage / Task | Default Frontmatter `model` | `timeout` | `max_tokens` | `temperature` | CLI Override Flag |
+|---|---|---|---|---|---|---|
+| [`prompts/01_applicability_gate.md`](../prompts/01_applicability_gate.md) | **Stage 1c**: Document Intake (Applicability Gate) | `strata/unsloth-iq4_xs` | `900` | `16384` | *(default)* | `--router-model` / `--model` |
+| [`prompts/02_section_router.md`](../prompts/02_section_router.md) | **Stage 1d**: Document Intake (Section Router) | `strata/unsloth-iq4_xs` | `900` | `16384` | *(default)* | `--router-model` / `--model` |
+| [`prompts/03_protocol_extraction.md`](../prompts/03_protocol_extraction.md) | **Stage 2**: JSON CPSA Generation | `strata/unsloth-iq4_xs` | `3600` | `65536` | *(default)* | `--extraction-model` / `--model` |
+| [`prompts/04_schema_self_correction.md`](../prompts/04_schema_self_correction.md) | **Stage 2 (Retry)**: 1-Shot Schema Self-Correction | `strata/unsloth-iq4_xs` | `3600` | `65536` | *(default)* | `--extraction-model` / `--model` |
+| [`prompts/05_rag_query_formulation.md`](../prompts/05_rag_query_formulation.md) | **Stage 5 & 6**: Agentic CPSA KB Searcher | `strata/unsloth-iq4_xs` | `900` | `16384` | *(default)* | `--query-model` / `--model` |
+| [`prompts/06_compiler_repair.md`](../prompts/06_compiler_repair.md) | **Stage 5 & 6**: Self-Healing Compiler Repair | `strata/unsloth-iq4_xs` | `3600` | `65536` | *(default)* | `--repair-model` / `--model` |
+| [`prompts/07_think_token_synthesizer.md`](../prompts/07_think_token_synthesizer.md) | **Phase 3**: Hindsight Reasoning (`<think>`) Synthesizer | `strata/unsloth-iq4_xs` | `3600` | `65536` | `0.2` | `./rfc-think --model` |
 
 ### 2.2 Zero-Restart Live Hot-Reloading
 [`load_prompt_spec()`](../src/prompt_loader.py) reads and parses `prompts/<filename>.md` dynamically from disk on **every LLM invocation**:
@@ -84,9 +84,9 @@ STRATA_API_BASE=http://localhost:11435/v1
 For every LLM call, [`resolve_prompt_model()`](../src/prompt_loader.py) and [`load_prompt_spec()`](../src/prompt_loader.py) resolve configuration in strict precedence order:
 1. **Explicit CLI Override** (highest priority): One-off session flags passed to `./rfc-llm` (`--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, or global `--model`) or `./rfc-think` (`--model`).
 2. **Live YAML Frontmatter**: The `model:`, `timeout:`, and `temperature:` values currently saved at the top of the stage's `prompts/0*.md` file.
-3. **Built-In `_FALLBACK_METADATA`**: Stage-specific defaults in [`src/prompt_loader.py`](../src/prompt_loader.py) (with `GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"` and `SYSTEM_CONFIG.LLM_TIMEOUT_SECONDS = 180`) if a frontmatter key or prompt file is omitted.
+3. **Built-In `_FALLBACK_METADATA`**: Stage-specific defaults in [`src/prompt_loader.py`](../src/prompt_loader.py) (with `GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"` and `SYSTEM_CONFIG.LLM_TIMEOUT_SECONDS = 3600`) if a frontmatter key or prompt file is omitted.
 
 Non-LLM compiler execution bounds are enforced deterministically in [`src/system_config.py`](../src/system_config.py):
-- `CPSA_TIMEOUT_SECONDS = 60` (hard 60-second process-group `SIGKILL` cap on MITRE `make` / `cpsa4` compilation).
+- `CPSA_TIMEOUT_SECONDS = 15` (hard 15-second process-group `SIGKILL` cap on MITRE `make` / `cpsa4` compilation).
 - `ROLETRAN_TIMEOUT_SECONDS = 15` (15-second cap on `cpsa4roletran` / `cpsa4 -l 1` pre-flight checks).
-- `MAX_REPAIR_ATTEMPTS = 50` (maximum self-healing iterations per verification stage).
+- `MAX_REPAIR_ATTEMPTS = 10` (maximum self-healing iterations per verification stage).

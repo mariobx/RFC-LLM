@@ -14,7 +14,7 @@ from pydantic_settings import BaseSettings
 litellm.suppress_debug_info = True
 litellm.set_verbose = False
 litellm.drop_params = True
-litellm.request_timeout = 2700
+litellm.request_timeout = 3600
 for _logger_name in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router"):
     logging.getLogger(_logger_name).setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=".*litellm.*")
@@ -62,7 +62,7 @@ class SystemEnvironmentConfig(BaseSettings):
     STRATA_API_KEY: str = os.getenv("STRATA_API_KEY", "local-strata")
 
     # Compiler & Harness Execution Limits
-    LLM_TIMEOUT_SECONDS: int = 2700
+    LLM_TIMEOUT_SECONDS: int = 3600
     CPSA_TIMEOUT_SECONDS: int = 15
     ROLETRAN_TIMEOUT_SECONDS: int = 15
     MAX_REPAIR_ATTEMPTS: int = 10

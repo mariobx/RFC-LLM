@@ -2,26 +2,39 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-03 21:53:56 UTC · Git: `main` @ `8b5b88a14002` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~28,709*
+*Generated: 2026-11-05 18:27:58 UTC · Git: `main` @ `955b498002b7` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,122*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `8b5b88a14002` — feat: 67-col CPSA security CSV, per-run --csv isolation, hover tooltips, security & live analytics tabs, and collapsible snowball autopsy
+- **Git commit:** `955b498002b7` — Harden local LLM timeouts, section ID normalization, hex/unnumbered RFC slicing, temperature cycle bump, and CPSA pre-flight check
 - **Added (0):** none
-- **Modified (11):**
-  - `logs/pipeline_runs.csv`
-  - `src/document_ingestion/protocol_applicability_gate.py`
-  - `src/logging_config.py`
+- **Modified (24):**
+  - `README.md`
+  - `docs/INTERMEDIATE_REPRESENTATION.md`
+  - `docs/TIERED_MODEL_ROUTING.md`
+  - `docs/VERIFICATION_AND_SELF_HEALING.md`
+  - `prompts/03_protocol_extraction.md`
+  - `prompts/04_schema_self_correction.md`
+  - `prompts/06_compiler_repair.md`
+  - `prompts/07_think_token_synthesizer.md`
+  - `refrences/cpsa_kb/01_core_rules/00_json_ast_to_cpsa_scheme_mapping.md`
+  - `refrences/cpsa_kb/01_core_rules/07_compiler_and_solver_error_catalog.md`
+  - `src/document_ingestion/handshake_section_router.py`
+  - `src/document_ingestion/rfc_header_filter.py`
+  - `src/document_ingestion/rfc_toc_parser.py`
+  - `src/document_ingestion/verbatim_section_slicer.py`
+  - `src/intermediate_representation/cpsa_grammar.py`
+  - `src/intermediate_representation/protocol_syntax_tree.py`
   - `src/main_pipeline_orchestrator.py`
-  - `src/pipeline.py`
-  - `src/pipeline_events.py`
+  - `src/prompt_loader.py`
+  - `src/rag_retriever_client.py`
+  - `src/system_config.py`
+  - `src/verification_engine/compiler_diagnostic_repair.py`
+  - `src/verification_engine/roletran_executability_gate.py`
   - `src/verification_engine/trajectory_metadata_exporter.py`
-  - `src/visualizer/server.py`
-  - `src/visualizer/static/index.html`
-  - `tests/test_cpsa_kb_and_agentic_searcher.py`
   - `tests/test_trajectory_and_hardening.py`
 - **Deleted (0):** none
 
@@ -47,13 +60,13 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 
 | Bundle | Title | Files | Size | Estimated Tokens | Tier |
 |---|---|---|---|---|---|
-| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 112.4 KB | ~28,709 | Tier 1 — Architecture, Documentation & Project Configs |
-| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 900.5 KB | ~230,453 | Tier 2 — Core Source Code & CLI Entrypoints |
-| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 183.3 KB | ~46,700 | Tier 3 — Knowledge Base Index & Test Suites |
-| `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 693.4 KB | ~175,802 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
+| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 114.0 KB | ~29,122 | Tier 1 — Architecture, Documentation & Project Configs |
+| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 946.0 KB | ~242,120 | Tier 2 — Core Source Code & CLI Entrypoints |
+| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 198.3 KB | ~50,538 | Tier 3 — Knowledge Base Index & Test Suites |
+| `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 694.5 KB | ~176,071 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
 | `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files) | 155 | 915.3 KB | ~234,169 | Tier 3 — Domain Reference Code Corpus (.scm) |
 
-**Total Ingested Context Payload:** ~715,833 tokens across all bundles (71.6% of Gemini 1M context window)
+**Total Ingested Context Payload:** ~732,020 tokens across all bundles (73.2% of Gemini 1M context window)
 
 ---
 
@@ -69,11 +82,11 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/code_generation/cpsa_scheme_emitter.py` | CPSA Scheme S-Expression Emitter using cpsa4json. | `CPSAJsonCompilationError` | `sanitize_protocol_stem`, `emit_cpsa_scheme` | — |
 | `src/cost_tracker.py` | Real-Time Token & USD Cost Telemetry Tracker across Pipeline | `PipelineCostTracker` | `_empty_role_bucket`, `make_empty_cost_summary`, `_normalize_model_key`, `_safe_int` | — |
 | `src/document_ingestion/__init__.py` | Document Ingestion package for Stage 1 RFC filtering, TOC pa | — | — | — |
-| `src/document_ingestion/handshake_section_router.py` | Handshake Section Router for Navigating RFC Table of Content | `SectionRoutingDecision` | `route_handshake_sections`, `_heuristic_section_router` | — |
+| `src/document_ingestion/handshake_section_router.py` | Handshake Section Router for Navigating RFC Table of Content | `SectionRoutingDecision` | `normalize_section_id_token`, `_match_valid_toc_id`, `route_handshake_sections`, `_heuristic_section_router` | — |
 | `src/document_ingestion/protocol_applicability_gate.py` | Protocol Applicability Gate (Tier 1 Gatekeeper). | `ProtocolApplicabilityReport` | `evaluate_protocol_applicability` | — |
 | `src/document_ingestion/rfc_header_filter.py` | RFC Header and Frontmatter Metadata Filter (Tier 0 Filter). | `HeaderFilterResult` | `filter_rfc_header` | — |
 | `src/document_ingestion/rfc_toc_parser.py` | RFC Table of Contents (TOC) Parser. | `TOCSectionEntry` | `parse_table_of_contents` | — |
-| `src/document_ingestion/verbatim_section_slicer.py` | Verbatim RFC Section Boundary Slicer. | — | `_is_rfc_page_break`, `_find_section_start`, `_find_section_end`, `slice_verbatim_sections` | — |
+| `src/document_ingestion/verbatim_section_slicer.py` | Verbatim RFC Section Boundary Slicer. | — | `_is_rfc_page_break`, `_clean_requested_sec_id`, `_find_section_start`, `_find_section_end`, `_slice_unnumbered_rfc_body`, `slice_verbatim_sections` | — |
 | `src/generate_think/__init__.py` | Phase 3 Hindsight Reasoning (<think>) Synthesizer Package. | — | — | — |
 | `src/generate_think/cli.py` | Command-line interface for Phase 3 Hindsight Reasoning (<thi | — | `main` | `--model`, `-m`, `--mode`, `--min-tier`, `--no-jsonl` |
 | `src/generate_think/dspy_think_synthesizer.py` | Phase 3 Agentic DSPy Hindsight Reasoning (<think>) Synthesiz | `CPSAHindsightReasoningSignature`, `CPSAHindsightThinkModule` | `_format_sexpr`, `_extract_compiler_backtracking_summary`, `compile_deterministic_reasoning_steps`, `_sanitize_hindsight_leakage`, `_compose_comprehensive_monologue`, `synthesize_reasoning_steps_via_dspy_or_llm` … | — |
@@ -81,7 +94,7 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/intermediate_representation/__init__.py` | Intermediate Representation (IR) package for MITRE CPSA 4.4. | — | — | — |
 | `src/intermediate_representation/algebraic_sorts.py` | Order-Sorted Message Algebra Sort Definitions for MITRE CPSA | `CPSASortEnum` | — | — |
 | `src/intermediate_representation/cpsa_grammar.py` | MITRE CPSA 4.4.9 Formal Grammar, Scoped Keywords, and Arity  | — | `desugar_term_tree`, `validate_cpsa_term_syntax` | — |
-| `src/intermediate_representation/protocol_syntax_tree.py` | Strongly-Typed Intermediate Representation (AST) for MITRE C | `CPSAVariableDeclaration`, `CPSATraceEvent`, `CPSAProtocolRole`, `CPSAStrandInstance`, `CPSAPreskeleton`, `CPSAProtocolSpecification` | `_validate_cpsa_term`, `sanitize_cpsa_symbol`, `extract_term_tokens`, `normalize_cpsa_term`, `_validate_no_mesg_encryption_key`, `_is_valid_roletran_input_term` | — |
+| `src/intermediate_representation/protocol_syntax_tree.py` | Strongly-Typed Intermediate Representation (AST) for MITRE C | `CPSAVariableDeclaration`, `CPSATraceEvent`, `CPSAProtocolRole`, `CPSAStrandInstance`, `CPSAPreskeleton`, `CPSAProtocolSpecification` | `_validate_cpsa_term`, `sanitize_cpsa_symbol`, `_quote_cpsa_tag_literal`, `_is_quoted_tag_literal`, `_collect_implied_variable_sorts`, `_invert_cpsa_key` … | — |
 | `src/logging_config.py` | Comprehensive Structured Logging Subsystem for RFC-LLM Pipel | `PipelineConsoleFormatter`, `PipelineMetricsCSVLogger` | `configure_pipeline_logging`, `get_pipeline_logger` | — |
 | `src/main_pipeline_orchestrator.py` | Main Pipeline Orchestrator for RFC-to-CPSA Synthesis. | `PipelineExecutionSummary` | `_compact_diagnostic_headline`, `_extract_rfc_abstract`, `_read_scm_safe`, `_compute_ast_hash`, `_run_roletran_self_healing_loop`, `_run_mitre_solver_self_healing_loop` … | — |
 | `src/pipeline.py` | Command-line interface for RFC-LLM synthesis pipeline suppor | — | `_print_cost_breakdown`, `natural_rfc_sort_key`, `get_completed_rfc_ids`, `get_failed_rfc_ids`, `main` | `--view`, `--output-dir`, `-o`, `--model`, `-m`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, `--no-visualize` … |
@@ -96,7 +109,7 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/verification_engine/mitre_build_orchestrator.py` | MITRE Build Orchestrator for CPSA Verification and Visualiza | `CPSABuildArtifacts`, `CPSABuildError` | `_run_make_with_hard_timeout`, `_ensure_cpsa_makefile`, `_count_shapes_in_file`, `execute_mitre_make_build` | — |
 | `src/verification_engine/roletran_executability_gate.py` | MITRE CPSA Roletran Pre-Flight Executability Gate (<15 ms). | `RoletranVerificationResult` | `verify_role_executability` | — |
 | `src/verification_engine/snowball_autopsy.py` | CPSA 4.4.9 State-Space Snowball Classifier, Herald Injector, | — | `is_snowball_state_error`, `inject_herald_options_into_scm`, `_extract_balanced_sexp`, `_normalize_primed_identifiers`, `_parse_skeleton_records`, `_extract_primed_variable_stats` … | — |
-| `src/verification_engine/trajectory_metadata_exporter.py` | Programmatic Trajectory & Formal Verification Metadata Expor | — | `split_top_level_sexprs`, `_extract_int_clause`, `_has_flag_clause`, `_extract_clause_block`, `_extract_root_deflistener`, `_extract_skeleton_vars_sorts` … | — |
+| `src/verification_engine/trajectory_metadata_exporter.py` | Programmatic Trajectory & Formal Verification Metadata Expor | — | `split_top_level_sexprs`, `_extract_int_clause`, `_has_flag_clause`, `_extract_clause_block`, `_extract_root_deflisteners`, `_extract_root_deflistener` … | — |
 | `src/visualizer/__init__.py` | RFC-LLM Live Visualization and Interactive Dashboard Module. | — | — | — |
 | `src/visualizer/server.py` | Asynchronous web server for live and offline multi-RFC synth | `VisualizerServer` | `_get_manual_chunk_lookup`, `_resolve_chunks_by_ids`, `hydrate_tab_payload`, `_synthesize_events_from_trajectory`, `_load_csv_analytics_payload`, `run_visualizer_in_background` | — |
 | `tests/conftest.py` | Global pytest fixtures ensuring hermetic test execution with | — | `_hermetic_logs_directory` | — |
@@ -521,7 +534,7 @@ SOFTWARE.
 
 ### `README.md`
 
-*sha256:`14a33801a274` · 90 lines · 9.5 KB (~2,416 tokens) · lang:`markdown`*
+*sha256:`0d23cf339357` · 90 lines · 9.8 KB (~2,509 tokens) · lang:`markdown`*
 
 ````markdown
 # RFC-LLM
@@ -541,11 +554,11 @@ SOFTWARE.
    - Extracts a validated `CPSAProtocolSpecification` Pydantic AST enforcing MITRE CPSA 4.4.9 sort rules, positional keyword scoping, and the Stage 2 Verbatim Slice Bailout Gate (exiting immediately with 0 repair loops if the sliced RFC text defines no cryptographic message exchange).
    - Enforces the **3-POV Preskeleton Architecture**: pure 1-strand `defstrandmax` Point-of-View skeletons for each role (with zero listeners) plus a dedicated `deflistener` secrecy probe skeleton.
 3. **Stage 3 — CPSA4json -> scm ([`src/code_generation/`](src/code_generation/))**:
-   - [`cpsa_json_serializer.py`](src/code_generation/cpsa_json_serializer.py) & [`cpsa_scheme_emitter.py`](src/code_generation/cpsa_scheme_emitter.py): Serializes the validated Pydantic AST into native CPSA JSON S-expression arrays and compiles them into canonical CPSA 4.4.9 `.scm` code via `cpsa4json`.
+   - [`cpsa_json_serializer.py`](src/code_generation/cpsa_json_serializer.py) & [`cpsa_scheme_emitter.py`](src/code_generation/cpsa_scheme_emitter.py): Runs the deterministic AST pre-normalizer (auto-quoting undeclared constant tags/numbers as `"\"tag\""`, inferring missing `name`/`locn` variables from `ltk`/`bltk`/`pubk`/`privk`/`load`/`stor`, and abstractly interpreting role traces to synthesize `cpsa4roletran` `inputs`), serializes CPSA JSON S-expression arrays, and compiles them into canonical CPSA 4.4.9 `.scm` code via `cpsa4json`.
 4. **Stage 4 — Roletran Check ([`src/verification_engine/roletran_executability_gate.py`](src/verification_engine/roletran_executability_gate.py))**:
-   - Runs `cpsa4roletran` (for `basic` algebra) or `cpsa4 -l 1` (for `diffie-hellman` algebra) under `ROLETRAN_TIMEOUT_SECONDS = 15` to verify role constructibility, destructibility, and variable origination before invoking full strand-space search.
+   - Runs `cpsa4roletran` (for stateless `basic` algebra) or `cpsa4 -l 1` (for `diffie-hellman` or stateful `locn`/`load`/`stor` specifications) under `ROLETRAN_TIMEOUT_SECONDS = 15` to verify role constructibility, destructibility, and variable origination before invoking full strand-space search.
 5. **Stage 5 — Self-Healing Loop ([`src/verification_engine/compiler_diagnostic_repair.py`](src/verification_engine/compiler_diagnostic_repair.py), [`src/rag_retriever_client.py`](src/rag_retriever_client.py))**:
-   - Intercepts Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejections, tracks canonical SHA-256 AST hashes to break repair oscillations, runs the Pinned CPSA Header + Agentic CPSA Knowledge Base Searcher (`refrences/cpsa_kb/`), and patches the Pydantic AST while preserving 1-to-1 fidelity to the verbatim RFC.
+   - Intercepts Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejections, tracks canonical SHA-256 AST hashes (stripping cosmetic prose/comments) and prior failed attempt summaries to break `A -> B -> A` repair oscillations, runs the Pinned CPSA Header + Agentic CPSA Knowledge Base Searcher (`refrences/cpsa_kb/`), and patches the Pydantic AST while preserving 1-to-1 fidelity to the verbatim RFC.
 6. **Stage 6 — CPSA Compilation & 3-Tier Snowball State Recovery ([`src/verification_engine/mitre_build_orchestrator.py`](src/verification_engine/mitre_build_orchestrator.py), [`src/verification_engine/snowball_autopsy.py`](src/verification_engine/snowball_autopsy.py), [`src/verification_engine/trajectory_metadata_exporter.py`](src/verification_engine/trajectory_metadata_exporter.py))**:
    - Executes `cpsa4init` and `make` (`cpsa4`, `cpsa4shapes`, `cpsa4graph`) under a hard 15-second process-group `SIGKILL` cap (`CPSA_TIMEOUT_SECONDS = 15`) with 3-tier snowball state recovery (Tier 1 herald search-order portfolio, Tier 2 partial `.txt` snowball autopsy, Tier 3 structural anti-unification repair).
    - Scores deterministic verification quality tiers (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`), records per-role and batch USD/token telemetry ([`src/cost_tracker.py`](src/cost_tracker.py)), upserts the master ledger (`logs/pipeline_runs.csv`), and updates `output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`.
@@ -1173,7 +1186,7 @@ Every entry defines:
 
 ### `docs/INTERMEDIATE_REPRESENTATION.md`
 
-*sha256:`b8ffe1824b6d` · 184 lines · 9.8 KB (~2,496 tokens) · lang:`markdown`*
+*sha256:`41f007a8e16e` · 185 lines · 10.5 KB (~2,679 tokens) · lang:`markdown`*
 
 ````markdown
 # Formal Grammar & Intermediate Representation (IR)
@@ -1235,11 +1248,11 @@ CPSA defines two order-sorted message algebras:
 
 ### 3.1 Term Definition (Tables 10.3 & 10.5)
 
-$$term \leftarrow id \mid integer \mid string \mid (op\ term^+)$$
+$$term \leftarrow id \mid \text{"\"tag\""} \mid (op\ term^+)$$
 
 In the JSON intermediate representation (`CPSATerm`):
-- Atoms are strings: `"client_random"`, `"server_identity"`, `"session_key"`.
-- Integers are constants: `1`.
+- Declared variables are string identifiers: `"client_random"`, `"server_identity"`, `"session_key"`.
+- Fixed protocol message types, opcodes, or domain-separation labels are quoted tag strings: `"\"SAKE_CHALLENGE\""` (any undeclared leaf constant string or integer is automatically normalized to a quoted CPSA tag literal `"\"...\""` by `normalize_cpsa_term()`).
 - Operators are prefix lists: `["enc", "payload", "key"]`, `["exp", ["gen"], "x"]`.
 
 ### 3.2 The Dict-In-Term Failure Mode
@@ -1310,10 +1323,11 @@ class CPSAProtocolRole(BaseModel):
 - **Equation 10.1 Enforcement**: Variables declared with top sort `mesg` are rejected as the encryption key (last argument) in `["enc", ..., key]`.
 - **Roletran Serialization Normalization (`to_cpsa_json()`)**:
   1. Variables of sort `rndx` or `expt` placed in `unique_originating` are automatically migrated to `unique_generated` (`uniq-gen`).
-  2. Channel variables used in `send`/`recv` events are automatically declared with sort `chan` and added to `inputs`.
-  3. Uniquely originating/generated values (`uniq-orig` / `uniq-gen`) and compound non-key terms (`cat`, `enc`, `hash`) are stripped from `inputs`.
-  4. Any parameter in `inputs` is stripped from `outputs` so no input is repeated as an output.
-  5. Every variable in `inputs`, `outputs`, and `unique_originating` is verified to appear in `trace`.
+  2. Implied principal `name` variables from `ltk`/`bltk`/`pubk`/`privk`, channel variables (`chan`) from `send`/`recv`, and memory locations (`locn`) from `load`/`stor` are automatically declared in `(vars ...)`.
+  3. Undeclared constant strings or integers in trace events are deterministically quoted as CPSA tag literals (`"\"tag\""`) so fixed message types and domain-separation labels compile cleanly without turning into unconstrained variables.
+  4. Procedural `(inputs ...)` are deterministically synthesized by abstractly interpreting the role trace in order (`recv`/`load` bindings vs. `send`/`stor`/`hash` build requirements), stripping `uniq-orig`/`uniq-gen` values and compound non-key terms (`cat`, `enc`, `hash`).
+  5. Any parameter in `inputs` is stripped from `outputs` so no input is repeated as an output.
+  6. Every variable in `inputs`, `outputs`, `unique_originating`, and `non_originating` is verified to appear in `trace`.
 
 ### 4.4 `CPSAPreskeleton`
 Defines a point-of-view analysis scenario (`defskeleton`, Tables 10.1 & 10.6):
@@ -1876,7 +1890,7 @@ flowchart TD
 
 ### `docs/TIERED_MODEL_ROUTING.md`
 
-*sha256:`a123b2b26cf6` · 92 lines · 7.1 KB (~1,805 tokens) · lang:`markdown`*
+*sha256:`aa3648f54482` · 92 lines · 7.2 KB (~1,830 tokens) · lang:`markdown`*
 
 ````markdown
 # Tiered Model Routing & YAML Frontmatter Configuration
@@ -1909,15 +1923,15 @@ You are a formal methods expert in cryptographic protocol specification for MITR
 
 ### 2.1 Per-Stage Prompt & Routing Catalog
 
-| Prompt File | Stage / Task | Default Frontmatter `model` | `timeout` | `temperature` | CLI Override Flag |
-|---|---|---|---|---|---|
-| [`prompts/01_applicability_gate.md`](../prompts/01_applicability_gate.md) | **Stage 1c**: Document Intake (Applicability Gate) | `nous/z-ai/glm-5.3` | `180` | `0.0` | `--router-model` / `--model` |
-| [`prompts/02_section_router.md`](../prompts/02_section_router.md) | **Stage 1d**: Document Intake (Section Router) | `nous/z-ai/glm-5.3` | `180` | `0.0` | `--router-model` / `--model` |
-| [`prompts/03_protocol_extraction.md`](../prompts/03_protocol_extraction.md) | **Stage 2**: JSON CPSA Generation | `nous/google/gemini-4-argon` | `180` | `0.0` | `--extraction-model` / `--model` |
-| [`prompts/04_schema_self_correction.md`](../prompts/04_schema_self_correction.md) | **Stage 2 (Retry)**: 1-Shot Schema Self-Correction | `nous/google/gemini-4-argon` | `180` | `0.0` | `--extraction-model` / `--model` |
-| [`prompts/05_rag_query_formulation.md`](../prompts/05_rag_query_formulation.md) | **Stage 5 & 6**: RAG Diagnostic Query Formulation | `nous/anthropic/claude-haiku-5.5` | `15` | `0.0` | `--query-model` / `--model` |
-| [`prompts/06_compiler_repair.md`](../prompts/06_compiler_repair.md) | **Stage 5 & 6**: Self-Healing Compiler Repair | `nous/google/gemini-3.8-flash` | `180` | `0.0` | `--repair-model` / `--model` |
-| [`prompts/07_think_token_synthesizer.md`](../prompts/07_think_token_synthesizer.md) | **Phase 3**: Hindsight Reasoning (`<think>`) Synthesizer | `gemini/gemini-3.5-flash-lite` | `180` | `0.2` | `./rfc-think --model` |
+| Prompt File | Stage / Task | Default Frontmatter `model` | `timeout` | `max_tokens` | `temperature` | CLI Override Flag |
+|---|---|---|---|---|---|---|
+| [`prompts/01_applicability_gate.md`](../prompts/01_applicability_gate.md) | **Stage 1c**: Document Intake (Applicability Gate) | `strata/unsloth-iq4_xs` | `900` | `16384` | *(default)* | `--router-model` / `--model` |
+| [`prompts/02_section_router.md`](../prompts/02_section_router.md) | **Stage 1d**: Document Intake (Section Router) | `strata/unsloth-iq4_xs` | `900` | `16384` | *(default)* | `--router-model` / `--model` |
+| [`prompts/03_protocol_extraction.md`](../prompts/03_protocol_extraction.md) | **Stage 2**: JSON CPSA Generation | `strata/unsloth-iq4_xs` | `3600` | `65536` | *(default)* | `--extraction-model` / `--model` |
+| [`prompts/04_schema_self_correction.md`](../prompts/04_schema_self_correction.md) | **Stage 2 (Retry)**: 1-Shot Schema Self-Correction | `strata/unsloth-iq4_xs` | `3600` | `65536` | *(default)* | `--extraction-model` / `--model` |
+| [`prompts/05_rag_query_formulation.md`](../prompts/05_rag_query_formulation.md) | **Stage 5 & 6**: Agentic CPSA KB Searcher | `strata/unsloth-iq4_xs` | `900` | `16384` | *(default)* | `--query-model` / `--model` |
+| [`prompts/06_compiler_repair.md`](../prompts/06_compiler_repair.md) | **Stage 5 & 6**: Self-Healing Compiler Repair | `strata/unsloth-iq4_xs` | `3600` | `65536` | *(default)* | `--repair-model` / `--model` |
+| [`prompts/07_think_token_synthesizer.md`](../prompts/07_think_token_synthesizer.md) | **Phase 3**: Hindsight Reasoning (`<think>`) Synthesizer | `strata/unsloth-iq4_xs` | `3600` | `65536` | `0.2` | `./rfc-think --model` |
 
 ### 2.2 Zero-Restart Live Hot-Reloading
 [`load_prompt_spec()`](../src/prompt_loader.py) reads and parses `prompts/<filename>.md` dynamically from disk on **every LLM invocation**:
@@ -1965,19 +1979,19 @@ STRATA_API_BASE=http://localhost:11435/v1
 For every LLM call, [`resolve_prompt_model()`](../src/prompt_loader.py) and [`load_prompt_spec()`](../src/prompt_loader.py) resolve configuration in strict precedence order:
 1. **Explicit CLI Override** (highest priority): One-off session flags passed to `./rfc-llm` (`--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, or global `--model`) or `./rfc-think` (`--model`).
 2. **Live YAML Frontmatter**: The `model:`, `timeout:`, and `temperature:` values currently saved at the top of the stage's `prompts/0*.md` file.
-3. **Built-In `_FALLBACK_METADATA`**: Stage-specific defaults in [`src/prompt_loader.py`](../src/prompt_loader.py) (with `GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"` and `SYSTEM_CONFIG.LLM_TIMEOUT_SECONDS = 180`) if a frontmatter key or prompt file is omitted.
+3. **Built-In `_FALLBACK_METADATA`**: Stage-specific defaults in [`src/prompt_loader.py`](../src/prompt_loader.py) (with `GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"` and `SYSTEM_CONFIG.LLM_TIMEOUT_SECONDS = 3600`) if a frontmatter key or prompt file is omitted.
 
 Non-LLM compiler execution bounds are enforced deterministically in [`src/system_config.py`](../src/system_config.py):
-- `CPSA_TIMEOUT_SECONDS = 60` (hard 60-second process-group `SIGKILL` cap on MITRE `make` / `cpsa4` compilation).
+- `CPSA_TIMEOUT_SECONDS = 15` (hard 15-second process-group `SIGKILL` cap on MITRE `make` / `cpsa4` compilation).
 - `ROLETRAN_TIMEOUT_SECONDS = 15` (15-second cap on `cpsa4roletran` / `cpsa4 -l 1` pre-flight checks).
-- `MAX_REPAIR_ATTEMPTS = 50` (maximum self-healing iterations per verification stage).
+- `MAX_REPAIR_ATTEMPTS = 10` (maximum self-healing iterations per verification stage).
 ````
 
 ---
 
 ### `docs/VERIFICATION_AND_SELF_HEALING.md`
 
-*sha256:`ae94e3bb7f13` · 114 lines · 11.4 KB (~2,911 tokens) · lang:`markdown`*
+*sha256:`279470e2950a` · 115 lines · 11.8 KB (~3,023 tokens) · lang:`markdown`*
 
 ````markdown
 # Verification Engine & Closed-Loop Self-Healing
@@ -1994,18 +2008,18 @@ For protocols declared under `basic` message algebra:
   2. **Destructibility**: Every received term can be parsed and decrypted using keys already held in `inputs` or extracted from earlier receptions.
   3. **Input/Output Disjointness & Trace Occurrence**: Every parameter in `inputs`, `outputs`, and `uniq-orig` appears in the role's trace, and no `inputs` variable is repeated in `outputs` or `uniq-orig`.
 
-### 1.2 Diffie-Hellman Algebra Path (`cpsa4 -l 1`)
-- **MITRE CPSA 4.4.9 Binary Constraint**: `cpsa4roletran` implements only `CPSA.Roletran.Algebra` (`basic` algebra) and rejects `diffie-hellman` protocols unconditionally with `Expecting terms in basic algebra`.
+### 1.2 Diffie-Hellman & Stateful `locn`/`load`/`stor` Path (`cpsa4 -l 1`)
+- **MITRE CPSA 4.4.9 Binary Constraint**: `cpsa4roletran` implements only stateless `CPSA.Roletran.Algebra` (`basic` algebra over `chan`) and rejects `diffie-hellman` protocols (`Expecting terms in basic algebra`) as well as stateful `locn`/`load`/`stor` protocols (`Sort locn not recognized`).
 - **Dual Pre-Flight Strategy**:
-  When `diffie-hellman` is present in `<protocol>.scm`, `verify_role_executability()` automatically executes `~/.cabal/bin/cpsa4 -l 1 <protocol>.scm` (`15s` timeout):
+  When `diffie-hellman` or stateful `locn`/`load`/`stor` is present in `<protocol>.scm`, `verify_role_executability()` automatically executes `~/.cabal/bin/cpsa4 -l 1 <protocol>.scm` (`15s` timeout):
   - Executes the CPSA S-expression loader, sort checker, role well-formedness validator, and `(uniq-gen ...)` exponent checks before stopping after 1 search step (`Step limit exceeded`).
-  - Rejects any syntax, sort, or origination error (`Role not well formed`, `Expecting ...`) while passing well-formed Diffie-Hellman specifications directly to Stage 6.
+  - Rejects any syntax, sort, or origination error (`Role not well formed`, `Expecting ...`) while passing well-formed Diffie-Hellman or stateful specifications directly to Stage 6.
 
 ---
 
 ## 2. Stage 5: Self-Healing Loop ([`src/verification_engine/compiler_diagnostic_repair.py`](../src/verification_engine/compiler_diagnostic_repair.py))
 
-Whenever Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejects a candidate specification, the orchestrator enters an automated RAG-guided repair loop bounded by `MAX_REPAIR_ATTEMPTS = 50`:
+Whenever Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejects a candidate specification, the orchestrator enters an automated RAG-guided repair loop bounded by `MAX_REPAIR_ATTEMPTS = 10`:
 
 ```
 [Rejected .scm] ──> [Compiler / Timeout Diagnostic]
@@ -2030,15 +2044,16 @@ Whenever Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejects a ca
 ```
 
 ### 2.1 Error Diagnostic Extraction
-`verify_role_executability()` and `execute_mitre_make_build()` isolate actionable compiler diagnostics from `stderr`/`stdout` (such as `Received term cannot be fully destructured`, `Role not well formed: uniq-orig x doesn't originate`, `Expecting a name`, or `MITRE CPSA compilation timed out after 60 seconds`).
+`verify_role_executability()` and `execute_mitre_make_build()` isolate actionable compiler diagnostics from `stderr`/`stdout`—preserving `.scm` line/column numbers and offending S-expression snippets (`(at .scm line L, col C: ...)`).
 
 ### 2.2 SHA-256 Oscillation & Cycle Detection
-LLMs repairing compiler errors can oscillate between two invalid states (for example, adding a key to `inputs` and removing it on the next pass).
-- Both `_run_roletran_self_healing_loop()` and `_run_mitre_solver_self_healing_loop()` in [`src/main_pipeline_orchestrator.py`](../src/main_pipeline_orchestrator.py) hash every candidate AST via `hashlib.sha256(protocol_ast.model_dump_json().encode()).hexdigest()`.
+LLMs repairing compiler errors can oscillate between two invalid states (for example, `A -> B -> A` between `Malformed input` and `Cannot build`).
+- Both `_run_roletran_self_healing_loop()` and `_run_mitre_solver_self_healing_loop()` in [`src/main_pipeline_orchestrator.py`](../src/main_pipeline_orchestrator.py) hash every candidate AST via `_compute_ast_hash()`, which strips all cosmetic prose fields (`herald_comment`, `ineligibility_reason`, `role.description`, `role.comment`, `var.description`, `var.rfc_field`, `event.description`, `skel.description`, `skel.comment`) so cosmetic comment changes never mask an AST cycle.
+- Every repair pass also receives the `prior_attempts` history of failed diagnostics on that specification so it never repeats an edit that already failed.
 - If a SHA-256 hash reappears in `seen_roletran_hashes` or `seen_solver_hashes`:
   1. `cycle_detected = True` is logged and emitted to the visualizer.
   2. An explicit anti-oscillation directive is appended to the repair prompt instructing the model to abandon prior edits.
-  3. Sampling temperature is raised to `max(0.4, base_temp)` to break greedy repetition.
+  3. Sampling temperature is raised to `max(0.5, base_temp)` to break greedy repetition.
 
 ### 2.3 Dynamic RAG Query Formulation ([`prompts/05_rag_query_formulation.md`](../prompts/05_rag_query_formulation.md))
 Raw compiler errors contain protocol-specific identifiers (`edhoc.scm:72:6`, `client_random`, `connection_id_i`) that do not exist in the MITRE manual.

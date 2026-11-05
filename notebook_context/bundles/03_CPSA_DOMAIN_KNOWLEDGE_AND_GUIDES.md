@@ -2,7 +2,7 @@
 
 > Tier 1/3 Domain Reference — Zero-hallucination CPSA 4.4.9 core operational rules (`refrences/cpsa_kb/01_core_rules/`), JSON AST to Scheme S-expression mapping, exhaustive compiler/solver diagnostic catalog, and the 5 consolidated official MITRE manuals (`refrences/cpsa_kb/02_manuals/`).
 
-*Generated: 2026-11-03 21:53:56 UTC · Git: `main` @ `8b5b88a14002` · Tier: Tier 1/3 — Domain Reference Documentation & Modeling Guides · Files: 13 · Estimated Tokens: ~175,802*
+*Generated: 2026-11-05 18:27:58 UTC · Git: `main` @ `955b498002b7` · Tier: Tier 1/3 — Domain Reference Documentation & Modeling Guides · Files: 13 · Estimated Tokens: ~176,071*
 
 ## Table of Contents
 
@@ -24,7 +24,7 @@
 
 ### `refrences/cpsa_kb/01_core_rules/00_json_ast_to_cpsa_scheme_mapping.md`
 
-*sha256:`2f735a9f8ff9` · 379 lines · 22.3 KB (~5,695 tokens) · lang:`markdown`*
+*sha256:`0c05334e3143` · 380 lines · 22.6 KB (~5,784 tokens) · lang:`markdown`*
 
 ````markdown
 # CPSA 4.4.9 JSON AST to Scheme S-Expression Mapping Reference
@@ -41,7 +41,8 @@ The RFC-LLM code generation pipeline translates a validated `CPSAProtocolSpecifi
    - Enforces strict keyword scoping across top-level specifications, roles (`CPSAProtocolRole`), trace events (`CPSATraceEvent`), and point-of-view preskeletons (`CPSAPreskeleton`) in accordance with MITRE CPSA 4.4.9 Manual Tables 10.1 through 10.6.
    - Sanitizes all symbolic identifiers via `sanitize_cpsa_symbol()`, converting spaces and periods (`.`) into hyphens (`-`) and stripping characters outside `[a-zA-Z0-9+\-*/<=>!?$:%_&~^]` to prevent `cpsa4json: Bad char in atom` errors.
    - Desugars foreign cryptographic operators (`aenc` $\to$ `enc`, `senc` $\to$ `enc`, `sign` $\to$ `enc`, `mac`/`hmac` $\to$ `hash`) via `desugar_term_tree()`.
-   - Normalizes asymmetric key terms via `normalize_cpsa_term()`: unwraps `["pubk", k]` $\to$ `k` and `["privk", k]` $\to$ `["invk", k]` when `k` has sort `akey`, repairs reversed 2-argument `["pubk", name_var, tag_str]` $\to$ `["pubk", "\"tag_str\"", name_var]`, and expands bare `"gen"` / `"one"` inside Diffie-Hellman operators (`exp`, `mul`, `rec`) into `["gen"]` / `["one"]`.
+   - Normalizes asymmetric key terms via `normalize_cpsa_term()`: unwraps `["pubk", k]` $\to$ `k` and `["privk", k]` $\to$ `["invk", k]` when `k` has sort `akey`, repairs reversed 2-argument `["pubk", name_var, tag_str]` $\to$ `["pubk", "\"tag_str\"", name_var]`, expands bare `"gen"` / `"one"` inside Diffie-Hellman operators (`exp`, `mul`, `rec`) into `["gen"]` / `["one"]`, and deterministically quotes undeclared constant strings/numbers as CPSA tag literals (`"\"tag\""`).
+   - Deterministically infers missing principal `name` variables (from `ltk`, `bltk`, `pubk`, `privk`), memory `locn` variables (from `load`, `stor`), and procedural `cpsa4roletran` `(inputs ...)` by abstractly interpreting each role's trace events in order.
 2. **JSON S-Expression Serialization (`cpsa_json_serializer.py`)**:
    - Invokes `spec.to_cpsa_json_payload()`, returning a list of top-level JSON S-expression arrays (`["herald", ...]`, `["defprotocol", ...]`, and `["defskeleton", ...]`).
    - Serializes each top-level JSON array onto a separate double-newline-delimited line via `serialize_to_cpsa_json_string()`.
@@ -1302,7 +1303,7 @@ When inspecting a partial or aborted `.txt` output file to locate the source of 
 
 ### `refrences/cpsa_kb/01_core_rules/07_compiler_and_solver_error_catalog.md`
 
-*sha256:`065ded1b6bde` · 429 lines · 49.5 KB (~12,629 tokens) · lang:`markdown`*
+*sha256:`9e0dd0f23b82` · 431 lines · 50.2 KB (~12,809 tokens) · lang:`markdown`*
 
 ````markdown
 # CPSA 4.4.9 Exhaustive Compiler, Roletran, and Solver Error Diagnostic Catalog
@@ -1325,7 +1326,9 @@ Every entry specifies:
 - **Root Cause in CPSA Semantics**: During the fixed-point destructuring loop (`reduce` / `loop`) on a `(recv ch term)` event, at least one subterm remains in the `todo` queue (`loop pos _ False [] (_ : _)`) after a full pass with no progress (`more == False`). This happens when:
   1. The received term contains an encryption `(enc x y)` (`loopEncr`), and `synth st (inv y)` returns `Nothing` because the role does **not** possess the inverse decryption key $\text{inv}(y)$ at that point in the trace; OR
   2. The received term contains a one-way hash `(hash x)` (`loopHash`), and `synth st (Hsh x)` returns `Nothing` because the role cannot locally synthesize `(hash x)` from its compile-time store `compStore` to compare via `Same`.
-- **Exact JSON AST Field to Fix**: `CPSAProtocolRole.inputs` (add the required decryption key, e.g., `["privk", "server_identity"]`, `["pubk", "client_identity"]`, `["ltk", "client_identity", "server_identity"]`, or symmetric key variable `"psk"`, or preimage inputs needed to verify `(hash x)`) or `CPSAProtocolRole.trace` (ensure any dynamically negotiated key is received in an earlier carried position before it is used to decrypt).
+- **Exact JSON AST Field to Fix**:
+  1. `CPSAProtocolRole.inputs`: Add the required decryption/verification key (e.g., `["privk", "server_identity"]`, `["pubk", "client_identity"]`, `["ltk", "client_identity", "server_identity"]`, or symmetric key variable `"psk"`, or preimage inputs needed to verify `(hash x)`).
+  2. `CPSAProtocolRole.trace` & `CPSAProtocolRole.variables` (**Multi-Hop / Opaque Ciphertext Rule**): In `CPSA.Roletran.Derivation :: loopEncr`, `cpsa4roletran` NEVER equality-checks a ciphertext `(enc x y)`—it ALWAYS attempts `synth st (inv y)` to decrypt `(enc x y)`! Therefore, if a role (such as a `Client` or an `IntermediateRouter` in a multi-hop protocol) receives an encrypted subterm `["enc", ..., ["pubk", "other_principal"]]` or `["enc", ..., ["ltk", "a", "b"]]` for which it does **not** hold `["privk", "other_principal"]` or `["ltk", "a", "b"]`, you MUST replace that undecryptable `["enc", ...]` subterm in that role's `recv` (and forwarding `send`) with an opaque variable declared with `"sort": "mesg"` (e.g., `encrypted_blob: mesg`), while keeping the full `["enc", ...]` term in the originating and final decrypting roles!
 - **Before / After Fix Example**:
   - *Failing JSON (`server` role receives message encrypted under `(pubk server_identity)` but lacks `(privk server_identity)` in `inputs`)*:
     ```json

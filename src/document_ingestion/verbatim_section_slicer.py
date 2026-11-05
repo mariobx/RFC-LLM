@@ -8,7 +8,7 @@ from src.logging_config import get_pipeline_logger
 logger = get_pipeline_logger("section_slicer")
 
 _ANY_SECTION_HEADING_RE = re.compile(
-    r"^(?:(\d+(?:\.\d+)+)\.?|(\d+)\.|(\d+)|Appendix\s+([A-Z](?:\.\d+)*)\.?|([A-Z](?:\.\d+)+)\.?)\s+"
+    r"^(?:(\d+(?:\.\d+)+)(?:\.|\s+-)?|(\d+)(?:\.|\s+-)|(\d+)|Appendix\s+([A-Z](?:\.\d+)*)\.?|([A-Z](?:\.\d+)+)\.?|([A-Z])\.)\s+"
     r"(?=[A-Za-z0-9\"'\(\[])"
 )
 _TOC_DOT_LEADER_RE = re.compile(r"(?:\.{3,}|(?:\.\s+){3,})\s*\d+\s*$")
@@ -41,15 +41,15 @@ def _find_section_start(lines: List[str], section_id: str, search_from_line: int
     if not clean_id:
         return None
     escaped_id = re.escape(clean_id)
-    # Match "^7.3.  Title", "^6.7.2.  0x0002 - AUTHENTICATION_TYPE", or "^Appendix A.  Title"
+    # Match "^7.3.  Title", "^2 - Authentication", "^6.7.2.  0x0002 - AUTHENTICATION_TYPE", or "^Appendix A.  Title"
     if "." in clean_id:
         pattern = re.compile(
-            rf"^(?:{escaped_id}\.?|Appendix\s+{escaped_id}\.?)\s+[A-Za-z0-9\"'\(\[]",
+            rf"^(?:{escaped_id}(?:\.|\s+-)?|Appendix\s+{escaped_id}\.?)\s+[A-Za-z0-9\"'\(\[]",
             re.IGNORECASE,
         )
     else:
         pattern = re.compile(
-            rf"^(?:{escaped_id}\.\s+[A-Za-z0-9\"'\(\[]|{escaped_id}\s+[A-Za-z]|Appendix\s+{escaped_id}\.?\s+[A-Za-z0-9\"'\(\[])",
+            rf"^(?:{escaped_id}(?:\.|\s+-)\s+[A-Za-z0-9\"'\(\[]|{escaped_id}\s+[A-Za-z]|Appendix\s+{escaped_id}\.?\s+[A-Za-z0-9\"'\(\[])",
             re.IGNORECASE,
         )
 
@@ -80,6 +80,7 @@ def _find_section_end(lines: List[str], section_id: str, start_line_idx: int) ->
                 or match.group(3)
                 or match.group(4)
                 or match.group(5)
+                or match.group(6)
                 or ""
             ).rstrip(".")
             if found_id and found_id.lower() != norm_id.lower() and not found_id.lower().startswith(sub_prefix.lower()):

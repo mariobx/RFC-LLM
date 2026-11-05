@@ -2,14 +2,14 @@
 # Stage 2 (Retry): 1-Shot Schema & Grammar Self-Correction
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: strata/unsloth-iq4_xs
-timeout: 2700
+timeout: 3600
 max_tokens: 65536
 ---
 Your previous JSON output failed MITRE CPSA 4.4.9 schema and scoping validation with the following errors:
 {validation_error}
 
 CRITICAL MITRE CPSA MANUAL GROUNDING RULES (Chapter 10, Tables 10.1 - 10.6):
-1. In 'message_term', terms MUST be plain string identifier atoms (e.g. 'client_random', 'session_key'), integers, or prefix lists like ['enc', payload, key].
+1. In 'message_term', terms MUST be plain string identifier atoms (e.g. 'client_random', 'session_key'), quoted string tag literals (e.g. '"\"MSG_TYPE\""'), or prefix lists like ['enc', payload, key].
    NEVER place variable objects or dictionaries inside message_term!
 2. In ['enc', ...], the encryption key is ALWAYS the LAST element in the list, and must NEVER have sort 'mesg' (Equation 10.1).
 3. In ['pubk', ...] and ['privk', ...], 1-arg form is ['pubk', principal_name] and 2-arg form is ['pubk', tag_string, principal_name].

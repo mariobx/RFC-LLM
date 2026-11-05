@@ -110,15 +110,24 @@ def _read_scm_safe(scm_path: Optional[Path]) -> Optional[str]:
 
 def _compute_ast_hash(spec: CPSAProtocolSpecification) -> str:
     """Computes a canonical SHA-256 hash of a protocol AST excluding cosmetic prose fields
-    (`herald_comment`, `ineligibility_reason`, `description`, `comment`) so text variations
+    (`herald_comment`, `ineligibility_reason`, `description`, `comment`, `rfc_field`) so text variations
     across repair passes never mask an AST cycle.
     """
     payload = spec.model_dump(exclude={"herald_comment", "ineligibility_reason"})
     for role in payload.get("roles", []):
         role.pop("description", None)
+        role.pop("comment", None)
+        for v in role.get("variables", []):
+            v.pop("description", None)
+            v.pop("rfc_field", None)
+        for ev in role.get("trace", []):
+            ev.pop("description", None)
     for skel in payload.get("skeletons", []):
         skel.pop("description", None)
         skel.pop("comment", None)
+        for v in skel.get("variables", []):
+            v.pop("description", None)
+            v.pop("rfc_field", None)
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
 
@@ -196,6 +205,10 @@ def _run_roletran_self_healing_loop(
             roletran_result.error_diagnostic,
         )
         try:
+            prior_summaries = [
+                f"Attempt #{entry.get('attempt_number')}: {entry.get('parsed_diagnostic') or entry.get('repair_exception')}"
+                for entry in repair_attempts_log[-4:]
+            ]
             protocol_ast = repair_protocol_specification(
                 failing_spec=protocol_ast,
                 error_diagnostic=roletran_result.error_diagnostic or "Executability verification failure",
@@ -205,6 +218,7 @@ def _run_roletran_self_healing_loop(
                 query_model=query_model_override,
                 cycle_detected=cycle_detected,
                 use_agentic_searcher=use_searcher,
+                prior_attempts=prior_summaries,
             )
             scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir, filename_prefix=stable_stem)
             GLOBAL_EVENT_BUS.emit(
@@ -382,6 +396,10 @@ def _run_mitre_solver_self_healing_loop(
                             f"Pre-flight Roletran Executability Diagnostic:\n{roletran_result.error_diagnostic}"
                         )
 
+                    prior_solver_summaries = [
+                        f"Attempt #{entry.get('attempt_number')}: {_compact_diagnostic_headline(entry.get('parsed_diagnostic') or entry.get('repair_exception') or '')}"
+                        for entry in solver_attempts_log[-4:]
+                    ]
                     protocol_ast = repair_protocol_specification(
                         failing_spec=protocol_ast,
                         error_diagnostic=combined_diagnostic,
@@ -391,6 +409,7 @@ def _run_mitre_solver_self_healing_loop(
                         query_model=query_model_override,
                         cycle_detected=cycle_detected,
                         use_agentic_searcher=use_searcher,
+                        prior_attempts=prior_solver_summaries,
                     )
                     scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir, filename_prefix=stable_stem)
                     GLOBAL_EVENT_BUS.emit(

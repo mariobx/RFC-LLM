@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-03 21:53:56 UTC · Git: `main` @ `8b5b88a14002` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~230,453*
+*Generated: 2026-11-05 18:27:58 UTC · Git: `main` @ `955b498002b7` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~242,120*
 
 ## Table of Contents
 
@@ -59,16 +59,15 @@
 
 ### `prompts/01_applicability_gate.md`
 
-*sha256:`c63a448c849f` · 33 lines · 2.7 KB (~684 tokens) · lang:`markdown`*
+*sha256:`9f63d4594e6d` · 32 lines · 2.7 KB (~680 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 1c: Protocol Applicability Gatekeeper
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: strata/unsloth-iq4_xs
-timeout: 1500
-max_tokens: 65536
-temperature: 0.0
+timeout: 900
+max_tokens: 16384
 ---
 You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.
 Your task is to analyze an IETF RFC's metadata and Table of Contents to determine if it specifies an interactive cryptographic security protocol.
@@ -101,16 +100,15 @@ Example output format:
 
 ### `prompts/02_section_router.md`
 
-*sha256:`6073cacf8e4c` · 23 lines · 1.6 KB (~409 tokens) · lang:`markdown`*
+*sha256:`918d738d3659` · 23 lines · 1.8 KB (~464 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 1d: Handshake & Exchange TOC Section Router
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: strata/unsloth-iq4_xs
-timeout: 1500
-max_tokens: 65536
-temperature: 0.0
+timeout: 900
+max_tokens: 16384
 ---
 You are a protocol analyst reading an RFC's Table of Contents.
 Your task is to identify the EXACT section numbers that define the complete cryptographic message exchange, handshake flights, and cryptographic payload/key/MAC structures between principals.
@@ -120,6 +118,7 @@ Guidelines:
 - If a multi-party or multi-phase protocol splits its message flows across multiple sections (e.g., `3. Client-AS Communication` and `4. Client-RS Communication`, or `2. Operation` and `4. Packet Types`), include ALL sections that define the exchange flights!
 - ALWAYS include sections that define the cryptographic key derivation, signature/MAC calculation, or encrypted payload structure alongside the message flow sections.
 - Do NOT select introductory terminology, conventions, IANA registries, or acknowledgements.
+- Output ONLY bare numerical and dotted section IDs (e.g., `"3"`, `"4.1"`, `"7.1.2"`, or `"App-A"` for appendices). NEVER prefix section IDs with `#`, `Section`, or `Sec.`, and NEVER include section titles inside `selected_section_ids`.
 
 CRITICAL: Return a populated JSON instance object, NOT the JSON Schema definition and NOT wrapped inside a `"properties"` key.
 Example output format:
@@ -133,16 +132,15 @@ Example output format:
 
 ### `prompts/03_protocol_extraction.md`
 
-*sha256:`7a39ea35c74e` · 104 lines · 11.4 KB (~2,913 tokens) · lang:`markdown`*
+*sha256:`0dbebc786f8f` · 109 lines · 12.7 KB (~3,256 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 2: JSON CPSA Generation (Constrained Protocol Semantic Extraction)
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: strata/unsloth-iq4_xs
-timeout: 1500
+timeout: 3600
 max_tokens: 65536
-temperature: 0.0
 ---
 You are a formal methods expert in cryptographic protocol specification for MITRE CPSA 4.4.9.
 Your task is to analyze the provided verbatim RFC specification text and extract a complete, mathematically rigorous CPSAProtocolSpecification that is strictly 1-to-1 with the RFC.
@@ -173,10 +171,16 @@ Every extracted construct must strictly obey the MITRE CPSA formal syntax:
 
 2. Term Syntax & Structure (Tables 10.3 & 10.5):
    - Formal Term Grammar:
-     term ::= id | integer | (op term+)
-   - STRICT ATOM ENFORCEMENT: A term is strictly an atom string (variable identifier e.g. "client_random", "session_key"), an integer constant (e.g. 1), or a prefix operator list [op, ...args].
+     term ::= id | "\"tag_literal\"" | (op term+)
+   - STRICT ATOM ENFORCEMENT: A term is strictly a declared variable identifier string (e.g. "client_random", "session_key"), a quoted string constant tag literal (e.g. "\"SAKE_CHALLENGE\"") for fixed protocol message types/opcodes/labels, or a prefix operator list [op, ...args]. Do NOT use bare JSON integers for message types.
    - ABSOLUTE NEGATIVE CONSTRAINT: A term is NEVER a dictionary or object (e.g. NEVER {"name": "...", "description": "..."}).
      Variables MUST BE DECLARED in the role's 'variables' list. In 'message_term', 'inputs', 'outputs', and 'unique_originating', variables are referenced ONLY by their plain string name atom (e.g. "session_key", "client_random").
+   - OPAQUE FORWARDING & SIGNATURE VERIFICATION IN `recv` (`cpsa4roletran` Rule):
+     * In `cpsa4roletran`, any role that receives an explicit `["enc", payload, key]` MUST possess the inverse decryption key `inv(key)` in its `inputs` or prior receptions!
+     * Therefore, a role must NEVER place `["enc", ..., ["pubk", "peer_name"]]` inside a `recv` event if it does not hold `["privk", "peer_name"]` (e.g., an intermediate router forwarding a blob encrypted for a core/initiator, or a client receiving a token encrypted under an issuer's public key). Instead, model any encrypted subtree that a role cannot decrypt as an opaque variable of sort `"mesg"` in that role's `variables` and `recv`/`send` events!
+   - COMPLETE BIDIRECTIONAL TRACES & KDF TRANSCRIPT BINDING:
+     * Every initiator role that sends a request in a request/response protocol MUST also include the `recv` event for the responder's reply (never leave an initiator role as a 1-event `send`-only stub when the responder sends a reply).
+     * When the RFC derives a session key or MAC from negotiated handshake fields (cipher suites, nonces, identities), bind those fields inside `["hash", ...]` rather than replacing the derived key with an unbound static `skey` variable.
    - Authorized Operator Signatures:
      * ["enc", term1, ..., termN, encryption_key] (Table 10.3): One or more payload terms followed by the encryption key as the LAST element. By Equation 10.1, the encryption_key must NEVER be a variable of sort "mesg".
      * ["hash", term1, ...] (Table 10.3): One-way hash digest.
@@ -246,22 +250,21 @@ Return ONLY a valid JSON object matching the requested CPSAProtocolSpecification
 
 ### `prompts/04_schema_self_correction.md`
 
-*sha256:`074f705a8930` · 21 lines · 1.6 KB (~412 tokens) · lang:`markdown`*
+*sha256:`46077c8e92f4` · 20 lines · 1.6 KB (~418 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 2 (Retry): 1-Shot Schema & Grammar Self-Correction
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: strata/unsloth-iq4_xs
-timeout: 1500
+timeout: 3600
 max_tokens: 65536
-temperature: 0.0
 ---
 Your previous JSON output failed MITRE CPSA 4.4.9 schema and scoping validation with the following errors:
 {validation_error}
 
 CRITICAL MITRE CPSA MANUAL GROUNDING RULES (Chapter 10, Tables 10.1 - 10.6):
-1. In 'message_term', terms MUST be plain string identifier atoms (e.g. 'client_random', 'session_key'), integers, or prefix lists like ['enc', payload, key].
+1. In 'message_term', terms MUST be plain string identifier atoms (e.g. 'client_random', 'session_key'), quoted string tag literals (e.g. '"\"MSG_TYPE\""'), or prefix lists like ['enc', payload, key].
    NEVER place variable objects or dictionaries inside message_term!
 2. In ['enc', ...], the encryption key is ALWAYS the LAST element in the list, and must NEVER have sort 'mesg' (Equation 10.1).
 3. In ['pubk', ...] and ['privk', ...], 1-arg form is ['pubk', principal_name] and 2-arg form is ['pubk', tag_string, principal_name].
@@ -276,16 +279,15 @@ Return ONLY the corrected, fully valid JSON object.
 
 ### `prompts/05_rag_query_formulation.md`
 
-*sha256:`7d116cf8f4f1` · 37 lines · 2.8 KB (~710 tokens) · lang:`markdown`*
+*sha256:`893fc10d2a84` · 36 lines · 2.8 KB (~705 tokens) · lang:`markdown`*
 
 ````markdown
 ---
 # Stage 5 & 6: Agentic CPSA Knowledge Base Investigator & Diagnostic Searcher
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: strata/unsloth-iq4_xs
-timeout: 1500
-max_tokens: 65536
-temperature: 0.0
+timeout: 900
+max_tokens: 16384
 ---
 You are the Agentic CPSA 4.4.9 Knowledge Base Investigator for RFC-LLM.
 Your task is to inspect a failing `CPSAProtocolSpecification` AST summary, the compiler/solver diagnostic (`cpsa4roletran` or `cpsa4`), and the Master Table of Contents of the CPSA Knowledge Base (`refrences/cpsa_kb/`), then invoke the available Knowledge Base tools to retrieve the exact formal CPSA rules and working `.scm` examples needed by the Repair Model.
@@ -322,16 +324,15 @@ If you are only given a single compiler diagnostic without a TOC map (legacy sin
 
 ### `prompts/06_compiler_repair.md`
 
-*sha256:`3c2a33b75aad` · 67 lines · 9.2 KB (~2,360 tokens) · lang:`markdown`*
+*sha256:`29fa722cf12e` · 66 lines · 10.1 KB (~2,571 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Stage 5 & 6: RAG-Guided Compiler Self-Healing Repair
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: strata/unsloth-iq4_xs
-timeout: 1500
+timeout: 3600
 max_tokens: 65536
-temperature: 0.0
 ---
 You are a formal methods expert in debugging and repairing MITRE CPSA 4.4.9 protocol specifications.
 You are given a failing CPSAProtocolSpecification, the verbatim RFC exchange text, the compiler error diagnostic, and retrieved guidance from the MITRE CPSA reference manual.
@@ -345,19 +346,19 @@ STRICT 1-TO-1 RFC FIDELITY DURING REPAIR (ZERO HALLUCINATION):
 - Every variable, role, and trace event in your repaired specification MUST remain grounded 1-to-1 in the provided Verbatim RFC Exchange Specification.
 
 Common Diagnostics & Fixes:
-1. "Undeclared variable <var>":
-   - A variable is declared in "inputs", "outputs", or "unique_originating", but does NOT occur anywhere in the role's trace events!
-   - Fix: Remove the variable from "inputs", "outputs", and "unique_originating". In CPSA roletran, every variable in inputs/outputs/uniq-orig must actually appear in a trace send or recv.
+1. "Undeclared variable <var>" or "Malformed term":
+   - Either `<var>` is declared in `inputs`, `outputs`, or `unique_originating` without appearing in the role's `trace`, OR `<var>` is used in `trace` without being declared in `variables`.
+   - Fix: If `<var>` is a genuine protocol variable (nonce, key, identity, parameter), declare it in `variables` with its proper CPSA sort (`name`, `text`, `data`, `skey`, `akey`, `mesg`). If `<var>` is a fixed message-type constant or domain-separation label, keep it as a quoted tag literal `"\"<var>\""`—NEVER delete domain-separation labels and NEVER convert distinct message-type constants (like `CHALLENGE` vs `CONFIRM`) into unconstrained `text` variables (which allows CPSA to unify them and create false replay shapes!).
 2. "Cannot build <term>":
    - A role attempts to send a term before it has been generated ("unique_originating"), received, or passed as an input ("inputs").
    - Or, a symmetric encryption key in ["enc", payload, key] was mistakenly declared as "data" instead of "skey".
-   - Fix: Change key sort to "skey". Add fresh originating terms to "unique_originating". Add known parameters or channels to "inputs".
+   - Fix: Change key sort to "skey". Add fresh originating terms to "unique_originating". Add known parameters, keys (`["ltk", ...]`, `["pubk", ...]`, `["privk", ...]`), or channels to "inputs".
 3. "Received term cannot be fully destructured":
-   - A role receives an encrypted message or hash, but lacks the necessary decryption key or preimage in its "inputs".
+   - A role receives an encrypted message or hash, but lacks the necessary decryption key or preimage in its "inputs", OR a role is trying to pattern-match inside `["enc", ..., ["pubk", "peer_name"]]` / `["enc", ..., ["ltk", "a", "b"]]` without owning the decryption key!
    - Fix:
-     * If the receiving role is the intended verifier/recipient of the encrypted message or MAC, ensure its `inputs` list includes the required key (e.g., `["ltk", "client_name", "server_name"]` or symmetric `skey` variable) and any public parameters needed to reconstruct a received `["hash", ...]`.
+     * If the receiving role is the intended verifier/recipient of the encrypted message or MAC, ensure its `inputs` list includes the required key (e.g., `["ltk", "client_name", "server_name"]`, `["pubk", "signer_name"]` to verify `["enc", ..., ["privk", "signer_name"]]`, `["privk", "recipient_name"]` to decrypt `["enc", ..., ["pubk", "recipient_name"]]`, or symmetric `skey` variable) and any public parameters needed to reconstruct a received `["hash", ...]`.
+     * CRITICAL (`cpsa4roletran` `loopEncr` Rule): If a role (such as a `Client` or an `IntermediateRouter` in a multi-hop protocol) receives an encrypted subterm `["enc", ..., ["pubk", "other_principal"]]` or `["enc", ..., ["ltk", "a", "b"]]` for which it does NOT possess `["privk", "other_principal"]` or `["ltk", "a", "b"]`, `cpsa4roletran` CANNOT equality-check or open that `["enc", ...]` inside `recv`! Replace that undecryptable encrypted subterm in that role's `recv` (and subsequent forwarding `send`) with an opaque variable of sort `"mesg"` (e.g. `encrypted_token: mesg`), while keeping the full `["enc", ...]` term in the originating and final decrypting roles!
      * NEVER replace the final verifier's encrypted term or MAC with an unchecked bare `mesg` variable (such as `["recv", "tesla_mac"]` where `tesla_mac` is sort `mesg`), and NEVER model an Authorization Server token to a Resource Server using only public-key encryption `["enc", ..., ["pubk", "rs_name"]]` without an authenticating key `["ltk", "as_name", "rs_name"]` or signature `["privk", "as_name"]`—anyone (including the adversary) knows `["pubk", "rs_name"]` and can forge an unsigned public-key encryption in 1 strand!
-     * If an intermediary role (such as an OAuth/Kerberos `Client`) receives an opaque ticket encrypted under `["ltk", "as_name", "rs_name"]` that the `Client` cannot decrypt and merely forwards to `ResourceServer`, declare `access_token` with sort `mesg` ONLY inside `Client` (`["recv", ["enc", "access_token", "session_key", ["ltk", "client_name", "as_name"]]]` -> `["send", ["cat", "access_token", ...]]`), while `AuthorizationServer` sends and `ResourceServer` receives the full `["enc", ..., ["ltk", "as_name", "rs_name"]]` structure! Never make the entire `AS -> Client` message a bare `mesg` variable.
 4. Preskeleton Architecture & "Skeleton not well formed: non-orig <key> carried":
    - CRITICAL: Never put 'deflistener' inside pure POV skeletons! A listener on an uncompromised secret causes CPSA to abort without displaying the completed bilateral protocol handshake shape.
    - Separate into pure POV skeletons + (only if the RFC establishes/transmits a confidential secret) a Secrecy POV skeleton:
@@ -398,14 +399,14 @@ Return ONLY the repaired, valid CPSAProtocolSpecification matching the requested
 
 ### `prompts/07_think_token_synthesizer.md`
 
-*sha256:`bc39caba79f4` · 36 lines · 3.7 KB (~957 tokens) · lang:`markdown`*
+*sha256:`3035af57c8c4` · 36 lines · 3.7 KB (~957 tokens) · lang:`markdown`*
 
 ```markdown
 ---
 # Phase 3: Hindsight Reasoning (<think>) Synthesizer
 # Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
 model: strata/unsloth-iq4_xs
-timeout: 1500
+timeout: 3600
 max_tokens: 65536
 temperature: 0.2
 ---
@@ -5727,7 +5728,7 @@ __all__ = [
 
 ### `src/document_ingestion/handshake_section_router.py`
 
-*sha256:`23a4b284b4d4` · 163 lines · 5.7 KB (~1,452 tokens) · lang:`python`*
+*sha256:`9d6c18dd3001` · 217 lines · 7.9 KB (~2,031 tokens) · lang:`python`*
 
 ```python
 """Handshake Section Router for Navigating RFC Table of Contents.
@@ -5737,7 +5738,8 @@ the cryptographic message exchange or handshake flow.
 """
 
 import json
-from typing import List, Optional
+import re
+from typing import List, Optional, Set
 import json_repair
 import litellm
 from pydantic import BaseModel, Field
@@ -5760,9 +5762,46 @@ class SectionRoutingDecision(BaseModel):
 
     selected_section_ids: List[str] = Field(
         ...,
-        description="List of section IDs containing the protocol message traces (such as ['#.#', '#.#.#'])",
+        description=(
+            "List of bare numerical and dotted section IDs from the Table of Contents "
+            "containing the protocol message traces (e.g., ['3', '4'] or ['7.1.1', '7.2.2', 'App-A']). "
+            "Use ONLY digits and dots (or 'App-X' for appendices)—NEVER include '#', 'Section', or section titles."
+        ),
     )
     rationale: str = Field(..., description="Explanation of why these sections were selected")
+
+
+def normalize_section_id_token(raw_id: str) -> str:
+    """Normalizes a section ID string into a bare numerical/dotted token (e.g. '#7.1.1.' -> '7.1.1')."""
+    if not raw_id:
+        return ""
+    s = str(raw_id).strip().strip("`'\"")
+    # Strip leading '#' or '§' or 'Section' / 'Sec.'
+    s = re.sub(r"^[#§]+\s*", "", s)
+    s = re.sub(r"^(?:Section|Sec\.?)\s+", "", s, flags=re.IGNORECASE)
+    # Normalize 'Appendix A' -> 'App-A'
+    s = re.sub(r"^Appendix\s+([A-Za-z0-9]+(?:\.[0-9]+)*)", r"App-\1", s, flags=re.IGNORECASE)
+    # If the model included a title after the section number (e.g. "7.1.1 Handshake"), keep only the leading ID token
+    token_match = re.match(r"^((?:App-[A-Za-z0-9]+(?:\.[0-9]+)*)|(?:[A-Za-z]\.[0-9]+(?:\.[0-9]+)*)|(?:\d+(?:\.\d+)*))", s, flags=re.IGNORECASE)
+    if token_match:
+        s = token_match.group(1)
+    return s.rstrip(".")
+
+
+def _match_valid_toc_id(raw_id: str, valid_toc_ids: Set[str]) -> Optional[str]:
+    """Matches a raw LLM section ID against `valid_toc_ids` after normalization."""
+    if raw_id in valid_toc_ids:
+        return raw_id
+    norm = normalize_section_id_token(raw_id)
+    if not norm:
+        return None
+    if norm in valid_toc_ids:
+        return norm
+    norm_lower = norm.lower()
+    for valid_id in valid_toc_ids:
+        if valid_id.lower() == norm_lower or valid_id.rstrip(".").lower() == norm_lower:
+            return valid_id
+    return None
 
 
 def route_handshake_sections(
@@ -5772,9 +5811,13 @@ def route_handshake_sections(
     model: Optional[str] = None,
 ) -> List[str]:
     """Uses a structured LLM call to select the exchange section IDs from the TOC."""
+    if not toc_entries:
+        logger.info("No numbered TOC entries found for %s; routing to full body fallback.", rfc_id)
+        return ["FULL_BODY"]
+
     prompt_spec = load_prompt_spec(PROMPT_SECTION_ROUTER)
     model_name = model or prompt_spec.model
-    sampling_temp = prompt_spec.temperature if prompt_spec.temperature is not None else 0.0
+    sampling_temp = prompt_spec.temperature
     logger.info("Routing exchange sections for %s ('%s') using %s", rfc_id, protocol_name, model_name)
 
     toc_formatted = "\n".join(f"{entry.section_id} {entry.title}" for entry in toc_entries)
@@ -5783,7 +5826,8 @@ def route_handshake_sections(
         f"Protocol Name: {protocol_name}\n"
         f"RFC: {rfc_id}\n\n"
         f"Table of Contents:\n{toc_formatted}\n\n"
-        "Select the section IDs containing the primary cryptographic message exchange or handshake."
+        "Select the section IDs containing the primary cryptographic message exchange or handshake. "
+        "Output ONLY bare numerical and dotted section IDs (e.g., \"3\", \"4.1\", \"7.1.2\") without '#' or 'Section'."
     )
 
     system_prompt = build_schema_system_prompt(
@@ -5815,9 +5859,11 @@ def route_handshake_sections(
         decision = SectionRoutingDecision.model_validate(decision_data)
 
         valid_toc_ids = {entry.section_id for entry in toc_entries}
-        filtered_section_ids = [
-            section_id for section_id in decision.selected_section_ids if section_id in valid_toc_ids
-        ]
+        filtered_section_ids: List[str] = []
+        for raw_sec_id in decision.selected_section_ids:
+            matched_id = _match_valid_toc_id(raw_sec_id, valid_toc_ids)
+            if matched_id and matched_id not in filtered_section_ids:
+                filtered_section_ids.append(matched_id)
 
         if not filtered_section_ids:
             logger.warning(
@@ -5852,6 +5898,15 @@ def _heuristic_section_router(toc_entries: List[TOCSectionEntry]) -> List[str]:
         "informative references",
         "acknowledgements",
         "acknowledgments",
+        "full copyright statement",
+        "copyright notice",
+        "intellectual property",
+        "author's address",
+        "authors' addresses",
+        "editor's address",
+        "status of this memo",
+        "abstract",
+        "table of contents",
     )
 
     exchange_keywords = [
@@ -5899,7 +5954,7 @@ def _heuristic_section_router(toc_entries: List[TOCSectionEntry]) -> List[str]:
 
 ### `src/document_ingestion/protocol_applicability_gate.py`
 
-*sha256:`e8cb40b8764a` · 142 lines · 5.4 KB (~1,370 tokens) · lang:`python`*
+*sha256:`bc190bacc005` · 142 lines · 5.3 KB (~1,358 tokens) · lang:`python`*
 
 ```python
 """Protocol Applicability Gate (Tier 1 Gatekeeper).
@@ -5958,7 +6013,7 @@ def evaluate_protocol_applicability(
     """Evaluates an RFC using its frontmatter and entire TOC to determine CPSA eligibility."""
     prompt_spec = load_prompt_spec(PROMPT_APPLICABILITY_GATE)
     model_name = model or prompt_spec.model
-    sampling_temp = prompt_spec.temperature if prompt_spec.temperature is not None else 0.0
+    sampling_temp = prompt_spec.temperature
     logger.info("Evaluating protocol applicability for %s: '%s' using model %s", rfc_id, title, model_name)
 
     toc_summary = "\n".join(f"{entry.section_id} {entry.title}" for entry in toc_entries)
@@ -6050,7 +6105,7 @@ def evaluate_protocol_applicability(
 
 ### `src/document_ingestion/rfc_header_filter.py`
 
-*sha256:`9b874aada184` · 170 lines · 6.5 KB (~1,659 tokens) · lang:`python`*
+*sha256:`ee1e8df89d04` · 183 lines · 7.2 KB (~1,855 tokens) · lang:`python`*
 
 ```python
 """RFC Header and Frontmatter Metadata Filter (Tier 0 Filter)."""
@@ -6160,28 +6215,41 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
                 disqualification_reason=f"Category '{category}' is not a protocol specification",
             )
 
-    # 4. Extract Title: lines between author/category block and "Status of This Memo"
+    # 4. Extract Title: lines between author/category block and "Status of This Memo" (or top header fallback for pre-RFC-2223 RFCs)
     title: Optional[str] = None
     status_idx = next(
-        (i for i, l in enumerate(lines) if re.search(r"(Status of [Tt]his Memo|Abstract)", l, re.IGNORECASE)),
-        len(lines),
+        (i for i, l in enumerate(lines) if re.search(r"^\s*(Status of [Tt]his Memo|Abstract)\b", l, re.IGNORECASE)),
+        None,
     )
 
-    # Search backwards from Status of This Memo for consecutive non-empty lines
     title_candidate_lines = []
-    idx = status_idx - 1
-    # Skip any trailing blank lines right before "Status of This Memo"
-    while idx >= 0 and not lines[idx].strip():
-        idx -= 1
-
-    # Now collect all consecutive non-empty lines belonging to the title
-    while idx >= 0 and lines[idx].strip():
-        line_str = lines[idx].strip()
-        # If we reached the header block (Category, Date, RFC, etc.), stop
-        if re.search(r"(Category:|Updates:|Obsoletes:|Request for Comments|Network Working Group|ISSN:)", line_str, re.IGNORECASE):
-            break
-        title_candidate_lines.insert(0, line_str)
-        idx -= 1
+    if status_idx is not None:
+        # Search backwards from Status of This Memo for consecutive non-empty lines
+        idx = status_idx - 1
+        while idx >= 0 and not lines[idx].strip():
+            idx -= 1
+        while idx >= 0 and lines[idx].strip():
+            line_str = lines[idx].strip()
+            if re.search(r"(Category:|Updates:|Obsoletes:|Request for Comments|Network Working Group|ISSN:)", line_str, re.IGNORECASE):
+                break
+            title_candidate_lines.insert(0, line_str)
+            idx -= 1
+    else:
+        # Legacy pre-RFC-2223 format (no "Status of This Memo" or "Abstract"):
+        # Find the end of the top header block within the first 30 lines, then take the first centered/indented title block.
+        header_end_idx = 0
+        for i, l in enumerate(lines[:25]):
+            if re.search(r"(Request for Comments|Network Working Group|RFC\s*#?\s*\d+|NIC\s*#?\s*\d+|Category:|Obsoletes:|Updates:)", l, re.IGNORECASE):
+                header_end_idx = i + 1
+        idx = header_end_idx
+        while idx < min(len(lines), 45) and not lines[idx].strip():
+            idx += 1
+        while idx < min(len(lines), 45) and lines[idx].strip():
+            line_str = lines[idx].strip()
+            if re.match(r"^(?:1(?:\.|\s+-)?\s+|Introduction\b)", line_str, re.IGNORECASE):
+                break
+            title_candidate_lines.append(line_str)
+            idx += 1
 
     if title_candidate_lines:
         title = " ".join(title_candidate_lines)
@@ -6229,7 +6297,7 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
 
 ### `src/document_ingestion/rfc_toc_parser.py`
 
-*sha256:`b3d2e386a414` · 125 lines · 5.6 KB (~1,423 tokens) · lang:`python`*
+*sha256:`4920983a2cc9` · 127 lines · 5.8 KB (~1,495 tokens) · lang:`python`*
 
 ```python
 """RFC Table of Contents (TOC) Parser."""
@@ -6263,9 +6331,9 @@ TOC_HEADER_PATTERN = re.compile(r"^\s*(Table of Contents|CONTENTS)\s*$", re.IGNO
 # "   Appendix A.  Protocol Structures ..................................68"
 # "   1.  Introduction"
 TOC_LINE_PATTERN = re.compile(
-    r"^(?P<indent>\s*)(?P<sec_id>(?:(?:[0-9]+(?:\.[0-9]+)*)|(?:Appendix\s+[A-Z](?:\.[0-9]+)*)|(?:[A-Z]\.[0-9]+)))\.?\s+"
+    r"^(?P<indent>\s*)(?P<sec_id>(?:(?:[0-9]+(?:\.[0-9]+)*)|(?:Appendix\s+[A-Z](?:\.[0-9]+)*)|(?:[A-Z]\.[0-9]+)|(?:[A-Z](?=\.\s+\S+.*(?:\.{2,}|\.\s+\.)))))(?:\.|\s+-)?\s+"
     r"(?P<title>.+?)"
-    r"(?:\s*(?:\.{2,}|(?:\.\s+){2,})\s*(?P<page>[0-9]+))?\s*$",
+    r"(?:\s*(?:\.{2,}|(?:\.\s+){2,}|\.\s+)\s*(?P<page>[0-9]+))?\s*$",
     re.IGNORECASE,
 )
 
@@ -6290,7 +6358,7 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
         # Scan forward until the first section begins at column 0 (e.g. "1.  Introduction")
         for line in lines[toc_start_idx:]:
             # If we hit the actual start of Section 1 at column 0, TOC has ended
-            if re.match(r"^1\.?\s+[A-Z]", line):
+            if re.match(r"^1(?:\.|\s+-)?\s+[A-Z]", line):
                 break
             # Or if we hit 500 entries without stopping
             if len(entries) > 500:
@@ -6346,12 +6414,14 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
     if not entries:
         logger.info("No explicit TOC block found. Scanning body headings for synthetic TOC...")
         body_heading_pattern = re.compile(
-            r"^(?P<sec_id>(?:[0-9]+(?:\.[0-9]+)*)|(?:[A-Z]\.[0-9]+))\.?\s+(?P<title>[A-Z][A-Za-z0-9\s\-_,:()'\"]{3,60})$"
+            r"^(?P<sec_id>(?:[0-9]+\.[0-9]+(?:\.[0-9]+)*(?:\.|\s+-)?)|(?:[0-9]+(?:\.|\s+-))|(?:Appendix\s+[A-Z](?:\.[0-9]+)*\.?)|(?:[A-Z]\.[0-9]+\.?))\s+"
+            r"(?P<title>[A-Za-z0-9][A-Za-z0-9\s\-_,:()'\"/]{2,70})$"
         )
         for line in lines:
             match = body_heading_pattern.match(line)
             if match:
-                sec_id = match.group("sec_id").strip()
+                sec_id = re.sub(r"\s+-$", "", match.group("sec_id").strip()).rstrip(".")
+                sec_id = re.sub(r"^Appendix\s+", "App-", sec_id, flags=re.IGNORECASE)
                 title = match.group("title").strip()
                 entries.append(TOCSectionEntry(section_id=sec_id, title=title, page_number=None, indent_level=0))
 
@@ -6363,7 +6433,7 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
 
 ### `src/document_ingestion/verbatim_section_slicer.py`
 
-*sha256:`d1d0163243a3` · 137 lines · 5.5 KB (~1,420 tokens) · lang:`python`*
+*sha256:`ebee5f9bcfae` · 217 lines · 9.2 KB (~2,349 tokens) · lang:`python`*
 
 ```python
 """Verbatim RFC Section Boundary Slicer."""
@@ -6376,8 +6446,10 @@ from src.logging_config import get_pipeline_logger
 logger = get_pipeline_logger("section_slicer")
 
 _ANY_SECTION_HEADING_RE = re.compile(
-    r"^(?:(\d+(?:\.\d+)*)|Appendix\s+([A-Z](?:\.\d+)*))\.?\s+[A-Z]"
+    r"^(?:(\d+(?:\.\d+)+)(?:\.|\s+-)?|(\d+)(?:\.|\s+-)|(\d+)|Appendix\s+([A-Z](?:\.\d+)*)\.?|([A-Z](?:\.\d+)+)\.?|([A-Z])\.)\s+"
+    r"(?=[A-Za-z0-9\"'\(\[])"
 )
+_TOC_DOT_LEADER_RE = re.compile(r"(?:\.{3,}|(?:\.\s+){3,})\s*\d+\s*$")
 
 
 def _is_rfc_page_break(line: str) -> bool:
@@ -6392,32 +6464,93 @@ def _is_rfc_page_break(line: str) -> bool:
     return False
 
 
+def _clean_requested_sec_id(section_id: str) -> str:
+    """Normalizes a section identifier for body heading lookup."""
+    s = section_id.strip().strip("`'\"")
+    s = re.sub(r"^[#§]+\s*", "", s)
+    s = re.sub(r"^(?:Section|Sec\.?)\s+", "", s, flags=re.IGNORECASE)
+    s = re.sub(r"^(?:Appendix\s+|App-)", "", s, flags=re.IGNORECASE)
+    return s.rstrip(".")
+
+
 def _find_section_start(lines: List[str], section_id: str, search_from_line: int = 0) -> Optional[int]:
     """Finds the line index where a section heading starts at column 0 in the body text."""
-    # Pattern matching "^7.3.  Title" or "^7.3  Title" or "^Appendix A.  Title"
-    escaped_id = re.escape(section_id)
-    pattern = re.compile(rf"^(?:{escaped_id}|Appendix\s+{escaped_id})\.?\s+[A-Z]", re.IGNORECASE)
+    clean_id = _clean_requested_sec_id(section_id)
+    if not clean_id:
+        return None
+    escaped_id = re.escape(clean_id)
+    # Match "^7.3.  Title", "^2 - Authentication", "^6.7.2.  0x0002 - AUTHENTICATION_TYPE", or "^Appendix A.  Title"
+    if "." in clean_id:
+        pattern = re.compile(
+            rf"^(?:{escaped_id}(?:\.|\s+-)?|Appendix\s+{escaped_id}\.?)\s+[A-Za-z0-9\"'\(\[]",
+            re.IGNORECASE,
+        )
+    else:
+        pattern = re.compile(
+            rf"^(?:{escaped_id}(?:\.|\s+-)\s+[A-Za-z0-9\"'\(\[]|{escaped_id}\s+[A-Za-z]|Appendix\s+{escaped_id}\.?\s+[A-Za-z0-9\"'\(\[])",
+            re.IGNORECASE,
+        )
 
     for idx in range(search_from_line, len(lines)):
         line = lines[idx]
-        if pattern.match(line):
+        if pattern.match(line) and not _TOC_DOT_LEADER_RE.search(line):
             return idx
     return None
 
 
 def _find_section_end(lines: List[str], section_id: str, start_line_idx: int) -> int:
     """Finds the line index where `section_id` (and any of its nested subsections) ends."""
-    norm_id = re.sub(r"^Appendix\s+", "", section_id.strip(), flags=re.IGNORECASE).rstrip(".")
+    norm_id = _clean_requested_sec_id(section_id)
     sub_prefix = f"{norm_id}."
 
     for idx in range(start_line_idx + 1, len(lines)):
-        match = _ANY_SECTION_HEADING_RE.match(lines[idx])
+        line = lines[idx]
+        if _TOC_DOT_LEADER_RE.search(line):
+            continue
+        match = _ANY_SECTION_HEADING_RE.match(line)
         if match:
-            found_id = (match.group(1) or match.group(2) or "").rstrip(".")
+            # If matched group(3) (bare integer without dot), require uppercase letter start for title
+            if match.group(3) and not re.match(r"^\d+\s+[A-Z]", line):
+                continue
+            found_id = (
+                match.group(1)
+                or match.group(2)
+                or match.group(3)
+                or match.group(4)
+                or match.group(5)
+                or match.group(6)
+                or ""
+            ).rstrip(".")
             if found_id and found_id.lower() != norm_id.lower() and not found_id.lower().startswith(sub_prefix.lower()):
                 return idx
 
     return min(start_line_idx + 600, len(lines))
+
+
+def _slice_unnumbered_rfc_body(lines: List[str], clean_page_breaks: bool = True) -> str:
+    """Fallback slicer for short RFCs with unnumbered section headings (e.g., RFC 3268)."""
+    start_idx = 0
+    for idx, line in enumerate(lines[:150]):
+        if re.match(r"^(?:Overview|Introduction|1\.?\s+Introduction)\s*$", line.strip(), re.IGNORECASE):
+            start_idx = idx
+            break
+        if re.match(r"^Abstract\s*$", line.strip(), re.IGNORECASE):
+            start_idx = idx
+    end_idx = len(lines)
+    for idx in range(start_idx + 1, len(lines)):
+        if re.match(
+            r"^(?:References|Normative References|Informative References|"
+            r"Author(?:'s|s')?\s+Address(?:es)?|Full Copyright Statement)\s*$",
+            lines[idx].strip(),
+            re.IGNORECASE,
+        ):
+            end_idx = idx
+            break
+    end_idx = min(end_idx, start_idx + 600)
+    sliced = lines[start_idx:end_idx]
+    if clean_page_breaks:
+        sliced = [line for line in sliced if not _is_rfc_page_break(line)]
+    return "\n".join(sliced).strip()
 
 
 def slice_verbatim_sections(
@@ -6428,23 +6561,26 @@ def slice_verbatim_sections(
     """Extracts the verbatim text for the specified section IDs from an RFC document,
     slicing each requested section individually and merging overlapping/contiguous spans.
     """
-    if not target_section_ids:
+    lines = raw_rfc_text.splitlines()
+    if not target_section_ids or target_section_ids == ["FULL_BODY"]:
+        if len(lines) <= 1000 or target_section_ids == ["FULL_BODY"]:
+            logger.info("Using unnumbered/full-body fallback slicer (%d document lines)", len(lines))
+            return _slice_unnumbered_rfc_body(lines, clean_page_breaks=clean_page_breaks)
         logger.warning("No target section IDs provided for slicing")
         return ""
-
-    lines = raw_rfc_text.splitlines()
 
     # Step 1: Skip past the Table of Contents to avoid matching TOC entries as section starts
     toc_end_idx = 100
     for idx, line in enumerate(lines[:800]):
-        if re.match(r"^1(?:\.0)?\.?\s+[A-Z]", line):
+        if re.match(r"^1(?:\.0)?\.?\s+[A-Z]", line) and not _TOC_DOT_LEADER_RE.search(line):
             toc_end_idx = idx
             break
 
     # Step 2: Resolve [start, end) line intervals for each requested section
     intervals: List[Tuple[int, int]] = []
     seen_parent_preambles = set()
-    for sec_id in target_section_ids:
+    for raw_sec_id in target_section_ids:
+        sec_id = _clean_requested_sec_id(raw_sec_id) or raw_sec_id.strip()
         # If a first subsection (e.g. "3.1") is requested without its parent ("3"),
         # also include the parent section's introductory preamble ("3" -> "3.1")
         if sec_id.endswith(".1") and sec_id.count(".") == 1:
@@ -6460,13 +6596,27 @@ def slice_verbatim_sections(
         start_idx = _find_section_start(lines, sec_id, search_from_line=toc_end_idx)
         if start_idx is None:
             start_idx = _find_section_start(lines, sec_id, search_from_line=0)
+        resolved_sec_id = sec_id
+        # Parent-section fallback if a deeply nested subsection (e.g. "6.7.2") has a malformed body heading
+        while start_idx is None and "." in resolved_sec_id:
+            parent_candidate = resolved_sec_id.rsplit(".", 1)[0]
+            logger.warning(
+                "Section '%s' not found directly; attempting parent section fallback '%s'",
+                resolved_sec_id,
+                parent_candidate,
+            )
+            resolved_sec_id = parent_candidate
+            start_idx = _find_section_start(lines, resolved_sec_id, search_from_line=toc_end_idx)
+            if start_idx is None:
+                start_idx = _find_section_start(lines, resolved_sec_id, search_from_line=0)
+
         if start_idx is None:
-            if not intervals and sec_id == target_section_ids[0]:
+            if not intervals and raw_sec_id == target_section_ids[0] and len(target_section_ids) == 1:
                 logger.error("Could not locate starting section '%s' in document", sec_id)
                 raise ValueError(f"Section '{sec_id}' not found in document")
             logger.warning("Requested section '%s' not found in document; skipping", sec_id)
             continue
-        end_idx = _find_section_end(lines, sec_id, start_idx)
+        end_idx = _find_section_end(lines, resolved_sec_id, start_idx)
         intervals.append((start_idx, end_idx))
 
     if not intervals:
@@ -7707,7 +7857,7 @@ CPSA_BASIC_VALUE_SORTS: Set[str] = {
 
 ### `src/intermediate_representation/cpsa_grammar.py`
 
-*sha256:`34ecf7421abb` · 397 lines · 13.9 KB (~3,552 tokens) · lang:`python`*
+*sha256:`90cc41d7d8cc` · 399 lines · 14.0 KB (~3,586 tokens) · lang:`python`*
 
 ```python
 """MITRE CPSA 4.4.9 Formal Grammar, Scoped Keywords, and Arity Specifications.
@@ -7952,12 +8102,11 @@ CPSA_TERM_JSON_SCHEMA: Dict[str, Any] = {
     "title": "CPSATerm",
     "description": (
         "A CPSA 4.4.9 message term: an identifier atom string (e.g. client_random, K_ab), "
-        "an integer constant, or a prefix S-expression list [operator, ...args] where operator "
+        "a quoted constant tag literal (e.g. '\"tag_v1\"'), or a prefix S-expression list [operator, ...args] where operator "
         "is strictly one of: enc, hash, cat, pubk, privk, invk, ltk, bltk, exp, gen, mul, rec, one."
     ),
     "anyOf": [
-        {"type": "string", "description": "Identifier atom, variable, or string literal"},
-        {"type": "integer", "description": "Integer constant"},
+        {"type": "string", "description": "Declared variable identifier or constant tag string"},
         {
             "type": "array",
             "description": "Prefix operator expression: [operator, ...subterms]",
@@ -7968,8 +8117,7 @@ CPSA_TERM_JSON_SCHEMA: Dict[str, Any] = {
                         "enum": sorted(list(CPSA_ALL_OPERATORS)),
                         "description": "Leading CPSA 4.4.9 operator keyword",
                     },
-                    {"type": "string", "description": "Subterm variable or constant"},
-                    {"type": "integer"},
+                    {"type": "string", "description": "Subterm variable or constant tag string"},
                     {"type": "array", "description": "Nested subterm expression"},
                 ]
             },
@@ -8006,11 +8154,15 @@ def desugar_term_tree(term: Any) -> Any:
             normalized_list[0] = CPSA_DESUGAR_MAP[operator]
         return [desugar_term_tree(subterm) for subterm in normalized_list]
 
+    if isinstance(term, int) and not isinstance(term, bool):
+        return f'"{term}"'
+
     if isinstance(term, dict):
         # Extract atomic identifier name from dictionary variable representation
         for key in ("name", "variable", "identifier", "var", "id", "atom", "field", "val", "value"):
-            if key in term and isinstance(term[key], str):
-                return term[key]
+            if key in term and isinstance(term[key], (str, int)):
+                val = term[key]
+                return f'"{val}"' if isinstance(val, int) and not isinstance(val, bool) else val
         if "term" in term:
             return desugar_term_tree(term["term"])
         if "args" in term and isinstance(term.get("op"), str):
@@ -8113,7 +8265,7 @@ def validate_cpsa_term_syntax(
 
 ### `src/intermediate_representation/protocol_syntax_tree.py`
 
-*sha256:`9bbce3796776` · 835 lines · 35.8 KB (~9,155 tokens) · lang:`python`*
+*sha256:`26d26dec0630` · 1252 lines · 55.1 KB (~14,110 tokens) · lang:`python`*
 
 ```python
 """Strongly-Typed Intermediate Representation (AST) for MITRE CPSA 4.4.9 Protocols.
@@ -8196,6 +8348,81 @@ def sanitize_cpsa_symbol(symbol: str) -> str:
     return sanitized.strip("-") or "prot"
 
 
+def _quote_cpsa_tag_literal(val: str) -> str:
+    """Formats an undeclared constant atom or number as a quoted CPSA 4.4.9 tag literal."""
+    inner = val.strip()
+    if len(inner) >= 2 and inner.startswith('"') and inner.endswith('"'):
+        inner = inner[1:-1]
+    inner = inner.replace("\\", "/").replace('"', "'")
+    return f'"{inner}"'
+
+
+def _is_quoted_tag_literal(term: Any) -> bool:
+    """Returns True if `term` is a quoted CPSA string tag literal (`\"...\"`)."""
+    return isinstance(term, str) and len(term) >= 2 and term.startswith('"') and term.endswith('"')
+
+
+def _collect_implied_variable_sorts(
+    term: Any,
+    implied_sorts: Dict[str, str],
+    akey_vars: Set[str],
+    name_vars: Set[str],
+) -> None:
+    """Infers mandatory CPSA 4.4.9 variable sorts from operator positions (e.g. `ltk`/`pubk`/`privk` -> `name`)."""
+    desugared = desugar_term_tree(term)
+    if not isinstance(desugared, list) or not desugared:
+        return
+    op = desugared[0]
+    if op in ("ltk", "bltk") and len(desugared) == 3:
+        for arg in desugared[1:]:
+            if isinstance(arg, str) and not _is_quoted_tag_literal(arg) and arg not in CPSA_ALL_OPERATORS:
+                implied_sorts.setdefault(arg, CPSASortEnum.NAME.value)
+    elif op in ("pubk", "privk"):
+        if len(desugared) == 2:
+            arg = desugared[1]
+            if (
+                isinstance(arg, str)
+                and not _is_quoted_tag_literal(arg)
+                and arg not in akey_vars
+                and arg not in CPSA_ALL_OPERATORS
+            ):
+                implied_sorts.setdefault(arg, CPSASortEnum.NAME.value)
+        elif len(desugared) == 3:
+            a1, a2 = desugared[1], desugared[2]
+            if isinstance(a1, str) and isinstance(a2, str):
+                if a1 in name_vars and a2 not in name_vars:
+                    pass
+                elif not _is_quoted_tag_literal(a2) and a2 not in CPSA_ALL_OPERATORS:
+                    implied_sorts.setdefault(a2, CPSASortEnum.NAME.value)
+    elif op == "invk" and len(desugared) == 2:
+        arg = desugared[1]
+        if isinstance(arg, str) and not _is_quoted_tag_literal(arg) and arg not in CPSA_ALL_OPERATORS:
+            implied_sorts.setdefault(arg, CPSASortEnum.AKEY.value)
+    elif op == "enc" and len(desugared) >= 2:
+        key_arg = desugared[-1]
+        if isinstance(key_arg, str) and not _is_quoted_tag_literal(key_arg) and key_arg not in CPSA_ALL_OPERATORS:
+            implied_sorts.setdefault(key_arg, CPSASortEnum.SKEY.value)
+
+    for sub in desugared[1:]:
+        _collect_implied_variable_sorts(sub, implied_sorts, akey_vars, name_vars)
+
+
+def _invert_cpsa_key(key_term: Any, akey_vars: Set[str]) -> Any:
+    """Returns the inverse key term required to decrypt/verify `(enc ... key_term)` in `cpsa4roletran`."""
+    if isinstance(key_term, list) and key_term:
+        op = key_term[0]
+        if op == "pubk":
+            return ["privk"] + key_term[1:]
+        if op == "privk":
+            return ["pubk"] + key_term[1:]
+        if op == "invk" and len(key_term) == 2:
+            return key_term[1]
+        return key_term
+    if isinstance(key_term, str) and key_term in akey_vars:
+        return ["invk", key_term]
+    return key_term
+
+
 def extract_term_tokens(item: Any, token_set: Set[str]) -> None:
     """Recursively extracts all string tokens from an S-expression tree."""
     if isinstance(item, str):
@@ -8213,13 +8440,15 @@ def normalize_cpsa_term(
     akey_vars: Optional[Set[str]] = None,
     name_vars: Optional[Set[str]] = None,
     declared_vars: Optional[Set[str]] = None,
+    quote_undeclared: bool = False,
 ) -> Any:
     """Recursively validates and normalizes message terms into valid CPSA 4.4.9 forms.
 
     Handles:
     1. Unwrapping (pubk k) -> k and (privk k) -> (invk k) when k has sort 'akey'.
-    2. Repairing reversed 2-arg (pubk name tag) -> (pubk "tag" name) per Table 10.3.
+    2. Repairing reversed 2-arg (pubk name tag) -> (pubk "tag" name) and quoting 2-arg tags per Table 10.3.
     3. Expanding bare 'gen' or 'one' in DH expressions to ['gen'] / ['one'] when not declared as variables.
+    4. Auto-quoting undeclared constant atoms/numbers as CPSA string tag literals when `quote_undeclared=True`.
     """
     desugared = desugar_term_tree(term)
     if isinstance(desugared, list):
@@ -8233,26 +8462,29 @@ def normalize_cpsa_term(
             akey_vars
             and len(normalized_list) == 2
             and isinstance(normalized_list[1], str)
-            and normalized_list[1] in akey_vars
+            and (normalized_list[1] in akey_vars or sanitize_cpsa_symbol(normalized_list[1]) in akey_vars)
         ):
+            clean_k = sanitize_cpsa_symbol(normalized_list[1]) if quote_undeclared else normalized_list[1]
             if operator == "pubk":
-                return normalized_list[1]
+                return clean_k
             if operator == "privk":
-                return ["invk", normalized_list[1]]
+                return ["invk", clean_k]
 
         # 2. 2-argument pubk/privk: Table 10.3 requires (pubk string_tag name_id)
         if (
             operator in ("pubk", "privk")
             and len(normalized_list) == 3
-            and name_vars
             and isinstance(normalized_list[1], str)
             and isinstance(normalized_list[2], str)
         ):
             first_arg, second_arg = normalized_list[1], normalized_list[2]
-            if first_arg in name_vars and second_arg not in name_vars:
-                tag_str = second_arg if second_arg.startswith('"') else f'"{second_arg}"'
-                normalized_list[1] = tag_str
-                normalized_list[2] = first_arg
+            if name_vars and (first_arg in name_vars or sanitize_cpsa_symbol(first_arg) in name_vars) and second_arg not in name_vars:
+                tag_str = _quote_cpsa_tag_literal(second_arg)
+                clean_name = sanitize_cpsa_symbol(first_arg) if quote_undeclared else first_arg
+                return [operator, tag_str, clean_name]
+            tag_str = _quote_cpsa_tag_literal(first_arg)
+            clean_name = sanitize_cpsa_symbol(second_arg) if quote_undeclared else second_arg
+            return [operator, tag_str, clean_name]
 
         # 3. Bare 'gen' or 'one' inside Diffie-Hellman operators (exp, mul, rec)
         if operator in ("exp", "mul", "rec"):
@@ -8263,10 +8495,27 @@ def normalize_cpsa_term(
                 elif arg == "one" and (not declared_vars or "one" not in declared_vars):
                     normalized_list[idx] = ["one"]
 
-        return [
-            normalize_cpsa_term(subterm, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars)
-            for subterm in normalized_list
+        return [normalized_list[0]] + [
+            normalize_cpsa_term(
+                subterm,
+                akey_vars=akey_vars,
+                name_vars=name_vars,
+                declared_vars=declared_vars,
+                quote_undeclared=quote_undeclared,
+            )
+            for subterm in normalized_list[1:]
         ]
+
+    if isinstance(desugared, str):
+        if _is_quoted_tag_literal(desugared):
+            return _quote_cpsa_tag_literal(desugared)
+        if quote_undeclared and declared_vars is not None:
+            clean_sym = sanitize_cpsa_symbol(desugared)
+            if desugared in declared_vars or clean_sym in declared_vars:
+                return clean_sym
+            if desugared in ("gen", "one"):
+                return desugared
+            return _quote_cpsa_tag_literal(desugared)
     return desugared
 
 
@@ -8292,7 +8541,11 @@ def _is_valid_roletran_input_term(term: Any) -> bool:
     if isinstance(term, str):
         return True
     if isinstance(term, list) and term:
-        return term[0] in CPSA_KEY_CONSTRUCTOR_OPERATORS
+        op = term[0]
+        if op in ("pubk", "privk", "invk"):
+            return len(term) == 2
+        if op in ("ltk", "bltk"):
+            return len(term) == 3
     return False
 
 
@@ -8444,14 +8697,70 @@ class CPSAProtocolRole(BaseModel):
                 )
         return self
 
-    def to_cpsa_json(self) -> List[Any]:
-        akey_vars = {var.name for var in self.variables if var.sort == CPSASortEnum.AKEY}
-        name_vars = {var.name for var in self.variables if var.sort == CPSASortEnum.NAME}
-        declared_vars = {var.name for var in self.variables}
+    def get_sanitized_var_sorts(self) -> Dict[str, str]:
+        """Returns the complete map of sanitized variable names to CPSA sort strings for this role,
+        including variables implied by key constructors (`ltk`, `bltk`, `pubk`, `privk`, `invk`),
+        channels (`chan`), and memory locations (`locn`).
+        """
+        akey_vars = {var.name for var in self.variables if var.sort == CPSASortEnum.AKEY} | {
+            sanitize_cpsa_symbol(var.name) for var in self.variables if var.sort == CPSASortEnum.AKEY
+        }
+        name_vars = {var.name for var in self.variables if var.sort == CPSASortEnum.NAME} | {
+            sanitize_cpsa_symbol(var.name) for var in self.variables if var.sort == CPSASortEnum.NAME
+        }
+        implied_sorts: Dict[str, str] = {}
+        for event in self.trace:
+            _collect_implied_variable_sorts(event.message_term, implied_sorts, akey_vars, name_vars)
+        for term in (
+            self.unique_originating
+            + self.unique_generated
+            + self.non_originating
+            + self.pen_non_originating
+            + self.inputs
+            + self.outputs
+            + self.gen_st
+        ):
+            _collect_implied_variable_sorts(term, implied_sorts, akey_vars, name_vars)
+        for fact in self.facts:
+            for ft in fact[1:] if isinstance(fact, list) and len(fact) > 1 else []:
+                _collect_implied_variable_sorts(ft, implied_sorts, akey_vars, name_vars)
 
-        # Normalize trace events and collect all channels used in send/recv events
+        var_sorts: Dict[str, str] = {}
+        for var_decl in self.variables:
+            clean_name = sanitize_cpsa_symbol(var_decl.name)
+            if clean_name not in var_sorts:
+                var_sorts[clean_name] = var_decl.sort.value
+
+        for raw_name, sort_val in implied_sorts.items():
+            clean_name = sanitize_cpsa_symbol(raw_name)
+            if clean_name not in var_sorts:
+                var_sorts[clean_name] = sort_val
+
+        for event in self.trace:
+            if event.direction in ("send", "recv") and event.channel:
+                clean_chan = sanitize_cpsa_symbol(event.channel)
+                var_sorts.setdefault(clean_chan, CPSASortEnum.CHAN.value)
+            elif event.direction in ("load", "stor"):
+                loc_var = event.location or (event.channel if event.channel and event.channel != "ch" else None)
+                if loc_var:
+                    clean_loc = sanitize_cpsa_symbol(loc_var)
+                    var_sorts.setdefault(clean_loc, CPSASortEnum.LOCN.value)
+        return var_sorts
+
+    def to_cpsa_json(self) -> List[Any]:
+        var_sorts_map = self.get_sanitized_var_sorts()
+        akey_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.AKEY.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.AKEY
+        }
+        name_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.NAME.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.NAME
+        }
+        declared_vars = set(var_sorts_map.keys()) | {var.name for var in self.variables}
+
+        # Normalize trace events and collect all channels and locations used in trace events
         normalized_events: List[List[Any]] = []
         used_channels: List[str] = []
+        used_locations: List[str] = []
         for event in self.trace:
             event_sexpr = event.to_cpsa_json()
             if len(event_sexpr) >= 2:
@@ -8460,54 +8769,70 @@ class CPSAProtocolRole(BaseModel):
                     akey_vars=akey_vars,
                     name_vars=name_vars,
                     declared_vars=declared_vars,
+                    quote_undeclared=True,
                 )
             if event.direction in ("send", "recv") and event.channel:
                 clean_chan = sanitize_cpsa_symbol(event.channel)
                 if clean_chan not in used_channels:
                     used_channels.append(clean_chan)
+            elif event.direction in ("load", "stor"):
+                loc_var = event.location or (event.channel if event.channel and event.channel != "ch" else None)
+                if loc_var:
+                    clean_loc = sanitize_cpsa_symbol(loc_var)
+                    if clean_loc not in used_locations:
+                        used_locations.append(clean_loc)
             normalized_events.append(event_sexpr)
 
         trace_form = ["trace"] + normalized_events
 
-        # Group declared variables by sort, ensuring any channel used in trace is declared as 'chan'
+        trace_tokens: Set[str] = set()
+        extract_term_tokens(trace_form, trace_tokens)
+        reserved_operators = {
+            "pubk", "privk", "invk", "ltk", "cat", "enc", "hash", "trace", "send", "recv", "load", "stor"
+        } | CPSA_ALL_OPERATORS
+
+        # Group declared variables by sort, keeping all declared variables and any implied variables that occur in trace
         sort_to_vars: Dict[str, List[str]] = {}
         declared_sanitized: Set[str] = set()
-        for var_decl in self.variables:
-            clean_var_name = sanitize_cpsa_symbol(var_decl.name)
+        explicit_sanitized = {sanitize_cpsa_symbol(v.name) for v in self.variables}
+        for clean_var_name, sort_val in var_sorts_map.items():
+            if clean_var_name not in explicit_sanitized and clean_var_name not in trace_tokens:
+                continue
             if clean_var_name not in declared_sanitized:
                 declared_sanitized.add(clean_var_name)
-                sort_to_vars.setdefault(var_decl.sort.value, []).append(clean_var_name)
-
-        for chan_name in used_channels:
-            if chan_name not in declared_sanitized:
-                declared_sanitized.add(chan_name)
-                sort_to_vars.setdefault(CPSASortEnum.CHAN.value, []).append(chan_name)
+                sort_to_vars.setdefault(sort_val, []).append(clean_var_name)
 
         vars_form: List[Any] = ["vars"]
         for sort_value, var_names in sort_to_vars.items():
             vars_form.append(var_names + [sort_value])
 
-        trace_tokens: Set[str] = set()
-        extract_term_tokens(trace_form, trace_tokens)
-        reserved_operators = {"pubk", "privk", "invk", "ltk", "cat", "enc", "hash", "trace", "send", "recv", "load", "stor"} | CPSA_ALL_OPERATORS
-
         def _term_vars_in_trace(term: Any) -> bool:
+            if _is_quoted_tag_literal(term):
+                return False
             if isinstance(term, str):
-                return term in trace_tokens
+                return term in trace_tokens and term in declared_sanitized
             if isinstance(term, (list, tuple)):
                 term_tokens: Set[str] = set()
                 extract_term_tokens(term, term_tokens)
-                var_tokens = term_tokens - reserved_operators
-                return bool(var_tokens and var_tokens.issubset(trace_tokens))
-            return True
+                var_tokens = {
+                    t for t in (term_tokens - reserved_operators) if not _is_quoted_tag_literal(t)
+                }
+                return bool(var_tokens and var_tokens.issubset(trace_tokens) and var_tokens.issubset(declared_sanitized))
+            return False
 
         role_form: List[Any] = ["defrole", sanitize_cpsa_symbol(self.role_name), vars_form, trace_form]
 
         # Enforce Section 4.2 & Table 10.6: rndx/expt variables must be in uniq-gen, never uniq-orig
-        dh_exponent_vars = {var.name for var in self.variables if var.sort.value in ("rndx", "expt")}
+        dh_exponent_vars = {k for k, v in var_sorts_map.items() if v in ("rndx", "expt")}
         effective_uniq_orig: List[Any] = []
-        effective_uniq_gen: List[Any] = list(self.unique_generated)
-        for term in self.unique_originating:
+        effective_uniq_gen: List[Any] = [
+            normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True)
+            for t in self.unique_generated
+        ]
+        for raw_term in self.unique_originating:
+            term = normalize_cpsa_term(
+                raw_term, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+            )
             if isinstance(term, str) and term in dh_exponent_vars:
                 if term not in effective_uniq_gen:
                     effective_uniq_gen.append(term)
@@ -8522,38 +8847,71 @@ class CPSAProtocolRole(BaseModel):
         if valid_uniq_gen:
             role_form.append(["uniq-gen"] + valid_uniq_gen)
 
-        if self.non_originating:
-            role_form.append(["non-orig"] + [
-                normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars)
-                for t in self.non_originating
-            ])
-        if self.pen_non_originating:
-            role_form.append(["pen-non-orig"] + [
-                normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars)
-                for t in self.pen_non_originating
-            ])
+        normalized_non_orig = [
+            normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True)
+            for t in self.non_originating
+        ]
+        valid_non_orig = [t for t in normalized_non_orig if _term_vars_in_trace(t)]
+        if valid_non_orig:
+            role_form.append(["non-orig"] + valid_non_orig)
+
+        normalized_pen_non_orig = [
+            normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True)
+            for t in self.pen_non_originating
+        ]
+        valid_pen_non_orig = [t for t in normalized_pen_non_orig if _term_vars_in_trace(t)]
+        if valid_pen_non_orig:
+            role_form.append(["pen-non-orig"] + valid_pen_non_orig)
+
         if self.confidential_channels:
-            role_form.append(["conf"] + self.confidential_channels)
+            role_form.append(["conf"] + [sanitize_cpsa_symbol(c) for c in self.confidential_channels])
         if self.authenticated_channels:
-            role_form.append(["auth"] + self.authenticated_channels)
+            role_form.append(["auth"] + [sanitize_cpsa_symbol(c) for c in self.authenticated_channels])
         if self.gen_st:
-            role_form.append(["gen-st"] + self.gen_st)
+            valid_gen_st = [
+                normalize_cpsa_term(t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True)
+                for t in self.gen_st
+            ]
+            valid_gen_st = [t for t in valid_gen_st if _term_vars_in_trace(t)]
+            if valid_gen_st:
+                role_form.append(["gen-st"] + valid_gen_st)
         if self.facts:
             role_form.append(["facts"] + self.facts)
 
-        # Procedural cpsa4roletran annotations:
+        # Deterministic cpsa4roletran procedural inputs synthesis:
         # 1. Every input/output variable must occur in trace.
-        # 2. All trace channels must be included in inputs.
+        # 2. All trace channels and locations must be included in inputs.
         # 3. No uniq-orig or uniq-gen value may appear in inputs (cpsa4roletran.md).
-        # 4. Each input must be a basic value or channel (no compound cat/enc/hash).
-        # 5. No input value may appear in outputs (cpsa4roletran.md).
+        # 4. Each input must be a basic value or channel/locn (no compound cat/enc/hash).
+        # 5. Any variable or key constructor needed before being bound by recv/load must be in inputs.
         orig_set = {str(t) for t in (valid_uniq_orig + valid_uniq_gen)}
+        non_orig_set = {str(t) for t in (valid_non_orig + valid_pen_non_orig)}
 
         valid_inputs: List[Any] = []
-        if self.inputs or self.outputs:
-            for chan_name in used_channels:
-                if chan_name not in valid_inputs:
-                    valid_inputs.append(chan_name)
+        known_vars: Set[str] = {
+            t for t in (valid_uniq_orig + valid_uniq_gen) if isinstance(t, str)
+        } | set(used_channels) | set(used_locations)
+
+        for chan_name in used_channels:
+            if chan_name not in valid_inputs:
+                valid_inputs.append(chan_name)
+        for loc_name in used_locations:
+            if loc_name not in valid_inputs and loc_name not in orig_set:
+                valid_inputs.append(loc_name)
+
+        def _add_required_input(candidate: Any) -> None:
+            if _is_quoted_tag_literal(candidate):
+                return
+            if str(candidate) in orig_set:
+                return
+            if not _is_valid_roletran_input_term(candidate):
+                return
+            if not _term_vars_in_trace(candidate):
+                return
+            if candidate not in valid_inputs:
+                valid_inputs.append(candidate)
+            if isinstance(candidate, str):
+                known_vars.add(candidate)
 
         for input_term in self.inputs:
             normalized_input = normalize_cpsa_term(
@@ -8561,16 +8919,77 @@ class CPSAProtocolRole(BaseModel):
                 akey_vars=akey_vars,
                 name_vars=name_vars,
                 declared_vars=declared_vars,
+                quote_undeclared=True,
             )
-            if str(normalized_input) in orig_set:
+            _add_required_input(normalized_input)
+
+        def _require_buildable(term: Any) -> None:
+            if isinstance(term, str):
+                if not _is_quoted_tag_literal(term) and term in declared_sanitized and term not in known_vars:
+                    _add_required_input(term)
+            elif isinstance(term, list) and term:
+                op = term[0]
+                if op in CPSA_KEY_CONSTRUCTOR_OPERATORS:
+                    _add_required_input(term)
+                else:
+                    for sub in term[1:]:
+                        _require_buildable(sub)
+
+        def _process_recv_term(term: Any) -> None:
+            if isinstance(term, str):
+                if not _is_quoted_tag_literal(term) and term in declared_sanitized:
+                    known_vars.add(term)
+            elif isinstance(term, list) and term:
+                op = term[0]
+                if op == "cat":
+                    for sub in term[1:]:
+                        _process_recv_term(sub)
+                elif op == "enc" and len(term) >= 2:
+                    key_term = term[-1]
+                    dec_key = _invert_cpsa_key(key_term, akey_vars)
+                    payload_tokens: Set[str] = set()
+                    for p in term[1:-1]:
+                        extract_term_tokens(p, payload_tokens)
+                    payload_vars = {
+                        t
+                        for t in (payload_tokens - reserved_operators)
+                        if not _is_quoted_tag_literal(t) and t in declared_sanitized
+                    }
+                    has_unbound_payload = bool(payload_vars - known_vars)
+                    if _is_valid_roletran_input_term(dec_key):
+                        is_unprovided_invk = isinstance(dec_key, list) and dec_key and dec_key[0] == "invk"
+                        is_peer_secret_key = (
+                            isinstance(dec_key, list)
+                            and dec_key
+                            and dec_key[0] in ("privk", "invk")
+                            and str(dec_key) in non_orig_set
+                            and not has_unbound_payload
+                        )
+                        if not is_peer_secret_key and not is_unprovided_invk:
+                            if isinstance(dec_key, str):
+                                if dec_key not in known_vars:
+                                    _add_required_input(dec_key)
+                            else:
+                                _add_required_input(dec_key)
+                    else:
+                        _require_buildable(dec_key)
+                    for p in term[1:-1]:
+                        _process_recv_term(p)
+                elif op in CPSA_KEY_CONSTRUCTOR_OPERATORS:
+                    _add_required_input(term)
+                else:
+                    for sub in term[1:]:
+                        _require_buildable(sub)
+
+        for event_sexpr in normalized_events:
+            if len(event_sexpr) < 2:
                 continue
-            if not _is_valid_roletran_input_term(normalized_input):
-                continue
-            input_tokens: Set[str] = set()
-            extract_term_tokens(normalized_input, input_tokens)
-            var_tokens = input_tokens - reserved_operators
-            if var_tokens and var_tokens.issubset(trace_tokens) and normalized_input not in valid_inputs:
-                valid_inputs.append(normalized_input)
+            ev_dir = event_sexpr[0]
+            ev_msg = event_sexpr[-1]
+            if ev_dir in ("send", "stor"):
+                _require_buildable(ev_msg)
+            elif ev_dir in ("recv", "load"):
+                _process_recv_term(ev_msg)
 
         if valid_inputs:
             role_form.append(["inputs"] + valid_inputs)
@@ -8584,13 +9003,13 @@ class CPSAProtocolRole(BaseModel):
                     akey_vars=akey_vars,
                     name_vars=name_vars,
                     declared_vars=declared_vars,
+                    quote_undeclared=True,
                 )
                 if str(normalized_output) in input_set:
                     continue
-                output_tokens: Set[str] = set()
-                extract_term_tokens(normalized_output, output_tokens)
-                var_tokens = output_tokens - reserved_operators
-                if var_tokens and var_tokens.issubset(trace_tokens) and normalized_output not in valid_outputs:
+                if not _term_vars_in_trace(normalized_output):
+                    continue
+                if normalized_output not in valid_outputs:
                     valid_outputs.append(normalized_output)
             if valid_outputs:
                 role_form.append(["outputs"] + valid_outputs)
@@ -8614,10 +9033,36 @@ class CPSAStrandInstance(BaseModel):
         description="Mapping from role variable identifier to instantiated skeleton term conforming to CPSA grammar",
     )
 
-    def to_cpsa_json(self) -> List[Any]:
+    def to_cpsa_json(
+        self,
+        akey_vars: Optional[Set[str]] = None,
+        name_vars: Optional[Set[str]] = None,
+        declared_vars: Optional[Set[str]] = None,
+        valid_role_vars: Optional[Set[str]] = None,
+        auto_bind_vars: Optional[Set[str]] = None,
+    ) -> List[Any]:
         strand_form: List[Any] = ["defstrandmax", sanitize_cpsa_symbol(self.role_name)]
+        bound_role_vars: Set[str] = set()
         for role_var, term_val in self.variable_bindings.items():
-            strand_form.append([sanitize_cpsa_symbol(role_var), term_val])
+            clean_role_var = sanitize_cpsa_symbol(role_var)
+            if valid_role_vars is not None and clean_role_var not in valid_role_vars:
+                continue
+            norm_val = normalize_cpsa_term(
+                term_val,
+                akey_vars=akey_vars,
+                name_vars=name_vars,
+                declared_vars=declared_vars,
+                quote_undeclared=declared_vars is not None,
+            )
+            strand_form.append([clean_role_var, norm_val])
+            bound_role_vars.add(clean_role_var)
+
+        if valid_role_vars and auto_bind_vars:
+            for extra_var in sorted(valid_role_vars & auto_bind_vars):
+                if extra_var not in bound_role_vars:
+                    strand_form.append([extra_var, extra_var])
+                    bound_role_vars.add(extra_var)
+
         return strand_form
 
 
@@ -8697,37 +9142,158 @@ class CPSAPreskeleton(BaseModel):
                 )
         return self
 
-    def to_cpsa_json(self) -> List[Any]:
+    def to_cpsa_json(
+        self,
+        role_var_sorts_by_role: Optional[Dict[str, Dict[str, str]]] = None,
+    ) -> List[Any]:
         skel_form: List[Any] = ["defskeleton", sanitize_cpsa_symbol(self.protocol_name)]
 
-        if self.variables:
+        var_sorts_map: Dict[str, str] = {}
+        for var_decl in self.variables:
+            clean_var_name = sanitize_cpsa_symbol(var_decl.name)
+            if clean_var_name not in var_sorts_map:
+                var_sorts_map[clean_var_name] = var_decl.sort.value
+
+        # Infer sorts from strand variable bindings if role_var_sorts_by_role is provided
+        if role_var_sorts_by_role:
+            for strand in self.strands:
+                clean_role = sanitize_cpsa_symbol(strand.role_name)
+                role_sorts = role_var_sorts_by_role.get(clean_role, {})
+                for role_var, bound_val in strand.variable_bindings.items():
+                    clean_rv = sanitize_cpsa_symbol(role_var)
+                    rv_sort = role_sorts.get(clean_rv)
+                    if rv_sort and isinstance(bound_val, str) and not _is_quoted_tag_literal(bound_val):
+                        clean_bv = sanitize_cpsa_symbol(bound_val)
+                        var_sorts_map.setdefault(clean_bv, rv_sort)
+
+        akey_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.AKEY.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.AKEY
+        }
+        name_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.NAME.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.NAME
+        }
+
+        implied_sorts: Dict[str, str] = {}
+        for strand in self.strands:
+            for bound_val in strand.variable_bindings.values():
+                _collect_implied_variable_sorts(bound_val, implied_sorts, akey_vars, name_vars)
+        for term in (
+            self.listeners
+            + self.non_originating
+            + self.pen_non_originating
+            + self.unique_originating
+            + self.unique_generated
+        ):
+            _collect_implied_variable_sorts(term, implied_sorts, akey_vars, name_vars)
+        for fact in self.facts:
+            for ft in fact[1:] if isinstance(fact, list) and len(fact) > 1 else []:
+                _collect_implied_variable_sorts(ft, implied_sorts, akey_vars, name_vars)
+
+        for raw_name, sort_val in implied_sorts.items():
+            clean_name = sanitize_cpsa_symbol(raw_name)
+            var_sorts_map.setdefault(clean_name, sort_val)
+
+        akey_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.AKEY.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.AKEY
+        }
+        name_vars = {k for k, v in var_sorts_map.items() if v == CPSASortEnum.NAME.value} | {
+            var.name for var in self.variables if var.sort == CPSASortEnum.NAME
+        }
+        declared_vars = set(var_sorts_map.keys()) | {var.name for var in self.variables}
+
+        if var_sorts_map:
             sort_to_vars: Dict[str, List[str]] = {}
-            declared_sanitized: Set[str] = set()
-            for var_decl in self.variables:
-                clean_var_name = sanitize_cpsa_symbol(var_decl.name)
-                if clean_var_name not in declared_sanitized:
-                    declared_sanitized.add(clean_var_name)
-                    sort_to_vars.setdefault(var_decl.sort.value, []).append(clean_var_name)
+            for clean_var_name, sort_val in var_sorts_map.items():
+                sort_to_vars.setdefault(sort_val, []).append(clean_var_name)
             vars_form: List[Any] = ["vars"]
             for sort_value, var_names in sort_to_vars.items():
                 vars_form.append(var_names + [sort_value])
             skel_form.append(vars_form)
 
+        strand_forms: List[List[Any]] = []
+        skel_trace_tokens: Set[str] = set()
         for strand in self.strands:
-            skel_form.append(strand.to_cpsa_json())
+            clean_role = sanitize_cpsa_symbol(strand.role_name)
+            valid_role_vars = (
+                set(role_var_sorts_by_role[clean_role].keys())
+                if role_var_sorts_by_role and clean_role in role_var_sorts_by_role
+                else None
+            )
+            s_form = strand.to_cpsa_json(
+                akey_vars=akey_vars,
+                name_vars=name_vars,
+                declared_vars=declared_vars,
+                valid_role_vars=valid_role_vars,
+                auto_bind_vars=set(var_sorts_map.keys()) if valid_role_vars is not None else None,
+            )
+            strand_forms.append(s_form)
+            for maplet in s_form[2:]:
+                if isinstance(maplet, list) and len(maplet) == 2:
+                    extract_term_tokens(maplet[1], skel_trace_tokens)
+
+        skel_form.extend(strand_forms)
 
         for listener in self.listeners:
-            skel_form.append(["deflistener", listener])
+            norm_listener = normalize_cpsa_term(
+                listener, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+            )
+            extract_term_tokens(norm_listener, skel_trace_tokens)
+            skel_form.append(["deflistener", norm_listener])
+
+        reserved_operators = {
+            "pubk", "privk", "invk", "ltk", "cat", "enc", "hash", "trace", "send", "recv", "load", "stor"
+        } | CPSA_ALL_OPERATORS
+
+        def _skel_term_in_trace(term: Any) -> bool:
+            if _is_quoted_tag_literal(term):
+                return False
+            if not skel_trace_tokens:
+                return True
+            if isinstance(term, str):
+                return term in skel_trace_tokens
+            if isinstance(term, (list, tuple)):
+                toks: Set[str] = set()
+                extract_term_tokens(term, toks)
+                var_toks = {t for t in (toks - reserved_operators) if not _is_quoted_tag_literal(t)}
+                return bool(var_toks and var_toks.issubset(skel_trace_tokens))
+            return False
 
         if self.non_originating:
-            skel_form.append(["non-orig"] + self.non_originating)
+            norm_non_orig = [
+                normalize_cpsa_term(
+                    t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+                )
+                for t in self.non_originating
+            ]
+            norm_non_orig = [t for t in norm_non_orig if _skel_term_in_trace(t)]
+            if norm_non_orig:
+                skel_form.append(["non-orig"] + norm_non_orig)
         if self.pen_non_originating:
-            skel_form.append(["pen-non-orig"] + self.pen_non_originating)
+            norm_pen_non_orig = [
+                normalize_cpsa_term(
+                    t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+                )
+                for t in self.pen_non_originating
+            ]
+            norm_pen_non_orig = [t for t in norm_pen_non_orig if _skel_term_in_trace(t)]
+            if norm_pen_non_orig:
+                skel_form.append(["pen-non-orig"] + norm_pen_non_orig)
 
-        skel_dh_vars = {var.name for var in self.variables if var.sort.value in ("rndx", "expt")}
+        skel_dh_vars = {k for k, v in var_sorts_map.items() if v in ("rndx", "expt")}
         effective_skel_uniq_orig: List[Any] = []
-        effective_skel_uniq_gen: List[Any] = list(self.unique_generated)
-        for term in self.unique_originating:
+        effective_skel_uniq_gen: List[Any] = [
+            normalize_cpsa_term(
+                t, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+            )
+            for t in self.unique_generated
+        ]
+        effective_skel_uniq_gen = [t for t in effective_skel_uniq_gen if _skel_term_in_trace(t)]
+        for raw_term in self.unique_originating:
+            term = normalize_cpsa_term(
+                raw_term, akey_vars=akey_vars, name_vars=name_vars, declared_vars=declared_vars, quote_undeclared=True
+            )
+            if not _skel_term_in_trace(term):
+                continue
             if isinstance(term, str) and (
                 term in skel_dh_vars
                 or "exponent" in term.lower()
@@ -8943,12 +9509,15 @@ class CPSAProtocolSpecification(BaseModel):
 
         clean_proto_name = sanitize_cpsa_symbol(self.protocol_name)
         protocol_form: List[Any] = ["defprotocol", clean_proto_name, self.message_algebra]
+        role_var_sorts_by_role: Dict[str, Dict[str, str]] = {}
         for role in self.roles:
+            clean_role_name = sanitize_cpsa_symbol(role.role_name)
+            role_var_sorts_by_role[clean_role_name] = role.get_sanitized_var_sorts()
             protocol_form.append(role.to_cpsa_json())
         payload.append(protocol_form)
 
         for skel in self.skeletons:
-            payload.append(skel.to_cpsa_json())
+            payload.append(skel.to_cpsa_json(role_var_sorts_by_role=role_var_sorts_by_role))
 
         return payload
 ```
@@ -8957,7 +9526,7 @@ class CPSAProtocolSpecification(BaseModel):
 
 ### `src/logging_config.py`
 
-*sha256:`879a2721f42c` · 631 lines · 29.3 KB (~7,489 tokens) · lang:`python`*
+*sha256:`f27629aeabb1` · 682 lines · 33.8 KB (~8,649 tokens) · lang:`python`*
 
 ```python
 """Comprehensive Structured Logging Subsystem for RFC-LLM Pipeline."""
@@ -9242,8 +9811,59 @@ class PipelineMetricsCSVLogger:
                 for row in reader:
                     norm_id = self.normalize_rfc_id(row.get("rfc_id", ""))
                     if norm_id:
-                        row_copy = dict(row)
+                        row_copy = {col: str(row.get(col) or "") for col in self.CSV_HEADER}
                         row_copy["rfc_id"] = norm_id
+                        # Backfill the 17 CPSA security_findings columns if seeding from an older 50-column CSV
+                        if (
+                            row_copy.get("is_eligible", "").strip().lower() == "true"
+                            and not row_copy.get("role_executability")
+                            and row_copy.get("trajectory_json_path")
+                        ):
+                            t_path = Path(row_copy["trajectory_json_path"])
+                            if t_path.exists():
+                                try:
+                                    t_obj = json.loads(t_path.read_text(encoding="utf-8", errors="ignore"))
+                                    qa_t = t_obj.get("quality_assessment") or {}
+                                    s6_t = t_obj.get("stage6_cpsa4_solver") or {}
+                                    fin_t = t_obj.get("final_verified_output") or {}
+                                    sf = t_obj.get("security_findings") or qa_t.get("security_findings")
+                                    if not sf and s6_t.get("shapes_analysis_from_shapes_txt"):
+                                        from src.verification_engine.trajectory_metadata_exporter import (
+                                            compute_security_findings,
+                                        )
+                                        sf = compute_security_findings(
+                                            shapes_analysis=s6_t.get("shapes_analysis_from_shapes_txt") or {},
+                                            exploration_telemetry=s6_t.get("exploration_telemetry_from_txt") or {},
+                                            sas_formulas=fin_t.get("shape_analysis_sentences") or [],
+                                        )
+                                    if isinstance(sf, dict) and sf:
+                                        dis_list = sf.get("parameter_disagreements") or []
+                                        dis_str = ";".join(
+                                            f"{d.get('pov_role', '?')}->{d.get('peer_role', '?')}:{d.get('parameter', '?')}({d.get('pov_value', '?')}!={d.get('peer_value', '?')})"
+                                            for d in dis_list
+                                            if isinstance(d, dict)
+                                        )
+                                        at = sf.get("authentication_tests_summary") or {}
+                                        anom_list = sf.get("vulnerabilities_and_anomalies") or []
+                                        row_copy["role_executability"] = str(sf.get("role_executability") or "")
+                                        row_copy["dead_roles_count"] = str(int(sf.get("dead_roles_count", 0)))
+                                        row_copy["authentication_profile"] = str(sf.get("authentication_profile") or "")
+                                        row_copy["parameter_agreement_status"] = str(sf.get("parameter_agreement_status") or "")
+                                        row_copy["disagreed_parameters_count"] = str(len(dis_list))
+                                        row_copy["disagreed_parameters_summary"] = dis_str
+                                        row_copy["role_reflection_status"] = str(sf.get("role_reflection_status") or "")
+                                        row_copy["secrecy_status"] = str(sf.get("secrecy_status") or "")
+                                        row_copy["protected_secrets"] = ";".join(str(x) for x in (sf.get("protected_secrets") or []))
+                                        row_copy["leaked_secrets"] = ";".join(str(x) for x in (sf.get("leaked_secrets") or []))
+                                        row_copy["defgoal_satisfaction_status"] = str(sf.get("defgoal_satisfaction_status") or "")
+                                        row_copy["shape_analysis_sentences_count"] = str(int(sf.get("shape_analysis_sentences_count", 0)))
+                                        row_copy["encryption_tests_count"] = str(int(at.get("encryption_tests", 0)))
+                                        row_copy["nonce_tests_count"] = str(int(at.get("nonce_tests", 0)))
+                                        row_copy["channel_tests_count"] = str(int(at.get("channel_tests", 0)))
+                                        row_copy["anomalies_count"] = str(len(anom_list))
+                                        row_copy["vulnerabilities_and_anomalies"] = " | ".join(str(x) for x in anom_list)
+                                except Exception:
+                                    pass
                         seeded_rows[norm_id] = row_copy
             rows_list = list(seeded_rows.values())
             self._write_all_rows(rows_list)
@@ -9597,7 +10217,7 @@ class PipelineMetricsCSVLogger:
 
 ### `src/main_pipeline_orchestrator.py`
 
-*sha256:`f276de706842` · 1247 lines · 55.6 KB (~14,244 tokens) · lang:`python`*
+*sha256:`d896b2c29551` · 1404 lines · 62.3 KB (~15,958 tokens) · lang:`python`*
 
 ```python
 """Main Pipeline Orchestrator for RFC-to-CPSA Synthesis.
@@ -9620,7 +10240,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from pydantic import BaseModel, Field
 
-from src.code_generation.cpsa_scheme_emitter import emit_cpsa_scheme
+from src.code_generation.cpsa_scheme_emitter import emit_cpsa_scheme, sanitize_protocol_stem
 from src.document_ingestion.handshake_section_router import route_handshake_sections
 from src.document_ingestion.protocol_applicability_gate import evaluate_protocol_applicability
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
@@ -9712,15 +10332,24 @@ def _read_scm_safe(scm_path: Optional[Path]) -> Optional[str]:
 
 def _compute_ast_hash(spec: CPSAProtocolSpecification) -> str:
     """Computes a canonical SHA-256 hash of a protocol AST excluding cosmetic prose fields
-    (`herald_comment`, `ineligibility_reason`, `description`, `comment`) so text variations
+    (`herald_comment`, `ineligibility_reason`, `description`, `comment`, `rfc_field`) so text variations
     across repair passes never mask an AST cycle.
     """
     payload = spec.model_dump(exclude={"herald_comment", "ineligibility_reason"})
     for role in payload.get("roles", []):
         role.pop("description", None)
+        role.pop("comment", None)
+        for v in role.get("variables", []):
+            v.pop("description", None)
+            v.pop("rfc_field", None)
+        for ev in role.get("trace", []):
+            ev.pop("description", None)
     for skel in payload.get("skeletons", []):
         skel.pop("description", None)
         skel.pop("comment", None)
+        for v in skel.get("variables", []):
+            v.pop("description", None)
+            v.pop("rfc_field", None)
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
 
@@ -9798,6 +10427,10 @@ def _run_roletran_self_healing_loop(
             roletran_result.error_diagnostic,
         )
         try:
+            prior_summaries = [
+                f"Attempt #{entry.get('attempt_number')}: {entry.get('parsed_diagnostic') or entry.get('repair_exception')}"
+                for entry in repair_attempts_log[-4:]
+            ]
             protocol_ast = repair_protocol_specification(
                 failing_spec=protocol_ast,
                 error_diagnostic=roletran_result.error_diagnostic or "Executability verification failure",
@@ -9807,6 +10440,7 @@ def _run_roletran_self_healing_loop(
                 query_model=query_model_override,
                 cycle_detected=cycle_detected,
                 use_agentic_searcher=use_searcher,
+                prior_attempts=prior_summaries,
             )
             scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir, filename_prefix=stable_stem)
             GLOBAL_EVENT_BUS.emit(
@@ -9984,6 +10618,10 @@ def _run_mitre_solver_self_healing_loop(
                             f"Pre-flight Roletran Executability Diagnostic:\n{roletran_result.error_diagnostic}"
                         )
 
+                    prior_solver_summaries = [
+                        f"Attempt #{entry.get('attempt_number')}: {_compact_diagnostic_headline(entry.get('parsed_diagnostic') or entry.get('repair_exception') or '')}"
+                        for entry in solver_attempts_log[-4:]
+                    ]
                     protocol_ast = repair_protocol_specification(
                         failing_spec=protocol_ast,
                         error_diagnostic=combined_diagnostic,
@@ -9993,6 +10631,7 @@ def _run_mitre_solver_self_healing_loop(
                         query_model=query_model_override,
                         cycle_detected=cycle_detected,
                         use_agentic_searcher=use_searcher,
+                        prior_attempts=prior_solver_summaries,
                     )
                     scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir, filename_prefix=stable_stem)
                     GLOBAL_EVENT_BUS.emit(
@@ -10277,7 +10916,116 @@ def run_rfc_translation_pipeline(
         model=router_model,
     )
 
-    verbatim_slice = slice_verbatim_sections(raw_rfc_text, target_sections)
+    try:
+        verbatim_slice = slice_verbatim_sections(raw_rfc_text, target_sections)
+        if not verbatim_slice.strip():
+            raise ValueError(f"Verbatim section slice for {target_sections} produced 0 non-empty lines")
+    except Exception as slice_exc:
+        elapsed = time.time() - start_time
+        error_msg = f"Section slicing failed: {slice_exc}"
+        csv_error_msg = f"{error_msg} | {eligible_rationale_msg}" if eligible_rationale_msg else error_msg
+        logger.error(error_msg)
+        empty_stage2 = {
+            "schema_self_correction_triggered": False,
+            "schema_validation_error": error_msg,
+            "initial_ast": None,
+            "initial_scm": None,
+        }
+        empty_stage5 = {
+            "validator_binary": "cpsa4roletran",
+            "roletran_algebra_supported": True,
+            "initial_passed": False,
+            "final_passed": False,
+            "total_attempts": 0,
+            "compiled_defproc_output": None,
+            "repair_attempts": [],
+        }
+        empty_stage6 = {
+            "validator_binary": "cpsa4",
+            "initial_passed": False,
+            "final_passed": False,
+            "total_attempts": 0,
+            "repair_attempts": [],
+        }
+        trajectory_path = write_trajectory_metadata_bundle(
+            output_dir=target_output_dir,
+            rfc_id=rfc_number_str,
+            rfc_title=protocol_title,
+            protocol_name=final_protocol_name,
+            participating_principals=applicability_report.participating_principals,
+            selected_sections=target_sections,
+            verbatim_slice="",
+            duration_seconds=elapsed,
+            stage2_record=empty_stage2,
+            stage5_record=empty_stage5,
+            stage6_record=empty_stage6,
+            final_spec=None,
+            final_scm_path=None,
+            trace_txt_path=None,
+            shapes_txt_path=None,
+            solver_passed=False,
+            intake_rationale=intake_rationale,
+        )
+        update_run_metadata_index(
+            run_root_dir=effective_run_root,
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            rfc_dir=target_output_dir,
+            scm_path=None,
+            trajectory_json_path=trajectory_path,
+            quality_tier="REJECTED",
+            is_eligible=True,
+            build_successful=False,
+            error_message=csv_error_msg,
+            tab_index=tab_index,
+            intake_rationale=intake_rationale,
+        )
+        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+        csv_recorder.log_run(
+            rfc_id=rfc_id,
+            is_eligible=True,
+            status="FAILED",
+            quality_tier="REJECTED",
+            protocol_name=final_protocol_name,
+            selected_sections=target_sections,
+            sliced_lines_count=0,
+            duration_seconds=elapsed,
+            cost_telemetry=rfc_cost_summary,
+            router_model=active_router_model,
+            extraction_model=active_extraction_model,
+            query_model=active_query_model,
+            repair_model=active_repair_model,
+            trajectory_json_path=trajectory_path,
+            error_message=csv_error_msg,
+        )
+        GLOBAL_EVENT_BUS.update_accepted_tab(
+            tab_index,
+            status="FAILED",
+            quality_tier="REJECTED",
+            duration_seconds=round(elapsed, 2),
+            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+            cost_telemetry=rfc_cost_summary,
+            trajectory_path=str(trajectory_path),
+            error_message=error_msg,
+            intake_rationale=intake_rationale,
+        )
+        GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, error_message=error_msg)
+        GLOBAL_EVENT_BUS.emit("pipeline_failed", error_message=error_msg)
+        return PipelineExecutionSummary(
+            rfc_id=rfc_id,
+            protocol_name=final_protocol_name,
+            is_eligible=True,
+            selected_sections=target_sections,
+            sliced_lines_count=0,
+            trajectory_json_path=trajectory_path,
+            quality_tier="REJECTED",
+            intake_rationale=intake_rationale,
+            duration_seconds=elapsed,
+            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+            cost_telemetry=rfc_cost_summary,
+            error_message=error_msg,
+        )
+
     slice_lines_count = len(verbatim_slice.splitlines())
 
     slice_file = target_output_dir / "verbatim_slice.txt"
@@ -10308,6 +11056,9 @@ def run_rfc_translation_pipeline(
             principals=applicability_report.participating_principals,
             model=extraction_model,
         )
+        # Immediately persist Stage 2 AST checkpoint to disk before Stage 3 (cpsa4json) runs
+        initial_ast_path = target_output_dir / "initial_ast.json"
+        initial_ast_path.write_text(protocol_ast.model_dump_json(indent=2), encoding="utf-8")
         GLOBAL_EVENT_BUS.emit(
             "stage_completed",
             stage=2,
@@ -10523,55 +11274,81 @@ def run_rfc_translation_pipeline(
     # -------------------------------------------------------------------------
     # STAGE 3: CPSA4json -> scm
     # -------------------------------------------------------------------------
+    extraction_meta = constrained_protocol_extractor.LAST_EXTRACTION_METADATA
+    stage2_record = {
+        "schema_self_correction_triggered": bool(extraction_meta.get("schema_self_correction_triggered", False)),
+        "schema_validation_error": extraction_meta.get("schema_validation_error"),
+        "initial_ast": protocol_ast.model_dump(),
+        "initial_scm": None,
+    }
+    stage5_record = {
+        "validator_binary": "cpsa4roletran",
+        "roletran_algebra_supported": True,
+        "initial_passed": False,
+        "final_passed": False,
+        "total_attempts": 0,
+        "compiled_defproc_output": None,
+        "repair_attempts": [],
+    }
+    stage6_record = {
+        "validator_binary": "cpsa4",
+        "initial_passed": False,
+        "final_passed": False,
+        "total_attempts": 0,
+        "repair_attempts": [],
+    }
+    scm_path: Optional[Path] = None
+    artifacts: Optional[CPSABuildArtifacts] = None
+    build_attempt = 0
+    last_build_error = "Unknown compilation failure"
+
     GLOBAL_EVENT_BUS.emit(
         "stage_started",
         stage=3,
         stage_name="CPSA4json -> scm",
         model="cpsa_scheme_emitter.py",
     )
-    scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
-    GLOBAL_EVENT_BUS.update_accepted_tab(
-        tab_index,
-        protocol_name=protocol_ast.protocol_name or final_protocol_name,
-        scm_path=str(scm_path),
-    )
-    GLOBAL_EVENT_BUS.emit("stage_completed", stage=3, scm_path=str(scm_path))
+    try:
+        scm_path = emit_cpsa_scheme(protocol_ast, target_output_dir)
+        stage2_record["initial_scm"] = _read_scm_safe(scm_path)
+        GLOBAL_EVENT_BUS.update_accepted_tab(
+            tab_index,
+            protocol_name=protocol_ast.protocol_name or final_protocol_name,
+            scm_path=str(scm_path),
+        )
+        GLOBAL_EVENT_BUS.emit("stage_completed", stage=3, scm_path=str(scm_path))
 
-    extraction_meta = constrained_protocol_extractor.LAST_EXTRACTION_METADATA
-    stage2_record = {
-        "schema_self_correction_triggered": bool(extraction_meta.get("schema_self_correction_triggered", False)),
-        "schema_validation_error": extraction_meta.get("schema_validation_error"),
-        "initial_ast": protocol_ast.model_dump(),
-        "initial_scm": _read_scm_safe(scm_path),
-    }
+        # -------------------------------------------------------------------------
+        # STAGE 4 & 5: Roletran Check (<15 ms) & Self-Healing Loop
+        # -------------------------------------------------------------------------
+        protocol_ast, scm_path, roletran_result, stage5_record = _run_roletran_self_healing_loop(
+            protocol_ast=protocol_ast,
+            scm_path=scm_path,
+            target_output_dir=target_output_dir,
+            verbatim_slice=verbatim_slice,
+            repair_model_override=repair_override,
+            query_model_override=query_model,
+        )
 
-    # -------------------------------------------------------------------------
-    # STAGE 4 & 5: Roletran Check (<15 ms) & Self-Healing Loop
-    # -------------------------------------------------------------------------
-    protocol_ast, scm_path, roletran_result, stage5_record = _run_roletran_self_healing_loop(
-        protocol_ast=protocol_ast,
-        scm_path=scm_path,
-        target_output_dir=target_output_dir,
-        verbatim_slice=verbatim_slice,
-        repair_model_override=repair_override,
-        query_model_override=query_model,
-    )
-
-    # -------------------------------------------------------------------------
-    # STAGE 6: CPSA Compilation (60s cap) with RAG Self-Healing Loop
-    # -------------------------------------------------------------------------
-    protocol_ast, scm_path, artifacts, build_attempt, last_build_error, stage6_record = _run_mitre_solver_self_healing_loop(
-        protocol_ast=protocol_ast,
-        scm_path=scm_path,
-        target_output_dir=target_output_dir,
-        verbatim_slice=verbatim_slice,
-        roletran_result=roletran_result,
-        repair_model_override=repair_override,
-        query_model_override=query_model,
-    )
+        # -------------------------------------------------------------------------
+        # STAGE 6: CPSA Compilation (60s cap) with RAG Self-Healing Loop
+        # -------------------------------------------------------------------------
+        protocol_ast, scm_path, artifacts, build_attempt, last_build_error, stage6_record = _run_mitre_solver_self_healing_loop(
+            protocol_ast=protocol_ast,
+            scm_path=scm_path,
+            target_output_dir=target_output_dir,
+            verbatim_slice=verbatim_slice,
+            roletran_result=roletran_result,
+            repair_model_override=repair_override,
+            query_model_override=query_model,
+        )
+    except Exception as downstream_exc:
+        last_build_error = f"Stage 3-6 toolchain error: {downstream_exc}"
+        logger.error("Unhandled Stage 3-6 error for %s (%s): %s", rfc_number_str, final_protocol_name, downstream_exc)
+        GLOBAL_EVENT_BUS.emit("stage_failed", stage=3, error_message=last_build_error)
 
     elapsed = time.time() - start_time
-    stem = scm_path.stem
+    stem = scm_path.stem if scm_path is not None else sanitize_protocol_stem(protocol_ast.protocol_name or final_protocol_name)
     trace_txt_candidate = artifacts.trace_txt_path if artifacts else (target_output_dir / f"{stem}.txt")
     shapes_txt_candidate = artifacts.shapes_txt_path if artifacts else (target_output_dir / f"{stem}_shapes.txt")
 
@@ -10853,7 +11630,7 @@ def run_rfc_translation_pipeline(
 
 ### `src/pipeline.py`
 
-*sha256:`60b713ea2277` · 582 lines · 23.9 KB (~6,131 tokens) · lang:`python`*
+*sha256:`59ac888002a9` · 593 lines · 24.5 KB (~6,269 tokens) · lang:`python`*
 
 ```python
 """Command-line interface for RFC-LLM synthesis pipeline supporting single RFCs and directory batching."""
@@ -11174,6 +11951,17 @@ def main():
 
     if args.csv and not Path(args.csv).exists():
         print(f"Error: Source --csv path does not exist: {args.csv}", file=sys.stderr)
+        sys.exit(1)
+
+    # Pre-flight verification of MITRE CPSA 4.4.9 compiler binaries before starting LLM synthesis
+    missing_cpsa_bins = SYSTEM_CONFIG.verify_cpsa_toolchain()
+    if missing_cpsa_bins:
+        print(
+            "Error: MITRE CPSA 4.4.9 compiler toolchain is missing required binaries:\n"
+            + "\n".join(f"  - {b}" for b in missing_cpsa_bins)
+            + "\nInstall CPSA 4.4.9 (`cabal update && cabal install cpsa`) or ensure ~/.cabal/bin is populated before running synthesis.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     # 1. Create Unique Timestamped Run Directory & Per-Run CSV Ledger
@@ -12062,7 +12850,7 @@ GLOBAL_EVENT_BUS = PipelineEventBus()
 
 ### `src/prompt_loader.py`
 
-*sha256:`667dc17983b9` · 292 lines · 12.7 KB (~3,251 tokens) · lang:`python`*
+*sha256:`9934cc0348f8` · 292 lines · 12.7 KB (~3,251 tokens) · lang:`python`*
 
 ````python
 """Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LLM (prompts/ directory).
@@ -12107,13 +12895,13 @@ GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"
 
 # Built-in fallback models & timeouts when a `prompts/*.md` file omits frontmatter or is missing
 _FALLBACK_METADATA: Dict[str, Dict[str, Any]] = {
-    PROMPT_APPLICABILITY_GATE: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_SECTION_ROUTER: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_PROTOCOL_EXTRACTION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_RAG_QUERY_FORMULATION: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_COMPILER_REPAIR: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.0},
-    PROMPT_THINK_SYNTHESIZER: {"model": "strata/unsloth-iq4_xs", "timeout": 1500, "max_tokens": 65536, "temperature": 0.2},
+    PROMPT_APPLICABILITY_GATE: {"model": "strata/unsloth-iq4_xs", "timeout": 900, "max_tokens": 16384, "temperature": None},
+    PROMPT_SECTION_ROUTER: {"model": "strata/unsloth-iq4_xs", "timeout": 900, "max_tokens": 16384, "temperature": None},
+    PROMPT_PROTOCOL_EXTRACTION: {"model": "strata/unsloth-iq4_xs", "timeout": 3600, "max_tokens": 65536, "temperature": None},
+    PROMPT_SCHEMA_SELF_CORRECTION: {"model": "strata/unsloth-iq4_xs", "timeout": 3600, "max_tokens": 65536, "temperature": None},
+    PROMPT_RAG_QUERY_FORMULATION: {"model": "strata/unsloth-iq4_xs", "timeout": 900, "max_tokens": 16384, "temperature": None},
+    PROMPT_COMPILER_REPAIR: {"model": "strata/unsloth-iq4_xs", "timeout": 3600, "max_tokens": 65536, "temperature": None},
+    PROMPT_THINK_SYNTHESIZER: {"model": "strata/unsloth-iq4_xs", "timeout": 3600, "max_tokens": 65536, "temperature": 0.2},
 }
 
 # Built-in fallback prompt bodies if a file in prompts/ is missing or empty
@@ -12363,7 +13151,7 @@ def parse_llm_json(raw_content: Optional[str]) -> Any:
 
 ### `src/rag_retriever_client.py`
 
-*sha256:`89a9564efef3` · 1109 lines · 48.5 KB (~12,418 tokens) · lang:`python`*
+*sha256:`681a399d2a50` · 1124 lines · 49.2 KB (~12,591 tokens) · lang:`python`*
 
 ```python
 """CPSA 4.4.9 Knowledge Base Indexer, `TOC.md` Flag Manager, and Agentic Searcher Client.
@@ -13112,6 +13900,13 @@ def retrieve_cpsa_manual_guidance(
     return fallback_message
 
 
+def _term_to_compact_sexpr(term: Any) -> str:
+    """Formats a JSON prefix term tree as a compact S-expression string for Searcher inspection."""
+    if isinstance(term, list):
+        return "(" + " ".join(_term_to_compact_sexpr(sub) for sub in term) + ")"
+    return str(term)
+
+
 def _summarize_failing_ast_for_searcher(failing_spec: Any) -> str:
     """Produces a compact structural summary of the failing `CPSAProtocolSpecification`
     so the Searcher LLM can inspect role variables, sorts, trace events (`send`/`recv`),
@@ -13128,9 +13923,9 @@ def _summarize_failing_ast_for_searcher(failing_spec: Any) -> str:
             for ev in r.get("trace", []):
                 direction = ev.get("direction", "?")
                 ch = ev.get("channel")
-                msg_str = json.dumps(ev.get("message_term"))
-                if len(msg_str) > 120:
-                    msg_str = msg_str[:117] + "..."
+                msg_str = _term_to_compact_sexpr(ev.get("message_term"))
+                if len(msg_str) > 600:
+                    msg_str = msg_str[:597] + "..."
                 trace_events.append(f"({direction}{f' {ch}' if ch else ''} {msg_str})")
             lines.append(
                 f"  Role '{r.get('role_name')}': vars=[{vars_str}] | "
@@ -13174,10 +13969,18 @@ def run_agentic_cpsa_searcher(
         return "Review standard MITRE CPSA 4.4.9 executability and preskeleton assumption rules."
 
     ast_summary = _summarize_failing_ast_for_searcher(failing_spec) if failing_spec is not None else ""
-    ast_hash = hashlib.sha256(ast_summary.encode("utf-8")).hexdigest()[:16]
+    proto_name = getattr(failing_spec, "protocol_name", "") if failing_spec is not None else ""
+    diag_for_key = re.sub(r"\(at \.scm line.*?\)", "", error_diagnostic[:220]).strip()
+    diag_for_key = re.sub(r"Undeclared variable\s+\S+", "Undeclared variable <VAR>", diag_for_key)
+    diag_for_key = re.sub(r"[0-9]+", "#", diag_for_key)
+    ast_hash = (
+        hashlib.sha256(proto_name.encode("utf-8")).hexdigest()[:16]
+        if "Undeclared variable <VAR>" in diag_for_key
+        else hashlib.sha256(ast_summary.encode("utf-8")).hexdigest()[:16]
+    )
 
     # Normalize error signature AND include AST hash so AST-specific diagnoses never bleed across RFCs
-    norm_sig = f"{failure_stage}:{ast_hash}:{re.sub(r'[0-9]+', '#', error_diagnostic[:220])}"
+    norm_sig = f"{failure_stage}:{ast_hash}:{diag_for_key}"
     if not cycle_detected and norm_sig in _SEARCH_CACHE:
         cached_query, cached_guidance, cached_ids, cached_diag, cached_trace = _SEARCH_CACHE[norm_sig]
         LAST_SEARCHER_QUERY = cached_query
@@ -13188,7 +13991,7 @@ def run_agentic_cpsa_searcher(
 
     searcher_spec = load_prompt_spec(PROMPT_RAG_QUERY_FORMULATION)
     searcher_model = model or searcher_spec.model
-    sampling_temp = searcher_spec.temperature if searcher_spec.temperature is not None else 0.0
+    sampling_temp = searcher_spec.temperature
 
     algebra_hint = getattr(failing_spec, "message_algebra", "basic") if failing_spec is not None else "basic"
 
@@ -13501,7 +14304,7 @@ __all__ = [
 
 ### `src/semantic_extraction/constrained_protocol_extractor.py`
 
-*sha256:`61484e869de2` · 443 lines · 19.5 KB (~4,993 tokens) · lang:`python`*
+*sha256:`d20398caaa8f` · 448 lines · 19.5 KB (~4,998 tokens) · lang:`python`*
 
 ```python
 """Constrained Protocol Semantic Extractor with RAG Grounding.
@@ -13557,7 +14360,7 @@ def extract_protocol_specification(
     }
     extraction_spec = load_prompt_spec(PROMPT_PROTOCOL_EXTRACTION)
     model_name = model or extraction_spec.model
-    sampling_temp = extraction_spec.temperature if extraction_spec.temperature is not None else 0.0
+    sampling_temp = extraction_spec.temperature
     logger.info("Extracting CPSAProtocolSpecification for '%s' using %s", protocol_name, model_name)
 
     principals_hint = f"Expected Principals: {', '.join(principals)}" if principals else ""
@@ -13578,14 +14381,19 @@ def extract_protocol_specification(
         CPSAProtocolSpecification,
     )
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
-        model_name,
-        temperature=sampling_temp,
-        max_tokens=extraction_spec.max_tokens,
-        json_mode=True,
-    )
     response = None
     for retry_idx in range(3):
+        effective_temp = (
+            max(0.5, sampling_temp or 0.0)
+            if retry_idx > 0
+            else sampling_temp
+        )
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            model_name,
+            temperature=effective_temp,
+            max_tokens=extraction_spec.max_tokens,
+            json_mode=True,
+        )
         try:
             response = litellm.completion(
                 **llm_kwargs,
@@ -13650,7 +14458,7 @@ def extract_protocol_specification(
             correction_prompt = f"{correction_template}\n\nValidation Errors:\n{validation_error}"
 
         corr_model = model or corr_spec.model
-        corr_temp = corr_spec.temperature if corr_spec.temperature is not None else 0.0
+        corr_temp = corr_spec.temperature
         corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
             corr_model,
             temperature=corr_temp,
@@ -13706,7 +14514,7 @@ def extract_protocol_specification(
         )
         corr_spec = load_prompt_spec(PROMPT_SCHEMA_SELF_CORRECTION)
         corr_model = model or corr_spec.model
-        corr_temp = corr_spec.temperature if corr_spec.temperature is not None else 0.0
+        corr_temp = corr_spec.temperature
         corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
             corr_model,
             temperature=corr_temp,
@@ -13953,16 +14761,17 @@ def ensure_three_point_of_view_skeletons(spec: CPSAProtocolSpecification) -> CPS
 
 ### `src/system_config.py`
 
-*sha256:`ab00a4a08cd7` · 154 lines · 6.9 KB (~1,756 tokens) · lang:`python`*
+*sha256:`590f02a01d64` · 175 lines · 7.6 KB (~1,935 tokens) · lang:`python`*
 
 ```python
 """Global environment, binary paths, execution limits, and provider configuration."""
 
 import os
+import shutil
 import warnings
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
 import litellm
 from pydantic_settings import BaseSettings
@@ -13971,7 +14780,7 @@ from pydantic_settings import BaseSettings
 litellm.suppress_debug_info = True
 litellm.set_verbose = False
 litellm.drop_params = True
-litellm.request_timeout = 1500
+litellm.request_timeout = 3600
 for _logger_name in ("LiteLLM", "litellm", "LiteLLM Proxy", "LiteLLM Router"):
     logging.getLogger(_logger_name).setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=".*litellm.*")
@@ -14019,12 +14828,33 @@ class SystemEnvironmentConfig(BaseSettings):
     STRATA_API_KEY: str = os.getenv("STRATA_API_KEY", "local-strata")
 
     # Compiler & Harness Execution Limits
-    LLM_TIMEOUT_SECONDS: int = 1500
+    LLM_TIMEOUT_SECONDS: int = 3600
     CPSA_TIMEOUT_SECONDS: int = 15
     ROLETRAN_TIMEOUT_SECONDS: int = 15
     MAX_REPAIR_ATTEMPTS: int = 10
 
     model_config = {"env_file": ".env", "extra": "ignore"}
+
+    def verify_cpsa_toolchain(self) -> List[str]:
+        """Verifies that required MITRE CPSA 4.4.9 binaries exist on disk or PATH.
+        Returns a list of missing binary names (empty list if all are present).
+        """
+        required_bins = [
+            ("cpsa4", self.CPSA4_BIN),
+            ("cpsa4json", self.CPSA4JSON_BIN),
+            ("cpsa4roletran", self.CPSA4ROLETRAN_BIN),
+            ("cpsa4shapes", self.CPSA4SHAPES_BIN),
+            ("cpsa4graph", self.CPSA4GRAPH_BIN),
+        ]
+        missing: List[str] = []
+        for bin_name, bin_path in required_bins:
+            if bin_path.exists() and os.access(bin_path, os.X_OK):
+                continue
+            found_on_path = shutil.which(bin_name)
+            if found_on_path:
+                continue
+            missing.append(f"{bin_name} (expected at {bin_path})")
+        return missing
 
     # Live model properties backed directly by `prompts/*.md` YAML frontmatter
     @property
@@ -14073,6 +14903,8 @@ class SystemEnvironmentConfig(BaseSettings):
         kwargs: Dict[str, Any] = {"model": model_name}
         effective_max_tokens = int(max_tokens) if (max_tokens is not None and max_tokens > 0) else 65536
         kwargs["max_tokens"] = effective_max_tokens
+        if temperature is not None:
+            kwargs["temperature"] = float(temperature)
 
         is_local_provider = model_name.startswith("strata/") or model_name.startswith("ollama/")
         if json_mode and not is_local_provider:
@@ -14102,9 +14934,6 @@ class SystemEnvironmentConfig(BaseSettings):
             if self.ANTHROPIC_API_KEY:
                 kwargs["api_key"] = self.ANTHROPIC_API_KEY
 
-        # Omit `temperature` from outbound API requests: modern reasoning & frontier models
-        # (gpt-5/6, gemini-3/4, claude, glm-5, deepseek) either reject temperature != 1.0
-        # when reasoning is active or perform best at their provider-native default.
         return kwargs
 
 
@@ -14164,7 +14993,7 @@ __all__ = [
 
 ### `src/verification_engine/compiler_diagnostic_repair.py`
 
-*sha256:`b65cb479ecc1` · 281 lines · 12.1 KB (~3,094 tokens) · lang:`python`*
+*sha256:`d2483d873015` · 295 lines · 12.6 KB (~3,232 tokens) · lang:`python`*
 
 ```python
 """Compiler Diagnostic Repair Engine with RAG-Guided Self-Healing.
@@ -14283,6 +15112,7 @@ def repair_protocol_specification(
     query_model: Optional[str] = None,
     cycle_detected: bool = False,
     use_agentic_searcher: bool = True,
+    prior_attempts: Optional[list] = None,
 ) -> CPSAProtocolSpecification:
     """Uses Two-Speed Pinned Header + Agentic CPSA Knowledge Base Searcher to patch a failing CPSAProtocolSpecification."""
     repair_spec = load_prompt_spec(PROMPT_COMPILER_REPAIR)
@@ -14362,10 +15192,18 @@ def repair_protocol_specification(
     if len(verbatim_slice) > 3000:
         slice_snippet += "\n... [Remaining RFC specification text truncated for compiler repair pass] ..."
 
+    prior_history_block = ""
+    if prior_attempts:
+        joined_history = "\n".join(f"- {item}" for item in prior_attempts)
+        prior_history_block = (
+            f"\n\nPrior Failed Repair Attempts on This Specification (Do NOT repeat edits that caused these errors):\n"
+            f"{joined_history}"
+        )
+
     user_prompt = (
         f"Failing Protocol: {failing_spec.protocol_name}\n"
         f"Failure Stage: {failure_stage}\n"
-        f"Compiler Diagnostic / Error:\n{error_diagnostic}\n\n"
+        f"Compiler Diagnostic / Error:\n{error_diagnostic}{prior_history_block}\n\n"
         "MITRE CPSA Reference Guidance (Helper Only - Explains syntax rules and failure mechanisms):\n"
         f"{guidance_text}\n\n"
         "Verbatim RFC Exchange Specification (Excerpt for repair context):\n"
@@ -14375,22 +15213,27 @@ def repair_protocol_specification(
         "Provide the complete repaired CPSAProtocolSpecification resolving the error without inventing fictional protocol terms."
     )
 
-    # Use higher temperature if cycle detected to break greedy minimum
-    base_temp = repair_spec.temperature if repair_spec.temperature is not None else 0.0
-    sampling_temperature = max(0.4, base_temp) if cycle_detected else base_temp
+    # Use higher temperature if cycle detected or on timeout retry to break out of repetitive token loops
+    base_temp = repair_spec.temperature
+    sampling_temperature = max(0.5, base_temp or 0.0) if cycle_detected else base_temp
     system_prompt = build_schema_system_prompt(
         PROMPT_COMPILER_REPAIR,
         CPSAProtocolSpecification,
     )
 
-    llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
-        model_name,
-        temperature=sampling_temperature,
-        max_tokens=repair_spec.max_tokens,
-        json_mode=True,
-    )
     response = None
     for retry_idx in range(4):
+        effective_temp = (
+            max(0.5, sampling_temperature or 0.0)
+            if retry_idx > 0
+            else sampling_temperature
+        )
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            model_name,
+            temperature=effective_temp,
+            max_tokens=repair_spec.max_tokens,
+            json_mode=True,
+        )
         try:
             response = litellm.completion(
                 **llm_kwargs,
@@ -14777,7 +15620,7 @@ def execute_mitre_make_build(
 
 ### `src/verification_engine/roletran_executability_gate.py`
 
-*sha256:`1e3ff9b9832e` · 141 lines · 6.4 KB (~1,650 tokens) · lang:`python`*
+*sha256:`a32baef5a33b` · 151 lines · 7.2 KB (~1,837 tokens) · lang:`python`*
 
 ```python
 """MITRE CPSA Roletran Pre-Flight Executability Gate (<15 ms)."""
@@ -14817,10 +15660,12 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
             scm_content = f.read()
 
         is_dh = "diffie-hellman" in scm_content
-        if is_dh:
-            # MITRE CPSA 4.4.9 cpsa4roletran only supports basic algebra.
-            # For Diffie-Hellman protocols, validate pre-flight syntax and role well-formedness using cpsa4.
-            logger.info("Protocol uses diffie-hellman message algebra; executing cpsa4 pre-flight validation gate")
+        has_stateful_locn = bool(re.search(r"\(\s*(?:load|stor)\b|\blocn\s*\)", scm_content))
+        if is_dh or has_stateful_locn:
+            # MITRE CPSA 4.4.9 cpsa4roletran only supports stateless basic algebra (send/recv over chan).
+            # For Diffie-Hellman or stateful locn/load/stor protocols, validate pre-flight syntax and role well-formedness using cpsa4.
+            feature_label = "diffie-hellman" if is_dh else "stateful locn/load/stor"
+            logger.info("Protocol uses %s; executing cpsa4 -l 1 pre-flight validation gate", feature_label)
             proc = subprocess.run(
                 [str(SYSTEM_CONFIG.CPSA4_BIN), "-l", "1", str(scm_path)],
                 capture_output=True,
@@ -14857,7 +15702,7 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
                             error_msg = line.strip()
                             break
                 error_msg = error_msg or stderr_output[:300] or combined[:300]
-                logger.warning("Diffie-Hellman pre-flight validation REJECT: %s", error_msg)
+                logger.warning("Pre-flight cpsa4 -l 1 validation REJECT: %s", error_msg)
                 return RoletranVerificationResult(
                     is_executable=False,
                     error_diagnostic=error_msg,
@@ -14865,7 +15710,7 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
                     validator_binary="cpsa4 -l 1",
                     roletran_algebra_supported=False,
                 )
-            logger.info("Diffie-Hellman pre-flight validation PASS: All roles are algebraically well-formed")
+            logger.info("Pre-flight cpsa4 -l 1 validation PASS: All roles are algebraically well-formed")
             return RoletranVerificationResult(
                 is_executable=True,
                 procedural_defproc_code=None,
@@ -14894,11 +15739,19 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
                 raw_stderr="",
             )
 
-        # Parse error message: e.g. ":6:6: Received term cannot be fully destructured"
+        # Parse error message and preserve line/col context: e.g. ":6:6: Received term cannot be fully destructured"
         clean_error = stderr_output
-        match = re.search(r":\d+:\d+:\s*(.*)", stderr_output)
+        match = re.search(r":(\d+):(\d+):\s*(.*)", stderr_output)
         if match:
-            clean_error = match.group(1).strip()
+            line_no = int(match.group(1))
+            col_no = int(match.group(2))
+            core_msg = match.group(3).strip()
+            scm_lines = scm_content.splitlines()
+            offending_line = scm_lines[line_no - 1].strip() if 1 <= line_no <= len(scm_lines) else ""
+            if offending_line:
+                clean_error = f"{core_msg} (at .scm line {line_no}, col {col_no}: `{offending_line[:160]}`)"
+            else:
+                clean_error = f"{core_msg} (at .scm line {line_no}, col {col_no})"
 
         logger.warning("Roletran REJECT: %s", clean_error)
         return RoletranVerificationResult(
@@ -15387,7 +16240,7 @@ def generate_snowball_autopsy_report(
 
 ### `src/verification_engine/trajectory_metadata_exporter.py`
 
-*sha256:`bd6ac4396e41` · 1067 lines · 43.3 KB (~11,093 tokens) · lang:`python`*
+*sha256:`62a363878d5b` · 1114 lines · 45.7 KB (~11,707 tokens) · lang:`python`*
 
 ```python
 """Programmatic Trajectory & Formal Verification Metadata Exporter.
@@ -15477,15 +16330,29 @@ def _extract_clause_block(sexpr: str, keyword: str) -> Optional[str]:
     return blocks[0] if blocks else None
 
 
-def _extract_root_deflistener(sexpr: str) -> Optional[str]:
-    """Extracts the listener term from a root preskeleton if `(deflistener ...)` is present outside `(operation ...)`."""
+def _extract_root_deflisteners(sexpr: str) -> List[str]:
+    """Extracts all listener terms from a root preskeleton if `(deflistener ...)` clauses are present outside `(operation ...)`."""
     op_block = _extract_clause_block(sexpr, "operation")
     cleaned = sexpr.replace(op_block, "") if op_block else sexpr
-    dl_block = _extract_clause_block(cleaned, "deflistener")
-    if not dl_block:
-        return None
-    inner = re.sub(r"^\(\s*deflistener\s+", "", dl_block[:-1]).strip()
-    return inner
+    stripped = cleaned.strip()
+    inner_body = (
+        stripped[1:-1]
+        if (stripped.startswith("(") and stripped.endswith(")"))
+        else stripped
+    )
+    terms: List[str] = []
+    for sub in split_top_level_sexprs(inner_body):
+        if re.match(r"^\(\s*deflistener\b", sub):
+            inner = re.sub(r"^\(\s*deflistener\s+", "", sub[:-1]).strip()
+            if inner:
+                terms.append(inner)
+    return terms
+
+
+def _extract_root_deflistener(sexpr: str) -> Optional[str]:
+    """Extracts the first listener term from a root preskeleton if `(deflistener ...)` is present outside `(operation ...)`."""
+    terms = _extract_root_deflisteners(sexpr)
+    return terms[0] if terms else None
 
 
 def _extract_skeleton_vars_sorts(sexpr: str) -> Dict[str, str]:
@@ -15804,8 +16671,9 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
         is_shape = _has_flag_clause(block, "shape")
 
         if parent is None:
-            listener_term = _extract_root_deflistener(block)
-            has_listener = listener_term is not None
+            listener_terms = _extract_root_deflisteners(block)
+            listener_term = listener_terms[0] if listener_terms else None
+            has_listener = bool(listener_terms)
             initial_strands = _extract_defstrands(block)
             group_idx = len(preskeleton_groups)
             if lbl is not None:
@@ -15818,6 +16686,7 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
                 "comment": _extract_comment_string(block),
                 "has_deflistener": has_listener,
                 "listener_term": listener_term,
+                "listener_terms": listener_terms,
                 "initial_strand_count": len(initial_strands),
                 "realized_shape_labels": [],
                 "realized_shapes_count": 0,
@@ -16000,13 +16869,19 @@ def compute_security_findings(
     protected_secrets: List[str] = []
     leaked_secrets: List[str] = []
     for l_pov in listener_povs:
-        term = l_pov.get("listener_term") or f"listener_label_{l_pov.get('root_label')}"
+        terms = l_pov.get("listener_terms") or (
+            [l_pov["listener_term"]]
+            if l_pov.get("listener_term")
+            else [f"listener_label_{l_pov.get('root_label')}"]
+        )
         if l_pov.get("realized_shapes_count", 0) == 0:
-            if term not in protected_secrets:
-                protected_secrets.append(term)
+            for term in terms:
+                if term not in protected_secrets:
+                    protected_secrets.append(term)
         else:
-            if term not in leaked_secrets:
-                leaked_secrets.append(term)
+            for term in terms:
+                if term not in leaked_secrets:
+                    leaked_secrets.append(term)
 
     if not listener_povs:
         secrecy_status = "NOT_APPLICABLE_NO_LISTENER"
@@ -16095,6 +16970,7 @@ def compute_quality_assessment(
     roletran_passed: bool = True,
     has_cryptographic_primitives: bool = True,
     security_findings: Optional[Dict[str, Any]] = None,
+    final_spec: Optional[CPSAProtocolSpecification] = None,
 ) -> Dict[str, Any]:
     """Computes the deterministic 4-tier translation & modeling quality grade (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`).
 
@@ -16153,9 +17029,32 @@ def compute_quality_assessment(
         o.get("realized_shapes_count", 0) == 0 for o in listener_povs
     )
 
+    # Detect truncated initiator trace where responder sends a reply that no role ever receives (e.g. RFC 3971)
+    has_dangling_response_flight = False
+    if final_spec and len(final_spec.roles) >= 2:
+        total_sends = sum(1 for r in final_spec.roles for ev in r.trace if ev.direction == "send")
+        total_recvs = sum(1 for r in final_spec.roles for ev in r.trace if ev.direction == "recv")
+        has_send_only_role = any(
+            len(r.trace) == 1 and r.trace[0].direction == "send" for r in final_spec.roles
+        )
+        has_recv_and_send_role = any(
+            any(ev.direction == "recv" for ev in r.trace) and any(ev.direction == "send" for ev in r.trace)
+            for r in final_spec.roles
+        )
+        any_trivial_pov = any(bool(o.get("is_trivial_single_strand_shape")) for o in participant_povs)
+        if has_send_only_role and has_recv_and_send_role and total_sends > total_recvs and any_trivial_pov:
+            has_dangling_response_flight = True
+            anomaly_msg = (
+                "INCOMPLETE_INITIATOR_TRACE: Responder sends a reply flight that no role receives, "
+                "leaving the initiator POV as a 1-strand trivial shape."
+            )
+            if anomaly_msg not in sec_report.get("vulnerabilities_and_anomalies", []):
+                sec_report.setdefault("vulnerabilities_and_anomalies", []).append(anomaly_msg)
+                sec_report["anomalies_count"] = len(sec_report["vulnerabilities_and_anomalies"])
+
     if not all_povs_realized or not has_cryptographic_primitives or any_preseeded_no_progress:
         tier = "BRONZE"
-    elif roletran_passed and causal_multi_pov_count >= 1:
+    elif roletran_passed and causal_multi_pov_count >= 1 and not has_dangling_response_flight:
         tier = "GOLD"
     else:
         tier = "SILVER"
@@ -16258,6 +17157,7 @@ def write_trajectory_metadata_bundle(
         roletran_passed=roletran_passed,
         has_cryptographic_primitives=has_crypto,
         security_findings=security_findings,
+        final_spec=final_spec,
     )
 
     stage6_full = {

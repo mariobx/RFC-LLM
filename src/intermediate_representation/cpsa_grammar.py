@@ -240,12 +240,11 @@ CPSA_TERM_JSON_SCHEMA: Dict[str, Any] = {
     "title": "CPSATerm",
     "description": (
         "A CPSA 4.4.9 message term: an identifier atom string (e.g. client_random, K_ab), "
-        "an integer constant, or a prefix S-expression list [operator, ...args] where operator "
+        "a quoted constant tag literal (e.g. '\"tag_v1\"'), or a prefix S-expression list [operator, ...args] where operator "
         "is strictly one of: enc, hash, cat, pubk, privk, invk, ltk, bltk, exp, gen, mul, rec, one."
     ),
     "anyOf": [
-        {"type": "string", "description": "Identifier atom, variable, or string literal"},
-        {"type": "integer", "description": "Integer constant"},
+        {"type": "string", "description": "Declared variable identifier or constant tag string"},
         {
             "type": "array",
             "description": "Prefix operator expression: [operator, ...subterms]",
@@ -256,8 +255,7 @@ CPSA_TERM_JSON_SCHEMA: Dict[str, Any] = {
                         "enum": sorted(list(CPSA_ALL_OPERATORS)),
                         "description": "Leading CPSA 4.4.9 operator keyword",
                     },
-                    {"type": "string", "description": "Subterm variable or constant"},
-                    {"type": "integer"},
+                    {"type": "string", "description": "Subterm variable or constant tag string"},
                     {"type": "array", "description": "Nested subterm expression"},
                 ]
             },
@@ -294,11 +292,15 @@ def desugar_term_tree(term: Any) -> Any:
             normalized_list[0] = CPSA_DESUGAR_MAP[operator]
         return [desugar_term_tree(subterm) for subterm in normalized_list]
 
+    if isinstance(term, int) and not isinstance(term, bool):
+        return f'"{term}"'
+
     if isinstance(term, dict):
         # Extract atomic identifier name from dictionary variable representation
         for key in ("name", "variable", "identifier", "var", "id", "atom", "field", "val", "value"):
-            if key in term and isinstance(term[key], str):
-                return term[key]
+            if key in term and isinstance(term[key], (str, int)):
+                val = term[key]
+                return f'"{val}"' if isinstance(val, int) and not isinstance(val, bool) else val
         if "term" in term:
             return desugar_term_tree(term["term"])
         if "args" in term and isinstance(term.get("op"), str):

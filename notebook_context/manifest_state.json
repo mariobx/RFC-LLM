@@ -4,16 +4,29 @@
     "added": [],
     "deleted": [],
     "modified": [
-      "logs/pipeline_runs.csv",
-      "src/document_ingestion/protocol_applicability_gate.py",
-      "src/logging_config.py",
+      "README.md",
+      "docs/INTERMEDIATE_REPRESENTATION.md",
+      "docs/TIERED_MODEL_ROUTING.md",
+      "docs/VERIFICATION_AND_SELF_HEALING.md",
+      "prompts/03_protocol_extraction.md",
+      "prompts/04_schema_self_correction.md",
+      "prompts/06_compiler_repair.md",
+      "prompts/07_think_token_synthesizer.md",
+      "refrences/cpsa_kb/01_core_rules/00_json_ast_to_cpsa_scheme_mapping.md",
+      "refrences/cpsa_kb/01_core_rules/07_compiler_and_solver_error_catalog.md",
+      "src/document_ingestion/handshake_section_router.py",
+      "src/document_ingestion/rfc_header_filter.py",
+      "src/document_ingestion/rfc_toc_parser.py",
+      "src/document_ingestion/verbatim_section_slicer.py",
+      "src/intermediate_representation/cpsa_grammar.py",
+      "src/intermediate_representation/protocol_syntax_tree.py",
       "src/main_pipeline_orchestrator.py",
-      "src/pipeline.py",
-      "src/pipeline_events.py",
+      "src/prompt_loader.py",
+      "src/rag_retriever_client.py",
+      "src/system_config.py",
+      "src/verification_engine/compiler_diagnostic_repair.py",
+      "src/verification_engine/roletran_executability_gate.py",
       "src/verification_engine/trajectory_metadata_exporter.py",
-      "src/visualizer/server.py",
-      "src/visualizer/static/index.html",
-      "tests/test_cpsa_kb_and_agentic_searcher.py",
       "tests/test_trajectory_and_hardening.py"
     ]
   },
@@ -38,8 +51,8 @@
     },
     "README.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "14a33801a2747aaad0ad9f79d101db31d8c2ebd8c933a05d785793d37f6c2f2e",
-      "size_bytes": 9681,
+      "sha256": "0d23cf339357839465e6a8886ee8dbd09c28ca7c30360f03b3b3ea7dcda496f4",
+      "size_bytes": 10054,
       "status": "included"
     },
     "docs/ARCHITECTURE.md": {
@@ -56,8 +69,8 @@
     },
     "docs/INTERMEDIATE_REPRESENTATION.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "b8ffe1824b6d1ca86f58b84639a3966f257483d04b86db2c1267f23440d193ad",
-      "size_bytes": 9985,
+      "sha256": "41f007a8e16e9dc7ee1954a20bf5c3d82dd0823a111f73153c88fcec3c5e7c4c",
+      "size_bytes": 10719,
       "status": "included"
     },
     "docs/MASTER_BLUEPRINT.md": {
@@ -80,14 +93,14 @@
     },
     "docs/TIERED_MODEL_ROUTING.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "a123b2b26cf6cdba8539b0956a0314f0166883e1ff4d45c7aa87b049146bb71b",
-      "size_bytes": 7227,
+      "sha256": "aa3648f5448229e47b85523a7f7fcc2fe175e98dff3d22e837f899f8b9995790",
+      "size_bytes": 7324,
       "status": "included"
     },
     "docs/VERIFICATION_AND_SELF_HEALING.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "ae94e3bb7f1345a1077dfb18ac7b80727dabcb8fbca240ada767979495dc1e64",
-      "size_bytes": 11657,
+      "sha256": "279470e2950a12b4d84cbc78e1a7be4e0bf15c7be1509e559aa393c07b27a963",
+      "size_bytes": 12105,
       "status": "included"
     },
     "logs/.gitignore": {
@@ -104,43 +117,43 @@
     },
     "prompts/01_applicability_gate.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "c63a448c849fd8a0919277a0b2e43e0cedaa413064e449b5c47436b1c6f02c67",
-      "size_bytes": 2739,
+      "sha256": "9f63d4594e6d0576b4d4ded02a8df561d3f804861c78ca962f744b0c0de48f60",
+      "size_bytes": 2721,
       "status": "included"
     },
     "prompts/02_section_router.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "6073cacf8e4c1a79c35e2d91be476965f910944f2eab3ed86fb7878424d6373c",
-      "size_bytes": 1641,
+      "sha256": "918d738d3659c36f9cdefd16acd8643832fa966925423c7f6e5ed983fc54f5a3",
+      "size_bytes": 1860,
       "status": "included"
     },
     "prompts/03_protocol_extraction.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "7a39ea35c74e7dc73de3f094eb149006043a5b9e35e4a6e645aaf94e4f01aed6",
-      "size_bytes": 11656,
+      "sha256": "0dbebc786f8f8067936c2723922e172f8fa0239b321caadba8d17ec3404d31d1",
+      "size_bytes": 13031,
       "status": "included"
     },
     "prompts/04_schema_self_correction.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "074f705a8930f905b6fa03fa70909ffe60fdc2620ea03f99405477572cc67217",
-      "size_bytes": 1649,
+      "sha256": "46077c8e92f46197be3ec80146d682f09e0f639457516aa604eb21e50d80c6e6",
+      "size_bytes": 1674,
       "status": "included"
     },
     "prompts/05_rag_query_formulation.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "7d116cf8f4f15c42d3b11f8c07104f4c5c959da51194ddfbe5adfc0e5c686d64",
-      "size_bytes": 2840,
+      "sha256": "893fc10d2a844c9f454a6b57aad17f2dfde2b2e5d2023811cd817530fcf6e528",
+      "size_bytes": 2822,
       "status": "included"
     },
     "prompts/06_compiler_repair.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "3c2a33b75aadcc8adcef550af0f4769532c2d40ee7897564a79fe40cc90d8b4f",
-      "size_bytes": 9448,
+      "sha256": "29fa722cf12ef5fd994d6af7c4d0b5d693a38f73f44f900805fee4e3a3b7d6da",
+      "size_bytes": 10293,
       "status": "included"
     },
     "prompts/07_think_token_synthesizer.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "bc39caba79f42ffdf7036f75f0ed1d376779244fa105b48f79833e1d65daeb24",
+      "sha256": "3035af57c8c4f5bc7a810cd47b33ae8810756837f90d52c091d1fb7d673556da",
       "size_bytes": 3830,
       "status": "included"
     },
@@ -164,8 +177,8 @@
     },
     "refrences/cpsa_kb/01_core_rules/00_json_ast_to_cpsa_scheme_mapping.md": {
       "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
-      "sha256": "2f735a9f8ff9aed16c6e7d12e6a528d095537328c2218eb2aabe13d40556de1e",
-      "size_bytes": 22785,
+      "sha256": "0c05334e3143bebcf2dadea2d3d410d6ce70dadd3794c9a3ecef71509f218fb7",
+      "size_bytes": 23141,
       "status": "included"
     },
     "refrences/cpsa_kb/01_core_rules/01_algebra_sorts_and_operators.md": {
@@ -206,8 +219,8 @@
     },
     "refrences/cpsa_kb/01_core_rules/07_compiler_and_solver_error_catalog.md": {
       "bundle": "03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md",
-      "sha256": "065ded1b6bde3e677279ae48289afe760dc2b2208ffc4cdcb1bf25ba19a09538",
-      "size_bytes": 50657,
+      "sha256": "9e0dd0f23b82b3c87344eca99b1be06ea9c9c46ceffc7c4a66372fc461d90838",
+      "size_bytes": 51380,
       "status": "included"
     },
     "refrences/cpsa_kb/02_manuals/01_CPSA4_User_Manual.md": {
@@ -1262,32 +1275,32 @@
     },
     "src/document_ingestion/handshake_section_router.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "23a4b284b4d4a323060623b823aa55a969bd83eb00f134637e63533a2b1190af",
-      "size_bytes": 5809,
+      "sha256": "9d6c18dd3001212ff5fe0c5ee0c9ad14fdaf1f3740d8509c6db6ca4ffd63bbd4",
+      "size_bytes": 8128,
       "status": "included"
     },
     "src/document_ingestion/protocol_applicability_gate.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "e8cb40b8764ab2d7b454c2f02beb3fd0803b10b64721dc0e2bce819527bd5a10",
-      "size_bytes": 5482,
+      "sha256": "bc190bacc005a9466ebfbe1f11224a3feb0ce55ebe1b9a696219a582fd3039e4",
+      "size_bytes": 5434,
       "status": "included"
     },
     "src/document_ingestion/rfc_header_filter.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "9b874aada184f4167ffd627b820d1aed101654c492b4b2d25ba929eda2558288",
-      "size_bytes": 6637,
+      "sha256": "ee1e8df89d048993d993d27a861c1c608e03d44bef261002d6216924a1435b9f",
+      "size_bytes": 7420,
       "status": "included"
     },
     "src/document_ingestion/rfc_toc_parser.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "b3d2e386a414af3be58c844299e6b45ef9bb592ac5574cfacb843448e26b9170",
-      "size_bytes": 5694,
+      "sha256": "4920983a2cc935b44f6a4f85e9d3a4595f645aa4da30e1941db1e437ecc0d82f",
+      "size_bytes": 5982,
       "status": "included"
     },
     "src/document_ingestion/verbatim_section_slicer.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "d1d0163243a33f9b14a6a23ec567e1e444bddaf3fb24d5d19719cb796af620b3",
-      "size_bytes": 5683,
+      "sha256": "ebee5f9bcfaeb8dc6625c72933aabfc0ddd59752041a02db0848f56a93969a09",
+      "size_bytes": 9398,
       "status": "included"
     },
     "src/generate_think/__init__.py": {
@@ -1328,32 +1341,32 @@
     },
     "src/intermediate_representation/cpsa_grammar.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "34ecf7421abbcedecc8090f46a0fdc0dc3a3c81f0366d2a6417fa1ab0964783f",
-      "size_bytes": 14211,
+      "sha256": "90cc41d7d8cc7f5f5118a89d2e5619ee63137ac64c9e27de3c8cfd2e4d271878",
+      "size_bytes": 14346,
       "status": "included"
     },
     "src/intermediate_representation/protocol_syntax_tree.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "9bbce3796776cc812fd50637375917836942d7dcefcb235eaaccb6b7f7b66acc",
-      "size_bytes": 36623,
+      "sha256": "26d26dec0630441863e6ad433d1df5b36161b13133c5268e253343b153bf54d4",
+      "size_bytes": 56442,
       "status": "included"
     },
     "src/logging_config.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "879a2721f42c90a9bcda8e06f60d00059d83dd3df59bccedcaa5fc4bd0923f96",
-      "size_bytes": 29956,
+      "sha256": "f27629aeabb146439c15cc4f357d711566fae5d621442b97d052cad4e15718a1",
+      "size_bytes": 34597,
       "status": "included"
     },
     "src/main_pipeline_orchestrator.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "f276de706842e34f52a6cc11869a2f8d666d875f556c45059396007e776eb67b",
-      "size_bytes": 56977,
+      "sha256": "d896b2c29551f719cf57a67938dfcf4bfe6f77d21a35debc6d2002d956fa7a28",
+      "size_bytes": 63833,
       "status": "included"
     },
     "src/pipeline.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "60b713ea2277d77e5ca3ad12d2c5baa527c028e898b3a573ac4b9f5af7ce8725",
-      "size_bytes": 24524,
+      "sha256": "59ac888002a9baa2180ef7de1f6d33389ed607f2e4f23ddd0721744a6d8c2b09",
+      "size_bytes": 25076,
       "status": "included"
     },
     "src/pipeline_events.py": {
@@ -1364,14 +1377,14 @@
     },
     "src/prompt_loader.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "667dc17983b9f92caa0d2f4609c3fe52a8bf9ab06403cd67b97bc803ffef7aad",
-      "size_bytes": 13004,
+      "sha256": "9934cc0348f8528141a008dab17e4d5e38530228e6368e0ff39d0386caaff674",
+      "size_bytes": 13007,
       "status": "included"
     },
     "src/rag_retriever_client.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "89a9564efef302402d23fd34257839cd1e3f5bded2b590848733eda5856914d7",
-      "size_bytes": 49677,
+      "sha256": "681a399d2a5048033bf5eac3c0be31f0e475cf08c054ec55cc7b90d28f55119e",
+      "size_bytes": 50368,
       "status": "included"
     },
     "src/semantic_extraction/__init__.py": {
@@ -1382,14 +1395,14 @@
     },
     "src/semantic_extraction/constrained_protocol_extractor.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "61484e869de2c430c76782b8db415c6e0abc689a2990e3beb4739d82a56832c4",
-      "size_bytes": 19979,
+      "sha256": "d20398caaa8f3b530199f0e73223532d20f060edd82efa8bf6b96c4abecc2081",
+      "size_bytes": 20000,
       "status": "included"
     },
     "src/system_config.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "ab00a4a08cd76a7c389f1277b4f808f7a6c89f4deea0654a889ba4bb01d32b30",
-      "size_bytes": 7025,
+      "sha256": "590f02a01d64401ff3105fe1113561c8958eb8c3d646f7500738c334cdf58c7a",
+      "size_bytes": 7741,
       "status": "included"
     },
     "src/verification_engine/__init__.py": {
@@ -1400,8 +1413,8 @@
     },
     "src/verification_engine/compiler_diagnostic_repair.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "b65cb479ecc1c37ebcf4b3ae8c5133f8b37a10ae88ae600b36eca36660b608a1",
-      "size_bytes": 12380,
+      "sha256": "d2483d873015f30f666b6d7a20545a9c4f7ad55a4a6209e7156ea8e9ac958cb1",
+      "size_bytes": 12932,
       "status": "included"
     },
     "src/verification_engine/mitre_build_orchestrator.py": {
@@ -1412,8 +1425,8 @@
     },
     "src/verification_engine/roletran_executability_gate.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "1e3ff9b9832e0ea03022f5a8bd3499430b6389a6d6fccfa4ace475aadb142d80",
-      "size_bytes": 6602,
+      "sha256": "a32baef5a33b573b37440085c96cd3aa9f37c0384a97e238238324211385232b",
+      "size_bytes": 7351,
       "status": "included"
     },
     "src/verification_engine/snowball_autopsy.py": {
@@ -1424,8 +1437,8 @@
     },
     "src/verification_engine/trajectory_metadata_exporter.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "bd6ac4396e41de4968a5e18b15279ec5672f268bdbe774a63ce6b98684baba1b",
-      "size_bytes": 44375,
+      "sha256": "62a363878d5b50198ffabc3ef7a328d220a2de3238fce7a8bdcb081297656156",
+      "size_bytes": 46833,
       "status": "included"
     },
     "src/visualizer/__init__.py": {
@@ -1490,14 +1503,14 @@
     },
     "tests/test_trajectory_and_hardening.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "fe62a412bb1384bfe3434d6abd828d4cc411a83d009e9db13f4d710da620ab59",
-      "size_bytes": 32135,
+      "sha256": "308276de7a8ee6d0148a26998fba9d9cfe173e60a58520e596477d616f7a77ae",
+      "size_bytes": 47480,
       "status": "included"
     },
     "tests/test_visualizer_and_events.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "6b9941f8ef42ef13d7fc6356d384967515a493b88da77912d36c46fbd77c2de3",
-      "size_bytes": 3805,
+      "sha256": "7084325acf2a8af10298513eaadb75f87632a7c6e568e12b8c97d397773f0650",
+      "size_bytes": 3815,
       "status": "included"
     },
     "tests/test_visualizer_tabs.py": {
@@ -1507,15 +1520,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-03 21:53:56 UTC",
+  "generated_at": "2026-11-05 18:27:58 UTC",
   "git": {
     "branch": "main",
-    "commit": "8b5b88a140020030905017025b2975da4d30dc5c",
-    "subject": "feat: 67-col CPSA security CSV, per-run --csv isolation, hover tooltips, security & live analytics tabs, and collapsible snowball autopsy"
+    "commit": "955b498002b77ce4270e7d22df6f8cb1f45dccdd",
+    "subject": "Harden local LLM timeouts, section ID normalization, hex/unnumbered RFC slicing, temperature cycle bump, and CPSA pre-flight check"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "039fdf29d2b09ee77b82228c13b6322cc6cbe64f",
-    "subject": "feat: decouple quality_tier from CPSA 4.4.9 security_findings and add --keep-ineligible CLI flag"
+    "commit": "955b498002b77ce4270e7d22df6f8cb1f45dccdd",
+    "subject": "Harden local LLM timeouts, section ID normalization, hex/unnumbered RFC slicing, temperature cycle bump, and CPSA pre-flight check"
   }
 }

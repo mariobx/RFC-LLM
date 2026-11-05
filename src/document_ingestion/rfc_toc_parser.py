@@ -29,9 +29,9 @@ TOC_HEADER_PATTERN = re.compile(r"^\s*(Table of Contents|CONTENTS)\s*$", re.IGNO
 # "   Appendix A.  Protocol Structures ..................................68"
 # "   1.  Introduction"
 TOC_LINE_PATTERN = re.compile(
-    r"^(?P<indent>\s*)(?P<sec_id>(?:(?:[0-9]+(?:\.[0-9]+)*)|(?:Appendix\s+[A-Z](?:\.[0-9]+)*)|(?:[A-Z]\.[0-9]+)))\.?\s+"
+    r"^(?P<indent>\s*)(?P<sec_id>(?:(?:[0-9]+(?:\.[0-9]+)*)|(?:Appendix\s+[A-Z](?:\.[0-9]+)*)|(?:[A-Z]\.[0-9]+)|(?:[A-Z](?=\.\s+\S+.*(?:\.{2,}|\.\s+\.)))))(?:\.|\s+-)?\s+"
     r"(?P<title>.+?)"
-    r"(?:\s*(?:\.{2,}|(?:\.\s+){2,})\s*(?P<page>[0-9]+))?\s*$",
+    r"(?:\s*(?:\.{2,}|(?:\.\s+){2,}|\.\s+)\s*(?P<page>[0-9]+))?\s*$",
     re.IGNORECASE,
 )
 
@@ -56,7 +56,7 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
         # Scan forward until the first section begins at column 0 (e.g. "1.  Introduction")
         for line in lines[toc_start_idx:]:
             # If we hit the actual start of Section 1 at column 0, TOC has ended
-            if re.match(r"^1\.?\s+[A-Z]", line):
+            if re.match(r"^1(?:\.|\s+-)?\s+[A-Z]", line):
                 break
             # Or if we hit 500 entries without stopping
             if len(entries) > 500:
@@ -112,13 +112,14 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
     if not entries:
         logger.info("No explicit TOC block found. Scanning body headings for synthetic TOC...")
         body_heading_pattern = re.compile(
-            r"^(?P<sec_id>(?:[0-9]+\.[0-9]+(?:\.[0-9]+)*\.?)|(?:[0-9]+\.)|(?:[A-Z]\.[0-9]+\.?))\s+"
+            r"^(?P<sec_id>(?:[0-9]+\.[0-9]+(?:\.[0-9]+)*(?:\.|\s+-)?)|(?:[0-9]+(?:\.|\s+-))|(?:Appendix\s+[A-Z](?:\.[0-9]+)*\.?)|(?:[A-Z]\.[0-9]+\.?))\s+"
             r"(?P<title>[A-Za-z0-9][A-Za-z0-9\s\-_,:()'\"/]{2,70})$"
         )
         for line in lines:
             match = body_heading_pattern.match(line)
             if match:
-                sec_id = match.group("sec_id").strip().rstrip(".")
+                sec_id = re.sub(r"\s+-$", "", match.group("sec_id").strip()).rstrip(".")
+                sec_id = re.sub(r"^Appendix\s+", "App-", sec_id, flags=re.IGNORECASE)
                 title = match.group("title").strip()
                 entries.append(TOCSectionEntry(section_id=sec_id, title=title, page_number=None, indent_level=0))
 

@@ -35,10 +35,12 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
             scm_content = f.read()
 
         is_dh = "diffie-hellman" in scm_content
-        if is_dh:
-            # MITRE CPSA 4.4.9 cpsa4roletran only supports basic algebra.
-            # For Diffie-Hellman protocols, validate pre-flight syntax and role well-formedness using cpsa4.
-            logger.info("Protocol uses diffie-hellman message algebra; executing cpsa4 pre-flight validation gate")
+        has_stateful_locn = bool(re.search(r"\(\s*(?:load|stor)\b|\blocn\s*\)", scm_content))
+        if is_dh or has_stateful_locn:
+            # MITRE CPSA 4.4.9 cpsa4roletran only supports stateless basic algebra (send/recv over chan).
+            # For Diffie-Hellman or stateful locn/load/stor protocols, validate pre-flight syntax and role well-formedness using cpsa4.
+            feature_label = "diffie-hellman" if is_dh else "stateful locn/load/stor"
+            logger.info("Protocol uses %s; executing cpsa4 -l 1 pre-flight validation gate", feature_label)
             proc = subprocess.run(
                 [str(SYSTEM_CONFIG.CPSA4_BIN), "-l", "1", str(scm_path)],
                 capture_output=True,
@@ -75,7 +77,7 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
                             error_msg = line.strip()
                             break
                 error_msg = error_msg or stderr_output[:300] or combined[:300]
-                logger.warning("Diffie-Hellman pre-flight validation REJECT: %s", error_msg)
+                logger.warning("Pre-flight cpsa4 -l 1 validation REJECT: %s", error_msg)
                 return RoletranVerificationResult(
                     is_executable=False,
                     error_diagnostic=error_msg,
@@ -83,7 +85,7 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
                     validator_binary="cpsa4 -l 1",
                     roletran_algebra_supported=False,
                 )
-            logger.info("Diffie-Hellman pre-flight validation PASS: All roles are algebraically well-formed")
+            logger.info("Pre-flight cpsa4 -l 1 validation PASS: All roles are algebraically well-formed")
             return RoletranVerificationResult(
                 is_executable=True,
                 procedural_defproc_code=None,
@@ -112,11 +114,19 @@ def verify_role_executability(scm_path: Path) -> RoletranVerificationResult:
                 raw_stderr="",
             )
 
-        # Parse error message: e.g. ":6:6: Received term cannot be fully destructured"
+        # Parse error message and preserve line/col context: e.g. ":6:6: Received term cannot be fully destructured"
         clean_error = stderr_output
-        match = re.search(r":\d+:\d+:\s*(.*)", stderr_output)
+        match = re.search(r":(\d+):(\d+):\s*(.*)", stderr_output)
         if match:
-            clean_error = match.group(1).strip()
+            line_no = int(match.group(1))
+            col_no = int(match.group(2))
+            core_msg = match.group(3).strip()
+            scm_lines = scm_content.splitlines()
+            offending_line = scm_lines[line_no - 1].strip() if 1 <= line_no <= len(scm_lines) else ""
+            if offending_line:
+                clean_error = f"{core_msg} (at .scm line {line_no}, col {col_no}: `{offending_line[:160]}`)"
+            else:
+                clean_error = f"{core_msg} (at .scm line {line_no}, col {col_no})"
 
         logger.warning("Roletran REJECT: %s", clean_error)
         return RoletranVerificationResult(

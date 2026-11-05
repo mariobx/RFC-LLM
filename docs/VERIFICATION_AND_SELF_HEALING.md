@@ -12,18 +12,18 @@ For protocols declared under `basic` message algebra:
   2. **Destructibility**: Every received term can be parsed and decrypted using keys already held in `inputs` or extracted from earlier receptions.
   3. **Input/Output Disjointness & Trace Occurrence**: Every parameter in `inputs`, `outputs`, and `uniq-orig` appears in the role's trace, and no `inputs` variable is repeated in `outputs` or `uniq-orig`.
 
-### 1.2 Diffie-Hellman Algebra Path (`cpsa4 -l 1`)
-- **MITRE CPSA 4.4.9 Binary Constraint**: `cpsa4roletran` implements only `CPSA.Roletran.Algebra` (`basic` algebra) and rejects `diffie-hellman` protocols unconditionally with `Expecting terms in basic algebra`.
+### 1.2 Diffie-Hellman & Stateful `locn`/`load`/`stor` Path (`cpsa4 -l 1`)
+- **MITRE CPSA 4.4.9 Binary Constraint**: `cpsa4roletran` implements only stateless `CPSA.Roletran.Algebra` (`basic` algebra over `chan`) and rejects `diffie-hellman` protocols (`Expecting terms in basic algebra`) as well as stateful `locn`/`load`/`stor` protocols (`Sort locn not recognized`).
 - **Dual Pre-Flight Strategy**:
-  When `diffie-hellman` is present in `<protocol>.scm`, `verify_role_executability()` automatically executes `~/.cabal/bin/cpsa4 -l 1 <protocol>.scm` (`15s` timeout):
+  When `diffie-hellman` or stateful `locn`/`load`/`stor` is present in `<protocol>.scm`, `verify_role_executability()` automatically executes `~/.cabal/bin/cpsa4 -l 1 <protocol>.scm` (`15s` timeout):
   - Executes the CPSA S-expression loader, sort checker, role well-formedness validator, and `(uniq-gen ...)` exponent checks before stopping after 1 search step (`Step limit exceeded`).
-  - Rejects any syntax, sort, or origination error (`Role not well formed`, `Expecting ...`) while passing well-formed Diffie-Hellman specifications directly to Stage 6.
+  - Rejects any syntax, sort, or origination error (`Role not well formed`, `Expecting ...`) while passing well-formed Diffie-Hellman or stateful specifications directly to Stage 6.
 
 ---
 
 ## 2. Stage 5: Self-Healing Loop ([`src/verification_engine/compiler_diagnostic_repair.py`](../src/verification_engine/compiler_diagnostic_repair.py))
 
-Whenever Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejects a candidate specification, the orchestrator enters an automated RAG-guided repair loop bounded by `MAX_REPAIR_ATTEMPTS = 50`:
+Whenever Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejects a candidate specification, the orchestrator enters an automated RAG-guided repair loop bounded by `MAX_REPAIR_ATTEMPTS = 10`:
 
 ```
 [Rejected .scm] ──> [Compiler / Timeout Diagnostic]
@@ -48,15 +48,16 @@ Whenever Stage 4 (`Roletran Check`) or Stage 6 (`CPSA Compilation`) rejects a ca
 ```
 
 ### 2.1 Error Diagnostic Extraction
-`verify_role_executability()` and `execute_mitre_make_build()` isolate actionable compiler diagnostics from `stderr`/`stdout` (such as `Received term cannot be fully destructured`, `Role not well formed: uniq-orig x doesn't originate`, `Expecting a name`, or `MITRE CPSA compilation timed out after 60 seconds`).
+`verify_role_executability()` and `execute_mitre_make_build()` isolate actionable compiler diagnostics from `stderr`/`stdout`—preserving `.scm` line/column numbers and offending S-expression snippets (`(at .scm line L, col C: ...)`).
 
 ### 2.2 SHA-256 Oscillation & Cycle Detection
-LLMs repairing compiler errors can oscillate between two invalid states (for example, adding a key to `inputs` and removing it on the next pass).
-- Both `_run_roletran_self_healing_loop()` and `_run_mitre_solver_self_healing_loop()` in [`src/main_pipeline_orchestrator.py`](../src/main_pipeline_orchestrator.py) hash every candidate AST via `hashlib.sha256(protocol_ast.model_dump_json().encode()).hexdigest()`.
+LLMs repairing compiler errors can oscillate between two invalid states (for example, `A -> B -> A` between `Malformed input` and `Cannot build`).
+- Both `_run_roletran_self_healing_loop()` and `_run_mitre_solver_self_healing_loop()` in [`src/main_pipeline_orchestrator.py`](../src/main_pipeline_orchestrator.py) hash every candidate AST via `_compute_ast_hash()`, which strips all cosmetic prose fields (`herald_comment`, `ineligibility_reason`, `role.description`, `role.comment`, `var.description`, `var.rfc_field`, `event.description`, `skel.description`, `skel.comment`) so cosmetic comment changes never mask an AST cycle.
+- Every repair pass also receives the `prior_attempts` history of failed diagnostics on that specification so it never repeats an edit that already failed.
 - If a SHA-256 hash reappears in `seen_roletran_hashes` or `seen_solver_hashes`:
   1. `cycle_detected = True` is logged and emitted to the visualizer.
   2. An explicit anti-oscillation directive is appended to the repair prompt instructing the model to abandon prior edits.
-  3. Sampling temperature is raised to `max(0.4, base_temp)` to break greedy repetition.
+  3. Sampling temperature is raised to `max(0.5, base_temp)` to break greedy repetition.
 
 ### 2.3 Dynamic RAG Query Formulation ([`prompts/05_rag_query_formulation.md`](../prompts/05_rag_query_formulation.md))
 Raw compiler errors contain protocol-specific identifiers (`edhoc.scm:72:6`, `client_random`, `connection_id_i`) that do not exist in the MITRE manual.
