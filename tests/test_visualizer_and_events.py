@@ -225,3 +225,11 @@ def test_cli_resume_three_tier_resolution_and_overrides(tmp_path: Path, monkeypa
     assert "gemini/gemini-2.5-pro" in updated_last_run
     assert "100.64.0.12" in updated_last_run
     assert "8088" in updated_last_run
+
+    # 4. Cross-PC portability: paths originating from another machine's directory structure rebase cleanly
+    alien_rfc = "/Users/friend_box/projects/RFC-LLM/refrences/all_RFCs/rfc5246.txt"
+    rebased = pipeline._resolve_portable_path(alien_rfc, base_dir=out_dir)
+    if (pipeline.SYSTEM_CONFIG.PROJECT_ROOT / "refrences" / "all_RFCs" / "rfc5246.txt").exists():
+        assert rebased == (pipeline.SYSTEM_CONFIG.PROJECT_ROOT / "refrences" / "all_RFCs" / "rfc5246.txt").resolve()
+    alien_run = "/Users/friend_box/projects/RFC-LLM/output/run_2026-11-04_10-00-00"
+    assert pipeline._resolve_portable_path(alien_run, base_dir=out_dir) == latest_run.resolve()

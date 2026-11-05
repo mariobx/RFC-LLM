@@ -2,7 +2,7 @@
 
 > Tier 3 — Master CPSA 4.4.9 Knowledge Base Table of Contents (`refrences/cpsa_kb/TOC.md`) with `rebuild_toc` YAML flag, and the complete pytest unit and integration test suite (`tests/`).
 
-*Generated: 2026-11-05 19:09:07 UTC · Git: `main` @ `8945378ed021` · Tier: Tier 3 — Knowledge Base Index & Test Suites · Files: 11 · Estimated Tokens: ~52,452*
+*Generated: 2026-11-05 19:40:53 UTC · Git: `main` @ `94b2c4e2cb6b` · Tier: Tier 3 — Knowledge Base Index & Test Suites · Files: 11 · Estimated Tokens: ~52,617*
 
 ## Table of Contents
 
@@ -3413,7 +3413,7 @@ def test_multi_deflistener_telemetry_and_dangling_response_quality_cap(tmp_path:
 
 ### `tests/test_visualizer_and_events.py`
 
-*sha256:`01ee0734558b` · 227 lines · 8.9 KB (~2,282 tokens) · lang:`python`*
+*sha256:`a405c6fc14bc` · 235 lines · 9.6 KB (~2,447 tokens) · lang:`python`*
 
 ```python
 """Unit and integration tests for Pipeline Event Bus, Cycle Detection, and Visualizer Server."""
@@ -3643,6 +3643,14 @@ def test_cli_resume_three_tier_resolution_and_overrides(tmp_path: Path, monkeypa
     assert "gemini/gemini-2.5-pro" in updated_last_run
     assert "100.64.0.12" in updated_last_run
     assert "8088" in updated_last_run
+
+    # 4. Cross-PC portability: paths originating from another machine's directory structure rebase cleanly
+    alien_rfc = "/Users/friend_box/projects/RFC-LLM/refrences/all_RFCs/rfc5246.txt"
+    rebased = pipeline._resolve_portable_path(alien_rfc, base_dir=out_dir)
+    if (pipeline.SYSTEM_CONFIG.PROJECT_ROOT / "refrences" / "all_RFCs" / "rfc5246.txt").exists():
+        assert rebased == (pipeline.SYSTEM_CONFIG.PROJECT_ROOT / "refrences" / "all_RFCs" / "rfc5246.txt").resolve()
+    alien_run = "/Users/friend_box/projects/RFC-LLM/output/run_2026-11-04_10-00-00"
+    assert pipeline._resolve_portable_path(alien_run, base_dir=out_dir) == latest_run.resolve()
 ```
 
 ---

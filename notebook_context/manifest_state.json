@@ -3,7 +3,11 @@
   "delta_of_this_sync": {
     "added": [],
     "deleted": [],
-    "modified": []
+    "modified": [
+      "src/pipeline.py",
+      "src/pipeline_events.py",
+      "tests/test_visualizer_and_events.py"
+    ]
   },
   "files": {
     ".env.example": {
@@ -1340,14 +1344,14 @@
     },
     "src/pipeline.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "4722c9d165cd446da26b25a8d128cd92aa8da47de3f911f09a272ea29108ef97",
-      "size_bytes": 48436,
+      "sha256": "25920a3499ec6109c4b1b55127354f247576338fba6e5b0dca23c629a38742c8",
+      "size_bytes": 49416,
       "status": "included"
     },
     "src/pipeline_events.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "4dc1c4a23313ee86a0ae8b6f702f9c1491cf009efca216ddeb225db8eab8137f",
-      "size_bytes": 27268,
+      "sha256": "24910c3bb9cb5d37d00c693603381f96a9184042edd61935069a0a7fd74783b8",
+      "size_bytes": 27660,
       "status": "included"
     },
     "src/prompt_loader.py": {
@@ -1484,8 +1488,8 @@
     },
     "tests/test_visualizer_and_events.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "01ee0734558bc0608cdf08f554b0c8900b24ccf8af6ede8b8abdf60d2aa1184c",
-      "size_bytes": 9128,
+      "sha256": "a405c6fc14bc8c7a9019d21167ef47a78473697cf68aca0ea510f24890f27c32",
+      "size_bytes": 9790,
       "status": "included"
     },
     "tests/test_visualizer_tabs.py": {
@@ -1495,15 +1499,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-05 19:09:07 UTC",
+  "generated_at": "2026-11-05 19:40:53 UTC",
   "git": {
     "branch": "main",
-    "commit": "8945378ed021553f00fd2ff94941c5868abec424",
-    "subject": "feat(cli,visualizer): add --host remote binding and -r/--resume with .last_run manifest"
+    "commit": "94b2c4e2cb6ba096f669d5278ee3c4795b881a4f",
+    "subject": "feat(resume): make run_manifest.json and metadata_index paths portable across PCs"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "335c258afed1f0c6e772799f762213bf78510e11",
-    "subject": "Implement 6-pillar deterministic AST pre-normalizer, roletran/cycle fixes, ingestion hardening, and docs"
+    "commit": "8945378ed021553f00fd2ff94941c5868abec424",
+    "subject": "feat(cli,visualizer): add --host remote binding and -r/--resume with .last_run manifest"
   }
 }

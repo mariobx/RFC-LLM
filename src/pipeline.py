@@ -206,25 +206,58 @@ def _infer_models_from_csv(csv_file: Path) -> Dict[str, Optional[str]]:
     return inferred
 
 
+def _to_portable_relpath(p: Path) -> str:
+    """Converts a path inside the repository to a portable project-relative path string."""
+    try:
+        return str(p.resolve().relative_to(SYSTEM_CONFIG.PROJECT_ROOT.resolve()))
+    except ValueError:
+        return str(p)
+
+
+def _resolve_portable_path(raw_str: str, base_dir: Optional[Path] = None) -> Optional[Path]:
+    """Resolves a path string that may be project-relative or an absolute path from another PC."""
+    if not raw_str:
+        return None
+    cand = Path(raw_str)
+    if cand.exists():
+        return cand.resolve()
+
+    proj_cand = SYSTEM_CONFIG.PROJECT_ROOT / raw_str
+    if proj_cand.exists():
+        return proj_cand.resolve()
+
+    if base_dir is not None:
+        for b_cand in (base_dir / raw_str, base_dir / cand.name):
+            if b_cand.exists():
+                return b_cand.resolve()
+
+    # Rebase absolute paths originating from another machine/user directory
+    parts = cand.parts
+    for anchor in ("refrences", "output", "data", "logs"):
+        if anchor in parts:
+            idx = parts.index(anchor)
+            rebased = SYSTEM_CONFIG.PROJECT_ROOT.joinpath(*parts[idx:])
+            if rebased.exists():
+                return rebased.resolve()
+
+    if cand.name.lower().startswith("rfc") and cand.suffix.lower() == ".txt":
+        fallback_rfc = SYSTEM_CONFIG.PROJECT_ROOT / "refrences" / "all_RFCs" / cand.name
+        if fallback_rfc.exists():
+            return fallback_rfc.resolve()
+
+    return None
+
+
 def _build_resume_command_string(
     run_root_dir: Path,
     targets: List[Path],
     args: argparse.Namespace,
 ) -> str:
     """Builds the full expanded `./rfc-llm -r <run_dir> ...` command string saved to `output/.last_run`."""
-    try:
-        rel_run = run_root_dir.resolve().relative_to(SYSTEM_CONFIG.PROJECT_ROOT.resolve())
-        run_arg = str(rel_run)
-    except ValueError:
-        run_arg = str(run_root_dir.resolve())
-
+    run_arg = _to_portable_relpath(run_root_dir)
     cmd: List[str] = ["./rfc-llm", "-r", run_arg]
     for t in targets:
-        try:
-            rel_t = t.resolve().relative_to(SYSTEM_CONFIG.PROJECT_ROOT.resolve())
-            cmd.append(str(rel_t))
-        except ValueError:
-            cmd.append(str(t))
+        cmd.append(_to_portable_relpath(t))
 
     if getattr(args, "model", None):
         cmd.extend(["--model", str(args.model)])
@@ -289,11 +322,11 @@ def _save_run_manifest_and_last_run(
 
     manifest_payload = {
         "schema_version": "1.0.0",
-        "run_root_dir": str(run_root_dir.resolve()),
+        "run_root_dir": _to_portable_relpath(run_root_dir),
         "resume_command": resume_cmd,
         "created_at_utc": existing_created,
         "updated_at_utc": now_utc,
-        "targets": [str(t.resolve()) for t in targets],
+        "targets": [_to_portable_relpath(t) for t in targets],
         "cli_args": {
             "model": args.model,
             "router_model": args.router_model,
@@ -313,7 +346,7 @@ def _save_run_manifest_and_last_run(
             "host": args.host,
             "port": int(args.port),
         },
-        "planned_rfc_files": [str(f.resolve()) for f in planned_rfc_files],
+        "planned_rfc_files": [_to_portable_relpath(f) for f in planned_rfc_files],
     }
     manifest_path.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
     return manifest_path, last_run_path, resume_cmd
@@ -568,10 +601,8 @@ def main(argv: Optional[List[str]] = None):
                             tokens.pop(0)
                         parsed_saved = parser.parse_args(tokens)
                         if parsed_saved.resume and parsed_saved.resume != "__LAST_RUN__":
-                            cand = Path(parsed_saved.resume)
-                            if not cand.exists() and (SYSTEM_CONFIG.PROJECT_ROOT / parsed_saved.resume).exists():
-                                cand = SYSTEM_CONFIG.PROJECT_ROOT / parsed_saved.resume
-                            if cand.exists() and cand.is_dir():
+                            cand = _resolve_portable_path(parsed_saved.resume, base_dir=base_dir)
+                            if cand and cand.is_dir():
                                 resuming_run_dir = cand.resolve()
                                 saved_tokens = tokens
                     except Exception:
@@ -620,12 +651,8 @@ def main(argv: Optional[List[str]] = None):
                         )
                     sys.exit(1)
             else:
-                cand = Path(raw_spec)
-                if not cand.exists() and (base_dir / raw_spec).exists():
-                    cand = base_dir / raw_spec
-                if not cand.exists() and (SYSTEM_CONFIG.PROJECT_ROOT / raw_spec).exists():
-                    cand = SYSTEM_CONFIG.PROJECT_ROOT / raw_spec
-                if not cand.exists() or not cand.is_dir():
+                cand = _resolve_portable_path(raw_spec, base_dir=base_dir)
+                if not cand or not cand.is_dir():
                     print(f"Error: Resume run directory does not exist: {raw_spec}", file=sys.stderr)
                     recent_runs = _list_recent_run_dirs(base_dir, limit=3)
                     if recent_runs:
@@ -723,13 +750,13 @@ def main(argv: Optional[List[str]] = None):
     if not args.target_path:
         parser.error("the following arguments are required: target_path (or pass --resume / -r or --view <run_dir>)")
 
-    targets = [Path(p) for p in args.target_path]
-    for idx_t, t in enumerate(targets):
-        if not t.exists() and (SYSTEM_CONFIG.PROJECT_ROOT / t).exists():
-            targets[idx_t] = SYSTEM_CONFIG.PROJECT_ROOT / t
-        elif not t.exists():
-            print(f"Error: Target path does not exist: {t}", file=sys.stderr)
+    targets: List[Path] = []
+    for p in args.target_path:
+        resolved_t = _resolve_portable_path(str(p), base_dir=base_dir)
+        if resolved_t is None:
+            print(f"Error: Target path does not exist: {p}", file=sys.stderr)
             sys.exit(1)
+        targets.append(resolved_t)
 
     if args.csv and not Path(args.csv).exists():
         print(f"Error: Source --csv path does not exist: {args.csv}", file=sys.stderr)
@@ -811,11 +838,16 @@ def main(argv: Optional[List[str]] = None):
         and not any(k in explicit_overrides for k in queue_affecting_overrides)
     )
 
+    planned_rfc_files: List[Path] = []
     if can_reuse_manifest_queue:
-        planned_rfc_files = [Path(p) for p in manifest_data["planned_rfc_files"] if Path(p).exists()]
-    elif len(targets) > 1 or targets[0].is_file():
+        for raw_p in manifest_data["planned_rfc_files"]:
+            rp = _resolve_portable_path(str(raw_p), base_dir=base_dir)
+            if rp is not None and rp.is_file():
+                planned_rfc_files.append(rp)
+
+    if not planned_rfc_files and (len(targets) > 1 or targets[0].is_file()):
         planned_rfc_files = [t for t in targets if t.is_file()]
-    elif targets[0].is_dir():
+    elif not planned_rfc_files and targets[0].is_dir():
         target = targets[0]
         raw_candidates = [f for f in target.glob(args.pattern) if f.is_file()]
         if args.pattern == "rfc*.txt":
@@ -863,7 +895,7 @@ def main(argv: Optional[List[str]] = None):
         if args.limit and args.limit > 0:
             planned_rfc_files = planned_rfc_files[:args.limit]
             print(f"[BATCH] Processing limited to {len(planned_rfc_files)} RFCs: {[f.name for f in planned_rfc_files]}")
-    else:
+    elif not planned_rfc_files:
         print(f"Error: Invalid target path: {targets[0]}", file=sys.stderr)
         sys.exit(1)
 

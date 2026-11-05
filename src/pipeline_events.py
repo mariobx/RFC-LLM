@@ -435,9 +435,13 @@ class PipelineEventBus:
                     rfc_dir_str = run_entry.get("rfc_directory")
                     traj_str = run_entry.get("metadata_json_file")
                     rfc_dir_path = Path(rfc_dir_str) if rfc_dir_str else None
-                    if rfc_dir_path:
+                    if rfc_dir_path and not rfc_dir_path.exists() and (run_dir / rfc_dir_path.name).exists():
+                        rfc_dir_path = run_dir / rfc_dir_path.name
+                    if rfc_dir_path and rfc_dir_path.exists():
                         seen_dirs.add(str(rfc_dir_path.resolve()))
                     traj_path = Path(traj_str) if traj_str else None
+                    if traj_path and not traj_path.exists() and rfc_dir_path and (rfc_dir_path / traj_path.name).exists():
+                        traj_path = rfc_dir_path / traj_path.name
                     if (not traj_path or not traj_path.exists()) and rfc_dir_path and rfc_dir_path.exists():
                         candidates = sorted(rfc_dir_path.glob("*_trajectory.json"))
                         if candidates:

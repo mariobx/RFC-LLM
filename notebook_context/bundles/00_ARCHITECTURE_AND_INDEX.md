@@ -2,17 +2,19 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-05 19:09:07 UTC · Git: `main` @ `8945378ed021` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,916*
+*Generated: 2026-11-05 19:40:53 UTC · Git: `main` @ `94b2c4e2cb6b` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,916*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `8945378ed021` — feat(cli,visualizer): add --host remote binding and -r/--resume with .last_run manifest
-- No file changes detected since the previous sync.
+- **Git commit:** `94b2c4e2cb6b` — feat(resume): make run_manifest.json and metadata_index paths portable across PCs
 - **Added (0):** none
-- **Modified (0):** none
+- **Modified (3):**
+  - `src/pipeline.py`
+  - `src/pipeline_events.py`
+  - `tests/test_visualizer_and_events.py`
 - **Deleted (0):** none
 
 ---
@@ -38,12 +40,12 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | Bundle | Title | Files | Size | Estimated Tokens | Tier |
 |---|---|---|---|---|---|
 | `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 117.1 KB | ~29,916 | Tier 1 — Architecture, Documentation & Project Configs |
-| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 976.8 KB | ~250,004 | Tier 2 — Core Source Code & CLI Entrypoints |
-| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 205.8 KB | ~52,452 | Tier 3 — Knowledge Base Index & Test Suites |
+| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 978.2 KB | ~250,347 | Tier 2 — Core Source Code & CLI Entrypoints |
+| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 206.5 KB | ~52,617 | Tier 3 — Knowledge Base Index & Test Suites |
 | `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 694.5 KB | ~176,071 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
 | `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files) | 155 | 915.3 KB | ~234,169 | Tier 3 — Domain Reference Code Corpus (.scm) |
 
-**Total Ingested Context Payload:** ~742,612 tokens across all bundles (74.3% of Gemini 1M context window)
+**Total Ingested Context Payload:** ~743,120 tokens across all bundles (74.3% of Gemini 1M context window)
 
 ---
 
