@@ -3,19 +3,7 @@
   "delta_of_this_sync": {
     "added": [],
     "deleted": [],
-    "modified": [
-      "README.md",
-      "docs/QUICKSTART_AND_OPERATIONS.md",
-      "src/cost_tracker.py",
-      "src/main_pipeline_orchestrator.py",
-      "src/pipeline.py",
-      "src/pipeline_events.py",
-      "src/verification_engine/trajectory_metadata_exporter.py",
-      "src/visualizer/server.py",
-      "src/visualizer/static/index.html",
-      "tests/test_main_pipeline_orchestrator.py",
-      "tests/test_visualizer_and_events.py"
-    ]
+    "modified": []
   },
   "files": {
     ".env.example": {
@@ -1507,11 +1495,11 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-05 19:08:45 UTC",
+  "generated_at": "2026-11-05 19:09:07 UTC",
   "git": {
     "branch": "main",
-    "commit": "335c258afed1f0c6e772799f762213bf78510e11",
-    "subject": "Implement 6-pillar deterministic AST pre-normalizer, roletran/cycle fixes, ingestion hardening, and docs"
+    "commit": "8945378ed021553f00fd2ff94941c5868abec424",
+    "subject": "feat(cli,visualizer): add --host remote binding and -r/--resume with .last_run manifest"
   },
   "previous_git": {
     "branch": "main",

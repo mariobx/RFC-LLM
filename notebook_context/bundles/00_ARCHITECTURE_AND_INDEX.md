@@ -2,27 +2,17 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-05 19:08:45 UTC · Git: `main` @ `335c258afed1` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,916*
+*Generated: 2026-11-05 19:09:07 UTC · Git: `main` @ `8945378ed021` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,916*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `335c258afed1` — Implement 6-pillar deterministic AST pre-normalizer, roletran/cycle fixes, ingestion hardening, and docs
+- **Git commit:** `8945378ed021` — feat(cli,visualizer): add --host remote binding and -r/--resume with .last_run manifest
+- No file changes detected since the previous sync.
 - **Added (0):** none
-- **Modified (11):**
-  - `README.md`
-  - `docs/QUICKSTART_AND_OPERATIONS.md`
-  - `src/cost_tracker.py`
-  - `src/main_pipeline_orchestrator.py`
-  - `src/pipeline.py`
-  - `src/pipeline_events.py`
-  - `src/verification_engine/trajectory_metadata_exporter.py`
-  - `src/visualizer/server.py`
-  - `src/visualizer/static/index.html`
-  - `tests/test_main_pipeline_orchestrator.py`
-  - `tests/test_visualizer_and_events.py`
+- **Modified (0):** none
 - **Deleted (0):** none
 
 ---
