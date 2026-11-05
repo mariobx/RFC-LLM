@@ -289,6 +289,37 @@ class PipelineCostTracker:
         with self._lock:
             return copy.deepcopy(self.batch_total)
 
+    def restore_batch_summary(self, batch_summary: Optional[Dict[str, Any]]) -> None:
+        """Restores cumulative batch cost telemetry when resuming an existing run directory."""
+        if not isinstance(batch_summary, dict):
+            return
+        with self._lock:
+            restored = make_empty_cost_summary()
+            for key in (
+                "total_calls",
+                "total_prompt_tokens",
+                "total_completion_tokens",
+                "total_cached_tokens",
+                "total_tokens",
+            ):
+                restored[key] = _safe_int(batch_summary.get(key, 0))
+            restored["total_cost_usd"] = round(float(batch_summary.get("total_cost_usd", 0.0) or 0.0), 8)
+            raw_roles = batch_summary.get("roles")
+            if isinstance(raw_roles, dict):
+                for role in MODEL_ROLES:
+                    rb = raw_roles.get(role)
+                    if isinstance(rb, dict):
+                        restored["roles"][role] = {
+                            "model": str(rb.get("model") or ""),
+                            "calls": _safe_int(rb.get("calls", 0)),
+                            "prompt_tokens": _safe_int(rb.get("prompt_tokens", 0)),
+                            "completion_tokens": _safe_int(rb.get("completion_tokens", 0)),
+                            "cached_tokens": _safe_int(rb.get("cached_tokens", 0)),
+                            "total_tokens": _safe_int(rb.get("total_tokens", 0)),
+                            "cost_usd": round(float(rb.get("cost_usd", 0.0) or 0.0), 8),
+                        }
+            self.batch_total = restored
+
     @staticmethod
     def format_cli_summary(summary: Dict[str, Any], prefix: str = "Run Cost") -> str:
         """Formats a single-line human-readable summary of total and per-role costs."""

@@ -478,6 +478,7 @@ def run_rfc_translation_pipeline(
     query_model: Optional[str] = None,
     run_root_dir: Optional[Path] = None,
     csv_path: Optional[Path] = None,
+    resume_checkpoint: bool = False,
 ) -> PipelineExecutionSummary:
     """Executes the end-to-end RFC to formally verified MITRE CPSA synthesis pipeline."""
     start_time = time.time()
@@ -535,288 +536,375 @@ def run_rfc_translation_pipeline(
     with open(rfc_file_path, "r", encoding="utf-8", errors="ignore") as rfc_file:
         raw_rfc_text = rfc_file.read()
 
-    # -------------------------------------------------------------------------
-    # STAGE 1a: Tier 0 Header Filter (Document Intake)
-    # -------------------------------------------------------------------------
-    GLOBAL_EVENT_BUS.emit(
-        "stage_started",
-        stage=1,
-        stage_name="Document Intake",
-        model=active_router_model,
-    )
-    header_filter_result = filter_rfc_header(raw_rfc_text)
-    if not header_filter_result.is_eligible:
-        elapsed = time.time() - start_time
-        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
-        csv_recorder.log_run(
-            rfc_id=rfc_id,
-            is_eligible=False,
-            status="INELIGIBLE",
-            quality_tier="INELIGIBLE",
-            rejection_gate="Tier 0 Header Filter",
-            protocol_name=header_filter_result.title,
-            duration_seconds=elapsed,
-            cost_telemetry=rfc_cost_summary,
-            router_model=active_router_model,
-            extraction_model=active_extraction_model,
-            query_model=active_query_model,
-            repair_model=active_repair_model,
-            error_message=header_filter_result.disqualification_reason,
-        )
-        update_run_metadata_index(
-            run_root_dir=effective_run_root,
-            rfc_id=header_filter_result.rfc_id or rfc_id,
-            protocol_name=header_filter_result.title,
-            rfc_dir=target_output_dir,
-            scm_path=None,
-            trajectory_json_path=None,
-            quality_tier="INELIGIBLE",
-            is_eligible=False,
-            build_successful=False,
-            error_message=header_filter_result.disqualification_reason,
-            rejection_gate="Tier 0 Header Filter",
-            duration_seconds=elapsed,
-        )
-        GLOBAL_EVENT_BUS.register_filtered_rfc(
-            rfc_id=header_filter_result.rfc_id or rfc_id,
-            title=header_filter_result.title or rfc_file_path.name,
-            gate="Tier 0 Header Filter",
-            reason=header_filter_result.disqualification_reason or "Disqualified by Tier 0 header filter",
-            duration_seconds=elapsed,
-        )
-        GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=header_filter_result.disqualification_reason)
-        return PipelineExecutionSummary(
-            rfc_id=rfc_id,
-            is_eligible=False,
-            duration_seconds=elapsed,
-            error_message=header_filter_result.disqualification_reason,
-        )
-
-    rfc_number_str = header_filter_result.rfc_id or rfc_id
-    protocol_title = header_filter_result.title or "Unknown Protocol"
-
-    # -------------------------------------------------------------------------
-    # STAGE 1b: Full TOC Parsing & Abstract Extraction
-    # -------------------------------------------------------------------------
-    toc_entries = parse_table_of_contents(raw_rfc_text)
-    abstract_text = _extract_rfc_abstract(raw_rfc_text)
-
-    # -------------------------------------------------------------------------
-    # STAGE 1c: Tier 1 Applicability Gate
-    # -------------------------------------------------------------------------
-    applicability_report = evaluate_protocol_applicability(
-        rfc_id=rfc_number_str,
-        title=protocol_title,
-        category=header_filter_result.category or "Unknown",
-        abstract=abstract_text,
-        toc_entries=toc_entries,
-        model=router_model,
-    )
-
-    if not applicability_report.is_cryptographic_protocol:
-        elapsed = time.time() - start_time
-        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
-        csv_recorder.log_run(
-            rfc_id=rfc_id,
-            is_eligible=False,
-            status="INELIGIBLE",
-            quality_tier="INELIGIBLE",
-            rejection_gate="Stage 1c Applicability Gate",
-            protocol_name=applicability_report.protocol_name or protocol_title,
-            duration_seconds=elapsed,
-            cost_telemetry=rfc_cost_summary,
-            router_model=active_router_model,
-            extraction_model=active_extraction_model,
-            query_model=active_query_model,
-            repair_model=active_repair_model,
-            error_message=f"Ineligible: {applicability_report.rationale}",
-        )
-        update_run_metadata_index(
-            run_root_dir=effective_run_root,
-            rfc_id=rfc_number_str,
-            protocol_name=applicability_report.protocol_name or protocol_title,
-            rfc_dir=target_output_dir,
-            scm_path=None,
-            trajectory_json_path=None,
-            quality_tier="INELIGIBLE",
-            is_eligible=False,
-            build_successful=False,
-            error_message=applicability_report.rationale,
-            rejection_gate="Stage 1c Applicability Gate",
-            duration_seconds=elapsed,
-        )
-        GLOBAL_EVENT_BUS.register_filtered_rfc(
-            rfc_id=rfc_number_str,
-            title=applicability_report.protocol_name or protocol_title,
-            gate="Stage 1c Applicability Gate",
-            reason=applicability_report.rationale or "Disqualified by Stage 1c applicability gate",
-            duration_seconds=elapsed,
-        )
-        GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=applicability_report.rationale)
-        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
-        logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix="Ineligible RFC Cost"))
-        return PipelineExecutionSummary(
-            rfc_id=rfc_id,
-            protocol_name=applicability_report.protocol_name or protocol_title,
-            is_eligible=False,
-            duration_seconds=elapsed,
-            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
-            cost_telemetry=rfc_cost_summary,
-            error_message=applicability_report.rationale,
-        )
-
-    # Eligible cryptographic protocol confirmed: create per-RFC output directory, run.log, and numbered tab
-    target_output_dir.mkdir(parents=True, exist_ok=True)
-    run_log_path = target_output_dir / "run.log"
-    configure_pipeline_logging(run_log_file=run_log_path)
-    final_protocol_name = applicability_report.protocol_name or protocol_title
-    intake_rationale = applicability_report.rationale
-    eligible_rationale_msg = f"Eligible: {intake_rationale}" if intake_rationale else None
-    tab_index = GLOBAL_EVENT_BUS.register_accepted_tab(
-        rfc_id=rfc_number_str,
-        protocol_name=final_protocol_name,
-        rfc_dir=target_output_dir,
-        rfc_title=protocol_title,
-        intake_rationale=intake_rationale,
-    )
-    logger.info("Eligible Cryptographic Protocol Confirmed [Tab #%d]: %s (%s)", tab_index, rfc_number_str, final_protocol_name)
-    logger.info("Output Directory: %s", target_output_dir)
-
-    GLOBAL_EVENT_BUS.emit("stage_completed", stage=1, protocol_name=final_protocol_name, rfc_id=rfc_number_str, tab_index=tab_index)
-
-    # -------------------------------------------------------------------------
-    # STAGE 1d & 1e: Exchange Section Routing & Verbatim Slicing
-    # -------------------------------------------------------------------------
-    target_sections = route_handshake_sections(
-        rfc_id=rfc_number_str,
-        protocol_name=final_protocol_name,
-        toc_entries=toc_entries,
-        model=router_model,
-    )
-
-    try:
-        verbatim_slice = slice_verbatim_sections(raw_rfc_text, target_sections)
-        if not verbatim_slice.strip():
-            raise ValueError(f"Verbatim section slice for {target_sections} produced 0 non-empty lines")
-    except Exception as slice_exc:
-        elapsed = time.time() - start_time
-        error_msg = f"Section slicing failed: {slice_exc}"
-        csv_error_msg = f"{error_msg} | {eligible_rationale_msg}" if eligible_rationale_msg else error_msg
-        logger.error(error_msg)
-        empty_stage2 = {
-            "schema_self_correction_triggered": False,
-            "schema_validation_error": error_msg,
-            "initial_ast": None,
-            "initial_scm": None,
-        }
-        empty_stage5 = {
-            "validator_binary": "cpsa4roletran",
-            "roletran_algebra_supported": True,
-            "initial_passed": False,
-            "final_passed": False,
-            "total_attempts": 0,
-            "compiled_defproc_output": None,
-            "repair_attempts": [],
-        }
-        empty_stage6 = {
-            "validator_binary": "cpsa4",
-            "initial_passed": False,
-            "final_passed": False,
-            "total_attempts": 0,
-            "repair_attempts": [],
-        }
-        trajectory_path = write_trajectory_metadata_bundle(
-            output_dir=target_output_dir,
-            rfc_id=rfc_number_str,
-            rfc_title=protocol_title,
-            protocol_name=final_protocol_name,
-            participating_principals=applicability_report.participating_principals,
-            selected_sections=target_sections,
-            verbatim_slice="",
-            duration_seconds=elapsed,
-            stage2_record=empty_stage2,
-            stage5_record=empty_stage5,
-            stage6_record=empty_stage6,
-            final_spec=None,
-            final_scm_path=None,
-            trace_txt_path=None,
-            shapes_txt_path=None,
-            solver_passed=False,
-            intake_rationale=intake_rationale,
-        )
-        update_run_metadata_index(
-            run_root_dir=effective_run_root,
-            rfc_id=rfc_number_str,
-            protocol_name=final_protocol_name,
-            rfc_dir=target_output_dir,
-            scm_path=None,
-            trajectory_json_path=trajectory_path,
-            quality_tier="REJECTED",
-            is_eligible=True,
-            build_successful=False,
-            error_message=csv_error_msg,
-            tab_index=tab_index,
-            intake_rationale=intake_rationale,
-        )
-        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
-        csv_recorder.log_run(
-            rfc_id=rfc_id,
-            is_eligible=True,
-            status="FAILED",
-            quality_tier="REJECTED",
-            protocol_name=final_protocol_name,
-            selected_sections=target_sections,
-            sliced_lines_count=0,
-            duration_seconds=elapsed,
-            cost_telemetry=rfc_cost_summary,
-            router_model=active_router_model,
-            extraction_model=active_extraction_model,
-            query_model=active_query_model,
-            repair_model=active_repair_model,
-            trajectory_json_path=trajectory_path,
-            error_message=csv_error_msg,
-        )
-        GLOBAL_EVENT_BUS.update_accepted_tab(
-            tab_index,
-            status="FAILED",
-            quality_tier="REJECTED",
-            duration_seconds=round(elapsed, 2),
-            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
-            cost_telemetry=rfc_cost_summary,
-            trajectory_path=str(trajectory_path),
-            error_message=error_msg,
-            intake_rationale=intake_rationale,
-        )
-        GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, error_message=error_msg)
-        GLOBAL_EVENT_BUS.emit("pipeline_failed", error_message=error_msg)
-        return PipelineExecutionSummary(
-            rfc_id=rfc_id,
-            protocol_name=final_protocol_name,
-            is_eligible=True,
-            selected_sections=target_sections,
-            sliced_lines_count=0,
-            trajectory_json_path=trajectory_path,
-            quality_tier="REJECTED",
-            intake_rationale=intake_rationale,
-            duration_seconds=elapsed,
-            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
-            cost_telemetry=rfc_cost_summary,
-            error_message=error_msg,
-        )
-
-    slice_lines_count = len(verbatim_slice.splitlines())
-
     slice_file = target_output_dir / "verbatim_slice.txt"
-    with open(slice_file, "w", encoding="utf-8") as slice_handle:
-        slice_handle.write(verbatim_slice)
-
-    GLOBAL_EVENT_BUS.update_accepted_tab(tab_index, slice_path=str(slice_file))
-    GLOBAL_EVENT_BUS.emit(
-        "slice_ready",
-        sections=target_sections,
-        line_count=slice_lines_count,
-        slice_path=str(slice_file),
+    intake_checkpoint_file = target_output_dir / "intake_checkpoint.json"
+    initial_ast_path = target_output_dir / "initial_ast.json"
+    has_completed_trajectory = target_output_dir.exists() and any(target_output_dir.glob("*_trajectory.json"))
+    can_resume_stage1 = (
+        resume_checkpoint
+        and not has_completed_trajectory
+        and slice_file.exists()
+        and slice_file.stat().st_size > 0
+        and (intake_checkpoint_file.exists() or initial_ast_path.exists())
     )
+
+    if can_resume_stage1:
+        header_filter_result = filter_rfc_header(raw_rfc_text)
+        ckpt_data: dict = {}
+        if intake_checkpoint_file.exists():
+            try:
+                ckpt_data = json.loads(intake_checkpoint_file.read_text(encoding="utf-8"))
+            except Exception:
+                ckpt_data = {}
+        elif initial_ast_path.exists():
+            try:
+                ast_peek = json.loads(initial_ast_path.read_text(encoding="utf-8"))
+                ckpt_data = {"final_protocol_name": ast_peek.get("protocol_name")}
+            except Exception:
+                ckpt_data = {}
+
+        rfc_number_str = ckpt_data.get("rfc_id") or header_filter_result.rfc_id or rfc_id
+        protocol_title = ckpt_data.get("protocol_title") or header_filter_result.title or "Unknown Protocol"
+        final_protocol_name = ckpt_data.get("final_protocol_name") or protocol_title
+        participating_principals = list(ckpt_data.get("participating_principals") or ["Initiator", "Responder"])
+        intake_rationale = ckpt_data.get("intake_rationale") or "Resumed from Stage 1/2 on-disk checkpoint."
+        eligible_rationale_msg = f"Eligible: {intake_rationale}" if intake_rationale else None
+        target_sections = list(ckpt_data.get("target_sections") or [])
+        verbatim_slice = slice_file.read_text(encoding="utf-8", errors="ignore")
+        slice_lines_count = len(verbatim_slice.splitlines())
+
+        target_output_dir.mkdir(parents=True, exist_ok=True)
+        run_log_path = target_output_dir / "run.log"
+        configure_pipeline_logging(run_log_file=run_log_path)
+        tab_index = GLOBAL_EVENT_BUS.register_accepted_tab(
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            rfc_dir=target_output_dir,
+            rfc_title=protocol_title,
+            intake_rationale=intake_rationale,
+        )
+        logger.info(
+            "Resumed Stage 1 checkpoint [Tab #%d]: %s (%s) — %d sliced lines",
+            tab_index,
+            rfc_number_str,
+            final_protocol_name,
+            slice_lines_count,
+        )
+        GLOBAL_EVENT_BUS.emit(
+            "stage_completed",
+            stage=1,
+            protocol_name=final_protocol_name,
+            rfc_id=rfc_number_str,
+            tab_index=tab_index,
+        )
+        GLOBAL_EVENT_BUS.update_accepted_tab(tab_index, slice_path=str(slice_file))
+        GLOBAL_EVENT_BUS.emit(
+            "slice_ready",
+            sections=target_sections,
+            line_count=slice_lines_count,
+            slice_path=str(slice_file),
+        )
+    else:
+        # -------------------------------------------------------------------------
+        # STAGE 1a: Tier 0 Header Filter (Document Intake)
+        # -------------------------------------------------------------------------
+        GLOBAL_EVENT_BUS.emit(
+            "stage_started",
+            stage=1,
+            stage_name="Document Intake",
+            model=active_router_model,
+        )
+        header_filter_result = filter_rfc_header(raw_rfc_text)
+        if not header_filter_result.is_eligible:
+            elapsed = time.time() - start_time
+            rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+            csv_recorder.log_run(
+                rfc_id=rfc_id,
+                is_eligible=False,
+                status="INELIGIBLE",
+                quality_tier="INELIGIBLE",
+                rejection_gate="Tier 0 Header Filter",
+                protocol_name=header_filter_result.title,
+                duration_seconds=elapsed,
+                cost_telemetry=rfc_cost_summary,
+                router_model=active_router_model,
+                extraction_model=active_extraction_model,
+                query_model=active_query_model,
+                repair_model=active_repair_model,
+                error_message=header_filter_result.disqualification_reason,
+            )
+            update_run_metadata_index(
+                run_root_dir=effective_run_root,
+                rfc_id=header_filter_result.rfc_id or rfc_id,
+                protocol_name=header_filter_result.title,
+                rfc_dir=target_output_dir,
+                scm_path=None,
+                trajectory_json_path=None,
+                quality_tier="INELIGIBLE",
+                is_eligible=False,
+                build_successful=False,
+                error_message=header_filter_result.disqualification_reason,
+                rejection_gate="Tier 0 Header Filter",
+                duration_seconds=elapsed,
+            )
+            GLOBAL_EVENT_BUS.register_filtered_rfc(
+                rfc_id=header_filter_result.rfc_id or rfc_id,
+                title=header_filter_result.title or rfc_file_path.name,
+                gate="Tier 0 Header Filter",
+                reason=header_filter_result.disqualification_reason or "Disqualified by Tier 0 header filter",
+                duration_seconds=elapsed,
+            )
+            GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=header_filter_result.disqualification_reason)
+            return PipelineExecutionSummary(
+                rfc_id=rfc_id,
+                is_eligible=False,
+                duration_seconds=elapsed,
+                error_message=header_filter_result.disqualification_reason,
+            )
+
+        rfc_number_str = header_filter_result.rfc_id or rfc_id
+        protocol_title = header_filter_result.title or "Unknown Protocol"
+
+        # -------------------------------------------------------------------------
+        # STAGE 1b: Full TOC Parsing & Abstract Extraction
+        # -------------------------------------------------------------------------
+        toc_entries = parse_table_of_contents(raw_rfc_text)
+        abstract_text = _extract_rfc_abstract(raw_rfc_text)
+
+        # -------------------------------------------------------------------------
+        # STAGE 1c: Tier 1 Applicability Gate
+        # -------------------------------------------------------------------------
+        applicability_report = evaluate_protocol_applicability(
+            rfc_id=rfc_number_str,
+            title=protocol_title,
+            category=header_filter_result.category or "Unknown",
+            abstract=abstract_text,
+            toc_entries=toc_entries,
+            model=router_model,
+        )
+
+        if not applicability_report.is_cryptographic_protocol:
+            elapsed = time.time() - start_time
+            rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+            csv_recorder.log_run(
+                rfc_id=rfc_id,
+                is_eligible=False,
+                status="INELIGIBLE",
+                quality_tier="INELIGIBLE",
+                rejection_gate="Stage 1c Applicability Gate",
+                protocol_name=applicability_report.protocol_name or protocol_title,
+                duration_seconds=elapsed,
+                cost_telemetry=rfc_cost_summary,
+                router_model=active_router_model,
+                extraction_model=active_extraction_model,
+                query_model=active_query_model,
+                repair_model=active_repair_model,
+                error_message=f"Ineligible: {applicability_report.rationale}",
+            )
+            update_run_metadata_index(
+                run_root_dir=effective_run_root,
+                rfc_id=rfc_number_str,
+                protocol_name=applicability_report.protocol_name or protocol_title,
+                rfc_dir=target_output_dir,
+                scm_path=None,
+                trajectory_json_path=None,
+                quality_tier="INELIGIBLE",
+                is_eligible=False,
+                build_successful=False,
+                error_message=applicability_report.rationale,
+                rejection_gate="Stage 1c Applicability Gate",
+                duration_seconds=elapsed,
+            )
+            GLOBAL_EVENT_BUS.register_filtered_rfc(
+                rfc_id=rfc_number_str,
+                title=applicability_report.protocol_name or protocol_title,
+                gate="Stage 1c Applicability Gate",
+                reason=applicability_report.rationale or "Disqualified by Stage 1c applicability gate",
+                duration_seconds=elapsed,
+            )
+            GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=applicability_report.rationale)
+            rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+            logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix="Ineligible RFC Cost"))
+            return PipelineExecutionSummary(
+                rfc_id=rfc_id,
+                protocol_name=applicability_report.protocol_name or protocol_title,
+                is_eligible=False,
+                duration_seconds=elapsed,
+                cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+                cost_telemetry=rfc_cost_summary,
+                error_message=applicability_report.rationale,
+            )
+
+        # Eligible cryptographic protocol confirmed: create per-RFC output directory, run.log, and numbered tab
+        target_output_dir.mkdir(parents=True, exist_ok=True)
+        run_log_path = target_output_dir / "run.log"
+        configure_pipeline_logging(run_log_file=run_log_path)
+        final_protocol_name = applicability_report.protocol_name or protocol_title
+        participating_principals = applicability_report.participating_principals
+        intake_rationale = applicability_report.rationale
+        eligible_rationale_msg = f"Eligible: {intake_rationale}" if intake_rationale else None
+        tab_index = GLOBAL_EVENT_BUS.register_accepted_tab(
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            rfc_dir=target_output_dir,
+            rfc_title=protocol_title,
+            intake_rationale=intake_rationale,
+        )
+        logger.info("Eligible Cryptographic Protocol Confirmed [Tab #%d]: %s (%s)", tab_index, rfc_number_str, final_protocol_name)
+        logger.info("Output Directory: %s", target_output_dir)
+
+        GLOBAL_EVENT_BUS.emit("stage_completed", stage=1, protocol_name=final_protocol_name, rfc_id=rfc_number_str, tab_index=tab_index)
+
+        # -------------------------------------------------------------------------
+        # STAGE 1d & 1e: Exchange Section Routing & Verbatim Slicing
+        # -------------------------------------------------------------------------
+        target_sections = route_handshake_sections(
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            toc_entries=toc_entries,
+            model=router_model,
+        )
+
+        try:
+            verbatim_slice = slice_verbatim_sections(raw_rfc_text, target_sections)
+            if not verbatim_slice.strip():
+                raise ValueError(f"Verbatim section slice for {target_sections} produced 0 non-empty lines")
+        except Exception as slice_exc:
+            elapsed = time.time() - start_time
+            error_msg = f"Section slicing failed: {slice_exc}"
+            csv_error_msg = f"{error_msg} | {eligible_rationale_msg}" if eligible_rationale_msg else error_msg
+            logger.error(error_msg)
+            empty_stage2 = {
+                "schema_self_correction_triggered": False,
+                "schema_validation_error": error_msg,
+                "initial_ast": None,
+                "initial_scm": None,
+            }
+            empty_stage5 = {
+                "validator_binary": "cpsa4roletran",
+                "roletran_algebra_supported": True,
+                "initial_passed": False,
+                "final_passed": False,
+                "total_attempts": 0,
+                "compiled_defproc_output": None,
+                "repair_attempts": [],
+            }
+            empty_stage6 = {
+                "validator_binary": "cpsa4",
+                "initial_passed": False,
+                "final_passed": False,
+                "total_attempts": 0,
+                "repair_attempts": [],
+            }
+            trajectory_path = write_trajectory_metadata_bundle(
+                output_dir=target_output_dir,
+                rfc_id=rfc_number_str,
+                rfc_title=protocol_title,
+                protocol_name=final_protocol_name,
+                participating_principals=participating_principals,
+                selected_sections=target_sections,
+                verbatim_slice="",
+                duration_seconds=elapsed,
+                stage2_record=empty_stage2,
+                stage5_record=empty_stage5,
+                stage6_record=empty_stage6,
+                final_spec=None,
+                final_scm_path=None,
+                trace_txt_path=None,
+                shapes_txt_path=None,
+                solver_passed=False,
+                intake_rationale=intake_rationale,
+            )
+            update_run_metadata_index(
+                run_root_dir=effective_run_root,
+                rfc_id=rfc_number_str,
+                protocol_name=final_protocol_name,
+                rfc_dir=target_output_dir,
+                scm_path=None,
+                trajectory_json_path=trajectory_path,
+                quality_tier="REJECTED",
+                is_eligible=True,
+                build_successful=False,
+                error_message=csv_error_msg,
+                tab_index=tab_index,
+                intake_rationale=intake_rationale,
+            )
+            rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+            csv_recorder.log_run(
+                rfc_id=rfc_id,
+                is_eligible=True,
+                status="FAILED",
+                quality_tier="REJECTED",
+                protocol_name=final_protocol_name,
+                selected_sections=target_sections,
+                sliced_lines_count=0,
+                duration_seconds=elapsed,
+                cost_telemetry=rfc_cost_summary,
+                router_model=active_router_model,
+                extraction_model=active_extraction_model,
+                query_model=active_query_model,
+                repair_model=active_repair_model,
+                trajectory_json_path=trajectory_path,
+                error_message=csv_error_msg,
+            )
+            GLOBAL_EVENT_BUS.update_accepted_tab(
+                tab_index,
+                status="FAILED",
+                quality_tier="REJECTED",
+                duration_seconds=round(elapsed, 2),
+                cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+                cost_telemetry=rfc_cost_summary,
+                trajectory_path=str(trajectory_path),
+                error_message=error_msg,
+                intake_rationale=intake_rationale,
+            )
+            GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, error_message=error_msg)
+            GLOBAL_EVENT_BUS.emit("pipeline_failed", error_message=error_msg)
+            return PipelineExecutionSummary(
+                rfc_id=rfc_id,
+                protocol_name=final_protocol_name,
+                is_eligible=True,
+                selected_sections=target_sections,
+                sliced_lines_count=0,
+                trajectory_json_path=trajectory_path,
+                quality_tier="REJECTED",
+                intake_rationale=intake_rationale,
+                duration_seconds=elapsed,
+                cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+                cost_telemetry=rfc_cost_summary,
+                error_message=error_msg,
+            )
+
+        slice_lines_count = len(verbatim_slice.splitlines())
+
+        with open(slice_file, "w", encoding="utf-8") as slice_handle:
+            slice_handle.write(verbatim_slice)
+
+        try:
+            intake_checkpoint_file.write_text(
+                json.dumps(
+                    {
+                        "rfc_id": rfc_number_str,
+                        "protocol_title": protocol_title,
+                        "final_protocol_name": final_protocol_name,
+                        "participating_principals": participating_principals,
+                        "intake_rationale": intake_rationale,
+                        "target_sections": target_sections,
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
+
+        GLOBAL_EVENT_BUS.update_accepted_tab(tab_index, slice_path=str(slice_file))
+        GLOBAL_EVENT_BUS.emit(
+            "slice_ready",
+            sections=target_sections,
+            line_count=slice_lines_count,
+            slice_path=str(slice_file),
+        )
 
     # -------------------------------------------------------------------------
     # STAGE 2: JSON CPSA Generation
@@ -828,15 +916,29 @@ def run_rfc_translation_pipeline(
         model=resolve_prompt_model(PROMPT_PROTOCOL_EXTRACTION, extraction_model),
     )
     try:
-        protocol_ast = extract_protocol_specification(
-            verbatim_slice=verbatim_slice,
-            protocol_name=final_protocol_name,
-            principals=applicability_report.participating_principals,
-            model=extraction_model,
-        )
-        # Immediately persist Stage 2 AST checkpoint to disk before Stage 3 (cpsa4json) runs
-        initial_ast_path = target_output_dir / "initial_ast.json"
-        initial_ast_path.write_text(protocol_ast.model_dump_json(indent=2), encoding="utf-8")
+        if resume_checkpoint and not has_completed_trajectory and initial_ast_path.exists() and initial_ast_path.stat().st_size > 0:
+            protocol_ast = CPSAProtocolSpecification.model_validate_json(
+                initial_ast_path.read_text(encoding="utf-8")
+            )
+            constrained_protocol_extractor.LAST_EXTRACTION_METADATA = {
+                "schema_self_correction_triggered": False,
+                "schema_validation_error": None,
+            }
+            logger.info(
+                "Resumed Stage 2 AST from checkpoint (%s): %d roles, %d skeletons",
+                initial_ast_path,
+                len(protocol_ast.roles),
+                len(protocol_ast.skeletons),
+            )
+        else:
+            protocol_ast = extract_protocol_specification(
+                verbatim_slice=verbatim_slice,
+                protocol_name=final_protocol_name,
+                principals=participating_principals,
+                model=extraction_model,
+            )
+            # Immediately persist Stage 2 AST checkpoint to disk before Stage 3 (cpsa4json) runs
+            initial_ast_path.write_text(protocol_ast.model_dump_json(indent=2), encoding="utf-8")
         GLOBAL_EVENT_BUS.emit(
             "stage_completed",
             stage=2,
@@ -877,7 +979,7 @@ def run_rfc_translation_pipeline(
             rfc_id=rfc_number_str,
             rfc_title=protocol_title,
             protocol_name=final_protocol_name,
-            participating_principals=applicability_report.participating_principals,
+            participating_principals=participating_principals,
             selected_sections=target_sections,
             verbatim_slice=verbatim_slice,
             duration_seconds=elapsed,
@@ -1135,7 +1237,7 @@ def run_rfc_translation_pipeline(
         rfc_id=rfc_number_str,
         rfc_title=protocol_title,
         protocol_name=final_protocol_name,
-        participating_principals=applicability_report.participating_principals,
+        participating_principals=participating_principals,
         selected_sections=target_sections,
         verbatim_slice=verbatim_slice,
         duration_seconds=elapsed,

@@ -333,14 +333,15 @@ class PipelineEventBus:
             self._filtered_rfcs.clear()
             self._batch_cost_telemetry = {}
 
-    def load_run_from_disk(self, target_path: Path) -> Dict[str, Any]:
+    def load_run_from_disk(self, target_path: Path, is_live: bool = False) -> Dict[str, Any]:
         """Reconstructs numbered accepted tabs and filtered RFCs from an existing run directory,
-        metadata_index.json, or single <protocol>_trajectory.json for offline `--view` replay.
+        metadata_index.json, or single <protocol>_trajectory.json for offline `--view` replay
+        or live `--resume` continuation.
         """
         resolved = target_path.resolve()
         with self._lock:
             self.clear()
-            self._is_live = False
+            self._is_live = is_live
 
             index_file: Optional[Path] = None
             run_dir: Path = resolved
@@ -444,7 +445,7 @@ class PipelineEventBus:
 
                     if traj_path and traj_path.exists():
                         self._ingest_trajectory_as_tab(traj_path, fallback_entry=run_entry)
-                    elif rfc_dir_path and rfc_dir_path.exists():
+                    elif not is_live and rfc_dir_path and rfc_dir_path.exists():
                         self._ingest_folder_without_trajectory(rfc_dir_path, fallback_entry=run_entry)
 
                 # Also pick up any accepted RFC directories in run_dir that weren't flushed to metadata_index.json
@@ -455,7 +456,7 @@ class PipelineEventBus:
                             trajs = sorted(child.glob("*_trajectory.json"))
                             if trajs:
                                 self._ingest_trajectory_as_tab(trajs[0])
-                            elif any(child.iterdir()):
+                            elif not is_live and any(child.iterdir()):
                                 self._ingest_folder_without_trajectory(child)
             elif run_dir.is_dir():
                 for child in sorted(run_dir.iterdir()):

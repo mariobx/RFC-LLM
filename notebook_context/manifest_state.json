@@ -5,29 +5,16 @@
     "deleted": [],
     "modified": [
       "README.md",
-      "docs/INTERMEDIATE_REPRESENTATION.md",
-      "docs/TIERED_MODEL_ROUTING.md",
-      "docs/VERIFICATION_AND_SELF_HEALING.md",
-      "prompts/03_protocol_extraction.md",
-      "prompts/04_schema_self_correction.md",
-      "prompts/06_compiler_repair.md",
-      "prompts/07_think_token_synthesizer.md",
-      "refrences/cpsa_kb/01_core_rules/00_json_ast_to_cpsa_scheme_mapping.md",
-      "refrences/cpsa_kb/01_core_rules/07_compiler_and_solver_error_catalog.md",
-      "src/document_ingestion/handshake_section_router.py",
-      "src/document_ingestion/rfc_header_filter.py",
-      "src/document_ingestion/rfc_toc_parser.py",
-      "src/document_ingestion/verbatim_section_slicer.py",
-      "src/intermediate_representation/cpsa_grammar.py",
-      "src/intermediate_representation/protocol_syntax_tree.py",
+      "docs/QUICKSTART_AND_OPERATIONS.md",
+      "src/cost_tracker.py",
       "src/main_pipeline_orchestrator.py",
-      "src/prompt_loader.py",
-      "src/rag_retriever_client.py",
-      "src/system_config.py",
-      "src/verification_engine/compiler_diagnostic_repair.py",
-      "src/verification_engine/roletran_executability_gate.py",
+      "src/pipeline.py",
+      "src/pipeline_events.py",
       "src/verification_engine/trajectory_metadata_exporter.py",
-      "tests/test_trajectory_and_hardening.py"
+      "src/visualizer/server.py",
+      "src/visualizer/static/index.html",
+      "tests/test_main_pipeline_orchestrator.py",
+      "tests/test_visualizer_and_events.py"
     ]
   },
   "files": {
@@ -51,8 +38,8 @@
     },
     "README.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "0d23cf339357839465e6a8886ee8dbd09c28ca7c30360f03b3b3ea7dcda496f4",
-      "size_bytes": 10054,
+      "sha256": "2ac3210cfc05bdb34b477d97012169e6debf823214e13bd09fa7bb5bdd2e44e9",
+      "size_bytes": 11191,
       "status": "included"
     },
     "docs/ARCHITECTURE.md": {
@@ -81,8 +68,8 @@
     },
     "docs/QUICKSTART_AND_OPERATIONS.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "0eaffe8f77a1c5b81d1ab29d6a506a9e631516faeca485700c2d6c23f0bf07c6",
-      "size_bytes": 12370,
+      "sha256": "4bb6d424bc44fa31a6814bcf09defdf97753971b488e832564ba4bdf3b05f09e",
+      "size_bytes": 14408,
       "status": "included"
     },
     "docs/README.md": {
@@ -111,8 +98,8 @@
     },
     "logs/pipeline_runs.csv": {
       "bundle": "(tier4)",
-      "sha256": "ec2ad95382344f82963057b1f8b4a7d2a3533f6441ea67cd7878e12cc8274330",
-      "size_bytes": 283825,
+      "sha256": "6b057dac819b64c879d991bf9929edc21762f2e00f5007095870e096d90c5c32",
+      "size_bytes": 754,
       "status": "summarized"
     },
     "prompts/01_applicability_gate.md": {
@@ -1263,8 +1250,8 @@
     },
     "src/cost_tracker.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "7e821742be5b30391894a63beffa697099b5f2e7e054e57299b2b704a5f15976",
-      "size_bytes": 12904,
+      "sha256": "2e0351cfe3d71f2080544e9c666cc54c2954e7ad16dcf1423fe183bf7cbcb898",
+      "size_bytes": 14535,
       "status": "included"
     },
     "src/document_ingestion/__init__.py": {
@@ -1359,20 +1346,20 @@
     },
     "src/main_pipeline_orchestrator.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "d896b2c29551f719cf57a67938dfcf4bfe6f77d21a35debc6d2002d956fa7a28",
-      "size_bytes": 63833,
+      "sha256": "8832cbbb4c95cff782e9e0eda8da6fb9526ac193a73a6809fdf73b196ccdd34f",
+      "size_bytes": 69393,
       "status": "included"
     },
     "src/pipeline.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "59ac888002a9baa2180ef7de1f6d33389ed607f2e4f23ddd0721744a6d8c2b09",
-      "size_bytes": 25076,
+      "sha256": "4722c9d165cd446da26b25a8d128cd92aa8da47de3f911f09a272ea29108ef97",
+      "size_bytes": 48436,
       "status": "included"
     },
     "src/pipeline_events.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "0207791836c5e1c32cc2c54bc81f4340d2725bbbd9e92b446739e6cf074cec29",
-      "size_bytes": 27171,
+      "sha256": "4dc1c4a23313ee86a0ae8b6f702f9c1491cf009efca216ddeb225db8eab8137f",
+      "size_bytes": 27268,
       "status": "included"
     },
     "src/prompt_loader.py": {
@@ -1437,8 +1424,8 @@
     },
     "src/verification_engine/trajectory_metadata_exporter.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "62a363878d5b50198ffabc3ef7a328d220a2de3238fce7a8bdcb081297656156",
-      "size_bytes": 46833,
+      "sha256": "e2d2d046a6c02908c744b03073e9b052377fee7c1896782a39b82bcfc8902c7f",
+      "size_bytes": 47536,
       "status": "included"
     },
     "src/visualizer/__init__.py": {
@@ -1449,14 +1436,14 @@
     },
     "src/visualizer/server.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "8aafb7c40a7f903b3a34f69e9899c29014a81abfe550aebcc699fc019b4ed27a",
-      "size_bytes": 32501,
+      "sha256": "08246d725f18e36e436e75ca9cb8af454055f89cce2798b8ac7240b9585a9af3",
+      "size_bytes": 32700,
       "status": "included"
     },
     "src/visualizer/static/index.html": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "15754b1924be38a535f0fe46ece2b60c5e27e95406c88485a1c070f1e8defd31",
-      "size_bytes": 156763,
+      "sha256": "996292c3b2cb9d3d39833fff00a02a0ef9f25c39a8e75ef9bd277ff42ceef065",
+      "size_bytes": 156750,
       "status": "included"
     },
     "tests/conftest.py": {
@@ -1497,8 +1484,8 @@
     },
     "tests/test_main_pipeline_orchestrator.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "bc5a9ee15ce7dbd9c5d91d7fbe0bec32cbc8f5afbf57d8f887980bff0c77dd26",
-      "size_bytes": 7131,
+      "sha256": "b152ca85b0a7c4a9e146184de159f2f8037e91ff8545f93123a81e68ee07f864",
+      "size_bytes": 9471,
       "status": "included"
     },
     "tests/test_trajectory_and_hardening.py": {
@@ -1509,8 +1496,8 @@
     },
     "tests/test_visualizer_and_events.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
-      "sha256": "7084325acf2a8af10298513eaadb75f87632a7c6e568e12b8c97d397773f0650",
-      "size_bytes": 3815,
+      "sha256": "01ee0734558bc0608cdf08f554b0c8900b24ccf8af6ede8b8abdf60d2aa1184c",
+      "size_bytes": 9128,
       "status": "included"
     },
     "tests/test_visualizer_tabs.py": {
@@ -1520,15 +1507,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-05 18:27:58 UTC",
+  "generated_at": "2026-11-05 19:08:45 UTC",
   "git": {
     "branch": "main",
-    "commit": "955b498002b77ce4270e7d22df6f8cb1f45dccdd",
-    "subject": "Harden local LLM timeouts, section ID normalization, hex/unnumbered RFC slicing, temperature cycle bump, and CPSA pre-flight check"
+    "commit": "335c258afed1f0c6e772799f762213bf78510e11",
+    "subject": "Implement 6-pillar deterministic AST pre-normalizer, roletran/cycle fixes, ingestion hardening, and docs"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "955b498002b77ce4270e7d22df6f8cb1f45dccdd",
-    "subject": "Harden local LLM timeouts, section ID normalization, hex/unnumbered RFC slicing, temperature cycle bump, and CPSA pre-flight check"
+    "commit": "335c258afed1f0c6e772799f762213bf78510e11",
+    "subject": "Implement 6-pillar deterministic AST pre-normalizer, roletran/cycle fixes, ingestion hardening, and docs"
   }
 }

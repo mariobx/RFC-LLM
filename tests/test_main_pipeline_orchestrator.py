@@ -155,3 +155,52 @@ def test_pipeline_e2e_successful_synthesis_and_build(tmp_path: Path, mock_valid_
         assert str(summary.trajectory_json_path.resolve()) in idx_payload["metadata_json_files"]
         assert str((tmp_path / "rfc9999_out").resolve()) in idx_payload["rfc_directories"]
 
+
+def test_pipeline_resumes_from_mid_rfc_stage2_checkpoint(tmp_path: Path, mock_valid_spec: CPSAProtocolSpecification):
+    """When resume_checkpoint=True and verbatim_slice.txt + initial_ast.json exist on disk,
+    Stage 1 and Stage 2 LLM calls are skipped and synthesis resumes directly at Stage 3-6.
+    """
+    import json
+
+    rfc_source = tmp_path / "rfc9998.txt"
+    rfc_source.write_text(
+        "Request for Comments: 9998\nCategory: Standards Track\n\n"
+        "                    Resumable Protocol Specification\n\n"
+        "1. Handshake\n   Alice and Bob exchange nonces.\n",
+        encoding="utf-8",
+    )
+    rfc_out = tmp_path / "rfc9998"
+    rfc_out.mkdir(parents=True, exist_ok=True)
+    (rfc_out / "verbatim_slice.txt").write_text("1. Handshake\n   Alice and Bob exchange nonces.\n", encoding="utf-8")
+    (rfc_out / "intake_checkpoint.json").write_text(
+        json.dumps(
+            {
+                "rfc_id": "RFC 9998",
+                "protocol_title": "Resumable Protocol Specification",
+                "final_protocol_name": "orch_test_proto",
+                "participating_principals": ["init", "resp"],
+                "intake_rationale": "Interactive cryptographic handshake.",
+                "target_sections": ["1"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (rfc_out / "initial_ast.json").write_text(mock_valid_spec.model_dump_json(indent=2), encoding="utf-8")
+
+    with patch("src.main_pipeline_orchestrator.evaluate_protocol_applicability", side_effect=AssertionError("Stage 1c should be skipped on checkpoint resume")), \
+         patch("src.main_pipeline_orchestrator.route_handshake_sections", side_effect=AssertionError("Stage 1d should be skipped on checkpoint resume")), \
+         patch("src.main_pipeline_orchestrator.extract_protocol_specification", side_effect=AssertionError("Stage 2 should be skipped on checkpoint resume")):
+
+        summary = run_rfc_translation_pipeline(
+            rfc_file_path=rfc_source,
+            output_dir=rfc_out,
+            run_root_dir=tmp_path,
+            resume_checkpoint=True,
+        )
+
+        assert summary.is_eligible is True
+        assert summary.roletran_passed is True
+        assert summary.build_successful is True
+        assert summary.trajectory_json_path is not None and summary.trajectory_json_path.exists()
+
+

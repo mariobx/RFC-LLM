@@ -2,40 +2,27 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-05 18:27:58 UTC · Git: `main` @ `955b498002b7` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,122*
+*Generated: 2026-11-05 19:08:45 UTC · Git: `main` @ `335c258afed1` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~29,916*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `955b498002b7` — Harden local LLM timeouts, section ID normalization, hex/unnumbered RFC slicing, temperature cycle bump, and CPSA pre-flight check
+- **Git commit:** `335c258afed1` — Implement 6-pillar deterministic AST pre-normalizer, roletran/cycle fixes, ingestion hardening, and docs
 - **Added (0):** none
-- **Modified (24):**
+- **Modified (11):**
   - `README.md`
-  - `docs/INTERMEDIATE_REPRESENTATION.md`
-  - `docs/TIERED_MODEL_ROUTING.md`
-  - `docs/VERIFICATION_AND_SELF_HEALING.md`
-  - `prompts/03_protocol_extraction.md`
-  - `prompts/04_schema_self_correction.md`
-  - `prompts/06_compiler_repair.md`
-  - `prompts/07_think_token_synthesizer.md`
-  - `refrences/cpsa_kb/01_core_rules/00_json_ast_to_cpsa_scheme_mapping.md`
-  - `refrences/cpsa_kb/01_core_rules/07_compiler_and_solver_error_catalog.md`
-  - `src/document_ingestion/handshake_section_router.py`
-  - `src/document_ingestion/rfc_header_filter.py`
-  - `src/document_ingestion/rfc_toc_parser.py`
-  - `src/document_ingestion/verbatim_section_slicer.py`
-  - `src/intermediate_representation/cpsa_grammar.py`
-  - `src/intermediate_representation/protocol_syntax_tree.py`
+  - `docs/QUICKSTART_AND_OPERATIONS.md`
+  - `src/cost_tracker.py`
   - `src/main_pipeline_orchestrator.py`
-  - `src/prompt_loader.py`
-  - `src/rag_retriever_client.py`
-  - `src/system_config.py`
-  - `src/verification_engine/compiler_diagnostic_repair.py`
-  - `src/verification_engine/roletran_executability_gate.py`
+  - `src/pipeline.py`
+  - `src/pipeline_events.py`
   - `src/verification_engine/trajectory_metadata_exporter.py`
-  - `tests/test_trajectory_and_hardening.py`
+  - `src/visualizer/server.py`
+  - `src/visualizer/static/index.html`
+  - `tests/test_main_pipeline_orchestrator.py`
+  - `tests/test_visualizer_and_events.py`
 - **Deleted (0):** none
 
 ---
@@ -60,13 +47,13 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 
 | Bundle | Title | Files | Size | Estimated Tokens | Tier |
 |---|---|---|---|---|---|
-| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 114.0 KB | ~29,122 | Tier 1 — Architecture, Documentation & Project Configs |
-| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 946.0 KB | ~242,120 | Tier 2 — Core Source Code & CLI Entrypoints |
-| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 198.3 KB | ~50,538 | Tier 3 — Knowledge Base Index & Test Suites |
+| `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 117.1 KB | ~29,916 | Tier 1 — Architecture, Documentation & Project Configs |
+| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 48 | 976.8 KB | ~250,004 | Tier 2 — Core Source Code & CLI Entrypoints |
+| `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 11 | 205.8 KB | ~52,452 | Tier 3 — Knowledge Base Index & Test Suites |
 | `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 694.5 KB | ~176,071 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
 | `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files) | 155 | 915.3 KB | ~234,169 | Tier 3 — Domain Reference Code Corpus (.scm) |
 
-**Total Ingested Context Payload:** ~732,020 tokens across all bundles (73.2% of Gemini 1M context window)
+**Total Ingested Context Payload:** ~742,612 tokens across all bundles (74.3% of Gemini 1M context window)
 
 ---
 
@@ -97,7 +84,7 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/intermediate_representation/protocol_syntax_tree.py` | Strongly-Typed Intermediate Representation (AST) for MITRE C | `CPSAVariableDeclaration`, `CPSATraceEvent`, `CPSAProtocolRole`, `CPSAStrandInstance`, `CPSAPreskeleton`, `CPSAProtocolSpecification` | `_validate_cpsa_term`, `sanitize_cpsa_symbol`, `_quote_cpsa_tag_literal`, `_is_quoted_tag_literal`, `_collect_implied_variable_sorts`, `_invert_cpsa_key` … | — |
 | `src/logging_config.py` | Comprehensive Structured Logging Subsystem for RFC-LLM Pipel | `PipelineConsoleFormatter`, `PipelineMetricsCSVLogger` | `configure_pipeline_logging`, `get_pipeline_logger` | — |
 | `src/main_pipeline_orchestrator.py` | Main Pipeline Orchestrator for RFC-to-CPSA Synthesis. | `PipelineExecutionSummary` | `_compact_diagnostic_headline`, `_extract_rfc_abstract`, `_read_scm_safe`, `_compute_ast_hash`, `_run_roletran_self_healing_loop`, `_run_mitre_solver_self_healing_loop` … | — |
-| `src/pipeline.py` | Command-line interface for RFC-LLM synthesis pipeline suppor | — | `_print_cost_breakdown`, `natural_rfc_sort_key`, `get_completed_rfc_ids`, `get_failed_rfc_ids`, `main` | `--view`, `--output-dir`, `-o`, `--model`, `-m`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, `--no-visualize` … |
+| `src/pipeline.py` | Command-line interface for RFC-LLM synthesis pipeline suppor | — | `_print_cost_breakdown`, `natural_rfc_sort_key`, `get_completed_rfc_ids`, `get_failed_rfc_ids`, `get_eligible_rfc_count`, `_is_localhost_binding` … | `--resume`, `-r`, `--view`, `--output-dir`, `-o`, `--model`, `-m`, `--router-model`, `--extraction-model`, `--repair-model` … |
 | `src/pipeline_events.py` | Bounded event bus, sequential tab registry, and disk telemet | `PipelineEvent`, `PipelineEventBus` | `_strip_bulky_event_fields` | — |
 | `src/prompt_loader.py` | Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LL | `PromptSpec` | `parse_prompt_frontmatter`, `load_prompt_spec`, `resolve_prompt_model`, `load_prompt`, `build_schema_system_prompt`, `_unwrap_schema_envelope` … | — |
 | `src/rag_retriever_client.py` | CPSA 4.4.9 Knowledge Base Indexer, `TOC.md` Flag Manager, an | `CPSAKnowledgeBase` | `tokenize_cpsa_dsl`, `_slugify_heading`, `parse_toc_rebuild_flag`, `_split_markdown_file_into_sections`, `_extract_scm_metadata_from_source`, `build_cpsa_kb_index` … | — |
@@ -118,26 +105,23 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `tests/test_cpsa_scoping_and_prompts.py` | Unit Tests for MITRE CPSA 4.4.9 Keyword/Sort Scoping and Ext | — | `test_externalized_prompts_load_frontmatter_strip_yaml_and_fallback`, `test_prompt_frontmatter_live_hot_reload_and_strata_routing`, `test_logic_only_sorts_forbidden_in_role_and_skeleton_vars`, `test_diffie_hellman_sorts_forbidden_under_basic_algebra`, `test_structural_keywords_forbidden_inside_message_terms`, `test_role_and_skeleton_keyword_scoping_separation` … | — |
 | `tests/test_document_ingestion.py` | Unit & Integration Tests for Document Ingestion Subsystem (S | — | `tls_rfc_text`, `kerberos_rfc_text`, `mib_rfc_text`, `test_header_filter_accepts_tls`, `test_header_filter_accepts_kerberos`, `test_header_filter_rejects_mib` … | — |
 | `tests/test_generate_think.py` | Unit and integration tests for Phase 3 Hindsight Reasoning ( | — | `_sample_trajectory_dict`, `test_deterministic_reasoning_compiler_and_hindsight_sanitizer`, `test_process_run_directory_creates_think_json_and_updates_metadata_index` | — |
-| `tests/test_main_pipeline_orchestrator.py` | Integration tests for Main Pipeline Orchestrator. | — | `mock_valid_spec`, `test_pipeline_rejects_ineligible_rfc`, `test_pipeline_e2e_successful_synthesis_and_build` | — |
+| `tests/test_main_pipeline_orchestrator.py` | Integration tests for Main Pipeline Orchestrator. | — | `mock_valid_spec`, `test_pipeline_rejects_ineligible_rfc`, `test_pipeline_e2e_successful_synthesis_and_build`, `test_pipeline_resumes_from_mid_rfc_stage2_checkpoint` | — |
 | `tests/test_trajectory_and_hardening.py` | Hardening and edge-case tests for 60s process-group SIGKILL, | — | `test_hard_timeout_kills_entire_process_group_including_grandchild`, `test_malformed_yaml_frontmatter_and_edge_cases`, `test_split_top_level_sexprs_ignores_parens_in_comments_and_strings`, `test_offline_load_run_from_disk_discovery_modes`, `test_visualizer_artifact_endpoint_blocks_path_traversal_and_dotfiles`, `test_parse_llm_json_unwraps_schema_properties_and_single_element_lists` … | — |
-| `tests/test_visualizer_and_events.py` | Unit and integration tests for Pipeline Event Bus, Cycle Det | — | `sample_spec`, `test_pipeline_event_bus_emission_and_subscription`, `test_compiler_repair_cycle_detection_triggers_warning_and_jitter`, `test_visualizer_server_endpoints` | — |
+| `tests/test_visualizer_and_events.py` | Unit and integration tests for Pipeline Event Bus, Cycle Det | — | `sample_spec`, `test_pipeline_event_bus_emission_and_subscription`, `test_compiler_repair_cycle_detection_triggers_warning_and_jitter`, `test_visualizer_server_endpoints`, `test_visualizer_remote_host_binding_and_relative_api_paths`, `test_cli_resume_three_tier_resolution_and_overrides` | — |
 | `tests/test_visualizer_tabs.py` | Tests for scalable numbered multi-RFC tabs, filtered RFC dra | — | `test_sequential_tab_numbering_and_filtered_separation`, `test_per_attempt_hydration_and_offline_replay`, `test_5000_accepted_tabs_scalability_benchmark` | — |
 
 ---
 
 ## Excluded & Heavy Assets Inventory (Tier 4)
 
-6 assets (2.1 MB total) were **excluded from raw text dumping** and summarized below with metadata and lightweight schema previews, so the downstream LLM is aware of every dataset, embedding matrix, manual, figure and log in the repository without ingesting their bulk.
+6 assets (1.8 MB total) were **excluded from raw text dumping** and summarized below with metadata and lightweight schema previews, so the downstream LLM is aware of every dataset, embedding matrix, manual, figure and log in the repository without ingesting their bulk.
 
 ### `logs/pipeline_runs.csv`
 
-*277.2 KB · excluded because: declared Tier 4 summarized asset*
+*0.7 KB · excluded because: declared Tier 4 summarized asset*
 
 - Header (50 cols): `timestamp, rfc_id, run_count, is_eligible, status, quality_tier, total_completion_steps, zero_shot_passed, schema_repairs, roletran_repairs, solver_repairs, total_repairs, rejection_gate, protocol_name, message_algebra, selected_sections, sliced_lines_count, role_count, preskeleton_count, scm_lines_count, shapes_count, explored_skeletons_count, all_povs_multi_strand, secrecy_proved, searcher_invocations, herald_options, duration_seconds, router_model, router_calls, router_tokens, router_cost_usd, extraction_model, extraction_calls, extraction_tokens, extraction_cost_usd, query_model, query_calls, query_tokens, query_cost_usd, repair_model, repair_calls, repair_tokens, repair_cost_usd, total_calls, total_tokens, total_cost_usd, scm_path, shapes_xhtml_path, trajectory_json_path, error_message`
-- Sample row: `2026-11-03 14:48:47, RFC9872, 1, False, INELIGIBLE, INELIGIBLE, 0, , 0, 0, 0, 0, Stage 1c Applicability Gate, Recommendations for Discovering IPv6 ..., , , 0, 0, 0, 0, 0, 0, , , 0, , 3.537, nous/anthropic/claude-haiku-5.5, 1, 2804, 0.000409, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, 1, 2804, 0.000409, , , , Ineligible: RFC 9872 is an Informatio...`
-- Sample row: `2026-11-03 14:50:36, RFC7714, 1, False, INELIGIBLE, INELIGIBLE, 0, , 0, 0, 0, 0, Stage 1c Applicability Gate, AES-GCM Authenticated Encryption in S..., , , 0, 0, 0, 0, 0, 0, , , 0, , 2.229, nous/anthropic/claude-haiku-5.5, 1, 3517, 0.000477, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, 1, 3517, 0.000477, , , , Ineligible: RFC 7714 specifies how AE...`
-- Sample row: `2026-11-03 14:50:42, RFC2328, 1, False, INELIGIBLE, INELIGIBLE, 0, , 0, 0, 0, 0, Stage 1c Applicability Gate, OSPF Version 2, , , 0, 0, 0, 0, 0, 0, , , 0, , 6.556, nous/anthropic/claude-haiku-5.5, 1, 5371, 0.001019, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, nous/anthropic/claude-haiku-5.5, 0, 0, 0.000000, 1, 5371, 0.001019, , , , Ineligible: RFC 2328 is a link-state ...`
-- Total rows (incl. header): 298
+- Total rows (incl. header): 1
 
 ### `refrences/cpsa_kb/04_examples_catalog/batch1_meta.json`
 
@@ -534,7 +518,7 @@ SOFTWARE.
 
 ### `README.md`
 
-*sha256:`0d23cf339357` · 90 lines · 9.8 KB (~2,509 tokens) · lang:`markdown`*
+*sha256:`2ac3210cfc05` · 92 lines · 10.9 KB (~2,793 tokens) · lang:`markdown`*
 
 ````markdown
 # RFC-LLM
@@ -569,8 +553,10 @@ All 7 LLM prompt templates ([`prompts/01_applicability_gate.md`](prompts/01_appl
 - **Clean `.env`**: `.env` ([`.env.example`](.env.example)) holds **only** API credentials (`GEMINI_API_KEY`, `NOUS_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) and base endpoint URLs (`NOUS_API_BASE`, `OLLAMA_API_BASE`, `STRATA_API_BASE`).
 - **Provider Prefixes & CLI Overrides**: Supports `nous/<model>`, `strata/<model>`, `ollama/<model>`, `gemini/<model>`, `openai/<model>`, and `anthropic/<model>`, plus optional one-off CLI overrides (`--model`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`).
 
-### Multi-RFC Web Visualizer & Offline Replay (`--view`)
-[`src/visualizer/server.py`](src/visualizer/server.py), [`src/visualizer/static/index.html`](src/visualizer/static/index.html), and [`src/pipeline_events.py`](src/pipeline_events.py) provide real-time and offline multi-RFC inspection at `http://127.0.0.1:8080`:
+### Multi-RFC Web Visualizer, Remote Hosting (`--host` / `--port`), & In-Place Resume (`-r` / `--resume`)
+[`src/visualizer/server.py`](src/visualizer/server.py), [`src/visualizer/static/index.html`](src/visualizer/static/index.html), and [`src/pipeline_events.py`](src/pipeline_events.py) provide real-time and offline multi-RFC inspection:
+- **Local & Remote Tailscale / Reverse-Proxy Hosting (`--host` & `--port`)**: Defaults to `http://127.0.0.1:8080` and opens a local browser tab automatically. Pass `--host <ip> --port <port>` (e.g., `--host 100.x.y.z --port 8080` on a remote SSH/Tailscale server or `--host 0.0.0.0`) to bind to a specific interface; non-localhost bindings automatically skip `webbrowser.open()` and support subdomain/subpath reverse proxies (such as Authentik, Nginx, or Traefik) via relative `api/...` endpoints and `X-Accel-Buffering: no` SSE streaming.
+- **In-Place Run Resumption (`--resume` / `-r`)**: Every run saves its expanded resume command to `output/.last_run` and its deterministic RFC queue to `<run_dir>/run_manifest.json`. Running `./rfc-llm -r` resumes `output/.last_run` in-place (hydrating all prior tabs, CSV rows, and mid-RFC `initial_ast.json` checkpoints, while allowing on-the-fly CLI overrides like `--model` or `--host`); if `output/.last_run` does not exist, `./rfc-llm -r` lists the top 3 most recent `output/run_*` folders so you can resume with `./rfc-llm -r <1|2|3>` or `./rfc-llm -r <folder_path>`.
 - **Virtualized `#1..#N` Tab Strip**: Allocates sequential `#1..#N` tabs for accepted RFCs showing tab number, RFC ID, quality tier, and protocol name.
 - **Collapsible `Filtered / Skipped` Drawer**: Paginated, searchable drawer recording Tier 0, Stage 1c, and Stage 2 rejected RFCs.
 - **Per-Attempt Time-Travel Stepper**: Inspect `Attempt 0 | Initial` -> `Attempt 1..K` -> `Final` with a rejected/repaired `.scm` toggle, Pydantic JSON AST, compiler diagnostics, KB rules, and SVG shape graphs.
@@ -1622,7 +1608,7 @@ sequenceDiagram
 
 ### `docs/QUICKSTART_AND_OPERATIONS.md`
 
-*sha256:`0eaffe8f77a1` · 181 lines · 12.1 KB (~3,092 tokens) · lang:`markdown`*
+*sha256:`4bb6d424bc44` · 205 lines · 14.1 KB (~3,602 tokens) · lang:`markdown`*
 
 ````markdown
 # Quickstart & Operations Runbook
@@ -1717,13 +1703,37 @@ Key batch flags:
 - `--pattern "rfc*.txt"`: Custom glob pattern when scanning a directory.
 - `--output-dir <dir>` (`-o <dir>`): Custom parent output directory (or explicit `run_*` folder).
 
-### 2.3 Offline Visualizer Replay (`--view`)
+### 2.3 In-Place Run Resumption (`--resume` / `-r`) & Remote Visualizer Hosting (`--host` / `--port`)
+- **In-Place Resumption (`--resume` / `-r`)**:
+  Whenever a synthesis run starts, `./rfc-llm` writes the full expanded resume command (`./rfc-llm -r output/run_... ...`) to `output/.last_run` and saves the exact candidate queue to `<run_dir>/run_manifest.json`.
+  ```bash
+  # Resume the active run recorded in output/.last_run in-place
+  ./rfc-llm -r
+
+  # Resume while overriding the active model or remote visualizer binding mid-run
+  ./rfc-llm -r --model nous/google/gemini-3.8-flash --host 100.64.0.12 --port 8080
+
+  # Resume a specific run folder by path or top-3 index number (1, 2, or 3)
+  ./rfc-llm -r 1
+  ./rfc-llm -r output/run_2026-11-04_20-30-35
+  ```
+  - If `output/.last_run` is missing, `./rfc-llm -r` displays the top 3 most recent `output/run_*` directories with their processed/eligible/verified counts and prompts you to re-run with `-r <folder_number>`.
+  - If no previous runs exist in `output/`, `./rfc-llm -r` explains that `-r` is used after an initial run.
+  - Resuming pre-hydrates all existing `#1..#K` tabs and filtered RFCs in the live visualizer, skips completed RFCs in `pipeline_runs.csv`, and recovers mid-RFC `verbatim_slice.txt` + `initial_ast.json` checkpoints so interrupted Stage 2 extractions are not repeated.
+- **Remote / Tailscale / Authentik Visualizer Hosting (`--host` & `--port`)**:
+  ```bash
+  # Bind the live visualizer (or --view replay) to a Tailscale IP or 0.0.0.0 on a remote SSH server
+  ./rfc-llm refrences/all_RFCs/ --host 100.64.0.12 --port 8080 --tier0-eligible-only --random
+  ```
+  When `--host` is omitted, `./rfc-llm` binds to `127.0.0.1` (`localhost`) and opens your local browser automatically. When `--host` is set to a non-localhost IP, `webbrowser.open()` is skipped automatically and the server streams SSE events (`X-Accel-Buffering: no`) over relative `api/...` paths compatible with Tailscale and reverse proxies (Authentik, Nginx, Caddy, Traefik).
+
+### 2.4 Offline Visualizer Replay (`--view`)
 Open any previously completed run directory (or `metadata_index.json`) in the web visualizer without running synthesis:
 ```bash
-./rfc-llm --view output/run_2026-10-28_16-03-11 --port 8080
+./rfc-llm --view output/run_2026-10-28_16-03-11 --host 127.0.0.1 --port 8080
 ```
 
-### 2.4 One-Off CLI Model Overrides
+### 2.5 One-Off CLI Model Overrides
 For persistent routing changes (including live mid-batch updates), edit `model:` in `prompts/01_*.md` .. `07_*.md`. For temporary single-run overrides, pass CLI flags:
 ```bash
 ./rfc-llm refrences/all_RFCs/rfc5246.txt \

@@ -676,6 +676,7 @@ class VisualizerServer:
                 "Content-Type": "text/event-stream",
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
                 "Access-Control-Allow-Origin": "*",
             },
         )
@@ -707,7 +708,12 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
     def _is_port_available(p: int) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            return s.connect_ex((host, p)) != 0
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind((host, p))
+                return True
+            except OSError:
+                return False
 
     actual_port = port
     while not _is_port_available(actual_port) and actual_port < port + 20:

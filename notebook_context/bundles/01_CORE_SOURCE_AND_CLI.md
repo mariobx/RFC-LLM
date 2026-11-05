@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-05 18:27:58 UTC · Git: `main` @ `955b498002b7` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~242,120*
+*Generated: 2026-11-05 19:08:45 UTC · Git: `main` @ `335c258afed1` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~250,004*
 
 ## Table of Contents
 
@@ -5370,7 +5370,7 @@ def emit_cpsa_scheme(
 
 ### `src/cost_tracker.py`
 
-*sha256:`7e821742be5b` · 309 lines · 12.6 KB (~3,224 tokens) · lang:`python`*
+*sha256:`2e0351cfe3d7` · 340 lines · 14.2 KB (~3,631 tokens) · lang:`python`*
 
 ```python
 """Real-Time Token & USD Cost Telemetry Tracker across Pipeline Model Roles.
@@ -5663,6 +5663,37 @@ class PipelineCostTracker:
     def get_batch_summary(self) -> Dict[str, Any]:
         with self._lock:
             return copy.deepcopy(self.batch_total)
+
+    def restore_batch_summary(self, batch_summary: Optional[Dict[str, Any]]) -> None:
+        """Restores cumulative batch cost telemetry when resuming an existing run directory."""
+        if not isinstance(batch_summary, dict):
+            return
+        with self._lock:
+            restored = make_empty_cost_summary()
+            for key in (
+                "total_calls",
+                "total_prompt_tokens",
+                "total_completion_tokens",
+                "total_cached_tokens",
+                "total_tokens",
+            ):
+                restored[key] = _safe_int(batch_summary.get(key, 0))
+            restored["total_cost_usd"] = round(float(batch_summary.get("total_cost_usd", 0.0) or 0.0), 8)
+            raw_roles = batch_summary.get("roles")
+            if isinstance(raw_roles, dict):
+                for role in MODEL_ROLES:
+                    rb = raw_roles.get(role)
+                    if isinstance(rb, dict):
+                        restored["roles"][role] = {
+                            "model": str(rb.get("model") or ""),
+                            "calls": _safe_int(rb.get("calls", 0)),
+                            "prompt_tokens": _safe_int(rb.get("prompt_tokens", 0)),
+                            "completion_tokens": _safe_int(rb.get("completion_tokens", 0)),
+                            "cached_tokens": _safe_int(rb.get("cached_tokens", 0)),
+                            "total_tokens": _safe_int(rb.get("total_tokens", 0)),
+                            "cost_usd": round(float(rb.get("cost_usd", 0.0) or 0.0), 8),
+                        }
+            self.batch_total = restored
 
     @staticmethod
     def format_cli_summary(summary: Dict[str, Any], prefix: str = "Run Cost") -> str:
@@ -10217,7 +10248,7 @@ class PipelineMetricsCSVLogger:
 
 ### `src/main_pipeline_orchestrator.py`
 
-*sha256:`d896b2c29551` · 1404 lines · 62.3 KB (~15,958 tokens) · lang:`python`*
+*sha256:`8832cbbb4c95` · 1506 lines · 67.8 KB (~17,347 tokens) · lang:`python`*
 
 ```python
 """Main Pipeline Orchestrator for RFC-to-CPSA Synthesis.
@@ -10700,6 +10731,7 @@ def run_rfc_translation_pipeline(
     query_model: Optional[str] = None,
     run_root_dir: Optional[Path] = None,
     csv_path: Optional[Path] = None,
+    resume_checkpoint: bool = False,
 ) -> PipelineExecutionSummary:
     """Executes the end-to-end RFC to formally verified MITRE CPSA synthesis pipeline."""
     start_time = time.time()
@@ -10757,288 +10789,375 @@ def run_rfc_translation_pipeline(
     with open(rfc_file_path, "r", encoding="utf-8", errors="ignore") as rfc_file:
         raw_rfc_text = rfc_file.read()
 
-    # -------------------------------------------------------------------------
-    # STAGE 1a: Tier 0 Header Filter (Document Intake)
-    # -------------------------------------------------------------------------
-    GLOBAL_EVENT_BUS.emit(
-        "stage_started",
-        stage=1,
-        stage_name="Document Intake",
-        model=active_router_model,
-    )
-    header_filter_result = filter_rfc_header(raw_rfc_text)
-    if not header_filter_result.is_eligible:
-        elapsed = time.time() - start_time
-        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
-        csv_recorder.log_run(
-            rfc_id=rfc_id,
-            is_eligible=False,
-            status="INELIGIBLE",
-            quality_tier="INELIGIBLE",
-            rejection_gate="Tier 0 Header Filter",
-            protocol_name=header_filter_result.title,
-            duration_seconds=elapsed,
-            cost_telemetry=rfc_cost_summary,
-            router_model=active_router_model,
-            extraction_model=active_extraction_model,
-            query_model=active_query_model,
-            repair_model=active_repair_model,
-            error_message=header_filter_result.disqualification_reason,
-        )
-        update_run_metadata_index(
-            run_root_dir=effective_run_root,
-            rfc_id=header_filter_result.rfc_id or rfc_id,
-            protocol_name=header_filter_result.title,
-            rfc_dir=target_output_dir,
-            scm_path=None,
-            trajectory_json_path=None,
-            quality_tier="INELIGIBLE",
-            is_eligible=False,
-            build_successful=False,
-            error_message=header_filter_result.disqualification_reason,
-            rejection_gate="Tier 0 Header Filter",
-            duration_seconds=elapsed,
-        )
-        GLOBAL_EVENT_BUS.register_filtered_rfc(
-            rfc_id=header_filter_result.rfc_id or rfc_id,
-            title=header_filter_result.title or rfc_file_path.name,
-            gate="Tier 0 Header Filter",
-            reason=header_filter_result.disqualification_reason or "Disqualified by Tier 0 header filter",
-            duration_seconds=elapsed,
-        )
-        GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=header_filter_result.disqualification_reason)
-        return PipelineExecutionSummary(
-            rfc_id=rfc_id,
-            is_eligible=False,
-            duration_seconds=elapsed,
-            error_message=header_filter_result.disqualification_reason,
-        )
-
-    rfc_number_str = header_filter_result.rfc_id or rfc_id
-    protocol_title = header_filter_result.title or "Unknown Protocol"
-
-    # -------------------------------------------------------------------------
-    # STAGE 1b: Full TOC Parsing & Abstract Extraction
-    # -------------------------------------------------------------------------
-    toc_entries = parse_table_of_contents(raw_rfc_text)
-    abstract_text = _extract_rfc_abstract(raw_rfc_text)
-
-    # -------------------------------------------------------------------------
-    # STAGE 1c: Tier 1 Applicability Gate
-    # -------------------------------------------------------------------------
-    applicability_report = evaluate_protocol_applicability(
-        rfc_id=rfc_number_str,
-        title=protocol_title,
-        category=header_filter_result.category or "Unknown",
-        abstract=abstract_text,
-        toc_entries=toc_entries,
-        model=router_model,
-    )
-
-    if not applicability_report.is_cryptographic_protocol:
-        elapsed = time.time() - start_time
-        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
-        csv_recorder.log_run(
-            rfc_id=rfc_id,
-            is_eligible=False,
-            status="INELIGIBLE",
-            quality_tier="INELIGIBLE",
-            rejection_gate="Stage 1c Applicability Gate",
-            protocol_name=applicability_report.protocol_name or protocol_title,
-            duration_seconds=elapsed,
-            cost_telemetry=rfc_cost_summary,
-            router_model=active_router_model,
-            extraction_model=active_extraction_model,
-            query_model=active_query_model,
-            repair_model=active_repair_model,
-            error_message=f"Ineligible: {applicability_report.rationale}",
-        )
-        update_run_metadata_index(
-            run_root_dir=effective_run_root,
-            rfc_id=rfc_number_str,
-            protocol_name=applicability_report.protocol_name or protocol_title,
-            rfc_dir=target_output_dir,
-            scm_path=None,
-            trajectory_json_path=None,
-            quality_tier="INELIGIBLE",
-            is_eligible=False,
-            build_successful=False,
-            error_message=applicability_report.rationale,
-            rejection_gate="Stage 1c Applicability Gate",
-            duration_seconds=elapsed,
-        )
-        GLOBAL_EVENT_BUS.register_filtered_rfc(
-            rfc_id=rfc_number_str,
-            title=applicability_report.protocol_name or protocol_title,
-            gate="Stage 1c Applicability Gate",
-            reason=applicability_report.rationale or "Disqualified by Stage 1c applicability gate",
-            duration_seconds=elapsed,
-        )
-        GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=applicability_report.rationale)
-        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
-        logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix="Ineligible RFC Cost"))
-        return PipelineExecutionSummary(
-            rfc_id=rfc_id,
-            protocol_name=applicability_report.protocol_name or protocol_title,
-            is_eligible=False,
-            duration_seconds=elapsed,
-            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
-            cost_telemetry=rfc_cost_summary,
-            error_message=applicability_report.rationale,
-        )
-
-    # Eligible cryptographic protocol confirmed: create per-RFC output directory, run.log, and numbered tab
-    target_output_dir.mkdir(parents=True, exist_ok=True)
-    run_log_path = target_output_dir / "run.log"
-    configure_pipeline_logging(run_log_file=run_log_path)
-    final_protocol_name = applicability_report.protocol_name or protocol_title
-    intake_rationale = applicability_report.rationale
-    eligible_rationale_msg = f"Eligible: {intake_rationale}" if intake_rationale else None
-    tab_index = GLOBAL_EVENT_BUS.register_accepted_tab(
-        rfc_id=rfc_number_str,
-        protocol_name=final_protocol_name,
-        rfc_dir=target_output_dir,
-        rfc_title=protocol_title,
-        intake_rationale=intake_rationale,
-    )
-    logger.info("Eligible Cryptographic Protocol Confirmed [Tab #%d]: %s (%s)", tab_index, rfc_number_str, final_protocol_name)
-    logger.info("Output Directory: %s", target_output_dir)
-
-    GLOBAL_EVENT_BUS.emit("stage_completed", stage=1, protocol_name=final_protocol_name, rfc_id=rfc_number_str, tab_index=tab_index)
-
-    # -------------------------------------------------------------------------
-    # STAGE 1d & 1e: Exchange Section Routing & Verbatim Slicing
-    # -------------------------------------------------------------------------
-    target_sections = route_handshake_sections(
-        rfc_id=rfc_number_str,
-        protocol_name=final_protocol_name,
-        toc_entries=toc_entries,
-        model=router_model,
-    )
-
-    try:
-        verbatim_slice = slice_verbatim_sections(raw_rfc_text, target_sections)
-        if not verbatim_slice.strip():
-            raise ValueError(f"Verbatim section slice for {target_sections} produced 0 non-empty lines")
-    except Exception as slice_exc:
-        elapsed = time.time() - start_time
-        error_msg = f"Section slicing failed: {slice_exc}"
-        csv_error_msg = f"{error_msg} | {eligible_rationale_msg}" if eligible_rationale_msg else error_msg
-        logger.error(error_msg)
-        empty_stage2 = {
-            "schema_self_correction_triggered": False,
-            "schema_validation_error": error_msg,
-            "initial_ast": None,
-            "initial_scm": None,
-        }
-        empty_stage5 = {
-            "validator_binary": "cpsa4roletran",
-            "roletran_algebra_supported": True,
-            "initial_passed": False,
-            "final_passed": False,
-            "total_attempts": 0,
-            "compiled_defproc_output": None,
-            "repair_attempts": [],
-        }
-        empty_stage6 = {
-            "validator_binary": "cpsa4",
-            "initial_passed": False,
-            "final_passed": False,
-            "total_attempts": 0,
-            "repair_attempts": [],
-        }
-        trajectory_path = write_trajectory_metadata_bundle(
-            output_dir=target_output_dir,
-            rfc_id=rfc_number_str,
-            rfc_title=protocol_title,
-            protocol_name=final_protocol_name,
-            participating_principals=applicability_report.participating_principals,
-            selected_sections=target_sections,
-            verbatim_slice="",
-            duration_seconds=elapsed,
-            stage2_record=empty_stage2,
-            stage5_record=empty_stage5,
-            stage6_record=empty_stage6,
-            final_spec=None,
-            final_scm_path=None,
-            trace_txt_path=None,
-            shapes_txt_path=None,
-            solver_passed=False,
-            intake_rationale=intake_rationale,
-        )
-        update_run_metadata_index(
-            run_root_dir=effective_run_root,
-            rfc_id=rfc_number_str,
-            protocol_name=final_protocol_name,
-            rfc_dir=target_output_dir,
-            scm_path=None,
-            trajectory_json_path=trajectory_path,
-            quality_tier="REJECTED",
-            is_eligible=True,
-            build_successful=False,
-            error_message=csv_error_msg,
-            tab_index=tab_index,
-            intake_rationale=intake_rationale,
-        )
-        rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
-        csv_recorder.log_run(
-            rfc_id=rfc_id,
-            is_eligible=True,
-            status="FAILED",
-            quality_tier="REJECTED",
-            protocol_name=final_protocol_name,
-            selected_sections=target_sections,
-            sliced_lines_count=0,
-            duration_seconds=elapsed,
-            cost_telemetry=rfc_cost_summary,
-            router_model=active_router_model,
-            extraction_model=active_extraction_model,
-            query_model=active_query_model,
-            repair_model=active_repair_model,
-            trajectory_json_path=trajectory_path,
-            error_message=csv_error_msg,
-        )
-        GLOBAL_EVENT_BUS.update_accepted_tab(
-            tab_index,
-            status="FAILED",
-            quality_tier="REJECTED",
-            duration_seconds=round(elapsed, 2),
-            cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
-            cost_telemetry=rfc_cost_summary,
-            trajectory_path=str(trajectory_path),
-            error_message=error_msg,
-            intake_rationale=intake_rationale,
-        )
-        GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, error_message=error_msg)
-        GLOBAL_EVENT_BUS.emit("pipeline_failed", error_message=error_msg)
-        return PipelineExecutionSummary(
-            rfc_id=rfc_id,
-            protocol_name=final_protocol_name,
-            is_eligible=True,
-            selected_sections=target_sections,
-            sliced_lines_count=0,
-            trajectory_json_path=trajectory_path,
-            quality_tier="REJECTED",
-            intake_rationale=intake_rationale,
-            duration_seconds=elapsed,
-            cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
-            cost_telemetry=rfc_cost_summary,
-            error_message=error_msg,
-        )
-
-    slice_lines_count = len(verbatim_slice.splitlines())
-
     slice_file = target_output_dir / "verbatim_slice.txt"
-    with open(slice_file, "w", encoding="utf-8") as slice_handle:
-        slice_handle.write(verbatim_slice)
-
-    GLOBAL_EVENT_BUS.update_accepted_tab(tab_index, slice_path=str(slice_file))
-    GLOBAL_EVENT_BUS.emit(
-        "slice_ready",
-        sections=target_sections,
-        line_count=slice_lines_count,
-        slice_path=str(slice_file),
+    intake_checkpoint_file = target_output_dir / "intake_checkpoint.json"
+    initial_ast_path = target_output_dir / "initial_ast.json"
+    has_completed_trajectory = target_output_dir.exists() and any(target_output_dir.glob("*_trajectory.json"))
+    can_resume_stage1 = (
+        resume_checkpoint
+        and not has_completed_trajectory
+        and slice_file.exists()
+        and slice_file.stat().st_size > 0
+        and (intake_checkpoint_file.exists() or initial_ast_path.exists())
     )
+
+    if can_resume_stage1:
+        header_filter_result = filter_rfc_header(raw_rfc_text)
+        ckpt_data: dict = {}
+        if intake_checkpoint_file.exists():
+            try:
+                ckpt_data = json.loads(intake_checkpoint_file.read_text(encoding="utf-8"))
+            except Exception:
+                ckpt_data = {}
+        elif initial_ast_path.exists():
+            try:
+                ast_peek = json.loads(initial_ast_path.read_text(encoding="utf-8"))
+                ckpt_data = {"final_protocol_name": ast_peek.get("protocol_name")}
+            except Exception:
+                ckpt_data = {}
+
+        rfc_number_str = ckpt_data.get("rfc_id") or header_filter_result.rfc_id or rfc_id
+        protocol_title = ckpt_data.get("protocol_title") or header_filter_result.title or "Unknown Protocol"
+        final_protocol_name = ckpt_data.get("final_protocol_name") or protocol_title
+        participating_principals = list(ckpt_data.get("participating_principals") or ["Initiator", "Responder"])
+        intake_rationale = ckpt_data.get("intake_rationale") or "Resumed from Stage 1/2 on-disk checkpoint."
+        eligible_rationale_msg = f"Eligible: {intake_rationale}" if intake_rationale else None
+        target_sections = list(ckpt_data.get("target_sections") or [])
+        verbatim_slice = slice_file.read_text(encoding="utf-8", errors="ignore")
+        slice_lines_count = len(verbatim_slice.splitlines())
+
+        target_output_dir.mkdir(parents=True, exist_ok=True)
+        run_log_path = target_output_dir / "run.log"
+        configure_pipeline_logging(run_log_file=run_log_path)
+        tab_index = GLOBAL_EVENT_BUS.register_accepted_tab(
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            rfc_dir=target_output_dir,
+            rfc_title=protocol_title,
+            intake_rationale=intake_rationale,
+        )
+        logger.info(
+            "Resumed Stage 1 checkpoint [Tab #%d]: %s (%s) — %d sliced lines",
+            tab_index,
+            rfc_number_str,
+            final_protocol_name,
+            slice_lines_count,
+        )
+        GLOBAL_EVENT_BUS.emit(
+            "stage_completed",
+            stage=1,
+            protocol_name=final_protocol_name,
+            rfc_id=rfc_number_str,
+            tab_index=tab_index,
+        )
+        GLOBAL_EVENT_BUS.update_accepted_tab(tab_index, slice_path=str(slice_file))
+        GLOBAL_EVENT_BUS.emit(
+            "slice_ready",
+            sections=target_sections,
+            line_count=slice_lines_count,
+            slice_path=str(slice_file),
+        )
+    else:
+        # -------------------------------------------------------------------------
+        # STAGE 1a: Tier 0 Header Filter (Document Intake)
+        # -------------------------------------------------------------------------
+        GLOBAL_EVENT_BUS.emit(
+            "stage_started",
+            stage=1,
+            stage_name="Document Intake",
+            model=active_router_model,
+        )
+        header_filter_result = filter_rfc_header(raw_rfc_text)
+        if not header_filter_result.is_eligible:
+            elapsed = time.time() - start_time
+            rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+            csv_recorder.log_run(
+                rfc_id=rfc_id,
+                is_eligible=False,
+                status="INELIGIBLE",
+                quality_tier="INELIGIBLE",
+                rejection_gate="Tier 0 Header Filter",
+                protocol_name=header_filter_result.title,
+                duration_seconds=elapsed,
+                cost_telemetry=rfc_cost_summary,
+                router_model=active_router_model,
+                extraction_model=active_extraction_model,
+                query_model=active_query_model,
+                repair_model=active_repair_model,
+                error_message=header_filter_result.disqualification_reason,
+            )
+            update_run_metadata_index(
+                run_root_dir=effective_run_root,
+                rfc_id=header_filter_result.rfc_id or rfc_id,
+                protocol_name=header_filter_result.title,
+                rfc_dir=target_output_dir,
+                scm_path=None,
+                trajectory_json_path=None,
+                quality_tier="INELIGIBLE",
+                is_eligible=False,
+                build_successful=False,
+                error_message=header_filter_result.disqualification_reason,
+                rejection_gate="Tier 0 Header Filter",
+                duration_seconds=elapsed,
+            )
+            GLOBAL_EVENT_BUS.register_filtered_rfc(
+                rfc_id=header_filter_result.rfc_id or rfc_id,
+                title=header_filter_result.title or rfc_file_path.name,
+                gate="Tier 0 Header Filter",
+                reason=header_filter_result.disqualification_reason or "Disqualified by Tier 0 header filter",
+                duration_seconds=elapsed,
+            )
+            GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=header_filter_result.disqualification_reason)
+            return PipelineExecutionSummary(
+                rfc_id=rfc_id,
+                is_eligible=False,
+                duration_seconds=elapsed,
+                error_message=header_filter_result.disqualification_reason,
+            )
+
+        rfc_number_str = header_filter_result.rfc_id or rfc_id
+        protocol_title = header_filter_result.title or "Unknown Protocol"
+
+        # -------------------------------------------------------------------------
+        # STAGE 1b: Full TOC Parsing & Abstract Extraction
+        # -------------------------------------------------------------------------
+        toc_entries = parse_table_of_contents(raw_rfc_text)
+        abstract_text = _extract_rfc_abstract(raw_rfc_text)
+
+        # -------------------------------------------------------------------------
+        # STAGE 1c: Tier 1 Applicability Gate
+        # -------------------------------------------------------------------------
+        applicability_report = evaluate_protocol_applicability(
+            rfc_id=rfc_number_str,
+            title=protocol_title,
+            category=header_filter_result.category or "Unknown",
+            abstract=abstract_text,
+            toc_entries=toc_entries,
+            model=router_model,
+        )
+
+        if not applicability_report.is_cryptographic_protocol:
+            elapsed = time.time() - start_time
+            rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+            csv_recorder.log_run(
+                rfc_id=rfc_id,
+                is_eligible=False,
+                status="INELIGIBLE",
+                quality_tier="INELIGIBLE",
+                rejection_gate="Stage 1c Applicability Gate",
+                protocol_name=applicability_report.protocol_name or protocol_title,
+                duration_seconds=elapsed,
+                cost_telemetry=rfc_cost_summary,
+                router_model=active_router_model,
+                extraction_model=active_extraction_model,
+                query_model=active_query_model,
+                repair_model=active_repair_model,
+                error_message=f"Ineligible: {applicability_report.rationale}",
+            )
+            update_run_metadata_index(
+                run_root_dir=effective_run_root,
+                rfc_id=rfc_number_str,
+                protocol_name=applicability_report.protocol_name or protocol_title,
+                rfc_dir=target_output_dir,
+                scm_path=None,
+                trajectory_json_path=None,
+                quality_tier="INELIGIBLE",
+                is_eligible=False,
+                build_successful=False,
+                error_message=applicability_report.rationale,
+                rejection_gate="Stage 1c Applicability Gate",
+                duration_seconds=elapsed,
+            )
+            GLOBAL_EVENT_BUS.register_filtered_rfc(
+                rfc_id=rfc_number_str,
+                title=applicability_report.protocol_name or protocol_title,
+                gate="Stage 1c Applicability Gate",
+                reason=applicability_report.rationale or "Disqualified by Stage 1c applicability gate",
+                duration_seconds=elapsed,
+            )
+            GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, reason=applicability_report.rationale)
+            rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+            logger.info(GLOBAL_COST_TRACKER.format_cli_summary(rfc_cost_summary, prefix="Ineligible RFC Cost"))
+            return PipelineExecutionSummary(
+                rfc_id=rfc_id,
+                protocol_name=applicability_report.protocol_name or protocol_title,
+                is_eligible=False,
+                duration_seconds=elapsed,
+                cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+                cost_telemetry=rfc_cost_summary,
+                error_message=applicability_report.rationale,
+            )
+
+        # Eligible cryptographic protocol confirmed: create per-RFC output directory, run.log, and numbered tab
+        target_output_dir.mkdir(parents=True, exist_ok=True)
+        run_log_path = target_output_dir / "run.log"
+        configure_pipeline_logging(run_log_file=run_log_path)
+        final_protocol_name = applicability_report.protocol_name or protocol_title
+        participating_principals = applicability_report.participating_principals
+        intake_rationale = applicability_report.rationale
+        eligible_rationale_msg = f"Eligible: {intake_rationale}" if intake_rationale else None
+        tab_index = GLOBAL_EVENT_BUS.register_accepted_tab(
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            rfc_dir=target_output_dir,
+            rfc_title=protocol_title,
+            intake_rationale=intake_rationale,
+        )
+        logger.info("Eligible Cryptographic Protocol Confirmed [Tab #%d]: %s (%s)", tab_index, rfc_number_str, final_protocol_name)
+        logger.info("Output Directory: %s", target_output_dir)
+
+        GLOBAL_EVENT_BUS.emit("stage_completed", stage=1, protocol_name=final_protocol_name, rfc_id=rfc_number_str, tab_index=tab_index)
+
+        # -------------------------------------------------------------------------
+        # STAGE 1d & 1e: Exchange Section Routing & Verbatim Slicing
+        # -------------------------------------------------------------------------
+        target_sections = route_handshake_sections(
+            rfc_id=rfc_number_str,
+            protocol_name=final_protocol_name,
+            toc_entries=toc_entries,
+            model=router_model,
+        )
+
+        try:
+            verbatim_slice = slice_verbatim_sections(raw_rfc_text, target_sections)
+            if not verbatim_slice.strip():
+                raise ValueError(f"Verbatim section slice for {target_sections} produced 0 non-empty lines")
+        except Exception as slice_exc:
+            elapsed = time.time() - start_time
+            error_msg = f"Section slicing failed: {slice_exc}"
+            csv_error_msg = f"{error_msg} | {eligible_rationale_msg}" if eligible_rationale_msg else error_msg
+            logger.error(error_msg)
+            empty_stage2 = {
+                "schema_self_correction_triggered": False,
+                "schema_validation_error": error_msg,
+                "initial_ast": None,
+                "initial_scm": None,
+            }
+            empty_stage5 = {
+                "validator_binary": "cpsa4roletran",
+                "roletran_algebra_supported": True,
+                "initial_passed": False,
+                "final_passed": False,
+                "total_attempts": 0,
+                "compiled_defproc_output": None,
+                "repair_attempts": [],
+            }
+            empty_stage6 = {
+                "validator_binary": "cpsa4",
+                "initial_passed": False,
+                "final_passed": False,
+                "total_attempts": 0,
+                "repair_attempts": [],
+            }
+            trajectory_path = write_trajectory_metadata_bundle(
+                output_dir=target_output_dir,
+                rfc_id=rfc_number_str,
+                rfc_title=protocol_title,
+                protocol_name=final_protocol_name,
+                participating_principals=participating_principals,
+                selected_sections=target_sections,
+                verbatim_slice="",
+                duration_seconds=elapsed,
+                stage2_record=empty_stage2,
+                stage5_record=empty_stage5,
+                stage6_record=empty_stage6,
+                final_spec=None,
+                final_scm_path=None,
+                trace_txt_path=None,
+                shapes_txt_path=None,
+                solver_passed=False,
+                intake_rationale=intake_rationale,
+            )
+            update_run_metadata_index(
+                run_root_dir=effective_run_root,
+                rfc_id=rfc_number_str,
+                protocol_name=final_protocol_name,
+                rfc_dir=target_output_dir,
+                scm_path=None,
+                trajectory_json_path=trajectory_path,
+                quality_tier="REJECTED",
+                is_eligible=True,
+                build_successful=False,
+                error_message=csv_error_msg,
+                tab_index=tab_index,
+                intake_rationale=intake_rationale,
+            )
+            rfc_cost_summary = GLOBAL_COST_TRACKER.get_current_rfc_summary()
+            csv_recorder.log_run(
+                rfc_id=rfc_id,
+                is_eligible=True,
+                status="FAILED",
+                quality_tier="REJECTED",
+                protocol_name=final_protocol_name,
+                selected_sections=target_sections,
+                sliced_lines_count=0,
+                duration_seconds=elapsed,
+                cost_telemetry=rfc_cost_summary,
+                router_model=active_router_model,
+                extraction_model=active_extraction_model,
+                query_model=active_query_model,
+                repair_model=active_repair_model,
+                trajectory_json_path=trajectory_path,
+                error_message=csv_error_msg,
+            )
+            GLOBAL_EVENT_BUS.update_accepted_tab(
+                tab_index,
+                status="FAILED",
+                quality_tier="REJECTED",
+                duration_seconds=round(elapsed, 2),
+                cost_usd=round(float(rfc_cost_summary.get("total_cost_usd", 0.0)), 6),
+                cost_telemetry=rfc_cost_summary,
+                trajectory_path=str(trajectory_path),
+                error_message=error_msg,
+                intake_rationale=intake_rationale,
+            )
+            GLOBAL_EVENT_BUS.emit("stage_failed", stage=1, error_message=error_msg)
+            GLOBAL_EVENT_BUS.emit("pipeline_failed", error_message=error_msg)
+            return PipelineExecutionSummary(
+                rfc_id=rfc_id,
+                protocol_name=final_protocol_name,
+                is_eligible=True,
+                selected_sections=target_sections,
+                sliced_lines_count=0,
+                trajectory_json_path=trajectory_path,
+                quality_tier="REJECTED",
+                intake_rationale=intake_rationale,
+                duration_seconds=elapsed,
+                cost_usd=float(rfc_cost_summary.get("total_cost_usd", 0.0)),
+                cost_telemetry=rfc_cost_summary,
+                error_message=error_msg,
+            )
+
+        slice_lines_count = len(verbatim_slice.splitlines())
+
+        with open(slice_file, "w", encoding="utf-8") as slice_handle:
+            slice_handle.write(verbatim_slice)
+
+        try:
+            intake_checkpoint_file.write_text(
+                json.dumps(
+                    {
+                        "rfc_id": rfc_number_str,
+                        "protocol_title": protocol_title,
+                        "final_protocol_name": final_protocol_name,
+                        "participating_principals": participating_principals,
+                        "intake_rationale": intake_rationale,
+                        "target_sections": target_sections,
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
+
+        GLOBAL_EVENT_BUS.update_accepted_tab(tab_index, slice_path=str(slice_file))
+        GLOBAL_EVENT_BUS.emit(
+            "slice_ready",
+            sections=target_sections,
+            line_count=slice_lines_count,
+            slice_path=str(slice_file),
+        )
 
     # -------------------------------------------------------------------------
     # STAGE 2: JSON CPSA Generation
@@ -11050,15 +11169,29 @@ def run_rfc_translation_pipeline(
         model=resolve_prompt_model(PROMPT_PROTOCOL_EXTRACTION, extraction_model),
     )
     try:
-        protocol_ast = extract_protocol_specification(
-            verbatim_slice=verbatim_slice,
-            protocol_name=final_protocol_name,
-            principals=applicability_report.participating_principals,
-            model=extraction_model,
-        )
-        # Immediately persist Stage 2 AST checkpoint to disk before Stage 3 (cpsa4json) runs
-        initial_ast_path = target_output_dir / "initial_ast.json"
-        initial_ast_path.write_text(protocol_ast.model_dump_json(indent=2), encoding="utf-8")
+        if resume_checkpoint and not has_completed_trajectory and initial_ast_path.exists() and initial_ast_path.stat().st_size > 0:
+            protocol_ast = CPSAProtocolSpecification.model_validate_json(
+                initial_ast_path.read_text(encoding="utf-8")
+            )
+            constrained_protocol_extractor.LAST_EXTRACTION_METADATA = {
+                "schema_self_correction_triggered": False,
+                "schema_validation_error": None,
+            }
+            logger.info(
+                "Resumed Stage 2 AST from checkpoint (%s): %d roles, %d skeletons",
+                initial_ast_path,
+                len(protocol_ast.roles),
+                len(protocol_ast.skeletons),
+            )
+        else:
+            protocol_ast = extract_protocol_specification(
+                verbatim_slice=verbatim_slice,
+                protocol_name=final_protocol_name,
+                principals=participating_principals,
+                model=extraction_model,
+            )
+            # Immediately persist Stage 2 AST checkpoint to disk before Stage 3 (cpsa4json) runs
+            initial_ast_path.write_text(protocol_ast.model_dump_json(indent=2), encoding="utf-8")
         GLOBAL_EVENT_BUS.emit(
             "stage_completed",
             stage=2,
@@ -11099,7 +11232,7 @@ def run_rfc_translation_pipeline(
             rfc_id=rfc_number_str,
             rfc_title=protocol_title,
             protocol_name=final_protocol_name,
-            participating_principals=applicability_report.participating_principals,
+            participating_principals=participating_principals,
             selected_sections=target_sections,
             verbatim_slice=verbatim_slice,
             duration_seconds=elapsed,
@@ -11357,7 +11490,7 @@ def run_rfc_translation_pipeline(
         rfc_id=rfc_number_str,
         rfc_title=protocol_title,
         protocol_name=final_protocol_name,
-        participating_principals=applicability_report.participating_principals,
+        participating_principals=participating_principals,
         selected_sections=target_sections,
         verbatim_slice=verbatim_slice,
         duration_seconds=elapsed,
@@ -11630,7 +11763,7 @@ def run_rfc_translation_pipeline(
 
 ### `src/pipeline.py`
 
-*sha256:`59ac888002a9` · 593 lines · 24.5 KB (~6,269 tokens) · lang:`python`*
+*sha256:`4722c9d165cd` · 1094 lines · 47.3 KB (~12,109 tokens) · lang:`python`*
 
 ```python
 """Command-line interface for RFC-LLM synthesis pipeline supporting single RFCs and directory batching."""
@@ -11641,11 +11774,12 @@ import datetime as dt
 import json
 import random
 import re
+import shlex
 import sys
 import time
 import webbrowser
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from src.cost_tracker import GLOBAL_COST_TRACKER
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
@@ -11729,127 +11863,382 @@ def get_failed_rfc_ids(csv_path: Optional[Path] = None) -> Set[str]:
     return failed
 
 
-def main():
+def get_eligible_rfc_count(csv_path: Optional[Path] = None) -> int:
+    """Counts how many already-recorded RFC rows in pipeline_runs.csv were eligible protocols."""
+    target_csv = csv_path or (SYSTEM_CONFIG.LOGS_DIR / "pipeline_runs.csv")
+    if not target_csv.exists():
+        return 0
+    count = 0
+    try:
+        with open(target_csv, "r", encoding="utf-8", errors="ignore") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if (row.get("is_eligible") or "").strip().lower() == "true":
+                    count += 1
+    except Exception:
+        pass
+    return count
+
+
+def _is_localhost_binding(host: str) -> bool:
+    """Returns True when the visualizer host is bound to a local loopback address."""
+    return (host or "127.0.0.1").strip().lower() in {"127.0.0.1", "localhost", "::1"}
+
+
+def _list_recent_run_dirs(base_output_dir: Path, limit: int = 3) -> List[Path]:
+    """Returns the most recent `run_*` directories inside `base_output_dir`, sorted newest-first."""
+    if not base_output_dir.exists():
+        return []
+    candidates = [
+        d for d in base_output_dir.iterdir()
+        if d.is_dir() and d.name.startswith("run_")
+    ]
+    # Sort by folder name (timestamp `run_YYYY-MM-DD_HH-MM-SS`) and mtime as tie-breaker, newest first
+    candidates.sort(key=lambda d: (d.name, d.stat().st_mtime), reverse=True)
+    return candidates[:limit]
+
+
+def _summarize_run_dir(run_dir: Path) -> str:
+    """Returns a concise one-line progress summary for a `run_*` directory."""
+    csv_file = run_dir / "pipeline_runs.csv"
+    idx_file = run_dir / "metadata_index.json"
+    total_rows = 0
+    eligible_rows = 0
+    verified_rows = 0
+    model_hint = ""
+
+    if csv_file.exists() and csv_file.stat().st_size > 0:
+        try:
+            with open(csv_file, "r", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if not row.get("rfc_id"):
+                        continue
+                    total_rows += 1
+                    if (row.get("is_eligible") or "").strip().lower() == "true":
+                        eligible_rows += 1
+                    if (row.get("status") or "").strip().upper() == "VERIFIED":
+                        verified_rows += 1
+                    if not model_hint:
+                        model_hint = row.get("extraction_model") or row.get("router_model") or ""
+        except Exception:
+            pass
+    elif idx_file.exists():
+        try:
+            idx_data = json.loads(idx_file.read_text(encoding="utf-8", errors="ignore"))
+            runs = idx_data.get("runs") or []
+            filtered = idx_data.get("filtered_rfcs") or []
+            eligible_rows = sum(1 for r in runs if r.get("is_eligible", True))
+            verified_rows = sum(1 for r in runs if r.get("build_successful"))
+            total_rows = int(idx_data.get("total_rfcs_processed") or (len(runs) + len(filtered)))
+        except Exception:
+            pass
+
+    manifest_file = run_dir / "run_manifest.json"
+    if not model_hint and manifest_file.exists():
+        try:
+            m_data = json.loads(manifest_file.read_text(encoding="utf-8", errors="ignore"))
+            cli_a = m_data.get("cli_args") or {}
+            model_hint = cli_a.get("model") or cli_a.get("extraction_model") or ""
+        except Exception:
+            pass
+
+    model_str = f" | model: {model_hint}" if model_hint else ""
+    return f"{total_rows} processed, {eligible_rows} eligible, {verified_rows} verified{model_str}"
+
+
+def _infer_models_from_csv(csv_file: Path) -> Dict[str, Optional[str]]:
+    """Infers stage model overrides from the most recent row of an existing pipeline_runs.csv."""
+    inferred: Dict[str, Optional[str]] = {
+        "router_model": None,
+        "extraction_model": None,
+        "repair_model": None,
+        "query_model": None,
+    }
+    if not csv_file.exists() or csv_file.stat().st_size == 0:
+        return inferred
+    try:
+        with open(csv_file, "r", encoding="utf-8", errors="ignore") as f:
+            reader = csv.DictReader(f)
+            last_row = None
+            for row in reader:
+                if row.get("rfc_id"):
+                    last_row = row
+            if last_row:
+                for key in tuple(inferred.keys()):
+                    val = (last_row.get(key) or "").strip()
+                    if val:
+                        inferred[key] = val
+    except Exception:
+        pass
+    return inferred
+
+
+def _build_resume_command_string(
+    run_root_dir: Path,
+    targets: List[Path],
+    args: argparse.Namespace,
+) -> str:
+    """Builds the full expanded `./rfc-llm -r <run_dir> ...` command string saved to `output/.last_run`."""
+    try:
+        rel_run = run_root_dir.resolve().relative_to(SYSTEM_CONFIG.PROJECT_ROOT.resolve())
+        run_arg = str(rel_run)
+    except ValueError:
+        run_arg = str(run_root_dir.resolve())
+
+    cmd: List[str] = ["./rfc-llm", "-r", run_arg]
+    for t in targets:
+        try:
+            rel_t = t.resolve().relative_to(SYSTEM_CONFIG.PROJECT_ROOT.resolve())
+            cmd.append(str(rel_t))
+        except ValueError:
+            cmd.append(str(t))
+
+    if getattr(args, "model", None):
+        cmd.extend(["--model", str(args.model)])
+    if getattr(args, "router_model", None):
+        cmd.extend(["--router-model", str(args.router_model)])
+    if getattr(args, "extraction_model", None):
+        cmd.extend(["--extraction-model", str(args.extraction_model)])
+    if getattr(args, "repair_model", None):
+        cmd.extend(["--repair-model", str(args.repair_model)])
+    if getattr(args, "query_model", None):
+        cmd.extend(["--query-model", str(args.query_model)])
+    if getattr(args, "limit", None) is not None:
+        cmd.extend(["--limit", str(args.limit)])
+    if getattr(args, "target_eligible", None) is not None:
+        cmd.extend(["--target-eligible", str(args.target_eligible)])
+    if getattr(args, "pattern", None) and args.pattern != "rfc*.txt":
+        cmd.extend(["--pattern", str(args.pattern)])
+    if getattr(args, "tier0_eligible_only", False):
+        cmd.append("--tier0-eligible-only")
+    if getattr(args, "random", False):
+        cmd.append("--random")
+    if getattr(args, "retry_failed", False):
+        cmd.append("--retry-failed")
+    if getattr(args, "keep_ineligible", False):
+        cmd.append("--keep-ineligible")
+    if getattr(args, "no_visualize", False):
+        cmd.append("--no-visualize")
+    if getattr(args, "keep_alive", 0) and args.keep_alive > 0:
+        cmd.extend(["--keep-alive", str(args.keep_alive)])
+    if getattr(args, "host", "127.0.0.1") and args.host != "127.0.0.1":
+        cmd.extend(["--host", str(args.host)])
+    if getattr(args, "port", 8080) and args.port != 8080:
+        cmd.extend(["--port", str(args.port)])
+
+    return shlex.join(cmd)
+
+
+def _save_run_manifest_and_last_run(
+    run_root_dir: Path,
+    base_output_dir: Path,
+    targets: List[Path],
+    args: argparse.Namespace,
+    planned_rfc_files: List[Path],
+) -> Tuple[Path, Path, str]:
+    """Writes `<run_root_dir>/run_manifest.json` and updates `<base_output_dir>/.last_run` with the full resume command."""
+    run_root_dir.mkdir(parents=True, exist_ok=True)
+    base_output_dir.mkdir(parents=True, exist_ok=True)
+
+    resume_cmd = _build_resume_command_string(run_root_dir, targets, args)
+    last_run_path = base_output_dir / ".last_run"
+    last_run_path.write_text(resume_cmd + "\n", encoding="utf-8")
+
+    manifest_path = run_root_dir / "run_manifest.json"
+    now_utc = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    existing_created = now_utc
+    if manifest_path.exists():
+        try:
+            old_m = json.loads(manifest_path.read_text(encoding="utf-8"))
+            existing_created = old_m.get("created_at_utc") or now_utc
+        except Exception:
+            pass
+
+    manifest_payload = {
+        "schema_version": "1.0.0",
+        "run_root_dir": str(run_root_dir.resolve()),
+        "resume_command": resume_cmd,
+        "created_at_utc": existing_created,
+        "updated_at_utc": now_utc,
+        "targets": [str(t.resolve()) for t in targets],
+        "cli_args": {
+            "model": args.model,
+            "router_model": args.router_model,
+            "extraction_model": args.extraction_model,
+            "repair_model": args.repair_model,
+            "query_model": args.query_model,
+            "limit": args.limit,
+            "target_eligible": args.target_eligible,
+            "pattern": args.pattern,
+            "tier0_eligible_only": bool(args.tier0_eligible_only),
+            "random": bool(args.random),
+            "retry_failed": bool(args.retry_failed),
+            "keep_ineligible": bool(args.keep_ineligible),
+            "skip_completed": bool(args.skip_completed),
+            "no_visualize": bool(args.no_visualize),
+            "keep_alive": int(args.keep_alive or 0),
+            "host": args.host,
+            "port": int(args.port),
+        },
+        "planned_rfc_files": [str(f.resolve()) for f in planned_rfc_files],
+    }
+    manifest_path.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
+    return manifest_path, last_run_path, resume_cmd
+
+
+def _build_parser(suppress_defaults: bool = False) -> argparse.ArgumentParser:
+    """Constructs the CLI argument parser. When `suppress_defaults=True`, only explicitly passed CLI flags are populated."""
+    d_none = argparse.SUPPRESS if suppress_defaults else None
+    d_false = argparse.SUPPRESS if suppress_defaults else False
+    d_zero = argparse.SUPPRESS if suppress_defaults else 0
+    d_host = argparse.SUPPRESS if suppress_defaults else "127.0.0.1"
+    d_port = argparse.SUPPRESS if suppress_defaults else 8080
+    d_pat = argparse.SUPPRESS if suppress_defaults else "rfc*.txt"
+
     parser = argparse.ArgumentParser(
         description="RFC-LLM: End-to-End Synthesis of Verified MITRE CPSA Models from IETF RFCs",
+        add_help=not suppress_defaults,
     )
     parser.add_argument(
         "target_path",
         type=str,
         nargs="*",
+        default=d_none if suppress_defaults else [],
         help="One or more RFC text files (such as refrences/all_RFCs/rfc5246.txt) OR a directory containing RFCs",
+    )
+    parser.add_argument(
+        "--resume",
+        "-r",
+        nargs="?",
+        const="__LAST_RUN__",
+        default=d_none,
+        metavar="RUN_DIR_OR_NUM",
+        help="Resume a previous run in-place. Pass -r alone to resume output/.last_run, or pass a run folder / index (1-3).",
     )
     parser.add_argument(
         "--view",
         type=str,
-        default=None,
+        default=d_none,
         help="Open an existing run directory (e.g. output/run_2026-10-28_16-03-11) or metadata_index.json in offline visualizer replay mode",
     )
     parser.add_argument(
         "--output-dir",
         "-o",
         type=str,
-        default=None,
+        default=d_none,
         help="Directory to place synthesized models and build artifacts",
     )
     parser.add_argument(
         "--model",
         "-m",
         type=str,
-        default=None,
+        default=d_none,
         help="Global model identifier for all pipeline stages (e.g. 'gemini/gemini-3.5-flash-lite', 'ollama/qwen2.5:7b-instruct')",
     )
     parser.add_argument(
         "--router-model",
         type=str,
-        default=None,
+        default=d_none,
         help="Model identifier for document gatekeeper and TOC router",
     )
     parser.add_argument(
         "--extraction-model",
         type=str,
-        default=None,
+        default=d_none,
         help="Model identifier for Pydantic constrained semantic extraction",
     )
     parser.add_argument(
         "--repair-model",
         type=str,
-        default=None,
+        default=d_none,
         help="Model identifier for RAG self-healing compiler diagnostic repair",
     )
     parser.add_argument(
         "--query-model",
         type=str,
-        default=None,
+        default=d_none,
         help="Model identifier for RAG query formulation / conceptual abstraction",
     )
     parser.add_argument(
         "--no-visualize",
         action="store_true",
+        default=d_false,
         help="Disable the live web dashboard visualizer (enabled by default)",
     )
     parser.add_argument(
         "--visualize",
         "-v",
         action="store_true",
+        default=d_false,
         help="Ensure live web dashboard visualizer is enabled",
     )
     parser.add_argument(
         "--keep-alive",
         type=int,
-        default=0,
+        default=d_zero,
         help="Seconds to keep visualizer server running after completion in non-interactive mode",
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default=d_host,
+        help="Host/IP address to bind the web visualizer dashboard (default: 127.0.0.1; pass Tailscale IP or 0.0.0.0 for remote access)",
     )
     parser.add_argument(
         "--port",
         type=int,
-        default=8080,
+        default=d_port,
         help="Web port for the live visualizer dashboard (default: 8080)",
     )
     parser.add_argument(
         "--limit",
         "-n",
         type=int,
-        default=None,
+        default=d_none,
         help="Maximum number of RFC files to scan when pointing to a directory",
     )
     parser.add_argument(
         "--target-eligible",
         "-e",
         type=int,
-        default=None,
+        default=d_none,
         help="Stop batch processing once N eligible cryptographic protocols have been synthesized",
     )
     parser.add_argument(
         "--pattern",
         type=str,
-        default="rfc*.txt",
+        default=d_pat,
         help="Glob pattern for discovering RFC files when scanning a directory (default: 'rfc*.txt')",
     )
     parser.add_argument(
         "--skip-completed",
         action="store_true",
+        default=d_false,
         help="Skip RFCs that already have completed run entries in logs/pipeline_runs.csv",
     )
     parser.add_argument(
         "--retry-failed",
         action="store_true",
+        default=d_false,
         help="Run only RFCs recorded in logs/pipeline_runs.csv with status FAILED or PARTIAL (overwriting their rows in-place)",
     )
     parser.add_argument(
         "--random",
         action="store_true",
+        default=d_false,
         help="Randomly sample RFC files when pointing to a directory (useful with --limit)",
     )
     parser.add_argument(
         "--tier0-eligible-only",
         action="store_true",
+        default=d_false,
         help="Pre-filter directory candidates using deterministic Tier 0 frontmatter check before applying --limit",
     )
     parser.add_argument(
         "--csv",
         type=str,
-        default=None,
+        default=d_none,
         help="Path to an existing pipeline_runs.csv or older run directory to copy/seed into this new run's pipeline_runs.csv (source CSV is never modified)",
     )
     parser.add_argument(
@@ -11857,10 +12246,22 @@ def main():
         "--reset-eligible",
         dest="keep_ineligible",
         action="store_true",
+        default=d_false,
         help="Prune the active run's pipeline_runs.csv by deleting all rows EXCEPT ineligible RFCs (is_eligible=False), and skip those ineligible RFCs when starting a new batch run",
     )
+    return parser
 
-    args = parser.parse_args()
+
+def main(argv: Optional[List[str]] = None):
+    raw_argv = list(argv) if argv is not None else sys.argv[1:]
+    parser = _build_parser(suppress_defaults=False)
+    args = parser.parse_args(raw_argv)
+
+    explicit_parser = _build_parser(suppress_defaults=True)
+    explicit_ns, _ = explicit_parser.parse_known_args(raw_argv)
+    explicit_overrides = vars(explicit_ns)
+    if explicit_overrides.get("target_path") == []:
+        explicit_overrides.pop("target_path", None)
 
     # Offline Replay Mode (--view <run_dir>)
     if args.view:
@@ -11869,7 +12270,7 @@ def main():
             print(f"Error: Run directory or index does not exist: {view_path}", file=sys.stderr)
             sys.exit(1)
 
-        overview = GLOBAL_EVENT_BUS.load_run_from_disk(view_path)
+        overview = GLOBAL_EVENT_BUS.load_run_from_disk(view_path, is_live=False)
         if args.csv:
             src_csv = Path(args.csv)
             if src_csv.is_dir():
@@ -11880,8 +12281,8 @@ def main():
                     is_live=False,
                     csv_path=src_csv,
                 )
-        server = run_visualizer_in_background(port=args.port)
-        monitor_url = f"http://127.0.0.1:{server.port}"
+        server = run_visualizer_in_background(host=args.host, port=args.port)
+        monitor_url = f"http://{args.host}:{server.port}"
 
         print(f"\n{'='*70}")
         print(f" [OFFLINE REPLAY MONITOR] Active at: {monitor_url}")
@@ -11891,7 +12292,7 @@ def main():
         print(f" - Filtered / Skips: {overview.get('filtered_total', 0)}")
         print(f"{'='*70}\n")
 
-        if not args.no_visualize:
+        if not args.no_visualize and _is_localhost_binding(args.host):
             try:
                 webbrowser.open(monitor_url)
             except Exception:
@@ -11908,8 +12309,155 @@ def main():
             time.sleep(wait_sec)
         sys.exit(0)
 
-    # Require --csv whenever --keep-ineligible, --skip-completed, or --retry-failed is used
-    if (args.keep_ineligible or args.skip_completed or args.retry_failed) and not args.csv:
+    # -------------------------------------------------------------------------
+    # Resume Mode (--resume / -r [RUN_DIR_OR_NUM])
+    # -------------------------------------------------------------------------
+    base_dir = Path(args.output_dir) if args.output_dir else SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR
+    is_resuming = args.resume is not None
+    resuming_run_dir: Optional[Path] = None
+    manifest_data: Dict[str, Any] = {}
+
+    if is_resuming:
+        last_run_file = base_dir / ".last_run"
+        saved_tokens: Optional[List[str]] = None
+
+        if args.resume == "__LAST_RUN__":
+            if last_run_file.exists():
+                raw_last_cmd = last_run_file.read_text(encoding="utf-8", errors="ignore").strip()
+                if raw_last_cmd:
+                    try:
+                        tokens = shlex.split(raw_last_cmd)
+                        while tokens and (
+                            tokens[0].endswith("rfc-llm")
+                            or tokens[0].endswith("python")
+                            or tokens[0].endswith("python3")
+                            or tokens[0].endswith("pipeline.py")
+                        ):
+                            tokens.pop(0)
+                        parsed_saved = parser.parse_args(tokens)
+                        if parsed_saved.resume and parsed_saved.resume != "__LAST_RUN__":
+                            cand = Path(parsed_saved.resume)
+                            if not cand.exists() and (SYSTEM_CONFIG.PROJECT_ROOT / parsed_saved.resume).exists():
+                                cand = SYSTEM_CONFIG.PROJECT_ROOT / parsed_saved.resume
+                            if cand.exists() and cand.is_dir():
+                                resuming_run_dir = cand.resolve()
+                                saved_tokens = tokens
+                    except Exception:
+                        resuming_run_dir = None
+
+            if resuming_run_dir is None:
+                recent_runs = _list_recent_run_dirs(base_dir, limit=3)
+                if recent_runs:
+                    print("No active output/.last_run found. Top 3 most recent runs available to resume:")
+                    for idx_num, r_dir in enumerate(recent_runs, 1):
+                        try:
+                            rel_r = r_dir.resolve().relative_to(SYSTEM_CONFIG.PROJECT_ROOT.resolve())
+                            disp = str(rel_r)
+                        except ValueError:
+                            disp = str(r_dir)
+                        print(f"  [{idx_num}] {disp:<34} ({_summarize_run_dir(r_dir)})")
+                    print(
+                        "\nTo continue this, re-run the command with -r <folder_number> "
+                        "(e.g., ./rfc-llm -r 1) or -r <folder_path>."
+                    )
+                    sys.exit(0)
+                else:
+                    print(
+                        "No previous runs found in output/. The -r / --resume flag is used after a first initial run "
+                        "(e.g., ./rfc-llm refrences/all_RFCs/ --model ...)."
+                    )
+                    sys.exit(0)
+        else:
+            raw_spec = args.resume.strip()
+            if raw_spec.isdigit() and not Path(raw_spec).exists():
+                pick_idx = int(raw_spec) - 1
+                recent_runs = _list_recent_run_dirs(base_dir, limit=10)
+                if 0 <= pick_idx < len(recent_runs):
+                    resuming_run_dir = recent_runs[pick_idx].resolve()
+                else:
+                    top3 = recent_runs[:3]
+                    if top3:
+                        print(f"Error: Run number '{raw_spec}' is out of range.", file=sys.stderr)
+                        for idx_num, r_dir in enumerate(top3, 1):
+                            print(f"  [{idx_num}] {r_dir} ({_summarize_run_dir(r_dir)})", file=sys.stderr)
+                        print("To continue this, re-run the command with -r <folder_number>.", file=sys.stderr)
+                    else:
+                        print(
+                            "No previous runs found in output/. The -r / --resume flag is used after a first initial run.",
+                            file=sys.stderr,
+                        )
+                    sys.exit(1)
+            else:
+                cand = Path(raw_spec)
+                if not cand.exists() and (base_dir / raw_spec).exists():
+                    cand = base_dir / raw_spec
+                if not cand.exists() and (SYSTEM_CONFIG.PROJECT_ROOT / raw_spec).exists():
+                    cand = SYSTEM_CONFIG.PROJECT_ROOT / raw_spec
+                if not cand.exists() or not cand.is_dir():
+                    print(f"Error: Resume run directory does not exist: {raw_spec}", file=sys.stderr)
+                    recent_runs = _list_recent_run_dirs(base_dir, limit=3)
+                    if recent_runs:
+                        print("Top 3 most recent runs available to resume:", file=sys.stderr)
+                        for idx_num, r_dir in enumerate(recent_runs, 1):
+                            print(f"  [{idx_num}] {r_dir} ({_summarize_run_dir(r_dir)})", file=sys.stderr)
+                        print("To continue this, re-run the command with -r <folder_number>.", file=sys.stderr)
+                    sys.exit(1)
+                resuming_run_dir = cand.resolve()
+
+        # Load run_manifest.json from resuming_run_dir if available
+        manifest_file = resuming_run_dir / "run_manifest.json"
+        if manifest_file.exists():
+            try:
+                manifest_data = json.loads(manifest_file.read_text(encoding="utf-8"))
+            except Exception:
+                manifest_data = {}
+
+        if saved_tokens is None and manifest_data.get("resume_command"):
+            try:
+                m_tokens = shlex.split(manifest_data["resume_command"])
+                while m_tokens and (
+                    m_tokens[0].endswith("rfc-llm")
+                    or m_tokens[0].endswith("python")
+                    or m_tokens[0].endswith("python3")
+                    or m_tokens[0].endswith("pipeline.py")
+                ):
+                    m_tokens.pop(0)
+                saved_tokens = m_tokens
+            except Exception:
+                saved_tokens = None
+
+        if saved_tokens is not None:
+            base_args = parser.parse_args(saved_tokens)
+        else:
+            base_args = parser.parse_args([])
+            saved_cli = manifest_data.get("cli_args") or {}
+            for k, v in saved_cli.items():
+                if hasattr(base_args, k) and v is not None:
+                    setattr(base_args, k, v)
+            if manifest_data.get("targets"):
+                base_args.target_path = list(manifest_data["targets"])
+            else:
+                inferred_models = _infer_models_from_csv(resuming_run_dir / "pipeline_runs.csv")
+                for mk, mv in inferred_models.items():
+                    if mv and not getattr(base_args, mk, None):
+                        setattr(base_args, mk, mv)
+                default_rfc_dir = SYSTEM_CONFIG.PROJECT_ROOT / "refrences" / "all_RFCs"
+                if default_rfc_dir.exists():
+                    base_args.target_path = [str(default_rfc_dir)]
+
+        # Overlay any CLI flags explicitly passed on the current `-r` invocation
+        if "model" in explicit_overrides:
+            for stage_m in ("router_model", "extraction_model", "repair_model", "query_model"):
+                if stage_m not in explicit_overrides:
+                    setattr(base_args, stage_m, None)
+        for k, v in explicit_overrides.items():
+            if k != "resume":
+                setattr(base_args, k, v)
+        base_args.resume = str(resuming_run_dir)
+        args = base_args
+
+    # Require --csv whenever --keep-ineligible, --skip-completed, or --retry-failed is used (unless resuming with -r)
+    if not is_resuming and (args.keep_ineligible or args.skip_completed or args.retry_failed) and not args.csv:
         active_flags = [
             flag
             for flag, enabled in (
@@ -11920,13 +12468,13 @@ def main():
             if enabled
         ]
         parser.error(
-            f"{', '.join(active_flags)} requires --csv <path_to_existing_csv_or_run_dir>. "
+            f"{', '.join(active_flags)} requires --csv <path_to_existing_csv_or_run_dir> (or --resume / -r). "
             "Pass --csv pointing to the existing CSV ledger (or run directory) these flags should apply to, "
             "or remove those flags to start a fresh run."
         )
 
     # Standalone --keep-ineligible --csv <path> prune mode (no target_path passed)
-    if args.keep_ineligible and not args.target_path:
+    if not is_resuming and args.keep_ineligible and not args.target_path:
         cand = Path(args.csv)
         if not cand.exists():
             print(f"Error: Source --csv path does not exist: {cand}", file=sys.stderr)
@@ -11941,11 +12489,13 @@ def main():
         sys.exit(0)
 
     if not args.target_path:
-        parser.error("the following arguments are required: target_path (or pass --view <run_dir>)")
+        parser.error("the following arguments are required: target_path (or pass --resume / -r or --view <run_dir>)")
 
     targets = [Path(p) for p in args.target_path]
-    for t in targets:
-        if not t.exists():
+    for idx_t, t in enumerate(targets):
+        if not t.exists() and (SYSTEM_CONFIG.PROJECT_ROOT / t).exists():
+            targets[idx_t] = SYSTEM_CONFIG.PROJECT_ROOT / t
+        elif not t.exists():
             print(f"Error: Target path does not exist: {t}", file=sys.stderr)
             sys.exit(1)
 
@@ -11964,104 +12514,179 @@ def main():
         )
         sys.exit(1)
 
-    # 1. Create Unique Timestamped Run Directory & Per-Run CSV Ledger
-    run_timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_dir = Path(args.output_dir) if args.output_dir else SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR
-    if base_dir.name.startswith("run_"):
-        run_root_dir = base_dir
+    # 1. Create or Re-Attach Run Directory & Per-Run CSV Ledger
+    if is_resuming and resuming_run_dir is not None:
+        run_root_dir = resuming_run_dir
+        base_dir = run_root_dir.parent
     else:
-        run_root_dir = base_dir / f"run_{run_timestamp}"
+        run_timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        base_dir = Path(args.output_dir) if args.output_dir else SYSTEM_CONFIG.DEFAULT_OUTPUT_DIR
+        if base_dir.name.startswith("run_"):
+            run_root_dir = base_dir
+            base_dir = run_root_dir.parent
+        else:
+            run_root_dir = base_dir / f"run_{run_timestamp}"
+
     run_root_dir.mkdir(parents=True, exist_ok=True)
     run_csv_path = run_root_dir / "pipeline_runs.csv"
     csv_logger = PipelineMetricsCSVLogger(csv_path=run_csv_path)
 
-    # Seed new run's CSV from --csv <source> (source CSV is never mutated)
-    if args.csv:
-        src_csv_path = Path(args.csv)
-        seeded_count = csv_logger.seed_from_source(src_csv_path)
-        print(
-            f"[CSV SEED] Copied {seeded_count} row(s) from {src_csv_path} -> {run_csv_path} "
-            f"(source left untouched)."
-        )
+    if is_resuming:
+        # Ensure legacy runs that only had metadata_index.json have their CSV populated before filtering
+        if (
+            (not run_csv_path.exists() or len(get_completed_rfc_ids(csv_path=run_csv_path)) == 0)
+            and (run_root_dir / "metadata_index.json").exists()
+        ):
+            csv_logger.seed_from_source(run_root_dir / "metadata_index.json")
 
-    if args.keep_ineligible:
-        removed_cnt, kept_cnt = csv_logger.prune_keep_ineligible_only()
-        print(
-            f"[CSV PRUNE] Pruned {run_csv_path}: removed {removed_cnt} eligible row(s), "
-            f"retained {kept_cnt} INELIGIBLE row(s) (is_eligible=False)."
-        )
-        args.skip_completed = True
+        if explicit_overrides.get("keep_ineligible"):
+            removed_cnt, kept_cnt = csv_logger.prune_keep_ineligible_only()
+            print(
+                f"[CSV PRUNE] Pruned {run_csv_path}: removed {removed_cnt} eligible row(s), "
+                f"retained {kept_cnt} INELIGIBLE row(s) (is_eligible=False)."
+            )
 
-    GLOBAL_EVENT_BUS.set_run_directory(run_root_dir, is_live=True, csv_path=run_csv_path)
+        overview = GLOBAL_EVENT_BUS.load_run_from_disk(run_root_dir, is_live=True)
+        GLOBAL_EVENT_BUS.set_run_directory(run_root_dir, is_live=True, csv_path=run_csv_path)
+        GLOBAL_COST_TRACKER.restore_batch_summary(overview.get("batch_cost_telemetry"))
+        prior_eligible_count = 0 if args.retry_failed else get_eligible_rfc_count(csv_path=run_csv_path)
+    else:
+        prior_eligible_count = 0
+        # Seed new run's CSV from --csv <source> (source CSV is never mutated)
+        if args.csv:
+            src_csv_path = Path(args.csv)
+            seeded_count = csv_logger.seed_from_source(src_csv_path)
+            print(
+                f"[CSV SEED] Copied {seeded_count} row(s) from {src_csv_path} -> {run_csv_path} "
+                f"(source left untouched)."
+            )
 
-    # 2. Resolve Target Files (Single File, Multiple Files, or Directory Batch)
-    if len(targets) > 1 or targets[0].is_file():
-        rfc_files = [t for t in targets if t.is_file()]
+        if args.keep_ineligible:
+            removed_cnt, kept_cnt = csv_logger.prune_keep_ineligible_only()
+            print(
+                f"[CSV PRUNE] Pruned {run_csv_path}: removed {removed_cnt} eligible row(s), "
+                f"retained {kept_cnt} INELIGIBLE row(s) (is_eligible=False)."
+            )
+            args.skip_completed = True
+
+        GLOBAL_EVENT_BUS.set_run_directory(run_root_dir, is_live=True, csv_path=run_csv_path)
+
+    # 2. Resolve Target Files (Single File, Multiple Files, Directory Batch, or Resumed Queue)
+    queue_affecting_overrides = {"target_path", "limit", "random", "tier0_eligible_only", "pattern"}
+    can_reuse_manifest_queue = (
+        is_resuming
+        and bool(manifest_data.get("planned_rfc_files"))
+        and not any(k in explicit_overrides for k in queue_affecting_overrides)
+    )
+
+    if can_reuse_manifest_queue:
+        planned_rfc_files = [Path(p) for p in manifest_data["planned_rfc_files"] if Path(p).exists()]
+    elif len(targets) > 1 or targets[0].is_file():
+        planned_rfc_files = [t for t in targets if t.is_file()]
     elif targets[0].is_dir():
         target = targets[0]
         raw_candidates = [f for f in target.glob(args.pattern) if f.is_file()]
         if args.pattern == "rfc*.txt":
             # Exclude non-numeric index/reference files such as rfc-index-latest.txt or rfc-ref-old.txt
             numeric_candidates = [f for f in raw_candidates if re.fullmatch(r"rfc\d+\.txt", f.name.lower())]
-            rfc_files = sorted(numeric_candidates or raw_candidates, key=natural_rfc_sort_key)
+            planned_rfc_files = sorted(numeric_candidates or raw_candidates, key=natural_rfc_sort_key)
         else:
-            rfc_files = sorted(raw_candidates, key=natural_rfc_sort_key)
-        if not rfc_files:
+            planned_rfc_files = sorted(raw_candidates, key=natural_rfc_sort_key)
+        if not planned_rfc_files:
             # Fallback to all existing txt files if pattern yielded zero
-            rfc_files = sorted([f for f in target.glob("*.txt") if f.is_file()], key=natural_rfc_sort_key)
-        if not rfc_files:
+            planned_rfc_files = sorted([f for f in target.glob("*.txt") if f.is_file()], key=natural_rfc_sort_key)
+        if not planned_rfc_files:
             print(f"Error: No RFC text files found in directory {target}", file=sys.stderr)
             sys.exit(1)
 
-        if args.retry_failed:
-            failed_ids = get_failed_rfc_ids(csv_path=run_csv_path)
-            rfc_files = [
-                f for f in rfc_files
-                if f.stem.upper().replace(" ", "").replace("_", "") in failed_ids
-            ]
-            print(f"[BATCH] Filtered to {len(rfc_files)} previously FAILED/PARTIAL RFCs from {run_csv_path}")
-        elif args.skip_completed:
-            completed_ids = get_completed_rfc_ids(csv_path=run_csv_path)
-            initial_count = len(rfc_files)
-            rfc_files = [
-                f for f in rfc_files
-                if f.stem.upper().replace(" ", "").replace("_", "") not in completed_ids
-            ]
-            print(f"[BATCH] Filtered out {initial_count - len(rfc_files)} previously evaluated RFCs ({len(rfc_files)} remaining)")
+        if not is_resuming:
+            if args.retry_failed:
+                failed_ids = get_failed_rfc_ids(csv_path=run_csv_path)
+                planned_rfc_files = [
+                    f for f in planned_rfc_files
+                    if f.stem.upper().replace(" ", "").replace("_", "") in failed_ids
+                ]
+                print(f"[BATCH] Filtered to {len(planned_rfc_files)} previously FAILED/PARTIAL RFCs from {run_csv_path}")
+            elif args.skip_completed:
+                completed_ids = get_completed_rfc_ids(csv_path=run_csv_path)
+                initial_count = len(planned_rfc_files)
+                planned_rfc_files = [
+                    f for f in planned_rfc_files
+                    if f.stem.upper().replace(" ", "").replace("_", "") not in completed_ids
+                ]
+                print(f"[BATCH] Filtered out {initial_count - len(planned_rfc_files)} previously evaluated RFCs ({len(planned_rfc_files)} remaining)")
 
         if args.tier0_eligible_only:
-            before_t0 = len(rfc_files)
-            rfc_files = [
-                f for f in rfc_files
+            before_t0 = len(planned_rfc_files)
+            planned_rfc_files = [
+                f for f in planned_rfc_files
                 if filter_rfc_header(f.read_text(encoding="utf-8", errors="ignore")).is_eligible
             ]
-            print(f"[BATCH] Tier 0 pre-filter retained {len(rfc_files)}/{before_t0} candidate RFCs")
+            print(f"[BATCH] Tier 0 pre-filter retained {len(planned_rfc_files)}/{before_t0} candidate RFCs")
 
         if args.random:
-            random.shuffle(rfc_files)
+            random.shuffle(planned_rfc_files)
             print("[BATCH] Shuffled candidate RFC list randomly")
 
         if args.limit and args.limit > 0:
-            rfc_files = rfc_files[:args.limit]
-            print(f"[BATCH] Processing limited to {len(rfc_files)} RFCs: {[f.name for f in rfc_files]}")
+            planned_rfc_files = planned_rfc_files[:args.limit]
+            print(f"[BATCH] Processing limited to {len(planned_rfc_files)} RFCs: {[f.name for f in planned_rfc_files]}")
     else:
         print(f"Error: Invalid target path: {targets[0]}", file=sys.stderr)
         sys.exit(1)
+
+    if is_resuming:
+        if args.retry_failed:
+            failed_ids = get_failed_rfc_ids(csv_path=run_csv_path)
+            rfc_files = [
+                f for f in planned_rfc_files
+                if f.stem.upper().replace(" ", "").replace("_", "") in failed_ids
+            ]
+            print(f"[RESUME] Filtered to {len(rfc_files)} previously FAILED/PARTIAL RFCs in {run_root_dir.name}")
+        else:
+            completed_ids = get_completed_rfc_ids(csv_path=run_csv_path)
+            rfc_files = [
+                f for f in planned_rfc_files
+                if f.stem.upper().replace(" ", "").replace("_", "") not in completed_ids
+            ]
+            skipped_count = len(planned_rfc_files) - len(rfc_files)
+            print(
+                f"[RESUME] Continuing {run_root_dir.name}: skipped {skipped_count} already-processed RFC(s), "
+                f"{len(rfc_files)} remaining in queue."
+            )
+    else:
+        rfc_files = list(planned_rfc_files)
+
+    manifest_path, last_run_file, resume_cmd_str = _save_run_manifest_and_last_run(
+        run_root_dir=run_root_dir,
+        base_output_dir=base_dir,
+        targets=targets,
+        args=args,
+        planned_rfc_files=planned_rfc_files,
+    )
+
+    if is_resuming and not rfc_files:
+        print(
+            f"[RESUME] All candidate RFCs in {run_root_dir} have already been processed (0 remaining). "
+            f"Use ./rfc-llm --view {run_root_dir} to inspect results."
+        )
+        sys.exit(0)
 
     # 3. Launch Visualizer (Default Enabled)
     enable_visualizer = not args.no_visualize
     monitor_url = None
     if enable_visualizer:
         try:
-            server = run_visualizer_in_background(port=args.port)
-            monitor_url = f"http://127.0.0.1:{server.port}"
+            server = run_visualizer_in_background(host=args.host, port=args.port)
+            monitor_url = f"http://{args.host}:{server.port}"
             print(f"\n{'='*70}")
             print(f" [LIVE MONITOR] Active at: {monitor_url}")
             print(f"{'='*70}\n")
-            try:
-                webbrowser.open(monitor_url)
-            except Exception:
-                pass
+            if _is_localhost_binding(args.host):
+                try:
+                    webbrowser.open(monitor_url)
+                except Exception:
+                    pass
         except Exception as e:
             print(f"[WARN] Could not launch live monitor: {e}")
 
@@ -12089,9 +12714,10 @@ def main():
             encoding="utf-8",
         )
 
-    print(f"[RUN] Created timestamped run directory: {run_root_dir}")
+    print(f"[RUN] {'Resumed' if is_resuming else 'Created'} run directory   : {run_root_dir}")
     print(f"[RUN] Master Metadata Index           : {master_index_path}")
     print(f"[RUN] Run CSV Ledger                  : {run_csv_path}")
+    print(f"[RUN] Saved Resume Command (.last_run): {resume_cmd_str}")
 
     # 4. Execution Loop (Models resolve dynamically from prompts/*.md unless CLI overrides are passed)
     results: List[PipelineExecutionSummary] = []
@@ -12100,6 +12726,13 @@ def main():
     cli_extraction_model = args.extraction_model or args.model
     cli_repair_model = args.repair_model or args.model
     cli_query_model = args.query_model or args.model
+
+    if is_resuming and args.target_eligible and args.target_eligible > 0 and prior_eligible_count >= args.target_eligible:
+        print(
+            f"\n[RESUME] Run {run_root_dir.name} already reached target of "
+            f"{prior_eligible_count}/{args.target_eligible} eligible cryptographic protocols."
+        )
+        sys.exit(0)
 
     for idx, rfc_file in enumerate(rfc_files, 1):
         if total_files > 1:
@@ -12118,6 +12751,7 @@ def main():
                 query_model=cli_query_model,
                 run_root_dir=run_root_dir,
                 csv_path=run_csv_path,
+                resume_checkpoint=is_resuming,
             )
         except Exception as exc:
             print(f"[ERROR] Unhandled exception on {rfc_file.name}: {exc}", file=sys.stderr)
@@ -12129,7 +12763,7 @@ def main():
         results.append(summary)
 
         if args.target_eligible and args.target_eligible > 0:
-            eligible_so_far = sum(1 for r in results if r.is_eligible)
+            eligible_so_far = prior_eligible_count + sum(1 for r in results if r.is_eligible)
             if eligible_so_far >= args.target_eligible:
                 print(
                     f"\n[BATCH] Reached target of {eligible_so_far}/{args.target_eligible} "
@@ -12232,7 +12866,7 @@ if __name__ == "__main__":
 
 ### `src/pipeline_events.py`
 
-*sha256:`0207791836c5` · 609 lines · 26.5 KB (~6,792 tokens) · lang:`python`*
+*sha256:`4dc1c4a23313` · 610 lines · 26.6 KB (~6,817 tokens) · lang:`python`*
 
 ```python
 """Bounded event bus, sequential tab registry, and disk telemetry sink for pipeline visualization."""
@@ -12570,14 +13204,15 @@ class PipelineEventBus:
             self._filtered_rfcs.clear()
             self._batch_cost_telemetry = {}
 
-    def load_run_from_disk(self, target_path: Path) -> Dict[str, Any]:
+    def load_run_from_disk(self, target_path: Path, is_live: bool = False) -> Dict[str, Any]:
         """Reconstructs numbered accepted tabs and filtered RFCs from an existing run directory,
-        metadata_index.json, or single <protocol>_trajectory.json for offline `--view` replay.
+        metadata_index.json, or single <protocol>_trajectory.json for offline `--view` replay
+        or live `--resume` continuation.
         """
         resolved = target_path.resolve()
         with self._lock:
             self.clear()
-            self._is_live = False
+            self._is_live = is_live
 
             index_file: Optional[Path] = None
             run_dir: Path = resolved
@@ -12681,7 +13316,7 @@ class PipelineEventBus:
 
                     if traj_path and traj_path.exists():
                         self._ingest_trajectory_as_tab(traj_path, fallback_entry=run_entry)
-                    elif rfc_dir_path and rfc_dir_path.exists():
+                    elif not is_live and rfc_dir_path and rfc_dir_path.exists():
                         self._ingest_folder_without_trajectory(rfc_dir_path, fallback_entry=run_entry)
 
                 # Also pick up any accepted RFC directories in run_dir that weren't flushed to metadata_index.json
@@ -12692,7 +13327,7 @@ class PipelineEventBus:
                             trajs = sorted(child.glob("*_trajectory.json"))
                             if trajs:
                                 self._ingest_trajectory_as_tab(trajs[0])
-                            elif any(child.iterdir()):
+                            elif not is_live and any(child.iterdir()):
                                 self._ingest_folder_without_trajectory(child)
             elif run_dir.is_dir():
                 for child in sorted(run_dir.iterdir()):
@@ -16240,7 +16875,7 @@ def generate_snowball_autopsy_report(
 
 ### `src/verification_engine/trajectory_metadata_exporter.py`
 
-*sha256:`62a363878d5b` · 1114 lines · 45.7 KB (~11,707 tokens) · lang:`python`*
+*sha256:`e2d2d046a6c0` · 1132 lines · 46.4 KB (~11,883 tokens) · lang:`python`*
 
 ```python
 """Programmatic Trajectory & Formal Verification Metadata Exporter.
@@ -17333,9 +17968,22 @@ def update_run_metadata_index(
         traj_str = None
 
     scm_str = str(scm_path.resolve()) if (scm_path and scm_path.exists()) else None
-    effective_tab_idx = tab_index if tab_index is not None else (len(index_data.get("runs", [])) + 1)
+    runs_list = index_data.setdefault("runs", [])
+    norm_target_id = (rfc_id or "").strip().upper().replace(" ", "").replace("_", "")
+    existing_idx = next(
+        (
+            i
+            for i, entry in enumerate(runs_list)
+            if (entry.get("rfc_id") or "").strip().upper().replace(" ", "").replace("_", "") == norm_target_id
+        ),
+        None,
+    )
+    if existing_idx is not None and tab_index is None:
+        effective_tab_idx = runs_list[existing_idx].get("tab_index") or (existing_idx + 1)
+    else:
+        effective_tab_idx = tab_index if tab_index is not None else (len(runs_list) + 1)
 
-    index_data["runs"].append({
+    new_run_entry = {
         "tab_index": effective_tab_idx,
         "rfc_id": rfc_id,
         "protocol_name": protocol_name,
@@ -17350,7 +17998,12 @@ def update_run_metadata_index(
         "security_findings": security_findings,
         "cost_usd": round(float(rfc_cost.get("total_cost_usd", 0.0)), 6),
         "cost_telemetry": rfc_cost,
-    })
+    }
+    if existing_idx is not None:
+        runs_list[existing_idx] = new_run_entry
+        index_data["total_eligible_protocols"] = len(runs_list)
+    else:
+        runs_list.append(new_run_entry)
 
     with open(index_path, "w", encoding="utf-8") as handle:
         json.dump(index_data, handle, indent=2)
@@ -17372,7 +18025,7 @@ def update_run_metadata_index(
 
 ### `src/visualizer/server.py`
 
-*sha256:`8aafb7c40a7f` · 733 lines · 31.7 KB (~8,125 tokens) · lang:`python`*
+*sha256:`08246d725f18` · 739 lines · 31.9 KB (~8,175 tokens) · lang:`python`*
 
 ```python
 """Asynchronous web server for live and offline multi-RFC synthesis visualization."""
@@ -18053,6 +18706,7 @@ class VisualizerServer:
                 "Content-Type": "text/event-stream",
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
                 "Access-Control-Allow-Origin": "*",
             },
         )
@@ -18084,7 +18738,12 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
     def _is_port_available(p: int) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            return s.connect_ex((host, p)) != 0
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind((host, p))
+                return True
+            except OSError:
+                return False
 
     actual_port = port
     while not _is_port_available(actual_port) and actual_port < port + 20:
@@ -18114,7 +18773,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
 ### `src/visualizer/static/index.html`
 
-*sha256:`15754b1924be` · 3649 lines · 153.1 KB (~39,179 tokens) · lang:`html`*
+*sha256:`996292c3b2cb` · 3649 lines · 153.1 KB (~39,176 tokens) · lang:`html`*
 
 ```html
 <!DOCTYPE html>
@@ -19745,7 +20404,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       renderVirtualTabs();
       resetViewportDom('LIVE');
 
-      fetch('/api/active')
+      fetch('api/active')
         .then(r => r.json())
         .then(state => {
           if (state && Array.isArray(state.events)) {
@@ -19776,7 +20435,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       }
 
       document.getElementById('stage-diagnosis').innerText = `Loading Tab #${tabIndex}...`;
-      fetch(`/api/tab/${tabIndex}`)
+      fetch(`api/tab/${tabIndex}`)
         .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
         .then(payload => {
           if (payload.tab && payload.tab.status !== 'RUNNING') {
@@ -19833,7 +20492,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
       if (payload.shapes_xhtml) {
         document.getElementById('graph-container').innerHTML =
-          `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(payload.shapes_xhtml)}"></iframe>`;
+          `<iframe class="svg-frame" src="api/artifact?path=${encodeURIComponent(payload.shapes_xhtml)}"></iframe>`;
       }
 
       const secFindings = payload.security_findings || (payload.quality_assessment || {}).security_findings || tab.security_findings || {};
@@ -20003,7 +20662,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
     function fetchFilteredPage() {
       const q = encodeURIComponent(document.getElementById('filtered-search-input')?.value || '');
-      fetch(`/api/filtered?offset=${filteredOffset}&limit=100&q=${q}`)
+      fetch(`api/filtered?offset=${filteredOffset}&limit=100&q=${q}`)
         .then(r => r.json())
         .then(data => {
           updateFilteredButtonCount(data.total || 0);
@@ -20331,7 +20990,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           document.getElementById('code-ast').innerText = JSON.stringify(evt.data.ast, null, 2);
         }
         if (fetchLiveArtifacts && evt.data && evt.data.scm_path) {
-          fetch(`/api/artifact?path=${encodeURIComponent(evt.data.scm_path)}`)
+          fetch(`api/artifact?path=${encodeURIComponent(evt.data.scm_path)}`)
             .then(r => r.text())
             .then(txt => { document.getElementById('code-scm').innerText = txt; })
             .catch(() => {});
@@ -20340,7 +20999,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         typeLabel = 'SLICE_EXTRACTED';
         bodyText = `Sections: ${JSON.stringify(evt.data.sections)}\nLine count: ${evt.data.line_count}`;
         if (fetchLiveArtifacts && evt.data && evt.data.slice_path) {
-          fetch(`/api/artifact?path=${encodeURIComponent(evt.data.slice_path)}`)
+          fetch(`api/artifact?path=${encodeURIComponent(evt.data.slice_path)}`)
             .then(r => r.text())
             .then(txt => { document.getElementById('code-slice').innerText = txt; })
             .catch(() => {});
@@ -20387,7 +21046,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           pill.setAttribute('data-tooltip-key', evt.data.quality_tier || 'VERIFIED');
           if (evt.data.shapes_xhtml) {
             document.getElementById('graph-container').innerHTML =
-              `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
+              `<iframe class="svg-frame" src="api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
           }
           if (evt.data.security_findings) {
             renderSecurityVerdictStrip(evt.data.quality_tier || 'VERIFIED', evt.data.security_findings);
@@ -21278,7 +21937,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     }
 
     function refreshCsvAnalytics(force) {
-      fetch('/api/csv')
+      fetch('api/csv')
         .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
         .then(data => {
           latestCsvRows = data.rows || [];
@@ -21658,7 +22317,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     // =========================================================================
     // Initial Bootstrap & Named-Event SSE Subscription (Zero Polling Spam!)
     // =========================================================================
-    fetch('/api/models')
+    fetch('api/models')
       .then(r => r.ok ? r.json() : null)
       .then(cfg => {
         if (!cfg) return;
@@ -21674,7 +22333,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       .catch(() => {});
 
     function syncInitialState() {
-      fetch('/api/tabs')
+      fetch('api/tabs')
         .then(r => {
           if (!r.ok) throw new Error('legacy server');
           return r.json();
@@ -21713,7 +22372,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
               setDiagnosisBadge('Replay Loaded (0 Accepted Tabs)', 'normal');
             }
           } else if (viewMode === 'live') {
-            return fetch('/api/active')
+            return fetch('api/active')
               .then(r => r.json())
               .then(state => {
                 if (state && Array.isArray(state.events)) {
@@ -21724,7 +22383,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         })
         .catch(() => {
           // Graceful fallback if connected to an older in-memory server without /api/tabs
-          fetch('/api/history')
+          fetch('api/history')
             .then(r => r.json())
             .then(events => {
               if (Array.isArray(events)) events.forEach(e => renderEventIntoViewport(e, true));
@@ -21736,7 +22395,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     syncInitialState();
 
     // Real-time Server-Sent Events: listen on all named event types so frames fire in <1ms
-    const sse = new EventSource('/api/events');
+    const sse = new EventSource('api/events');
     const SSE_EVENT_TYPES = [
       'pipeline_started',
       'stage_started',

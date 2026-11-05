@@ -90,13 +90,37 @@ Key batch flags:
 - `--pattern "rfc*.txt"`: Custom glob pattern when scanning a directory.
 - `--output-dir <dir>` (`-o <dir>`): Custom parent output directory (or explicit `run_*` folder).
 
-### 2.3 Offline Visualizer Replay (`--view`)
+### 2.3 In-Place Run Resumption (`--resume` / `-r`) & Remote Visualizer Hosting (`--host` / `--port`)
+- **In-Place Resumption (`--resume` / `-r`)**:
+  Whenever a synthesis run starts, `./rfc-llm` writes the full expanded resume command (`./rfc-llm -r output/run_... ...`) to `output/.last_run` and saves the exact candidate queue to `<run_dir>/run_manifest.json`.
+  ```bash
+  # Resume the active run recorded in output/.last_run in-place
+  ./rfc-llm -r
+
+  # Resume while overriding the active model or remote visualizer binding mid-run
+  ./rfc-llm -r --model nous/google/gemini-3.8-flash --host 100.64.0.12 --port 8080
+
+  # Resume a specific run folder by path or top-3 index number (1, 2, or 3)
+  ./rfc-llm -r 1
+  ./rfc-llm -r output/run_2026-11-04_20-30-35
+  ```
+  - If `output/.last_run` is missing, `./rfc-llm -r` displays the top 3 most recent `output/run_*` directories with their processed/eligible/verified counts and prompts you to re-run with `-r <folder_number>`.
+  - If no previous runs exist in `output/`, `./rfc-llm -r` explains that `-r` is used after an initial run.
+  - Resuming pre-hydrates all existing `#1..#K` tabs and filtered RFCs in the live visualizer, skips completed RFCs in `pipeline_runs.csv`, and recovers mid-RFC `verbatim_slice.txt` + `initial_ast.json` checkpoints so interrupted Stage 2 extractions are not repeated.
+- **Remote / Tailscale / Authentik Visualizer Hosting (`--host` & `--port`)**:
+  ```bash
+  # Bind the live visualizer (or --view replay) to a Tailscale IP or 0.0.0.0 on a remote SSH server
+  ./rfc-llm refrences/all_RFCs/ --host 100.64.0.12 --port 8080 --tier0-eligible-only --random
+  ```
+  When `--host` is omitted, `./rfc-llm` binds to `127.0.0.1` (`localhost`) and opens your local browser automatically. When `--host` is set to a non-localhost IP, `webbrowser.open()` is skipped automatically and the server streams SSE events (`X-Accel-Buffering: no`) over relative `api/...` paths compatible with Tailscale and reverse proxies (Authentik, Nginx, Caddy, Traefik).
+
+### 2.4 Offline Visualizer Replay (`--view`)
 Open any previously completed run directory (or `metadata_index.json`) in the web visualizer without running synthesis:
 ```bash
-./rfc-llm --view output/run_2026-10-28_16-03-11 --port 8080
+./rfc-llm --view output/run_2026-10-28_16-03-11 --host 127.0.0.1 --port 8080
 ```
 
-### 2.4 One-Off CLI Model Overrides
+### 2.5 One-Off CLI Model Overrides
 For persistent routing changes (including live mid-batch updates), edit `model:` in `prompts/01_*.md` .. `07_*.md`. For temporary single-run overrides, pass CLI flags:
 ```bash
 ./rfc-llm refrences/all_RFCs/rfc5246.txt \

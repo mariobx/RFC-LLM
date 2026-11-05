@@ -1088,9 +1088,22 @@ def update_run_metadata_index(
         traj_str = None
 
     scm_str = str(scm_path.resolve()) if (scm_path and scm_path.exists()) else None
-    effective_tab_idx = tab_index if tab_index is not None else (len(index_data.get("runs", [])) + 1)
+    runs_list = index_data.setdefault("runs", [])
+    norm_target_id = (rfc_id or "").strip().upper().replace(" ", "").replace("_", "")
+    existing_idx = next(
+        (
+            i
+            for i, entry in enumerate(runs_list)
+            if (entry.get("rfc_id") or "").strip().upper().replace(" ", "").replace("_", "") == norm_target_id
+        ),
+        None,
+    )
+    if existing_idx is not None and tab_index is None:
+        effective_tab_idx = runs_list[existing_idx].get("tab_index") or (existing_idx + 1)
+    else:
+        effective_tab_idx = tab_index if tab_index is not None else (len(runs_list) + 1)
 
-    index_data["runs"].append({
+    new_run_entry = {
         "tab_index": effective_tab_idx,
         "rfc_id": rfc_id,
         "protocol_name": protocol_name,
@@ -1105,7 +1118,12 @@ def update_run_metadata_index(
         "security_findings": security_findings,
         "cost_usd": round(float(rfc_cost.get("total_cost_usd", 0.0)), 6),
         "cost_telemetry": rfc_cost,
-    })
+    }
+    if existing_idx is not None:
+        runs_list[existing_idx] = new_run_entry
+        index_data["total_eligible_protocols"] = len(runs_list)
+    else:
+        runs_list.append(new_run_entry)
 
     with open(index_path, "w", encoding="utf-8") as handle:
         json.dump(index_data, handle, indent=2)

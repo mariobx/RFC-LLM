@@ -1626,7 +1626,7 @@
       renderVirtualTabs();
       resetViewportDom('LIVE');
 
-      fetch('/api/active')
+      fetch('api/active')
         .then(r => r.json())
         .then(state => {
           if (state && Array.isArray(state.events)) {
@@ -1657,7 +1657,7 @@
       }
 
       document.getElementById('stage-diagnosis').innerText = `Loading Tab #${tabIndex}...`;
-      fetch(`/api/tab/${tabIndex}`)
+      fetch(`api/tab/${tabIndex}`)
         .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
         .then(payload => {
           if (payload.tab && payload.tab.status !== 'RUNNING') {
@@ -1714,7 +1714,7 @@
 
       if (payload.shapes_xhtml) {
         document.getElementById('graph-container').innerHTML =
-          `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(payload.shapes_xhtml)}"></iframe>`;
+          `<iframe class="svg-frame" src="api/artifact?path=${encodeURIComponent(payload.shapes_xhtml)}"></iframe>`;
       }
 
       const secFindings = payload.security_findings || (payload.quality_assessment || {}).security_findings || tab.security_findings || {};
@@ -1884,7 +1884,7 @@
 
     function fetchFilteredPage() {
       const q = encodeURIComponent(document.getElementById('filtered-search-input')?.value || '');
-      fetch(`/api/filtered?offset=${filteredOffset}&limit=100&q=${q}`)
+      fetch(`api/filtered?offset=${filteredOffset}&limit=100&q=${q}`)
         .then(r => r.json())
         .then(data => {
           updateFilteredButtonCount(data.total || 0);
@@ -2212,7 +2212,7 @@
           document.getElementById('code-ast').innerText = JSON.stringify(evt.data.ast, null, 2);
         }
         if (fetchLiveArtifacts && evt.data && evt.data.scm_path) {
-          fetch(`/api/artifact?path=${encodeURIComponent(evt.data.scm_path)}`)
+          fetch(`api/artifact?path=${encodeURIComponent(evt.data.scm_path)}`)
             .then(r => r.text())
             .then(txt => { document.getElementById('code-scm').innerText = txt; })
             .catch(() => {});
@@ -2221,7 +2221,7 @@
         typeLabel = 'SLICE_EXTRACTED';
         bodyText = `Sections: ${JSON.stringify(evt.data.sections)}\nLine count: ${evt.data.line_count}`;
         if (fetchLiveArtifacts && evt.data && evt.data.slice_path) {
-          fetch(`/api/artifact?path=${encodeURIComponent(evt.data.slice_path)}`)
+          fetch(`api/artifact?path=${encodeURIComponent(evt.data.slice_path)}`)
             .then(r => r.text())
             .then(txt => { document.getElementById('code-slice').innerText = txt; })
             .catch(() => {});
@@ -2268,7 +2268,7 @@
           pill.setAttribute('data-tooltip-key', evt.data.quality_tier || 'VERIFIED');
           if (evt.data.shapes_xhtml) {
             document.getElementById('graph-container').innerHTML =
-              `<iframe class="svg-frame" src="/api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
+              `<iframe class="svg-frame" src="api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
           }
           if (evt.data.security_findings) {
             renderSecurityVerdictStrip(evt.data.quality_tier || 'VERIFIED', evt.data.security_findings);
@@ -3159,7 +3159,7 @@
     }
 
     function refreshCsvAnalytics(force) {
-      fetch('/api/csv')
+      fetch('api/csv')
         .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
         .then(data => {
           latestCsvRows = data.rows || [];
@@ -3539,7 +3539,7 @@
     // =========================================================================
     // Initial Bootstrap & Named-Event SSE Subscription (Zero Polling Spam!)
     // =========================================================================
-    fetch('/api/models')
+    fetch('api/models')
       .then(r => r.ok ? r.json() : null)
       .then(cfg => {
         if (!cfg) return;
@@ -3555,7 +3555,7 @@
       .catch(() => {});
 
     function syncInitialState() {
-      fetch('/api/tabs')
+      fetch('api/tabs')
         .then(r => {
           if (!r.ok) throw new Error('legacy server');
           return r.json();
@@ -3594,7 +3594,7 @@
               setDiagnosisBadge('Replay Loaded (0 Accepted Tabs)', 'normal');
             }
           } else if (viewMode === 'live') {
-            return fetch('/api/active')
+            return fetch('api/active')
               .then(r => r.json())
               .then(state => {
                 if (state && Array.isArray(state.events)) {
@@ -3605,7 +3605,7 @@
         })
         .catch(() => {
           // Graceful fallback if connected to an older in-memory server without /api/tabs
-          fetch('/api/history')
+          fetch('api/history')
             .then(r => r.json())
             .then(events => {
               if (Array.isArray(events)) events.forEach(e => renderEventIntoViewport(e, true));
@@ -3617,7 +3617,7 @@
     syncInitialState();
 
     // Real-time Server-Sent Events: listen on all named event types so frames fire in <1ms
-    const sse = new EventSource('/api/events');
+    const sse = new EventSource('api/events');
     const SSE_EVENT_TYPES = [
       'pipeline_started',
       'stage_started',
