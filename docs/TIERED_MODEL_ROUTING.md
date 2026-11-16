@@ -15,7 +15,7 @@ RFC-LLM decouples model selection, HTTP timeouts, and sampling temperatures **pe
 
 ## 2. YAML Frontmatter Routing in `prompts/*.md` ([`src/prompt_loader.py`](../src/prompt_loader.py))
 
-Every prompt file in `prompts/01_applicability_gate.md` through `prompts/07_think_token_synthesizer.md` begins with a YAML frontmatter block configuring `model`, `timeout` (seconds), and `temperature`:
+Every prompt file in `prompts/00_book_protocol_splitter.md` through `prompts/08_rfc_style_distiller.md` begins with a YAML frontmatter block configuring `model`, `timeout` (seconds), and `temperature`:
 
 ```markdown
 ---
@@ -30,6 +30,7 @@ You are a formal methods expert in cryptographic protocol specification for MITR
 
 | Prompt File | Stage / Task | Default Frontmatter `model` | `timeout` | `max_tokens` | `temperature` | CLI Override Flag |
 |---|---|---|---|---|---|---|
+| [`prompts/00_book_protocol_splitter.md`](../prompts/00_book_protocol_splitter.md) | **Stage 1s**: Multi-Protocol Book Splitter (`--llm-split`) | `strata/unsloth-iq4_xs` | `900` | `16384` | `0.0` | `--distill-model` / `--model` |
 | [`prompts/01_applicability_gate.md`](../prompts/01_applicability_gate.md) | **Stage 1c**: Document Intake (Applicability Gate) | `strata/unsloth-iq4_xs` | `900` | `16384` | *(default)* | `--router-model` / `--model` |
 | [`prompts/02_section_router.md`](../prompts/02_section_router.md) | **Stage 1d**: Document Intake (Section Router) | `strata/unsloth-iq4_xs` | `900` | `16384` | *(default)* | `--router-model` / `--model` |
 | [`prompts/03_protocol_extraction.md`](../prompts/03_protocol_extraction.md) | **Stage 2**: JSON CPSA Generation | `strata/unsloth-iq4_xs` | `3600` | `65536` | *(default)* | `--extraction-model` / `--model` |
@@ -37,6 +38,7 @@ You are a formal methods expert in cryptographic protocol specification for MITR
 | [`prompts/05_rag_query_formulation.md`](../prompts/05_rag_query_formulation.md) | **Stage 5 & 6**: Agentic CPSA KB Searcher | `strata/unsloth-iq4_xs` | `900` | `16384` | *(default)* | `--query-model` / `--model` |
 | [`prompts/06_compiler_repair.md`](../prompts/06_compiler_repair.md) | **Stage 5 & 6**: Self-Healing Compiler Repair | `strata/unsloth-iq4_xs` | `3600` | `65536` | *(default)* | `--repair-model` / `--model` |
 | [`prompts/07_think_token_synthesizer.md`](../prompts/07_think_token_synthesizer.md) | **Phase 3**: Hindsight Reasoning (`<think>`) Synthesizer | `strata/unsloth-iq4_xs` | `3600` | `65536` | `0.2` | `./rfc-think --model` |
+| [`prompts/08_rfc_style_distiller.md`](../prompts/08_rfc_style_distiller.md) | **Stage 1f**: Lossless RFC-Style Distiller (`--rfc-style`) | `strata/unsloth-iq4_xs` | `1800` | `32768` | `0.0` | `--distill-model` / `--model` |
 
 ### 2.2 Zero-Restart Live Hot-Reloading
 [`load_prompt_spec()`](../src/prompt_loader.py) reads and parses `prompts/<filename>.md` dynamically from disk on **every LLM invocation**:
@@ -82,7 +84,7 @@ STRATA_API_BASE=http://localhost:11435/v1
 ## 5. Resolution Precedence & Built-In Fallbacks
 
 For every LLM call, [`resolve_prompt_model()`](../src/prompt_loader.py) and [`load_prompt_spec()`](../src/prompt_loader.py) resolve configuration in strict precedence order:
-1. **Explicit CLI Override** (highest priority): One-off session flags passed to `./rfc-llm` (`--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, or global `--model`) or `./rfc-think` (`--model`).
+1. **Explicit CLI Override** (highest priority): One-off session flags passed to `./rfc-llm` (`--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, `--distill-model`, or global `--model`) or `./rfc-think` (`--model`).
 2. **Live YAML Frontmatter**: The `model:`, `timeout:`, and `temperature:` values currently saved at the top of the stage's `prompts/0*.md` file.
 3. **Built-In `_FALLBACK_METADATA`**: Stage-specific defaults in [`src/prompt_loader.py`](../src/prompt_loader.py) (with `GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"` and `SYSTEM_CONFIG.LLM_TIMEOUT_SECONDS = 3600`) if a frontmatter key or prompt file is omitted.
 

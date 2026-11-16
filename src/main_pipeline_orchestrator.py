@@ -13,6 +13,7 @@ Coordinates the 6-stage synthesis pipeline for a single RFC document:
 import datetime as dt
 import hashlib
 import json
+import re
 import time
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -20,8 +21,10 @@ from pydantic import BaseModel, Field
 
 from src.code_generation.cpsa_scheme_emitter import emit_cpsa_scheme, sanitize_protocol_stem
 from src.document_ingestion.handshake_section_router import route_handshake_sections
+from src.document_ingestion.programmatic_debloater import debloat_protocol_slice
 from src.document_ingestion.protocol_applicability_gate import evaluate_protocol_applicability
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
+from src.document_ingestion.rfc_style_distiller import sanitize_paired_stem, synthesize_or_load_rfc_style_slice
 from src.document_ingestion.rfc_toc_parser import parse_table_of_contents
 from src.document_ingestion.verbatim_section_slicer import slice_verbatim_sections
 from src.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
@@ -36,6 +39,7 @@ from src.prompt_loader import (
     PROMPT_COMPILER_REPAIR,
     PROMPT_PROTOCOL_EXTRACTION,
     PROMPT_RAG_QUERY_FORMULATION,
+    PROMPT_RFC_STYLE_DISTILLER,
     resolve_prompt_model,
 )
 from src.semantic_extraction import constrained_protocol_extractor
@@ -479,6 +483,9 @@ def run_rfc_translation_pipeline(
     run_root_dir: Optional[Path] = None,
     csv_path: Optional[Path] = None,
     resume_checkpoint: bool = False,
+    rfc_style: bool = False,
+    refresh_rfc_style: bool = False,
+    distill_model: Optional[str] = None,
 ) -> PipelineExecutionSummary:
     """Executes the end-to-end RFC to formally verified MITRE CPSA synthesis pipeline."""
     start_time = time.time()
@@ -502,6 +509,9 @@ def run_rfc_translation_pipeline(
     active_extraction_model = resolve_prompt_model(PROMPT_PROTOCOL_EXTRACTION, extraction_model)
     active_repair_model = resolve_prompt_model(PROMPT_COMPILER_REPAIR, repair_override)
     active_query_model = resolve_prompt_model(PROMPT_RAG_QUERY_FORMULATION, query_model)
+    active_distill_model = (
+        resolve_prompt_model(PROMPT_RFC_STYLE_DISTILLER, distill_model) if rfc_style else ""
+    )
 
     logger.info("================================================================")
     logger.info("Starting RFC-LLM Synthesis Pipeline for: %s", rfc_file_path.name)
@@ -514,6 +524,7 @@ def run_rfc_translation_pipeline(
         extraction_model=active_extraction_model,
         query_model=active_query_model,
         repair_model=active_repair_model,
+        distiller_model=active_distill_model,
     )
     GLOBAL_EVENT_BUS.set_run_directory(effective_run_root, is_live=True, csv_path=effective_csv_path)
     GLOBAL_EVENT_BUS.start_rfc(rfc_id=rfc_id, rfc_file=rfc_file_path.name)
@@ -907,6 +918,61 @@ def run_rfc_translation_pipeline(
         )
 
     # -------------------------------------------------------------------------
+    # STAGE 1f: Paired Slice Companions ($0.00 Debloat + Optional --rfc-style)
+    # -------------------------------------------------------------------------
+    paired_stem = sanitize_paired_stem(rfc_file_path.stem)
+    is_non_rfc_doc = not bool(re.search(r"Request for Comments:\s*#?\d+", raw_rfc_text[:3000], re.IGNORECASE))
+    run_slices_dir = target_output_dir / f"{paired_stem}_slices"
+    run_slices_dir.mkdir(parents=True, exist_ok=True)
+    paired_verbatim_file = run_slices_dir / f"{paired_stem}__verbatim.txt"
+    paired_debloated_file = run_slices_dir / f"{paired_stem}__debloated.txt"
+    paired_verbatim_file.write_text(verbatim_slice, encoding="utf-8")
+
+    debloated_slice, debloat_stats = debloat_protocol_slice(verbatim_slice, is_non_rfc=is_non_rfc_doc)
+    if not debloated_slice.strip():
+        debloated_slice = verbatim_slice
+    paired_debloated_file.write_text(debloated_slice, encoding="utf-8")
+    logger.info(
+        "Zero-cost programmatic de-bloating (%s): %d -> %d chars (saved %.1f%%)",
+        paired_stem,
+        debloat_stats.get("raw_chars", len(verbatim_slice)),
+        debloat_stats.get("debloated_chars", len(debloated_slice)),
+        debloat_stats.get("saved_pct", 0.0),
+    )
+
+    rfc_style_slice: Optional[str] = None
+    if rfc_style:
+        try:
+            rfc_style_slice, distill_meta = synthesize_or_load_rfc_style_slice(
+                stem=paired_stem,
+                doc_id=rfc_number_str,
+                protocol_name=final_protocol_name,
+                verbatim_slice=verbatim_slice,
+                debloated_slice=debloated_slice,
+                source_file=rfc_file_path,
+                selected_sections=target_sections,
+                run_output_dir=target_output_dir,
+                model=distill_model,
+                refresh=refresh_rfc_style,
+            )
+            modeling_slice = rfc_style_slice
+            logger.info(
+                "Using --rfc-style slice (%s, %d chars, cache_hit=%s)",
+                distill_meta.get("run_rfc_style_path") or f"{paired_stem}__rfc_style.txt",
+                len(rfc_style_slice),
+                distill_meta.get("cache_hit", False),
+            )
+        except Exception as distill_exc:
+            logger.warning(
+                "RFC-style distillation failed (%s); falling back to $0 de-bloated slice.",
+                distill_exc,
+            )
+            rfc_style_slice = None
+            modeling_slice = debloated_slice
+    else:
+        modeling_slice = debloated_slice
+
+    # -------------------------------------------------------------------------
     # STAGE 2: JSON CPSA Generation
     # -------------------------------------------------------------------------
     GLOBAL_EVENT_BUS.emit(
@@ -932,7 +998,7 @@ def run_rfc_translation_pipeline(
             )
         else:
             protocol_ast = extract_protocol_specification(
-                verbatim_slice=verbatim_slice,
+                verbatim_slice=modeling_slice,
                 protocol_name=final_protocol_name,
                 principals=participating_principals,
                 model=extraction_model,
@@ -992,6 +1058,9 @@ def run_rfc_translation_pipeline(
             shapes_txt_path=None,
             solver_passed=False,
             intake_rationale=intake_rationale,
+            debloated_slice=debloated_slice,
+            rfc_style_slice=rfc_style_slice,
+            paired_stem=paired_stem,
         )
         update_run_metadata_index(
             run_root_dir=effective_run_root,
@@ -1205,7 +1274,7 @@ def run_rfc_translation_pipeline(
             protocol_ast=protocol_ast,
             scm_path=scm_path,
             target_output_dir=target_output_dir,
-            verbatim_slice=verbatim_slice,
+            verbatim_slice=modeling_slice,
             repair_model_override=repair_override,
             query_model_override=query_model,
         )
@@ -1217,7 +1286,7 @@ def run_rfc_translation_pipeline(
             protocol_ast=protocol_ast,
             scm_path=scm_path,
             target_output_dir=target_output_dir,
-            verbatim_slice=verbatim_slice,
+            verbatim_slice=modeling_slice,
             roletran_result=roletran_result,
             repair_model_override=repair_override,
             query_model_override=query_model,
@@ -1250,6 +1319,9 @@ def run_rfc_translation_pipeline(
         shapes_txt_path=shapes_txt_candidate if shapes_txt_candidate.exists() else None,
         solver_passed=artifacts is not None,
         intake_rationale=intake_rationale,
+        debloated_slice=debloated_slice,
+        rfc_style_slice=rfc_style_slice,
+        paired_stem=paired_stem,
     )
 
     quality_tier = "REJECTED"

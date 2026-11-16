@@ -24,8 +24,8 @@ from src.system_config import SYSTEM_CONFIG
 
 logger = get_pipeline_logger("cost_tracker")
 
-ModelRoleLiteral = Literal["router", "extraction", "query", "repair"]
-MODEL_ROLES: Tuple[str, ...] = ("router", "extraction", "query", "repair")
+ModelRoleLiteral = Literal["router", "extraction", "query", "repair", "distiller"]
+MODEL_ROLES: Tuple[str, ...] = ("router", "extraction", "query", "repair", "distiller")
 
 # Built-in fallback per-token USD rates (prompt, completion, cache_read) per 1 token
 # Derived from live Nous Research / OpenAI / Anthropic / Google / DeepSeek pricing.
@@ -165,6 +165,7 @@ class PipelineCostTracker:
         extraction_model: str = "",
         query_model: str = "",
         repair_model: str = "",
+        distiller_model: str = "",
     ) -> None:
         """Resets the active per-RFC cost bucket when starting a new RFC run."""
         with self._lock:
@@ -175,6 +176,7 @@ class PipelineCostTracker:
                 "extraction": extraction_model,
                 "query": query_model,
                 "repair": repair_model,
+                "distiller": distiller_model,
             }
             for role, mod in role_models.items():
                 if mod:
@@ -330,11 +332,17 @@ class PipelineCostTracker:
         e_usd = float(roles.get("extraction", {}).get("cost_usd", 0.0))
         q_usd = float(roles.get("query", {}).get("cost_usd", 0.0))
         rep_usd = float(roles.get("repair", {}).get("cost_usd", 0.0))
-        return (
+        d_info = roles.get("distiller", {}) or {}
+        d_usd = float(d_info.get("cost_usd", 0.0))
+        d_calls = int(d_info.get("calls", 0))
+        base = (
             f"{prefix}: ${total_usd:.4f} ({total_tok:,} tok) | "
             f"Router: ${r_usd:.4f} | Extraction: ${e_usd:.4f} | "
             f"Query/Searcher: ${q_usd:.4f} | Repair: ${rep_usd:.4f}"
         )
+        if d_calls > 0 or d_usd > 0.0:
+            return f"{base} | Distiller: ${d_usd:.4f}"
+        return base
 
 
 GLOBAL_COST_TRACKER = PipelineCostTracker()

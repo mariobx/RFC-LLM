@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from src.cost_tracker import GLOBAL_COST_TRACKER
+from src.document_ingestion.pdf_and_book_splitter import SUPPORTED_BOOK_EXTENSIONS, split_books_directory
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
 from src.logging_config import PipelineMetricsCSVLogger
 from src.main_pipeline_orchestrator import PipelineExecutionSummary, run_rfc_translation_pipeline
@@ -31,6 +32,9 @@ def _print_cost_breakdown(cost_summary: dict, title: str = "COST & TOKEN TELEMET
         ("query", "Query/Searcher Model"),
         ("repair", "Repair Model"),
     ]
+    dist_b = roles.get("distiller", {}) or {}
+    if int(dist_b.get("calls", 0)) > 0 or float(dist_b.get("cost_usd", 0.0)) > 0.0:
+        role_labels.append(("distiller", "Distiller Model"))
     print(f"\n[{title}]")
     for role_key, label in role_labels:
         rb = roles.get(role_key, {})
@@ -269,6 +273,12 @@ def _build_resume_command_string(
         cmd.extend(["--repair-model", str(args.repair_model)])
     if getattr(args, "query_model", None):
         cmd.extend(["--query-model", str(args.query_model)])
+    if getattr(args, "distill_model", None):
+        cmd.extend(["--distill-model", str(args.distill_model)])
+    if getattr(args, "rfc_style", False):
+        cmd.append("--rfc-style")
+    if getattr(args, "refresh_rfc_style", False):
+        cmd.append("--refresh-rfc-style")
     if getattr(args, "limit", None) is not None:
         cmd.extend(["--limit", str(args.limit)])
     if getattr(args, "target_eligible", None) is not None:
@@ -333,6 +343,9 @@ def _save_run_manifest_and_last_run(
             "extraction_model": args.extraction_model,
             "repair_model": args.repair_model,
             "query_model": args.query_model,
+            "distill_model": getattr(args, "distill_model", None),
+            "rfc_style": bool(getattr(args, "rfc_style", False)),
+            "refresh_rfc_style": bool(getattr(args, "refresh_rfc_style", False)),
             "limit": args.limit,
             "target_eligible": args.target_eligible,
             "pattern": args.pattern,
@@ -424,6 +437,48 @@ def _build_parser(suppress_defaults: bool = False) -> argparse.ArgumentParser:
         type=str,
         default=d_none,
         help="Model identifier for RAG query formulation / conceptual abstraction",
+    )
+    parser.add_argument(
+        "--distill-model",
+        type=str,
+        default=d_none,
+        help="Model identifier for --rfc-style distillation (defaults to --model or prompt 08 model)",
+    )
+    parser.add_argument(
+        "--rfc-style",
+        action="store_true",
+        default=d_false,
+        help="Synthesize and feed a paired compact RFC-style slice alongside the untouched verbatim slice",
+    )
+    parser.add_argument(
+        "--refresh-rfc-style",
+        action="store_true",
+        default=d_false,
+        help="Bypass cached paired_slices/<stem>/<stem>__rfc_style.txt and regenerate it",
+    )
+    parser.add_argument(
+        "--split-books",
+        action="store_true",
+        default=d_false,
+        help="Convert/split PDF, DOCX, HTML, Markdown, or long TXT standards books into standalone .txt protocols and exit",
+    )
+    parser.add_argument(
+        "--split-out",
+        type=str,
+        default=d_none,
+        help="Output directory for --split-books standalone .txt files (default: refrences/global_standards/protocols_txt)",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=d_none,
+        help="Worker process count for multi-core --split-books (default: all CPU cores)",
+    )
+    parser.add_argument(
+        "--llm-split",
+        action="store_true",
+        default=d_false,
+        help="Use opt-in LLM TOC protocol splitting in --split-books (default is $0.00 deterministic splitter)",
     )
     parser.add_argument(
         "--no-visualize",
@@ -706,7 +761,7 @@ def main(argv: Optional[List[str]] = None):
 
         # Overlay any CLI flags explicitly passed on the current `-r` invocation
         if "model" in explicit_overrides:
-            for stage_m in ("router_model", "extraction_model", "repair_model", "query_model"):
+            for stage_m in ("router_model", "extraction_model", "repair_model", "query_model", "distill_model"):
                 if stage_m not in explicit_overrides:
                     setattr(base_args, stage_m, None)
         for k, v in explicit_overrides.items():
@@ -761,6 +816,31 @@ def main(argv: Optional[List[str]] = None):
     if args.csv and not Path(args.csv).exists():
         print(f"Error: Source --csv path does not exist: {args.csv}", file=sys.stderr)
         sys.exit(1)
+
+    # Standalone Multi-Protocol Book & PDF Splitting Mode (--split-books)
+    if getattr(args, "split_books", False):
+        split_out = (
+            Path(args.split_out)
+            if getattr(args, "split_out", None)
+            else (SYSTEM_CONFIG.PROJECT_ROOT / "refrences" / "global_standards" / "protocols_txt")
+        )
+        split_res = split_books_directory(
+            targets=targets,
+            output_dir=split_out,
+            workers=getattr(args, "workers", None),
+            use_llm=bool(getattr(args, "llm_split", False)),
+            model=getattr(args, "distill_model", None) or args.model,
+        )
+        print(f"\n{'='*70}")
+        print("[BOOK SPLITTER] Standalone Protocol Conversion & Splitting Complete")
+        print(f"{'='*70}")
+        print(f"- Input Files Scanned    : {split_res['input_files_scanned']}")
+        print(f"- Standalone .txt Emitted: {split_res['emitted_protocols_count']}")
+        print(f"- Skipped (Non-Protocol) : {split_res['skipped_count']}")
+        print(f"- Output Directory       : {split_res['output_dir']}")
+        print(f"- Protocol Index CSV     : {split_res['index_csv']}")
+        print(f"{'='*70}\n")
+        sys.exit(0)
 
     # Pre-flight verification of MITRE CPSA 4.4.9 compiler binaries before starting LLM synthesis
     missing_cpsa_bins = SYSTEM_CONFIG.verify_cpsa_toolchain()
@@ -846,7 +926,22 @@ def main(argv: Optional[List[str]] = None):
                 planned_rfc_files.append(rp)
 
     if not planned_rfc_files and (len(targets) > 1 or targets[0].is_file()):
-        planned_rfc_files = [t for t in targets if t.is_file()]
+        raw_file_targets = [t for t in targets if t.is_file()]
+        txt_files = [t for t in raw_file_targets if t.suffix.lower() == ".txt"]
+        non_txt_files = [t for t in raw_file_targets if t.suffix.lower() != ".txt" and t.suffix.lower() in SUPPORTED_BOOK_EXTENSIONS]
+        if non_txt_files:
+            split_res = split_books_directory(
+                targets=non_txt_files,
+                output_dir=run_root_dir / "_split_protocols",
+                workers=getattr(args, "workers", None),
+                use_llm=bool(getattr(args, "llm_split", False)),
+                model=getattr(args, "distill_model", None) or args.model,
+            )
+            txt_files.extend(Path(item["path"]) for item in split_res["emitted_files"])
+        planned_rfc_files = txt_files
+        if not planned_rfc_files:
+            print(f"Error: No eligible cryptographic protocol text could be extracted from {[str(t) for t in targets]}", file=sys.stderr)
+            sys.exit(1)
     elif not planned_rfc_files and targets[0].is_dir():
         target = targets[0]
         raw_candidates = [f for f in target.glob(args.pattern) if f.is_file()]
@@ -857,10 +952,35 @@ def main(argv: Optional[List[str]] = None):
         else:
             planned_rfc_files = sorted(raw_candidates, key=natural_rfc_sort_key)
         if not planned_rfc_files:
-            # Fallback to all existing txt files if pattern yielded zero
+            # Fallback to all existing txt files first, then any supported PDF/DOCX/HTML/MD standards
             planned_rfc_files = sorted([f for f in target.glob("*.txt") if f.is_file()], key=natural_rfc_sort_key)
         if not planned_rfc_files:
-            print(f"Error: No RFC text files found in directory {target}", file=sys.stderr)
+            non_txt_dir_files = sorted(
+                [f for f in target.iterdir() if f.is_file() and f.suffix.lower() in (SUPPORTED_BOOK_EXTENSIONS - {".txt"})],
+                key=natural_rfc_sort_key,
+            )
+            if non_txt_dir_files:
+                split_res = split_books_directory(
+                    targets=non_txt_dir_files,
+                    output_dir=run_root_dir / "_split_protocols",
+                    workers=getattr(args, "workers", None),
+                    use_llm=bool(getattr(args, "llm_split", False)),
+                    model=getattr(args, "distill_model", None) or args.model,
+                )
+                planned_rfc_files = [Path(item["path"]) for item in split_res["emitted_files"]]
+        non_txt_selected = [f for f in planned_rfc_files if f.suffix.lower() != ".txt"]
+        if non_txt_selected:
+            txt_only = [f for f in planned_rfc_files if f.suffix.lower() == ".txt"]
+            split_res = split_books_directory(
+                targets=non_txt_selected,
+                output_dir=run_root_dir / "_split_protocols",
+                workers=getattr(args, "workers", None),
+                use_llm=bool(getattr(args, "llm_split", False)),
+                model=getattr(args, "distill_model", None) or args.model,
+            )
+            planned_rfc_files = txt_only + [Path(item["path"]) for item in split_res["emitted_files"]]
+        if not planned_rfc_files:
+            print(f"Error: No RFC or protocol specification files found in directory {target}", file=sys.stderr)
             sys.exit(1)
 
         if not is_resuming:
@@ -990,6 +1110,7 @@ def main(argv: Optional[List[str]] = None):
     cli_extraction_model = args.extraction_model or args.model
     cli_repair_model = args.repair_model or args.model
     cli_query_model = args.query_model or args.model
+    cli_distill_model = getattr(args, "distill_model", None) or args.model
 
     if is_resuming and args.target_eligible and args.target_eligible > 0 and prior_eligible_count >= args.target_eligible:
         print(
@@ -1005,6 +1126,15 @@ def main(argv: Optional[List[str]] = None):
             print(f"{'='*70}")
 
         rfc_output_dir = run_root_dir / rfc_file.stem.lower()
+        extra_pipeline_kwargs: Dict[str, Any] = {}
+        if getattr(args, "rfc_style", False):
+            extra_pipeline_kwargs["rfc_style"] = True
+            if cli_distill_model:
+                extra_pipeline_kwargs["distill_model"] = cli_distill_model
+        if getattr(args, "refresh_rfc_style", False):
+            extra_pipeline_kwargs["refresh_rfc_style"] = True
+        if getattr(args, "distill_model", None):
+            extra_pipeline_kwargs["distill_model"] = cli_distill_model
         try:
             summary = run_rfc_translation_pipeline(
                 rfc_file_path=rfc_file,
@@ -1016,6 +1146,7 @@ def main(argv: Optional[List[str]] = None):
                 run_root_dir=run_root_dir,
                 csv_path=run_csv_path,
                 resume_checkpoint=is_resuming,
+                **extra_pipeline_kwargs,
             )
         except Exception as exc:
             print(f"[ERROR] Unhandled exception on {rfc_file.name}: {exc}", file=sys.stderr)

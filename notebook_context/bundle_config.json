@@ -34,6 +34,7 @@
     "output/**",
     "all_RFCs/**",
     "**/all_RFCs/**",
+    "refrences/global_standards/**",
     "refrences/legacy_rag_archive/**",
     "notebook_context/**",
     "*.log",

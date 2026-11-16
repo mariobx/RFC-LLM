@@ -60,7 +60,9 @@ FRONTMATTER_CRYPTO_REGEX = re.compile(
     r"authentication|authenticated|authenticator|certificate|x\.509|pkix|"
     r"tls|dtls|ipsec|ike|ikev2|isakmp|oakley|kerberos|edhoc|oscore|wireguard|ssh|secsh|"
     r"sasl|gss-api|gssapi|eap|pana|hip\b|mls\b|acme|ntpsec|nts\b|dnscurve|dnssec|rpki|"
-    r"s/mime|openpgp|cms\b|cose|jose|jwt|jws|jwe|oauth|openid|spake|pake|srp\b|ake\b)\b",
+    r"s/mime|openpgp|cms\b|cose|jose|jwt|jws|jwe|oauth|openid|spake|pake|srp\b|ake\b|"
+    r"rekeying|otar|attestation|spdm|suci|apdu|cryptogram|commissioning|provisioning|"
+    r"pairing|noise\b|x3dh|pqxdh|double\s+ratchet|olm|megolm)\b",
     re.IGNORECASE,
 )
 
@@ -80,20 +82,27 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
 
     # 1. Line count check (trivial errata / 1-page stubs)
     total_lines = len(raw_rfc_text.splitlines())
-    if total_lines < 60:
+    is_non_rfc_hint = bool(re.search(r"^Document-ID:", header_text, re.MULTILINE | re.IGNORECASE)) and not bool(
+        re.search(r"Request for Comments:\s*#?\d+", header_text, re.IGNORECASE)
+    )
+    min_lines_threshold = 30 if is_non_rfc_hint else 60
+    if total_lines < min_lines_threshold:
         logger.info("Tier 0 REJECT: File has only %d lines (trivial stub)", total_lines)
         return HeaderFilterResult(
             is_eligible=False,
             disqualification_reason=f"Document is too short to be a protocol ({total_lines} lines)",
         )
 
-    # 2. Extract RFC ID
+    # 2. Extract RFC ID (or standardized non-RFC Document-ID)
     rfc_match = re.search(r"Request for Comments:\s*#?(\d+)", header_text, re.IGNORECASE)
-    rfc_id = f"RFC {rfc_match.group(1)}" if rfc_match else None
+    doc_id_match = re.search(r"^Document-ID:\s*(.+)$", header_text, re.MULTILINE | re.IGNORECASE)
+    proto_title_match = re.search(r"^Protocol-Title:\s*(.+)$", header_text, re.MULTILINE | re.IGNORECASE)
+    is_non_rfc_spec = bool(doc_id_match) and not bool(rfc_match)
+    rfc_id = f"RFC {rfc_match.group(1)}" if rfc_match else (doc_id_match.group(1).strip() if doc_id_match else None)
 
     # 3. Extract Category (stop at multiple spaces before right-column date)
     category_match = re.search(r"Category:\s*([A-Za-z\s]+?)(?:\s{2,}|\n|$)", header_text, re.IGNORECASE)
-    category = category_match.group(1).strip() if category_match else "Unknown"
+    category = category_match.group(1).strip() if category_match else ("Standards Track" if is_non_rfc_spec else "Unknown")
 
     for dis_cat in DISQUALIFIED_CATEGORIES:
         if dis_cat.lower() in category.lower():
@@ -145,9 +154,17 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
         title = " ".join(title_candidate_lines)
 
     # 5. Check Title Keywords
+    if proto_title_match and not title:
+        title = proto_title_match.group(1).strip()
     if title:
         title_lower = title.lower()
-        for kw in DISQUALIFIED_TITLE_KEYWORDS:
+        _non_rfc_allowed = {"architecture", "framework", "framework for", "security mechanisms", "data model"}
+        _active_keywords = (
+            [kw for kw in DISQUALIFIED_TITLE_KEYWORDS if kw.strip().lower() not in _non_rfc_allowed]
+            if is_non_rfc_spec
+            else DISQUALIFIED_TITLE_KEYWORDS
+        )
+        for kw in _active_keywords:
             if kw in title_lower:
                 logger.info("Tier 0 REJECT: Title '%s' matches blacklist keyword '%s'", title, kw)
                 return HeaderFilterResult(
@@ -159,7 +176,8 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
                 )
 
     # 6. Fast Frontmatter / Abstract / TOC Cryptographic & Protocol Vocabulary Gate
-    frontmatter_slice = "\n".join(raw_rfc_text.splitlines()[:350])
+    frontmatter_limit = 1200 if is_non_rfc_spec else 350
+    frontmatter_slice = "\n".join(raw_rfc_text.splitlines()[:frontmatter_limit])
     if not FRONTMATTER_CRYPTO_REGEX.search(frontmatter_slice) or not FRONTMATTER_PROTOCOL_REGEX.search(frontmatter_slice):
         logger.info(
             "Tier 0 REJECT: %s ('%s') lacks cryptographic/authentication protocol vocabulary in frontmatter/TOC",

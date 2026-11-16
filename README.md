@@ -1,6 +1,6 @@
 # RFC-LLM
 
-**RFC-LLM** is an automated pipeline that reads IETF RFC documents, identifies real cryptographic handshake protocols, extracts the exact message-exchange sections, and translates them into formally verified **MITRE CPSA 4.4.9** (Cryptographic Protocol Shapes Analyzer) models. It runs CPSA's compiler and strand-space solver (`cpsa4json`, `cpsa4roletran`, and `cpsa4`) in a self-healing repair loop to prove authentication shapes and secrecy properties, and packages the verified runs and `<think>` reasoning traces into training datasets (`sft_train.jsonl` and `dpo_pairs.jsonl`).
+**RFC-LLM** is an automated pipeline that reads IETF RFCs and global security standards (`.txt`, `.pdf`, `.docx`, `.html`, `.md`), identifies real cryptographic handshake protocols, extracts the exact message-exchange sections, and translates them into formally verified **MITRE CPSA 4.4.9** (Cryptographic Protocol Shapes Analyzer) models. It runs CPSA's compiler and strand-space solver (`cpsa4json`, `cpsa4roletran`, and `cpsa4`) in a self-healing repair loop to prove authentication shapes and secrecy properties, and packages the verified runs and `<think>` reasoning traces into training datasets (`sft_train.jsonl` and `dpo_pairs.jsonl`).
 
 ---
 
@@ -8,9 +8,11 @@
 
 [`src/main_pipeline_orchestrator.py`](src/main_pipeline_orchestrator.py) executes a **6-stage compiler-in-the-loop pipeline**:
 
-1. **Stage 1 — Document Intake ([`src/document_ingestion/`](src/document_ingestion/))**:
-   - [`rfc_header_filter.py`](src/document_ingestion/rfc_header_filter.py) & [`protocol_applicability_gate.py`](src/document_ingestion/protocol_applicability_gate.py): Rejects non-protocol RFCs (informational memos, MIBs, administrative guidelines, static payload formats, and protocols that merely run over TLS/IPsec without defining their own cryptographic handshake).
-   - [`rfc_toc_parser.py`](src/document_ingestion/rfc_toc_parser.py), [`handshake_section_router.py`](src/document_ingestion/handshake_section_router.py), & [`verbatim_section_slicer.py`](src/document_ingestion/verbatim_section_slicer.py): Slices 10,000+ line RFCs down to the verbatim sections defining the cryptographic message exchange (`verbatim_slice.txt`).
+1. **Stage 1 — Document Intake & Paired Normalization ([`src/document_ingestion/`](src/document_ingestion/))**:
+   - [`pdf_and_book_splitter.py`](src/document_ingestion/pdf_and_book_splitter.py): Converts `.pdf`, `.docx`, `.html`, `.md`, and `.txt` standards directly in memory, and provides standalone multi-core splitting (`--split-books`) at `$0.00` cost across all CPU cores (or opt-in `--llm-split`).
+   - [`rfc_header_filter.py`](src/document_ingestion/rfc_header_filter.py) & [`protocol_applicability_gate.py`](src/document_ingestion/protocol_applicability_gate.py): Accepts both IETF RFCs and `Document-ID:` / `Protocol-Title:` global standards while rejecting non-protocol documents (informational memos, MIBs, administrative guidelines, static payload formats, and protocols that merely defer security to TLS/IPsec).
+   - [`rfc_toc_parser.py`](src/document_ingestion/rfc_toc_parser.py), [`handshake_section_router.py`](src/document_ingestion/handshake_section_router.py), & [`verbatim_section_slicer.py`](src/document_ingestion/verbatim_section_slicer.py): Handles dotted RFC TOCs and PDF space-separated `Contents` blocks, slicing 10,000+ line documents down to the verbatim cryptographic exchange (`verbatim_slice.txt`).
+   - [`programmatic_debloater.py`](src/document_ingestion/programmatic_debloater.py) & [`rfc_style_distiller.py`](src/document_ingestion/rfc_style_distiller.py): Runs a deterministic `$0.00` pre-debloater before Stage 2 or `--rfc-style` distillation. With `--rfc-style`, stores shared-stem companions in per-protocol subdirectories (`refrences/global_standards/paired_slices/<stem>/` indexed in `PAIRED_INDEX.csv` + `<run>/<stem>/<stem>_slices/<stem>__{verbatim,debloated,rfc_style}.txt`) with `$0.00` cross-run `Verbatim-SHA256` cache hits.
 2. **Stage 2 — JSON CPSA Generation ([`src/intermediate_representation/`](src/intermediate_representation/), [`src/semantic_extraction/constrained_protocol_extractor.py`](src/semantic_extraction/constrained_protocol_extractor.py))**:
    - Extracts a validated `CPSAProtocolSpecification` Pydantic AST enforcing MITRE CPSA 4.4.9 sort rules, positional keyword scoping, and the Stage 2 Verbatim Slice Bailout Gate (exiting immediately with 0 repair loops if the sliced RFC text defines no cryptographic message exchange).
    - Enforces the **3-POV Preskeleton Architecture**: pure 1-strand `defstrandmax` Point-of-View skeletons for each role (with zero listeners) plus a dedicated `deflistener` secrecy probe skeleton.
@@ -25,10 +27,10 @@
    - Scores deterministic verification quality tiers (`GOLD`, `SILVER`, `BRONZE`, `REJECTED`), records per-role and batch USD/token telemetry ([`src/cost_tracker.py`](src/cost_tracker.py)), upserts the master ledger (`logs/pipeline_runs.csv`), and updates `output/run_YYYY-MM-DD_HH-MM-SS/metadata_index.json`.
 
 ### YAML Frontmatter Model Routing & Live Hot-Reload (`prompts/*.md`)
-All 7 LLM prompt templates ([`prompts/01_applicability_gate.md`](prompts/01_applicability_gate.md) through [`prompts/07_think_token_synthesizer.md`](prompts/07_think_token_synthesizer.md)) define their per-stage `model`, HTTP `timeout`, `max_tokens`, and `temperature` directly in leading YAML frontmatter via [`src/prompt_loader.py`](src/prompt_loader.py):
+All 9 LLM prompt templates ([`prompts/00_book_protocol_splitter.md`](prompts/00_book_protocol_splitter.md) through [`prompts/08_rfc_style_distiller.md`](prompts/08_rfc_style_distiller.md)) define their per-stage `model`, HTTP `timeout`, `max_tokens`, and `temperature` directly in leading YAML frontmatter via [`src/prompt_loader.py`](src/prompt_loader.py):
 - **Zero-Restart Live Hot-Reload**: Edits to `model:`, `timeout:`, `temperature:`, or prompt text take effect on the very next LLM call—even mid-batch—without restarting `./rfc-llm`.
 - **Clean `.env`**: `.env` ([`.env.example`](.env.example)) holds **only** API credentials (`GEMINI_API_KEY`, `NOUS_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) and base endpoint URLs (`NOUS_API_BASE`, `OLLAMA_API_BASE`, `STRATA_API_BASE`).
-- **Provider Prefixes & CLI Overrides**: Supports `nous/<model>`, `strata/<model>`, `ollama/<model>`, `gemini/<model>`, `openai/<model>`, and `anthropic/<model>`, plus optional one-off CLI overrides (`--model`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`).
+- **Provider Prefixes & CLI Overrides**: Supports `nous/<model>`, `strata/<model>`, `ollama/<model>`, `gemini/<model>`, `openai/<model>`, and `anthropic/<model>`, plus optional one-off CLI overrides (`--model`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, `--distill-model`).
 
 ### Multi-RFC Web Visualizer, Remote Hosting (`--host` / `--port`), & In-Place Resume (`-r` / `--resume`)
 [`src/visualizer/server.py`](src/visualizer/server.py), [`src/visualizer/static/index.html`](src/visualizer/static/index.html), and [`src/pipeline_events.py`](src/pipeline_events.py) provide real-time and offline multi-RFC inspection:
@@ -36,7 +38,7 @@ All 7 LLM prompt templates ([`prompts/01_applicability_gate.md`](prompts/01_appl
 - **In-Place Run Resumption (`--resume` / `-r`)**: Every run saves its expanded resume command to `output/.last_run` and its deterministic RFC queue to `<run_dir>/run_manifest.json`. Running `./rfc-llm -r` resumes `output/.last_run` in-place (hydrating all prior tabs, CSV rows, and mid-RFC `initial_ast.json` checkpoints, while allowing on-the-fly CLI overrides like `--model` or `--host`); if `output/.last_run` does not exist, `./rfc-llm -r` lists the top 3 most recent `output/run_*` folders so you can resume with `./rfc-llm -r <1|2|3>` or `./rfc-llm -r <folder_path>`.
 - **Virtualized `#1..#N` Tab Strip**: Allocates sequential `#1..#N` tabs for accepted RFCs showing tab number, RFC ID, quality tier, and protocol name.
 - **Collapsible `Filtered / Skipped` Drawer**: Paginated, searchable drawer recording Tier 0, Stage 1c, and Stage 2 rejected RFCs.
-- **Per-Attempt Time-Travel Stepper**: Inspect `Attempt 0 | Initial` -> `Attempt 1..K` -> `Final` with a rejected/repaired `.scm` toggle, Pydantic JSON AST, compiler diagnostics, KB rules, and SVG shape graphs.
+- **Per-Attempt Time-Travel Stepper**: Inspect `Attempt 0 | Initial` -> `Attempt 1..K` -> `Final` with a rejected/repaired `.scm` toggle, a **Verbatim / `$0 Debloated` / `RFC-Style`** slice toggle, Pydantic JSON AST, compiler diagnostics, KB rules, and SVG shape graphs.
 - **Offline Replay Mode**: Inspect any completed run folder without re-running synthesis via `./rfc-llm --view output/run_<timestamp>`.
 
 ### Hindsight Reasoning (`<think>`) Synthesizer (`./rfc-think`)
@@ -51,7 +53,7 @@ Implemented in [`./rfc-think`](rfc-think) ([`src/generate_think/`](src/generate_
 | [`rfc-llm`](rfc-llm) | Synthesis & offline replay CLI (`./rfc-llm <rfc_or_dir>` / `./rfc-llm --view <run_dir>`) |
 | [`rfc-think`](rfc-think) | `<think>` reasoning & SFT/DPO dataset synthesizer CLI (`./rfc-think <run_dir>`) |
 | [`.env.example`](.env.example) | Credentials & base endpoint URLs template (`*_API_KEY`, `NOUS_API_BASE`, `OLLAMA_API_BASE`, `STRATA_API_BASE`) |
-| [`prompts/`](prompts/README.md) | 7 YAML-frontmatter prompt templates (`model`, `timeout`, `temperature`) with live mid-batch hot-reload |
+| [`prompts/`](prompts/README.md) | 9 YAML-frontmatter prompt templates (`00`..`08`: `model`, `timeout`, `temperature`) with live mid-batch hot-reload |
 | [`src/`](src/) | Core 6-stage synthesis pipeline, Pydantic IR, verification engine, `<think>` synthesizer, and web visualizer |
 | [`docs/`](docs/README.md) | Architecture specifications, CPSA 4.4.9 keyword reference, model routing, and operational runbooks |
 | [`tests/`](tests/) | Unit and integration test suite enforcing CPSA 4.4.9 scoping, visualizer tabs, and `<think>` synthesis |
@@ -78,8 +80,14 @@ cp .env.example .env
 # 2. Run the full test suite
 .venv/bin/pytest tests/
 
-# 3. Synthesize & formally verify a CPSA model from an RFC (live visualizer on http://127.0.0.1:8080)
+# 3. Synthesize & formally verify a CPSA model from an RFC or global standard (.txt/.pdf/.docx/.html/.md)
 ./rfc-llm refrences/all_RFCs/rfc9528.txt
+
+# 3b. Synthesize a non-RFC standard with $0 de-bloating + paired --rfc-style projection
+./rfc-llm path/to/standard.pdf --rfc-style --model nous/anthropic/claude-haiku-5.5
+
+# 3c. Split multi-protocol standards books into standalone .txt files across CPU cores ($0 cost)
+./rfc-llm --split-books path/to/books_dir --workers 16
 
 # 4. Replay any completed run directory offline in the virtualized multi-RFC visualizer
 ./rfc-llm --view output/run_YYYY-MM-DD_HH-MM-SS

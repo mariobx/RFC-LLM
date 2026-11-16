@@ -31,7 +31,7 @@ TOC_HEADER_PATTERN = re.compile(r"^\s*(Table of Contents|CONTENTS)\s*$", re.IGNO
 TOC_LINE_PATTERN = re.compile(
     r"^(?P<indent>\s*)(?P<sec_id>(?:(?:[0-9]+(?:\.[0-9]+)*)|(?:Appendix\s+[A-Z](?:\.[0-9]+)*)|(?:[A-Z]\.[0-9]+)|(?:[A-Z](?=\.\s+\S+.*(?:\.{2,}|\.\s+\.)))))(?:\.|\s+-)?\s+"
     r"(?P<title>.+?)"
-    r"(?:\s*(?:\.{2,}|(?:\.\s+){2,}|\.\s+)\s*(?P<page>[0-9]+))?\s*$",
+    r"(?:\s*(?:\.{2,}|(?:\.\s+){2,}|\.\s+|\s{2,})\s*(?P<page>[0-9]+))?\s*$",
     re.IGNORECASE,
 )
 
@@ -42,7 +42,7 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
     toc_start_idx: Optional[int] = None
 
     # Step 1: Find the TOC Header within the first 250 lines
-    for idx, line in enumerate(lines[:250]):
+    for idx, line in enumerate(lines[:1500]):
         if TOC_HEADER_PATTERN.match(line):
             toc_start_idx = idx + 1
             break
@@ -56,10 +56,12 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
         # Scan forward until the first section begins at column 0 (e.g. "1.  Introduction")
         for line in lines[toc_start_idx:]:
             # If we hit the actual start of Section 1 at column 0, TOC has ended
-            if re.match(r"^1(?:\.|\s+-)?\s+[A-Z]", line):
+            if re.match(r"^1(?:\.|\s+-)?\s+[A-Z0-9]", line) and not re.search(
+                r"(?:\.{2,}|(?:\.\s+){2,}|[A-Za-z\)\]]\s{2,})\s*[0-9]+\s*$", line.strip()
+            ):
                 break
             # Or if we hit 500 entries without stopping
-            if len(entries) > 500:
+            if len(entries) > 1500:
                 break
 
             match = TOC_LINE_PATTERN.match(line)
@@ -84,8 +86,9 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
                 if (
                     "\x0c" in line
                     or re.search(r"\[Page\s+\d+\]", stripped_line, re.IGNORECASE)
+                    or re.search(r"^Page\s+\d+(?:\s+of\s+\d+)?$", stripped_line, re.IGNORECASE)
                     or re.search(r"\b(Standards Track|Informational|Experimental)\b", stripped_line, re.IGNORECASE)
-                    or re.search(r"^RFC\s+\d+", stripped_line, re.IGNORECASE)
+                    or re.search(r"^(?:RFC\s+\d+|CCSDS\s+\d+\.\d+-[A-Z]-\d+|3GPP\s+TS\s+\d|ETSI\s+(?:TS|EN|GS)\s+)", stripped_line, re.IGNORECASE)
                 ):
                     continue
 
@@ -112,7 +115,7 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
     if not entries:
         logger.info("No explicit TOC block found. Scanning body headings for synthetic TOC...")
         body_heading_pattern = re.compile(
-            r"^(?P<sec_id>(?:[0-9]+\.[0-9]+(?:\.[0-9]+)*(?:\.|\s+-)?)|(?:[0-9]+(?:\.|\s+-))|(?:Appendix\s+[A-Z](?:\.[0-9]+)*\.?)|(?:[A-Z]\.[0-9]+\.?))\s+"
+            r"^(?P<sec_id>(?:[0-9]+\.[0-9]+(?:\.[0-9]+)*(?:\.|\s+-)?)|(?:[0-9]+(?:\.|\s+-|\s(?=\s+[A-Za-z0-9])))|(?:Appendix\s+[A-Z](?:\.[0-9]+)*\.?)|(?:[A-Z]\.[0-9]+\.?))\s+"
             r"(?P<title>[A-Za-z0-9][A-Za-z0-9\s\-_,:()'\"/]{2,70})$"
         )
         for line in lines:

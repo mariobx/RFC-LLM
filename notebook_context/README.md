@@ -83,12 +83,14 @@ Key properties:
   catalog, AST symbol registry, and heavy-asset inventory.
 
 ### Tier 2 — Core Source, Prompts & CLI -> `01_CORE_SOURCE_AND_CLI.md`
-- `prompts/` — `01_applicability_gate.md` through
-  `07_think_token_synthesizer.md` (with YAML frontmatter `model`, `timeout`,
+- `prompts/` — `00_book_protocol_splitter.md` through
+  `08_rfc_style_distiller.md` (with YAML frontmatter `model`, `timeout`,
   `temperature`) and `prompts/README.md`
 - `src/` — complete Phase 2 & Phase 3 implementation:
-  - `document_ingestion/` (Tier 0 header filter, TOC parser, applicability gate,
-    handshake section router, verbatim section slicer)
+  - `document_ingestion/` (multi-format PDF/DOCX/HTML/MD book splitter,
+    `$0` programmatic de-bloater, `--rfc-style` paired distiller & SHA-256
+    cache, Tier 0 header filter, TOC parser, applicability gate, handshake
+    section router, verbatim section slicer)
   - `intermediate_representation/` (CPSA 4.4.9 grammar, algebraic sorts,
     order-sorted Pydantic syntax tree)
   - `semantic_extraction/` (RAG-grounded constrained protocol extractor)
@@ -99,10 +101,10 @@ Key properties:
   - `generate_think/` (Phase 3 DSPy/deterministic `<think>` synthesizer and
     `sft_train.jsonl` / `dpo_pairs.jsonl` dataset exporter)
   - `visualizer/` (async `aiohttp` SSE/REST server + virtualized `#1..#N` tab
-    dashboard HTML supporting offline `--view` replay)
+    dashboard HTML supporting offline `--view` replay and 3-way slice toggle)
   - Root `src/` modules: `main_pipeline_orchestrator.py`, `pipeline.py`,
-    `pipeline_events.py`, `prompt_loader.py`, `rag_retriever_client.py`,
-    `logging_config.py`, `system_config.py`
+    `pipeline_events.py`, `cost_tracker.py`, `prompt_loader.py`,
+    `rag_retriever_client.py`, `logging_config.py`, `system_config.py`
 - `rfc-llm` & `rfc-think` — extensionless root CLI launchers, plus
   `refrences/all_RFCs/rfc9528.txt` (benchmark EDHOC input RFC).
 

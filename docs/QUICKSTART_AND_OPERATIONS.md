@@ -50,7 +50,7 @@ OLLAMA_API_BASE=http://localhost:11434
 STRATA_API_BASE=http://localhost:11435/v1
 ```
 
-Per-stage `model`, HTTP `timeout` (`180s` default; `15s` for `05_rag_query_formulation.md`), and `temperature` are configured directly in the YAML frontmatter at the top of [`prompts/01_applicability_gate.md`](../prompts/01_applicability_gate.md) through [`prompts/07_think_token_synthesizer.md`](../prompts/07_think_token_synthesizer.md) and **hot-reload live mid-batch** without restarting `./rfc-llm`.
+Per-stage `model`, HTTP `timeout` (`180s` default; `15s` for `05_rag_query_formulation.md`), and `temperature` are configured directly in the YAML frontmatter at the top of [`prompts/00_book_protocol_splitter.md`](../prompts/00_book_protocol_splitter.md) through [`prompts/08_rfc_style_distiller.md`](../prompts/08_rfc_style_distiller.md) and **hot-reload live mid-batch** without restarting `./rfc-llm`.
 
 ### 1.4 Execution Limits & Compiler Caps ([`src/system_config.py`](../src/system_config.py))
 - **`CPSA_TIMEOUT_SECONDS = 15`**: Hard 15-second process-group `SIGKILL` cap per MITRE `make` / `cpsa4` compilation strategy, paired with the 3-Tier Snowball State Recovery engine ([`src/verification_engine/snowball_autopsy.py`](../src/verification_engine/snowball_autopsy.py)).
@@ -84,7 +84,7 @@ Key batch flags:
 - `--limit N` (`-n N`): Scan at most `N` candidate RFC files.
 - `--target-eligible E` (`-e E`): Stop batch processing once `E` eligible cryptographic protocols have been synthesized.
 - `--tier0-eligible-only`: Pre-filter directory candidates using the deterministic <1ms Tier 0 header check before applying `--limit`.
-- `--skip-completed`: Skip RFC IDs already recorded in the 50-column deduplicated master ledger `logs/pipeline_runs.csv`.
+- `--skip-completed`: Skip RFC IDs already recorded in the 67-column deduplicated master ledger `logs/pipeline_runs.csv`.
 - `--retry-failed`: Filter batch processing strictly to RFC IDs in `logs/pipeline_runs.csv` whose latest status is `FAILED` or `PARTIAL`, overwriting their CSV rows in-place upon completion.
 - `--random`: Shuffle candidate RFCs randomly before applying `--limit`.
 - `--pattern "rfc*.txt"`: Custom glob pattern when scanning a directory.
@@ -121,17 +121,35 @@ Open any previously completed run directory (or `metadata_index.json`) in the we
 ```
 
 ### 2.5 One-Off CLI Model Overrides
-For persistent routing changes (including live mid-batch updates), edit `model:` in `prompts/01_*.md` .. `07_*.md`. For temporary single-run overrides, pass CLI flags:
+For persistent routing changes (including live mid-batch updates), edit `model:` in `prompts/00_*.md` .. `08_*.md`. For temporary single-run overrides, pass CLI flags:
 ```bash
 ./rfc-llm refrences/all_RFCs/rfc5246.txt \
   --router-model nous/z-ai/glm-5.3 \
   --extraction-model nous/google/gemini-4-argon \
   --repair-model nous/google/gemini-3.8-flash \
-  --query-model nous/anthropic/claude-haiku-5.5
+  --query-model nous/anthropic/claude-haiku-5.5 \
+  --distill-model nous/anthropic/claude-haiku-5.5
 ```
 (Or pass `--model <provider>/<slug>` to override all stages simultaneously.)
 
-### 2.5 Phase 3 Hindsight Reasoning (`<think>`) Synthesis (`./rfc-think`)
+### 2.6 Global Standards Book Splitting (`--split-books`) & Paired `--rfc-style` Mode
+`./rfc-llm` ingests `.pdf`, `.docx`, `.html`/`.htm`, `.md`, and `.txt` standards directly, strips mechanical formatting noise at `$0.00` cost before Stage 2 (`programmatic_debloater.py`), and optionally distills a compact paired RFC-style view with `--rfc-style`:
+```bash
+# Split multi-protocol PDF/DOCX/HTML/MD books across 16 cores at $0.00 cost
+./rfc-llm --split-books path/to/books_dir \
+  --split-out refrences/global_standards/protocols_txt \
+  --workers 16
+# Optional LLM TOC boundary decomposition via prompts/00_book_protocol_splitter.md: add --llm-split
+
+# Run any RFC or non-RFC standard with $0 de-bloating + paired --rfc-style distillation
+./rfc-llm refrences/global_standards/protocols_txt/signal_signal_x3dh.txt \
+  --rfc-style --model nous/anthropic/claude-haiku-5.5 --no-visualize
+```
+- **Per-Protocol Subdirectory Pairing**: Paired companions are grouped cleanly per protocol (no loose flat dumps):
+  - **Global SHA-256 Cache**: `refrences/global_standards/paired_slices/<stem>/<stem>__{verbatim,debloated,rfc_style}.txt` indexed by `PAIRED_INDEX.csv`. Re-running with an unchanged `Verbatim-SHA256` reuses the cached RFC-style slice at `$0.00` cost (`--refresh-rfc-style` forces regeneration).
+  - **Per-Run Output**: `<run_dir>/<stem>/<stem>_slices/<stem>__{verbatim,debloated,rfc_style}.txt` (preserving `<run_dir>/<stem>/verbatim_slice.txt` for checkpoint resume).
+
+### 2.7 Phase 3 Hindsight Reasoning (`<think>`) Synthesis (`./rfc-think`)
 Generate `<protocol>_think.json` artifacts alongside `<protocol>_trajectory.json`, plus consolidated `sft_train.jsonl` and `dpo_pairs.jsonl` files in the run root directory:
 ```bash
 # Default ('auto' mode: DSPy/LLM using prompts/07_think_token_synthesizer.md with deterministic fallback)
@@ -164,7 +182,7 @@ Enabled by default during `./rfc-llm` runs and in offline `./rfc-llm --view <run
 - **Virtualized `#1..#N` Tab Bar**: Accepted RFCs receive sequential `#1..#N` tabs displaying tab number, RFC ID, quality tier (`GOLD`/`SILVER`/`BRONZE`/`REJECTED`), and protocol name. Virtual scrolling and on-demand disk hydration (`events.jsonl` + `<protocol>_trajectory.json`) maintain `O(1)` browser DOM nodes and `O(1)` server RAM across 5,000+ tabs.
 - **Collapsible `Filtered / Skipped` Drawer**: Displays Tier 0 and Stage 1c rejected RFCs with search and 100-row pagination without polluting the accepted tab strip.
 - **6-Stage Horizontal Stepper**: Live per-stage timers, active model slugs, and status across `Document Intake`, `JSON CPSA Generation`, `CPSA4JSON -> .scm`, `Roletran Check`, `Self-Healing Loop`, and `CPSA Compilation`.
-- **Per-Attempt Time-Travel Stepper**: Step across `Attempt 0 | Initial` -> `Attempt 1..K` -> `Final`, toggle between rejected input `.scm` and repaired `.scm`, and inspect the Pydantic JSON AST, sliced RFC text, compiler diagnostics, retrieved MITRE manual chunks, and SVG shape graphs.
+- **Per-Attempt Time-Travel Stepper**: Step across `Attempt 0 | Initial` -> `Attempt 1..K` -> `Final`, toggle between rejected input `.scm` and repaired `.scm`, switch between **Verbatim / `$0 Debloated` / `RFC-Style`** protocol views, and inspect the Pydantic JSON AST, compiler diagnostics, retrieved MITRE manual chunks, and SVG shape graphs.
 
 ---
 
@@ -176,6 +194,7 @@ Enabled by default during `./rfc-llm` runs and in offline `./rfc-llm --view <run
 ```
 Test modules under [`tests/`](../tests/):
 - `test_document_ingestion.py`: Tier 0 header filter regexes, TOC parsing, and verbatim section slicing.
+- `test_non_rfc_and_rfc_style.py`: `$0` programmatic de-bloater, PDF/DOCX/HTML/MD book splitting, non-RFC header/PDF TOC slicing, shared-stem per-protocol directory pairing, SHA-256 cache hits, `distiller` cost tracking, 67-column CSV guard, and visualizer slice hydration.
 - `test_cpsa_scoping_and_prompts.py`: CPSA 4.4.9 positional keyword scoping, Equation 10.1 enforcement, and `prompts/*.md` YAML frontmatter loader / live hot-reload tests.
 - `test_code_generation_and_verification.py`: Pydantic AST validation, `cpsa4json` Scheme emission, `Roletran Check`, and hard-timeout `CPSA Compilation`.
 - `test_main_pipeline_orchestrator.py`: End-to-end 6-stage synthesis and timestamped run directory / `metadata_index.json` tests.

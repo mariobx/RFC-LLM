@@ -222,6 +222,7 @@ __marimo__/
 all_RFCs/
 **/all_RFCs/
 refrences/legacy_rag_archive/
+refrences/global_standards/
 *.log
 
 # Pipeline runtime checkpoints and ephemeral state

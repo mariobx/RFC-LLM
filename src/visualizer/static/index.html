@@ -1249,6 +1249,13 @@
         <pre><code id="code-ast">// Pydantic JSON AST will appear here...</code></pre>
       </div>
       <div class="tab-viewport" id="tab-slice" style="display:none;">
+        <div id="slice-mode-bar" style="display:flex; gap:6px; padding:6px 10px; border-bottom:1px solid var(--border); background:var(--panel-alt, #111622); font-family:var(--mono); font-size:11px; align-items:center;">
+          <span style="color:var(--text-muted); margin-right:4px;">Slice View:</span>
+          <button type="button" class="mini-btn active" id="slice-btn-verbatim" onclick="setSliceViewMode('verbatim')">Verbatim</button>
+          <button type="button" class="mini-btn" id="slice-btn-debloated" onclick="setSliceViewMode('debloated')">$0 Debloated</button>
+          <button type="button" class="mini-btn" id="slice-btn-rfc-style" onclick="setSliceViewMode('rfc_style')">RFC-Style</button>
+          <span id="slice-paired-stem" style="color:var(--text-muted); margin-left:auto;"></span>
+        </div>
         <pre><code id="code-slice">Verbatim RFC section slice will appear here...</code></pre>
       </div>
       <div class="tab-viewport" id="tab-rag" style="display:none; padding:12px; overflow-y:auto;">
@@ -1700,7 +1707,15 @@
         setDiagnosisBadge(tab.error_message ? 'Failed (See Attempt Banner)' : 'Halted', 'syntax');
       }
 
-      if (payload.verbatim_slice) {
+      window._currentSlicePayloads = {
+        verbatim: payload.verbatim_slice || '',
+        debloated: payload.debloated_slice || '',
+        rfc_style: payload.rfc_style_slice || '',
+        stem: payload.paired_stem || ''
+      };
+      if (typeof setSliceViewMode === 'function') {
+        setSliceViewMode('verbatim');
+      } else if (payload.verbatim_slice) {
         document.getElementById('code-slice').innerText = payload.verbatim_slice;
       }
 
@@ -1727,6 +1742,28 @@
       if (currentAttemptsList.length > 0) {
         selectAttemptSnapshot(currentAttemptsList.length - 1);
       }
+    }
+
+    function setSliceViewMode(mode) {
+      const store = window._currentSlicePayloads || {};
+      let content = store.verbatim || '';
+      if (mode === 'debloated') {
+        content = store.debloated || store.verbatim || '';
+      } else if (mode === 'rfc_style') {
+        content = store.rfc_style || '[No --rfc-style companion generated for this run. Re-run with --rfc-style to synthesize.]';
+      }
+      const codeEl = document.getElementById('code-slice');
+      if (codeEl) codeEl.innerText = content || 'Verbatim RFC section slice will appear here...';
+      ['verbatim', 'debloated', 'rfc_style'].forEach(m => {
+        const btn = document.getElementById(`slice-btn-${m.replace('_', '-')}`);
+        if (btn) btn.classList.toggle('active', m === mode);
+      });
+      const debBtn = document.getElementById('slice-btn-debloated');
+      if (debBtn) debBtn.style.opacity = store.debloated ? '1' : '0.45';
+      const styleBtn = document.getElementById('slice-btn-rfc-style');
+      if (styleBtn) styleBtn.style.opacity = store.rfc_style ? '1' : '0.45';
+      const stemEl = document.getElementById('slice-paired-stem');
+      if (stemEl) stemEl.innerText = store.stem ? `stem: ${store.stem}` : '';
     }
 
     // =========================================================================
@@ -2223,7 +2260,10 @@
         if (fetchLiveArtifacts && evt.data && evt.data.slice_path) {
           fetch(`api/artifact?path=${encodeURIComponent(evt.data.slice_path)}`)
             .then(r => r.text())
-            .then(txt => { document.getElementById('code-slice').innerText = txt; })
+            .then(txt => {
+              window._currentSlicePayloads = Object.assign(window._currentSlicePayloads || {}, { verbatim: txt });
+              document.getElementById('code-slice').innerText = txt;
+            })
             .catch(() => {});
         }
       } else if (evt.event_type === 'repair_attempt') {

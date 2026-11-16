@@ -1,12 +1,38 @@
 {
-  "config_sha256": "fa9bbc0f35e620a446193163ce020dc71e5f52049c54fea63adef045744a972e",
+  "config_sha256": "973c5160bfb879548a4cc4ecd612331df1f51e2ccb0ee7295bd9713951c7709c",
   "delta_of_this_sync": {
-    "added": [],
+    "added": [
+      "prompts/00_book_protocol_splitter.md",
+      "prompts/08_rfc_style_distiller.md",
+      "src/document_ingestion/pdf_and_book_splitter.py",
+      "src/document_ingestion/programmatic_debloater.py",
+      "src/document_ingestion/rfc_style_distiller.py",
+      "tests/test_non_rfc_and_rfc_style.py"
+    ],
     "deleted": [],
     "modified": [
+      ".gitignore",
+      "README.md",
+      "docs/ARCHITECTURE.md",
+      "docs/MASTER_BLUEPRINT.md",
+      "docs/QUICKSTART_AND_OPERATIONS.md",
+      "docs/README.md",
+      "docs/TIERED_MODEL_ROUTING.md",
+      "prompts/01_applicability_gate.md",
+      "prompts/02_section_router.md",
+      "prompts/03_protocol_extraction.md",
+      "prompts/README.md",
+      "src/cost_tracker.py",
+      "src/document_ingestion/rfc_header_filter.py",
+      "src/document_ingestion/rfc_toc_parser.py",
+      "src/document_ingestion/verbatim_section_slicer.py",
+      "src/generate_think/dspy_think_synthesizer.py",
+      "src/main_pipeline_orchestrator.py",
       "src/pipeline.py",
-      "src/pipeline_events.py",
-      "tests/test_visualizer_and_events.py"
+      "src/prompt_loader.py",
+      "src/verification_engine/trajectory_metadata_exporter.py",
+      "src/visualizer/server.py",
+      "src/visualizer/static/index.html"
     ]
   },
   "files": {
@@ -18,8 +44,8 @@
     },
     ".gitignore": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "af8bbf7c24b1388406187998ec864f9768826e9691bfc5aea639acfc6bfc7756",
-      "size_bytes": 5364,
+      "sha256": "5fa754df524aac21c719fcef54b4ae84ffab23e80e6243879574f9cb4df34f60",
+      "size_bytes": 5392,
       "status": "included"
     },
     "LICENSE": {
@@ -30,14 +56,14 @@
     },
     "README.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "2ac3210cfc05bdb34b477d97012169e6debf823214e13bd09fa7bb5bdd2e44e9",
-      "size_bytes": 11191,
+      "sha256": "7e7d6fddaa6dfc6b7d97a9a23238ac1a9abd949f6608fe64dc8c75906a895354",
+      "size_bytes": 12626,
       "status": "included"
     },
     "docs/ARCHITECTURE.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "0f5b2b45b14b7f25677d797636a331ff1327ecf5503e7e0556a4b5c4e3e8f1c2",
-      "size_bytes": 17347,
+      "sha256": "fb9bc7ccb4bbf959d14c46ec00844e6d22af4d9f3318728668a37e34051bac15",
+      "size_bytes": 19950,
       "status": "included"
     },
     "docs/CPSA_KEYWORD_REFERENCE.md": {
@@ -54,26 +80,26 @@
     },
     "docs/MASTER_BLUEPRINT.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "d3a5892121efe1e7864370e6abb5e242bae0d93b88ec2d53d9a8b2ac1b3064af",
-      "size_bytes": 16892,
+      "sha256": "ead67d4c618e3811962056c0834bb2a7bb589b4796fb65504af4ccf592734e73",
+      "size_bytes": 17411,
       "status": "included"
     },
     "docs/QUICKSTART_AND_OPERATIONS.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "4bb6d424bc44fa31a6814bcf09defdf97753971b488e832564ba4bdf3b05f09e",
-      "size_bytes": 14408,
+      "sha256": "df964ffd4dbc60c343f7edd6545d82d22f585c8ccd0d06a966e9db647471c885",
+      "size_bytes": 16266,
       "status": "included"
     },
     "docs/README.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "e5cc7ae461ce0db94a7854fec888c899963b4832a5e7c897a049f5b2078c44fe",
-      "size_bytes": 5477,
+      "sha256": "854e8104ce5e3b0a2640f5aa33a2b12ac90e647556d072962a5edf2b1dc9847a",
+      "size_bytes": 5559,
       "status": "included"
     },
     "docs/TIERED_MODEL_ROUTING.md": {
       "bundle": "00_ARCHITECTURE_AND_INDEX.md",
-      "sha256": "aa3648f5448229e47b85523a7f7fcc2fe175e98dff3d22e837f899f8b9995790",
-      "size_bytes": 7324,
+      "sha256": "52ef13495f24510b67797bc744cc8fcc8660a0f2228234c8fbd95da466d55220",
+      "size_bytes": 7800,
       "status": "included"
     },
     "docs/VERIFICATION_AND_SELF_HEALING.md": {
@@ -94,22 +120,28 @@
       "size_bytes": 754,
       "status": "summarized"
     },
+    "prompts/00_book_protocol_splitter.md": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "daee997c65b0f97bef5c19417ec44ae13fd4e77dbb70609d8e96b5bca0f0419e",
+      "size_bytes": 1063,
+      "status": "included"
+    },
     "prompts/01_applicability_gate.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "9f63d4594e6d0576b4d4ded02a8df561d3f804861c78ca962f744b0c0de48f60",
-      "size_bytes": 2721,
+      "sha256": "dd8f6b890e5b0ed9ec786241eb0d748d221185d81f4f04afbbf84270bc8338b1",
+      "size_bytes": 2765,
       "status": "included"
     },
     "prompts/02_section_router.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "918d738d3659c36f9cdefd16acd8643832fa966925423c7f6e5ed983fc54f5a3",
-      "size_bytes": 1860,
+      "sha256": "d977b2807edbe18d583d87e43eba67737d3f9e490d8bc52c680d4c0646627859",
+      "size_bytes": 1887,
       "status": "included"
     },
     "prompts/03_protocol_extraction.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "0dbebc786f8f8067936c2723922e172f8fa0239b321caadba8d17ec3404d31d1",
-      "size_bytes": 13031,
+      "sha256": "9aee7b4456f9a1e18b1c954e53266ec977e2066bc0f20ee43d1c875a6851d0c3",
+      "size_bytes": 13068,
       "status": "included"
     },
     "prompts/04_schema_self_correction.md": {
@@ -136,10 +168,16 @@
       "size_bytes": 3830,
       "status": "included"
     },
+    "prompts/08_rfc_style_distiller.md": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "b04573c3bed6ccb83c052187e81f46c8ef334b2c45751d712854e37e828ad026",
+      "size_bytes": 2274,
+      "status": "included"
+    },
     "prompts/README.md": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "ea819aeb42930918deffb6b3c32c449d2e290305a442968f82eba8f13eee3525",
-      "size_bytes": 4756,
+      "sha256": "d8f304bff9cfc98ad976de69ad5296bdfdd1208214cf448085fdb7e6ed3f00fa",
+      "size_bytes": 5423,
       "status": "included"
     },
     "pytest.ini": {
@@ -1242,8 +1280,8 @@
     },
     "src/cost_tracker.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "2e0351cfe3d71f2080544e9c666cc54c2954e7ad16dcf1423fe183bf7cbcb898",
-      "size_bytes": 14535,
+      "sha256": "3850ab515c450421add8404b1f937fbff973cf14ae38a84f99c15f093a64d08f",
+      "size_bytes": 14903,
       "status": "included"
     },
     "src/document_ingestion/__init__.py": {
@@ -1258,6 +1296,18 @@
       "size_bytes": 8128,
       "status": "included"
     },
+    "src/document_ingestion/pdf_and_book_splitter.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "0eae7f1f5aac705e37ff3eb9bda12a0f092494fe92788e99cb32b47d239470e3",
+      "size_bytes": 29205,
+      "status": "included"
+    },
+    "src/document_ingestion/programmatic_debloater.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "12025a60210bd0466bc0bf399b58e160fb4efe14818e8e550b1607f11b2d2420",
+      "size_bytes": 6529,
+      "status": "included"
+    },
     "src/document_ingestion/protocol_applicability_gate.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
       "sha256": "bc190bacc005a9466ebfbe1f11224a3feb0ce55ebe1b9a696219a582fd3039e4",
@@ -1266,20 +1316,26 @@
     },
     "src/document_ingestion/rfc_header_filter.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "ee1e8df89d048993d993d27a861c1c608e03d44bef261002d6216924a1435b9f",
-      "size_bytes": 7420,
+      "sha256": "095a0339efcc2238adaa82db5843ac7a796f10a770aa40930641360f5f3f89c7",
+      "size_bytes": 8724,
+      "status": "included"
+    },
+    "src/document_ingestion/rfc_style_distiller.py": {
+      "bundle": "01_CORE_SOURCE_AND_CLI.md",
+      "sha256": "546b742497304f2f4dfbcc88765bb4e05a8fd4d4e271efc9099b49406379d0d3",
+      "size_bytes": 10937,
       "status": "included"
     },
     "src/document_ingestion/rfc_toc_parser.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "4920983a2cc935b44f6a4f85e9d3a4595f645aa4da30e1941db1e437ecc0d82f",
-      "size_bytes": 5982,
+      "sha256": "22b2775082d063f85b03a67bfaf6499517c8eb8a8a1e3e351d3682ccce9b363a",
+      "size_bytes": 6303,
       "status": "included"
     },
     "src/document_ingestion/verbatim_section_slicer.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "ebee5f9bcfaeb8dc6625c72933aabfc0ddd59752041a02db0848f56a93969a09",
-      "size_bytes": 9398,
+      "sha256": "f62969f736dbe5f562aaacbb4760b0a6276297a3c9452ae25471a9864f3f0200",
+      "size_bytes": 10374,
       "status": "included"
     },
     "src/generate_think/__init__.py": {
@@ -1296,8 +1352,8 @@
     },
     "src/generate_think/dspy_think_synthesizer.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "3c6700ca413304ff95acc3cf16efb83586d96b00bda8b44ea44ce26176fe0f74",
-      "size_bytes": 36184,
+      "sha256": "f1da961aae1dc7f104323ca1d13860640170dfafdfe16dc88290f0af82a730cb",
+      "size_bytes": 36396,
       "status": "included"
     },
     "src/generate_think/think_schema.py": {
@@ -1338,14 +1394,14 @@
     },
     "src/main_pipeline_orchestrator.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "8832cbbb4c95cff782e9e0eda8da6fb9526ac193a73a6809fdf73b196ccdd34f",
-      "size_bytes": 69393,
+      "sha256": "1e3ad068706b1624bfaa0eebdd6f2b860616d8db0d28ede3f3cae65854db5e41",
+      "size_bytes": 72741,
       "status": "included"
     },
     "src/pipeline.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "25920a3499ec6109c4b1b55127354f247576338fba6e5b0dca23c629a38742c8",
-      "size_bytes": 49416,
+      "sha256": "45e8801a9b145bd3cc7a94c4e9056d52020bbffab7d86f3569fe7358a99c576f",
+      "size_bytes": 55928,
       "status": "included"
     },
     "src/pipeline_events.py": {
@@ -1356,8 +1412,8 @@
     },
     "src/prompt_loader.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "9934cc0348f8528141a008dab17e4d5e38530228e6368e0ff39d0386caaff674",
-      "size_bytes": 13007,
+      "sha256": "862b4ab5d4383b8e1d0148984bde3858767bc197e42a06d96f274bb848b87d64",
+      "size_bytes": 13966,
       "status": "included"
     },
     "src/rag_retriever_client.py": {
@@ -1416,8 +1472,8 @@
     },
     "src/verification_engine/trajectory_metadata_exporter.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "e2d2d046a6c02908c744b03073e9b052377fee7c1896782a39b82bcfc8902c7f",
-      "size_bytes": 47536,
+      "sha256": "b62a37841d25baeadd2fbdb2f9a5a27ff43c6a7bbc7ccee85ccd31e980541acd",
+      "size_bytes": 47801,
       "status": "included"
     },
     "src/visualizer/__init__.py": {
@@ -1428,14 +1484,14 @@
     },
     "src/visualizer/server.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "08246d725f18e36e436e75ca9cb8af454055f89cce2798b8ac7240b9585a9af3",
-      "size_bytes": 32700,
+      "sha256": "381ee94cbebd3fffb87f5e0abc234ed576e7bb177d26ce3a3af12c38ee693e8d",
+      "size_bytes": 33617,
       "status": "included"
     },
     "src/visualizer/static/index.html": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "996292c3b2cb9d3d39833fff00a02a0ef9f25c39a8e75ef9bd277ff42ceef065",
-      "size_bytes": 156750,
+      "sha256": "15b69d5d01e22c7c150f95250ec0d6c3f93a826cb223b2c2a9ddb809a623671d",
+      "size_bytes": 159270,
       "status": "included"
     },
     "tests/conftest.py": {
@@ -1480,6 +1536,12 @@
       "size_bytes": 9471,
       "status": "included"
     },
+    "tests/test_non_rfc_and_rfc_style.py": {
+      "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
+      "sha256": "738b726af6dc5310c3c09dddace08ae2d5d77dc3ec63463c05249585fe58f472",
+      "size_bytes": 16413,
+      "status": "included"
+    },
     "tests/test_trajectory_and_hardening.py": {
       "bundle": "02_RAG_SCRIPTS_AND_TESTS.md",
       "sha256": "308276de7a8ee6d0148a26998fba9d9cfe173e60a58520e596477d616f7a77ae",
@@ -1499,15 +1561,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-05 19:40:53 UTC",
+  "generated_at": "2026-11-16 18:13:53 UTC",
   "git": {
     "branch": "main",
-    "commit": "94b2c4e2cb6ba096f669d5278ee3c4795b881a4f",
+    "commit": "f1ef8ddb44add6c44a2e14dd80db47bbfbaf200b",
     "subject": "feat(resume): make run_manifest.json and metadata_index paths portable across PCs"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "8945378ed021553f00fd2ff94941c5868abec424",
-    "subject": "feat(cli,visualizer): add --host remote binding and -r/--resume with .last_run manifest"
+    "commit": "94b2c4e2cb6ba096f669d5278ee3c4795b881a4f",
+    "subject": "feat(resume): make run_manifest.json and metadata_index paths portable across PCs"
   }
 }

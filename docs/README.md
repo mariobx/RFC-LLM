@@ -25,9 +25,9 @@ Technical reference documentation for **RFC-LLM**, an automated synthesis, forma
    - Formal BNF grammar productions, algebraic validity, strand space semantics, canonical S-expressions, Pydantic mappings, and compiler diagnostics.
 
 5. **[Tiered Model Routing & YAML Frontmatter Configuration](TIERED_MODEL_ROUTING.md)**
-   - Per-stage `model`, `timeout`, and `temperature` configuration in `prompts/01_*.md` through `prompts/07_*.md` YAML frontmatter with zero-restart live hot-reload.
+   - Per-stage `model`, `timeout`, and `temperature` configuration in `prompts/00_*.md` through `prompts/08_*.md` YAML frontmatter with zero-restart live hot-reload.
    - Clean credentials- and base-URLs-only `.env` specification (`GEMINI_API_KEY`, `NOUS_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `NOUS_API_BASE`, `OLLAMA_API_BASE`, `STRATA_API_BASE`).
-   - Provider routing prefixes (`nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/`) and one-off CLI overrides.
+   - Provider routing prefixes (`nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/`) and one-off CLI overrides (`--distill-model`, etc.).
 
 6. **[Verification Engine & Self-Healing](VERIFICATION_AND_SELF_HEALING.md)**
    - Stage 4 `Roletran Check` (`cpsa4roletran` for `basic` algebra, `cpsa4 -l 1` for `diffie-hellman` algebra; `ROLETRAN_TIMEOUT_SECONDS = 15`).
@@ -47,7 +47,7 @@ Technical reference documentation for **RFC-LLM**, an automated synthesis, forma
 
 ```mermaid
 flowchart TD
-    A["Raw IETF RFC Text"] --> B["Stage 1: Document Intake\nTier 0 Header Filter + TOC + Gatekeeper + Verbatim Slicer"]
+    A["Raw RFC / Standard (.txt/.pdf/.docx/.html/.md)"] --> B["Stage 1: Document Intake\nTier 0 Header Filter + TOC + Gatekeeper + Verbatim Slicer + $0 Debloat / --rfc-style"]
     B --> C["Stage 2: JSON CPSA Generation\nScoped Pydantic AST + RAG Grounding + 1-Shot Retry"]
     C --> D["Stage 3: CPSA4json -> scm\nDeterministic JSON Serialization & cpsa4json Emission"]
     D --> E["Stage 4: Roletran Check (15s Timeout)\ncpsa4roletran (Basic) / cpsa4 -l 1 (Diffie-Hellman)"]

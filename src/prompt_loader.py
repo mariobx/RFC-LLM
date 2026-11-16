@@ -28,6 +28,7 @@ from src.logging_config import get_pipeline_logger
 logger = get_pipeline_logger("prompt_loader")
 
 # Canonical prompt filenames in prompts/
+PROMPT_BOOK_SPLITTER = "00_book_protocol_splitter.md"
 PROMPT_APPLICABILITY_GATE = "01_applicability_gate.md"
 PROMPT_SECTION_ROUTER = "02_section_router.md"
 PROMPT_PROTOCOL_EXTRACTION = "03_protocol_extraction.md"
@@ -35,6 +36,7 @@ PROMPT_SCHEMA_SELF_CORRECTION = "04_schema_self_correction.md"
 PROMPT_RAG_QUERY_FORMULATION = "05_rag_query_formulation.md"
 PROMPT_COMPILER_REPAIR = "06_compiler_repair.md"
 PROMPT_THINK_SYNTHESIZER = "07_think_token_synthesizer.md"
+PROMPT_RFC_STYLE_DISTILLER = "08_rfc_style_distiller.md"
 
 GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"
 
@@ -47,6 +49,8 @@ _FALLBACK_METADATA: Dict[str, Dict[str, Any]] = {
     PROMPT_RAG_QUERY_FORMULATION: {"model": "strata/unsloth-iq4_xs", "timeout": 900, "max_tokens": 16384, "temperature": None},
     PROMPT_COMPILER_REPAIR: {"model": "strata/unsloth-iq4_xs", "timeout": 3600, "max_tokens": 65536, "temperature": None},
     PROMPT_THINK_SYNTHESIZER: {"model": "strata/unsloth-iq4_xs", "timeout": 3600, "max_tokens": 65536, "temperature": 0.2},
+    PROMPT_BOOK_SPLITTER: {"model": "strata/unsloth-iq4_xs", "timeout": 600, "max_tokens": 8192, "temperature": 0.0},
+    PROMPT_RFC_STYLE_DISTILLER: {"model": "strata/unsloth-iq4_xs", "timeout": 900, "max_tokens": 16384, "temperature": 0.0},
 }
 
 # Built-in fallback prompt bodies if a file in prompts/ is missing or empty
@@ -90,6 +94,15 @@ _FALLBACK_PROMPTS: Dict[str, str] = {
         "Never mention that you were provided the final AST or .scm output in advance; write strictly from a "
         "forward-looking, first-principles deduction perspective, incorporating compiler self-correction and "
         "backtracking steps where applicable."
+    ),
+    PROMPT_BOOK_SPLITTER: (
+        "You are a standards-document index analyst. Identify distinct cryptographic protocol sections in a "
+        "standards table of contents and return strict JSON listing start and end line numbers and protocol titles."
+    ),
+    PROMPT_RFC_STYLE_DISTILLER: (
+        "You are a cryptographic protocol specification technical writer converting a verbatim de-bloated "
+        "protocol slice into clean, compact IETF RFC style without omitting cryptographic operations, "
+        "key schedules, field encodings, validation checks, or specification weaknesses."
     ),
 }
 

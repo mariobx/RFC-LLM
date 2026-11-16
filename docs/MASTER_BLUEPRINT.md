@@ -18,7 +18,7 @@ Prompting an LLM to directly emit raw CPSA `.scm` strings fails due to three str
 
 ### 1.3 The RFC-LLM Solution: Staged Compiler & Trajectory Factory
 RFC-LLM treats protocol formalization as a **6-stage verified compiler pipeline** (`./rfc-llm`) paired with a **Phase 3 hindsight reasoning synthesizer** (`./rfc-think`):
-- **Stage 1 (`Document Intake`)**: Filters non-protocols in <1 ms via regex, parses the TOC, verifies cryptographic applicability, routes handshake sections, and slices verbatim specification text (`verbatim_slice.txt`).
+- **Stage 1 (`Document Intake`)**: Converts `.pdf`/`.docx`/`.html`/`.md`/`.txt` specs (with standalone multi-core `--split-books`), filters non-protocols in <1 ms via regex, parses RFC or PDF space-separated TOCs, verifies cryptographic applicability, routes handshake sections, slices verbatim text (`verbatim_slice.txt`), applies deterministic `$0` de-bloating (`programmatic_debloater.py`), and optionally projects paired `--rfc-style` slices (`paired_slices/<stem>/` & `<stem>_slices/`).
 - **Stage 2 (`JSON CPSA Generation`)**: Extracts a strongly-typed Pydantic AST enforcing Tables 10.1-10.6, Equation 10.1, positional keyword scoping, 1-shot schema self-correction, and 3-POV skeleton separation.
 - **Stage 3 (`CPSA4json -> scm`)**: Deterministically serializes native CPSA JSON arrays and compiles them to `.scm` via `cpsa4json`.
 - **Stage 4 (`Roletran Check`)**: Pre-flight validates executability in milliseconds via `cpsa4roletran` (`basic` algebra) or `cpsa4 -l 1` (`diffie-hellman` algebra) under a `15s` timeout.
@@ -153,10 +153,11 @@ $$term \leftarrow id \mid integer \mid string \mid (op\ term^+)$$
 
 ## 4. YAML Frontmatter Model Routing & Clean `.env`
 
-Per-stage LLM routing, HTTP timeouts, and temperatures live directly in the YAML frontmatter of [`prompts/01_applicability_gate.md`](../prompts/01_applicability_gate.md) through [`prompts/07_think_token_synthesizer.md`](../prompts/07_think_token_synthesizer.md) and **hot-reload live mid-batch** via [`src/prompt_loader.py`](../src/prompt_loader.py):
+Per-stage LLM routing, HTTP timeouts, and temperatures live directly in the YAML frontmatter of [`prompts/00_book_protocol_splitter.md`](../prompts/00_book_protocol_splitter.md) through [`prompts/08_rfc_style_distiller.md`](../prompts/08_rfc_style_distiller.md) and **hot-reload live mid-batch** via [`src/prompt_loader.py`](../src/prompt_loader.py):
 
 | Prompt File | Pipeline Stage | Default `timeout` | Default `temperature` | CLI Override |
 |---|---|---|---|---|
+| `prompts/00_book_protocol_splitter.md` | Stage 1s: Book Splitter (`--llm-split`) | `900s` | `0.0` | `--distill-model` |
 | `prompts/01_applicability_gate.md` | Stage 1c: Applicability Gate | `180s` | `0.0` | `--router-model` |
 | `prompts/02_section_router.md` | Stage 1d: Section Router | `180s` | `0.0` | `--router-model` |
 | `prompts/03_protocol_extraction.md` | Stage 2: JSON CPSA Generation | `180s` | `0.0` | `--extraction-model` |
@@ -164,6 +165,7 @@ Per-stage LLM routing, HTTP timeouts, and temperatures live directly in the YAML
 | `prompts/05_rag_query_formulation.md` | Stage 5/6: RAG Query Formulation | `15s` | `0.0` | `--query-model` |
 | `prompts/06_compiler_repair.md` | Stage 5/6: Compiler Repair | `180s` | `0.0` | `--repair-model` |
 | `prompts/07_think_token_synthesizer.md` | Phase 3: `<think>` Synthesizer | `180s` | `0.2` | `./rfc-think --model` |
+| `prompts/08_rfc_style_distiller.md` | Stage 1f: RFC-Style Distiller (`--rfc-style`) | `1800s` | `0.0` | `--distill-model` |
 
 - **Clean `.env` ([`.env.example`](../.env.example))**: Holds **only** API keys (`GEMINI_API_KEY`, `NOUS_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) and base endpoint URLs (`NOUS_API_BASE`, `OLLAMA_API_BASE`, `STRATA_API_BASE`).
 - **Supported Provider Slugs**: `nous/<model>`, `strata/<model>`, `ollama/<model>`, `gemini/<model>`, `openai/<model>`, and `anthropic/<model>`.

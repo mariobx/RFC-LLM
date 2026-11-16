@@ -11,17 +11,23 @@ _ANY_SECTION_HEADING_RE = re.compile(
     r"^(?:(\d+(?:\.\d+)+)(?:\.|\s+-)?|(\d+)(?:\.|\s+-)|(\d+)|Appendix\s+([A-Z](?:\.\d+)*)\.?|([A-Z](?:\.\d+)+)\.?|([A-Z])\.)\s+"
     r"(?=[A-Za-z0-9\"'\(\[])"
 )
-_TOC_DOT_LEADER_RE = re.compile(r"(?:\.{3,}|(?:\.\s+){3,})\s*\d+\s*$")
+_TOC_DOT_LEADER_RE = re.compile(
+    r"(?:(?:\.{2,}|(?:\.\s+){2,})\s*\d+|[A-Za-z\)\]]\s{2,}\d{1,4})\s*$"
+)
 
 
 def _is_rfc_page_break(line: str) -> bool:
-    """Detects RFC pagination artifacts (form feeds, header/footer lines)."""
+    """Detects RFC and global SDO pagination artifacts (form feeds, header/footer lines)."""
     stripped = line.strip()
     if "\x0c" in line:
         return True
     if re.search(r"\[Page\s+\d+\]$", stripped, re.IGNORECASE):
         return True
+    if re.search(r"^Page\s+\d+(?:\s+of\s+\d+)?$", stripped, re.IGNORECASE):
+        return True
     if re.search(r"^RFC\s+\d+", stripped, re.IGNORECASE):
+        return True
+    if re.search(r"^(?:CCSDS\s+\d+\.\d+-[A-Z]-\d+|Page\s+[A-Z0-9-]+\s+CCSDS|3GPP\s+TS\s+\d|ETSI\s+(?:TS|EN|GS)\s+)", stripped, re.IGNORECASE):
         return True
     return False
 
@@ -49,7 +55,7 @@ def _find_section_start(lines: List[str], section_id: str, search_from_line: int
         )
     else:
         pattern = re.compile(
-            rf"^(?:{escaped_id}(?:\.|\s+-)\s+[A-Za-z0-9\"'\(\[]|{escaped_id}\s+[A-Za-z]|Appendix\s+{escaped_id}\.?\s+[A-Za-z0-9\"'\(\[])",
+            rf"^(?:{escaped_id}(?:\.|\s+-)\s+[A-Za-z0-9\"'\(\[]|{escaped_id}\s{{2,}}[A-Za-z0-9\"'\(\[]|{escaped_id}\s+[A-Za-z]|Appendix\s+{escaped_id}\.?\s+[A-Za-z0-9\"'\(\[])",
             re.IGNORECASE,
         )
 
@@ -71,8 +77,12 @@ def _find_section_end(lines: List[str], section_id: str, start_line_idx: int) ->
             continue
         match = _ANY_SECTION_HEADING_RE.match(line)
         if match:
-            # If matched group(3) (bare integer without dot), require uppercase letter start for title
-            if match.group(3) and not re.match(r"^\d+\s+[A-Z]", line):
+            # Skip numbered prose list sentences (e.g. "1. The initiator computes HMAC and sends it.")
+            stripped_cand = line.strip()
+            if len(stripped_cand) > 75 and stripped_cand.endswith("."):
+                continue
+            # If matched group(3) (bare integer without dot), require uppercase or 2+ spaces + alphanumeric start
+            if match.group(3) and not re.match(r"^\d+(?:\s+[A-Z]|\s{2,}[0-9][A-Za-z])", line):
                 continue
             found_id = (
                 match.group(1)
@@ -83,10 +93,12 @@ def _find_section_end(lines: List[str], section_id: str, start_line_idx: int) ->
                 or match.group(6)
                 or ""
             ).rstrip(".")
+            if norm_id.isdigit() and found_id.isdigit() and int(found_id) < int(norm_id):
+                continue
             if found_id and found_id.lower() != norm_id.lower() and not found_id.lower().startswith(sub_prefix.lower()):
                 return idx
 
-    return min(start_line_idx + 600, len(lines))
+    return min(start_line_idx + 1500, len(lines))
 
 
 def _slice_unnumbered_rfc_body(lines: List[str], clean_page_breaks: bool = True) -> str:
@@ -108,7 +120,7 @@ def _slice_unnumbered_rfc_body(lines: List[str], clean_page_breaks: bool = True)
         ):
             end_idx = idx
             break
-    end_idx = min(end_idx, start_idx + 600)
+    end_idx = min(end_idx, start_idx + 1500)
     sliced = lines[start_idx:end_idx]
     if clean_page_breaks:
         sliced = [line for line in sliced if not _is_rfc_page_break(line)]
@@ -131,10 +143,16 @@ def slice_verbatim_sections(
         logger.warning("No target section IDs provided for slicing")
         return ""
 
-    # Step 1: Skip past the Table of Contents to avoid matching TOC entries as section starts
+    # Step 1: Skip past the Table of Contents (including internal PDF Contents blocks)
+    toc_scan_start = 0
+    for idx, line in enumerate(lines[:300]):
+        if re.match(r"^\s*(?:Table of Contents|Contents)\s*$", line, re.IGNORECASE):
+            toc_scan_start = idx + 1
+
     toc_end_idx = 100
-    for idx, line in enumerate(lines[:800]):
-        if re.match(r"^1(?:\.0)?\.?\s+[A-Z]", line) and not _TOC_DOT_LEADER_RE.search(line):
+    for idx in range(toc_scan_start, min(len(lines), 800)):
+        line = lines[idx]
+        if re.match(r"^1(?:\.0)?(?:\.|\s+-)?\s+[A-Z]", line) and not _TOC_DOT_LEADER_RE.search(line):
             toc_end_idx = idx
             break
 

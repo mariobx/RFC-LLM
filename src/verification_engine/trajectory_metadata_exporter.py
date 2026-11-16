@@ -876,6 +876,9 @@ def write_trajectory_metadata_bundle(
     shapes_txt_path: Optional[Path],
     solver_passed: bool,
     intake_rationale: Optional[str] = None,
+    debloated_slice: Optional[str] = None,
+    rfc_style_slice: Optional[str] = None,
+    paired_stem: Optional[str] = None,
 ) -> Path:
     """Computes programmatic CPSA verification metrics, prepends `.scm` metadata headers,
     and writes `<protocol_stem>_trajectory.json` into `output_dir`.
@@ -977,6 +980,9 @@ def write_trajectory_metadata_bundle(
             "selected_sections": selected_sections,
             "sliced_lines_count": len(verbatim_slice.splitlines()),
             "verbatim_rfc_slice": verbatim_slice,
+            "debloated_rfc_slice": debloated_slice,
+            "rfc_style_slice": rfc_style_slice,
+            "paired_stem": paired_stem,
             "intake_rationale": intake_rationale,
         },
         "stage2_initial_extraction": stage2_record,

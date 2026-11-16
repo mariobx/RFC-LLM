@@ -384,7 +384,11 @@ def synthesize_reasoning_steps_via_dspy_or_llm(
     rfc_title = rfc_meta.get("rfc_title", "Unknown Protocol")
     principals = rfc_meta.get("participating_principals", [])
     sections = rfc_meta.get("selected_sections", [])
-    verbatim_slice = rfc_meta.get("verbatim_rfc_slice", "")
+    verbatim_slice = (
+        rfc_meta.get("rfc_style_slice")
+        or rfc_meta.get("debloated_rfc_slice")
+        or rfc_meta.get("verbatim_rfc_slice", "")
+    )
 
     final_out = trajectory_data.get("final_verified_output", {})
     final_ast = final_out.get("final_ast") or trajectory_data.get("stage2_initial_extraction", {}).get("initial_ast")
@@ -502,7 +506,11 @@ def _build_sft_and_dpo_records(
     rfc_meta = trajectory_data.get("rfc_metadata", {})
     rfc_id = rfc_meta.get("rfc_id", "Unknown RFC")
     rfc_title = rfc_meta.get("rfc_title", "Unknown Protocol")
-    verbatim_slice = rfc_meta.get("verbatim_rfc_slice", "")
+    verbatim_slice = (
+        rfc_meta.get("rfc_style_slice")
+        or rfc_meta.get("debloated_rfc_slice")
+        or rfc_meta.get("verbatim_rfc_slice", "")
+    )
 
     final_out = trajectory_data.get("final_verified_output", {})
     final_scm = (

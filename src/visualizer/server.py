@@ -123,10 +123,24 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
     qa = traj.get("quality_assessment", {})
     final_out = traj.get("final_verified_output", {})
 
-    # 1. Verbatim RFC Slice
+    # 1. Verbatim RFC Slice + Paired Debloated / RFC-Style Companions
     verbatim_slice = meta.get("verbatim_rfc_slice") or ""
     if not verbatim_slice and rfc_dir and (rfc_dir / "verbatim_slice.txt").exists():
         verbatim_slice = (rfc_dir / "verbatim_slice.txt").read_text(encoding="utf-8", errors="ignore")
+
+    debloated_slice = meta.get("debloated_rfc_slice") or ""
+    if not debloated_slice and rfc_dir:
+        cand_deb = next(rfc_dir.glob("*_slices/*__debloated.txt"), None) or next(rfc_dir.glob("*__debloated.txt"), None)
+        if cand_deb and cand_deb.exists():
+            debloated_slice = cand_deb.read_text(encoding="utf-8", errors="ignore")
+
+    rfc_style_slice = meta.get("rfc_style_slice") or ""
+    if not rfc_style_slice and rfc_dir:
+        cand_style = next(rfc_dir.glob("*_slices/*__rfc_style.txt"), None) or next(rfc_dir.glob("*__rfc_style.txt"), None)
+        if cand_style and cand_style.exists():
+            rfc_style_slice = cand_style.read_text(encoding="utf-8", errors="ignore")
+
+    paired_stem = meta.get("paired_stem") or ""
 
     # Load Chronological Events early so we can reconstruct in-flight attempts for RUNNING tabs
     events: List[Dict[str, Any]] = []
@@ -370,6 +384,9 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
         "exploration_telemetry": s6.get("exploration_telemetry_from_txt") or {},
         "cost_telemetry": cost_telemetry,
         "verbatim_slice": verbatim_slice,
+        "debloated_slice": debloated_slice,
+        "rfc_style_slice": rfc_style_slice,
+        "paired_stem": paired_stem,
         "shapes_xhtml": shapes_xhtml,
         "attempts": attempts,
         "events": events,

@@ -6,12 +6,12 @@ timeout: 3600
 max_tokens: 65536
 ---
 You are a formal methods expert in cryptographic protocol specification for MITRE CPSA 4.4.9.
-Your task is to analyze the provided verbatim RFC specification text and extract a complete, mathematically rigorous CPSAProtocolSpecification that is strictly 1-to-1 with the RFC.
+Your task is to analyze the provided verbatim protocol specification / RFC text and extract a complete, mathematically rigorous CPSAProtocolSpecification that is strictly 1-to-1 with the specification.
 
-ABSOLUTE 1-TO-1 VERBATIM RFC GROUNDING MANDATE (ZERO HALLUCINATION):
+ABSOLUTE 1-TO-1 VERBATIM SPECIFICATION GROUNDING MANDATE (ZERO HALLUCINATION):
 - STAGE 2 FALSE-POSITIVE / UNVERIFIABLE PROTOCOL BAILOUT (`"is_verifiable_protocol": false`):
-  Before extracting any roles, verify that the provided Verbatim RFC Exchange Specification actually defines a self-contained, interactive multi-message cryptographic or authenticated exchange between two or more principals.
-  If the provided RFC excerpt:
+  Before extracting any roles, verify that the provided Verbatim Exchange Specification actually defines a self-contained, interactive multi-message cryptographic or authenticated exchange between two or more principals.
+  If the provided specification excerpt:
   (a) contains NO interactive message flights (e.g., only terminology/scope, local flag/KDF tweaks like TCP-AO-NAT or TLS master-secret input tweaks, static HTTP response headers like HPKP, `[see PostScript]` figure placeholders, or 1-way link-layer frame bit layouts), OR
   (b) delegates the entire key exchange / authentication handshake to an external specification (e.g., "use IKE [RFC2409]" or "use TLS [RFC5246]") without defining the interactive cryptographic flights in this excerpt, OR
   (c) is a plaintext application, conferencing, relay, or UI-prompt protocol (e.g., BFCP floor control, TURN TCP allocations, HELD HTTP GET, HTTP SET polling, NNTP cleartext `AUTHINFO USER/PASS`, or SSH `keyboard-interactive` prompt framing) that defines zero cryptographic operations of its own,

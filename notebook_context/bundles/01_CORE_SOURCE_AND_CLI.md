@@ -2,10 +2,11 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-05 19:40:53 UTC · Git: `main` @ `94b2c4e2cb6b` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 48 · Estimated Tokens: ~250,347*
+*Generated: 2026-11-16 18:13:53 UTC · Git: `main` @ `f1ef8ddb44ad` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 53 · Estimated Tokens: ~267,465*
 
 ## Table of Contents
 
+- [`prompts/00_book_protocol_splitter.md`](#prompts00-book-protocol-splittermd)
 - [`prompts/01_applicability_gate.md`](#prompts01-applicability-gatemd)
 - [`prompts/02_section_router.md`](#prompts02-section-routermd)
 - [`prompts/03_protocol_extraction.md`](#prompts03-protocol-extractionmd)
@@ -13,6 +14,7 @@
 - [`prompts/05_rag_query_formulation.md`](#prompts05-rag-query-formulationmd)
 - [`prompts/06_compiler_repair.md`](#prompts06-compiler-repairmd)
 - [`prompts/07_think_token_synthesizer.md`](#prompts07-think-token-synthesizermd)
+- [`prompts/08_rfc_style_distiller.md`](#prompts08-rfc-style-distillermd)
 - [`prompts/README.md`](#promptsreadmemd)
 - [`refrences/all_RFCs/rfc9528.txt`](#refrencesall-rfcsrfc9528txt)
 - [`rfc-llm`](#rfc-llm)
@@ -24,8 +26,11 @@
 - [`src/cost_tracker.py`](#srccost-trackerpy)
 - [`src/document_ingestion/__init__.py`](#srcdocument-ingestion-init-py)
 - [`src/document_ingestion/handshake_section_router.py`](#srcdocument-ingestionhandshake-section-routerpy)
+- [`src/document_ingestion/pdf_and_book_splitter.py`](#srcdocument-ingestionpdf-and-book-splitterpy)
+- [`src/document_ingestion/programmatic_debloater.py`](#srcdocument-ingestionprogrammatic-debloaterpy)
 - [`src/document_ingestion/protocol_applicability_gate.py`](#srcdocument-ingestionprotocol-applicability-gatepy)
 - [`src/document_ingestion/rfc_header_filter.py`](#srcdocument-ingestionrfc-header-filterpy)
+- [`src/document_ingestion/rfc_style_distiller.py`](#srcdocument-ingestionrfc-style-distillerpy)
 - [`src/document_ingestion/rfc_toc_parser.py`](#srcdocument-ingestionrfc-toc-parserpy)
 - [`src/document_ingestion/verbatim_section_slicer.py`](#srcdocument-ingestionverbatim-section-slicerpy)
 - [`src/generate_think/__init__.py`](#srcgenerate-think-init-py)
@@ -57,9 +62,34 @@
 
 ---
 
+### `prompts/00_book_protocol_splitter.md`
+
+*sha256:`daee997c65b0` · 16 lines · 1.0 KB (~265 tokens) · lang:`markdown`*
+
+```markdown
+---
+# Stage 1s: Multi-Protocol Standards Book Splitter (--llm-split)
+# Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
+model: strata/unsloth-iq4_xs
+timeout: 900
+max_tokens: 16384
+temperature: 0.0
+---
+You are a cryptographic standards analyst inspecting the Table of Contents of a multi-protocol specification book.
+Your task is to decompose the book into separate, self-contained interactive cryptographic protocols so each protocol can be modeled independently in MITRE CPSA 4.4.9.
+
+Guidelines:
+- Emit one bundle per distinct interactive cryptographic handshake, key-exchange, rekeying, onboarding, authentication, or session-establishment procedure.
+- Include both the procedure's message-flow sections AND any shared key-derivation or cryptographic PDU format section IDs that procedure depends on.
+- Use ONLY exact section IDs present in the Table of Contents (bare section numbers or annex/appendix IDs).
+- Skip administrative prefaces, glossaries, test vectors, and physical-layer electrical chapters.
+```
+
+---
+
 ### `prompts/01_applicability_gate.md`
 
-*sha256:`9f63d4594e6d` · 32 lines · 2.7 KB (~680 tokens) · lang:`markdown`*
+*sha256:`dd8f6b890e5b` · 32 lines · 2.7 KB (~691 tokens) · lang:`markdown`*
 
 ```markdown
 ---
@@ -70,10 +100,10 @@ timeout: 900
 max_tokens: 16384
 ---
 You are a formal methods expert in cryptographic protocol verification using MITRE CPSA 4.4.9.
-Your task is to analyze an IETF RFC's metadata and Table of Contents to determine if it specifies an interactive cryptographic security protocol.
+Your task is to analyze a protocol specification's or IETF RFC's metadata and Table of Contents to determine if it specifies an interactive cryptographic security protocol.
 
 ELIGIBLE for CPSA:
-- Self-contained interactive protocols between two or more principals that define their own multi-message cryptographic exchange or handshake in this RFC.
+- Self-contained interactive protocols between two or more principals that define their own multi-message cryptographic exchange or handshake in this specification or RFC.
 - Employs cryptographic primitives directly in the protocol flights defined by this document: keys (symmetric or asymmetric), nonces, digital signatures, MACs/hashes, or Diffie-Hellman exponent groups.
 - Focuses on authentication, secrecy, key establishment, or secure channel setup.
 
@@ -100,7 +130,7 @@ Example output format:
 
 ### `prompts/02_section_router.md`
 
-*sha256:`918d738d3659` · 23 lines · 1.8 KB (~464 tokens) · lang:`markdown`*
+*sha256:`d977b2807edb` · 23 lines · 1.8 KB (~471 tokens) · lang:`markdown`*
 
 ```markdown
 ---
@@ -110,7 +140,7 @@ model: strata/unsloth-iq4_xs
 timeout: 900
 max_tokens: 16384
 ---
-You are a protocol analyst reading an RFC's Table of Contents.
+You are a protocol analyst reading a protocol specification's or RFC's Table of Contents.
 Your task is to identify the EXACT section numbers that define the complete cryptographic message exchange, handshake flights, and cryptographic payload/key/MAC structures between principals.
 
 Guidelines:
@@ -132,7 +162,7 @@ Example output format:
 
 ### `prompts/03_protocol_extraction.md`
 
-*sha256:`0dbebc786f8f` · 109 lines · 12.7 KB (~3,256 tokens) · lang:`markdown`*
+*sha256:`9aee7b4456f9` · 109 lines · 12.8 KB (~3,266 tokens) · lang:`markdown`*
 
 ```markdown
 ---
@@ -143,12 +173,12 @@ timeout: 3600
 max_tokens: 65536
 ---
 You are a formal methods expert in cryptographic protocol specification for MITRE CPSA 4.4.9.
-Your task is to analyze the provided verbatim RFC specification text and extract a complete, mathematically rigorous CPSAProtocolSpecification that is strictly 1-to-1 with the RFC.
+Your task is to analyze the provided verbatim protocol specification / RFC text and extract a complete, mathematically rigorous CPSAProtocolSpecification that is strictly 1-to-1 with the specification.
 
-ABSOLUTE 1-TO-1 VERBATIM RFC GROUNDING MANDATE (ZERO HALLUCINATION):
+ABSOLUTE 1-TO-1 VERBATIM SPECIFICATION GROUNDING MANDATE (ZERO HALLUCINATION):
 - STAGE 2 FALSE-POSITIVE / UNVERIFIABLE PROTOCOL BAILOUT (`"is_verifiable_protocol": false`):
-  Before extracting any roles, verify that the provided Verbatim RFC Exchange Specification actually defines a self-contained, interactive multi-message cryptographic or authenticated exchange between two or more principals.
-  If the provided RFC excerpt:
+  Before extracting any roles, verify that the provided Verbatim Exchange Specification actually defines a self-contained, interactive multi-message cryptographic or authenticated exchange between two or more principals.
+  If the provided specification excerpt:
   (a) contains NO interactive message flights (e.g., only terminology/scope, local flag/KDF tweaks like TCP-AO-NAT or TLS master-secret input tweaks, static HTTP response headers like HPKP, `[see PostScript]` figure placeholders, or 1-way link-layer frame bit layouts), OR
   (b) delegates the entire key exchange / authentication handshake to an external specification (e.g., "use IKE [RFC2409]" or "use TLS [RFC5246]") without defining the interactive cryptographic flights in this excerpt, OR
   (c) is a plaintext application, conferencing, relay, or UI-prompt protocol (e.g., BFCP floor control, TURN TCP allocations, HELD HTTP GET, HTTP SET polling, NNTP cleartext `AUTHINFO USER/PASS`, or SSH `keyboard-interactive` prompt framing) that defines zero cryptographic operations of its own,
@@ -442,9 +472,44 @@ Return ONLY a valid JSON object matching the requested `SynthesizedReasoningStep
 
 ---
 
+### `prompts/08_rfc_style_distiller.md`
+
+*sha256:`b04573c3bed6` · 26 lines · 2.2 KB (~568 tokens) · lang:`markdown`*
+
+```markdown
+---
+# Stage 1f: Lossless RFC-Style Protocol Distiller (--rfc-style)
+# Slugs: nous/<model>, strata/<model>, ollama/<model>, gemini/<model>, openai/<model>, anthropic/<model>
+model: strata/unsloth-iq4_xs
+timeout: 1800
+max_tokens: 32768
+temperature: 0.0
+---
+You are a formal cryptographic protocol specification writer.
+Your task is to convert a verbose or non-RFC protocol specification slice into a clean, focused, IETF RFC-style specification optimized for MITRE CPSA 4.4.9 extraction.
+
+STRICT LOSSLESS CRYPTOGRAPHIC PROJECTION RULES (MANDATORY):
+1. PRESERVE EVERY IDENTIFIER VERBATIM: Keep the exact principal names, message names, PDU/opcode labels, cryptographic field names, key names, nonce/counter names, and KDF/HMAC/AEAD/signature/Diffie-Hellman formulas stated in the source specification.
+2. NEVER INVENT OR REPAIR FLAWS: Do NOT add missing nonces, timestamps, endpoint/port bindings, MAC inputs, sequence numbers, or validation checks that are absent from the source text. If the source omits a field from a signature, MAC, or key derivation input, preserve that exact omission faithfully (or explicitly note `[Not bound in source: ...]`), because downstream formal analysis relies on detecting specification bugs!
+3. STRIP BLOAT ONLY: Remove non-security hardware/electrical timers, physical-layer framing/UI chrome, logging/MIB/telemetry fluff, packet hex dumps of unrelated examples, and repetitive narrative filler.
+4. CITE SECTIONS: Preserve original section numbers inline as `[Src §...]` so every requirement traces directly back to the verbatim source.
+
+Required RFC-Style Output Format:
+1. Overview & Participating Principals
+   - Concise summary of principals, long-term keys / pre-shared secrets, and freshly generated values.
+2. Message Exchange & ASCII Sequence Diagram
+   - Clean IETF RFC ASCII ladder diagram (`PrincipalA ---> PrincipalB : MessageName(...)`) showing exact flights in order.
+3. Message Formats & Cryptographic Computations
+   - Bullet specification of each flight using exact source field names, encryption/signature/MAC constructions, and verification checks (`MUST`/`SHALL`).
+4. Key Derivation & Security State Rules
+   - Exact KDF labels/inputs/contexts, replay/freshness checks, and secret payloads established or transported.
+```
+
+---
+
 ### `prompts/README.md`
 
-*sha256:`ea819aeb4293` · 39 lines · 4.6 KB (~1,188 tokens) · lang:`markdown`*
+*sha256:`d8f304bff9cf` · 41 lines · 5.3 KB (~1,354 tokens) · lang:`markdown`*
 
 ````markdown
 # RFC-LLM Customizable Prompt Templates & Model Routing (`prompts/`)
@@ -468,6 +533,7 @@ You are a formal methods expert...
 
 | Prompt File | Pipeline Stage | Calling Module | Default Timeout / Temp | Supported Provider Prefixes | Uses RAG? |
 |---|---|---|---|---|---|
+| [`00_book_protocol_splitter.md`](00_book_protocol_splitter.md) | **Stage 1s**: Multi-Protocol Book Splitter (`--llm-split`) | [`src/document_ingestion/pdf_and_book_splitter.py`](../src/document_ingestion/pdf_and_book_splitter.py) | `900s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | No |
 | [`01_applicability_gate.md`](01_applicability_gate.md) | **Stage 1c**: Document Intake (Applicability Gate) | [`src/document_ingestion/protocol_applicability_gate.py`](../src/document_ingestion/protocol_applicability_gate.py) | `180s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | No |
 | [`02_section_router.md`](02_section_router.md) | **Stage 1d**: Document Intake (Handshake Section Router) | [`src/document_ingestion/handshake_section_router.py`](../src/document_ingestion/handshake_section_router.py) | `180s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | No |
 | [`03_protocol_extraction.md`](03_protocol_extraction.md) | **Stage 2**: JSON CPSA Generation | [`src/semantic_extraction/constrained_protocol_extractor.py`](../src/semantic_extraction/constrained_protocol_extractor.py) | `180s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | **Yes** (Hybrid RRF) |
@@ -475,6 +541,7 @@ You are a formal methods expert...
 | [`05_rag_query_formulation.md`](05_rag_query_formulation.md) | **Stage 5 & 6**: Self-Healing Loop (RAG Query Formulation) | [`src/verification_engine/compiler_diagnostic_repair.py`](../src/verification_engine/compiler_diagnostic_repair.py) | `15s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | **Yes** (Formulates query) |
 | [`06_compiler_repair.md`](06_compiler_repair.md) | **Stage 5 & 6**: Self-Healing Loop (Compiler Diagnostic Repair) | [`src/verification_engine/compiler_diagnostic_repair.py`](../src/verification_engine/compiler_diagnostic_repair.py) | `180s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | **Yes** (Consumes chunks) |
 | [`07_think_token_synthesizer.md`](07_think_token_synthesizer.md) | **Phase 3**: Hindsight Reasoning (`<think>`) Synthesizer | [`src/generate_think/dspy_think_synthesizer.py`](../src/generate_think/dspy_think_synthesizer.py) | `180s` / `0.2` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | Trajectory-backed |
+| [`08_rfc_style_distiller.md`](08_rfc_style_distiller.md) | **Stage 1f**: Lossless RFC-Style Protocol Distiller (`--rfc-style`) | [`src/document_ingestion/rfc_style_distiller.py`](../src/document_ingestion/rfc_style_distiller.py) | `1800s` / `0.0` | `nous/`, `strata/`, `ollama/`, `gemini/`, `openai/`, `anthropic/` | No |
 
 ---
 
@@ -482,7 +549,7 @@ You are a formal methods expert...
 
 Prompts and frontmatter metadata are loaded dynamically on every invocation via [`src/prompt_loader.py`](../src/prompt_loader.py):
 1. **Zero-Restart Live Hot-Reload**: Editing `model:`, `timeout:`, `temperature:`, or prompt instructions in any `prompts/*.md` file takes effect on the **next LLM call**—even mid-batch—without restarting `./rfc-llm`.
-2. **One-Off CLI Overrides**: Passing `--model`, `--router-model`, `--extraction-model`, `--repair-model`, or `--query-model` to `./rfc-llm` (or `--model` to `./rfc-think`) overrides the frontmatter `model:` for that CLI session without modifying `prompts/*.md` on disk.
+2. **One-Off CLI Overrides**: Passing `--model`, `--router-model`, `--extraction-model`, `--repair-model`, `--query-model`, or `--distill-model` to `./rfc-llm` (or `--model` to `./rfc-think`) overrides the frontmatter `model:` for that CLI session without modifying `prompts/*.md` on disk.
 3. **Frontmatter Stripping & Schema Safety**: [`load_prompt`](../src/prompt_loader.py) strips the `--- ... ---` YAML block before sending the system prompt to LiteLLM, and mandatory Pydantic JSON schemas (`ProtocolApplicabilityReport`, `SectionRoutingDecision`, `CPSAProtocolSpecification`, `SynthesizedReasoningSteps`) are appended automatically in Python.
 4. **Template Placeholders**: [`04_schema_self_correction.md`](04_schema_self_correction.md) supports the `{validation_error}` placeholder for 1-shot retry diagnostics.
 5. **Resilient Fallback**: If frontmatter fields or `.md` files are missing, [`src/prompt_loader.py`](../src/prompt_loader.py) falls back cleanly to built-in defaults (`GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"`).
@@ -5370,7 +5437,7 @@ def emit_cpsa_scheme(
 
 ### `src/cost_tracker.py`
 
-*sha256:`2e0351cfe3d7` · 340 lines · 14.2 KB (~3,631 tokens) · lang:`python`*
+*sha256:`3850ab515c45` · 348 lines · 14.6 KB (~3,723 tokens) · lang:`python`*
 
 ```python
 """Real-Time Token & USD Cost Telemetry Tracker across Pipeline Model Roles.
@@ -5399,8 +5466,8 @@ from src.system_config import SYSTEM_CONFIG
 
 logger = get_pipeline_logger("cost_tracker")
 
-ModelRoleLiteral = Literal["router", "extraction", "query", "repair"]
-MODEL_ROLES: Tuple[str, ...] = ("router", "extraction", "query", "repair")
+ModelRoleLiteral = Literal["router", "extraction", "query", "repair", "distiller"]
+MODEL_ROLES: Tuple[str, ...] = ("router", "extraction", "query", "repair", "distiller")
 
 # Built-in fallback per-token USD rates (prompt, completion, cache_read) per 1 token
 # Derived from live Nous Research / OpenAI / Anthropic / Google / DeepSeek pricing.
@@ -5540,6 +5607,7 @@ class PipelineCostTracker:
         extraction_model: str = "",
         query_model: str = "",
         repair_model: str = "",
+        distiller_model: str = "",
     ) -> None:
         """Resets the active per-RFC cost bucket when starting a new RFC run."""
         with self._lock:
@@ -5550,6 +5618,7 @@ class PipelineCostTracker:
                 "extraction": extraction_model,
                 "query": query_model,
                 "repair": repair_model,
+                "distiller": distiller_model,
             }
             for role, mod in role_models.items():
                 if mod:
@@ -5705,11 +5774,17 @@ class PipelineCostTracker:
         e_usd = float(roles.get("extraction", {}).get("cost_usd", 0.0))
         q_usd = float(roles.get("query", {}).get("cost_usd", 0.0))
         rep_usd = float(roles.get("repair", {}).get("cost_usd", 0.0))
-        return (
+        d_info = roles.get("distiller", {}) or {}
+        d_usd = float(d_info.get("cost_usd", 0.0))
+        d_calls = int(d_info.get("calls", 0))
+        base = (
             f"{prefix}: ${total_usd:.4f} ({total_tok:,} tok) | "
             f"Router: ${r_usd:.4f} | Extraction: ${e_usd:.4f} | "
             f"Query/Searcher: ${q_usd:.4f} | Repair: ${rep_usd:.4f}"
         )
+        if d_calls > 0 or d_usd > 0.0:
+            return f"{base} | Distiller: ${d_usd:.4f}"
+        return base
 
 
 GLOBAL_COST_TRACKER = PipelineCostTracker()
@@ -5983,6 +6058,922 @@ def _heuristic_section_router(toc_entries: List[TOCSectionEntry]) -> List[str]:
 
 ---
 
+### `src/document_ingestion/pdf_and_book_splitter.py`
+
+*sha256:`0eae7f1f5aac` · 736 lines · 28.5 KB (~7,301 tokens) · lang:`python`*
+
+```python
+"""Native PDF/DOCX/HTML/Markdown Reader and Multi-Protocol Book Splitter.
+
+Extracts layout-preserved text and PDF bookmark hierarchies, splits multi-protocol
+standards books into standalone verbatim `.txt` dossiers (across all CPU cores at
+$0.00 cost by default, or opt-in `--llm-split`), and emits clean normalized
+protocol `.txt` files ready for `RFC-LLM` Stage 1-6 synthesis.
+"""
+
+from __future__ import annotations
+
+import csv
+import html
+import os
+import re
+import shutil
+import subprocess
+import tempfile
+import xml.etree.ElementTree as ET
+import zipfile
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from html.parser import HTMLParser
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+import litellm
+import pymupdf
+from pydantic import BaseModel, Field
+
+from src.document_ingestion.programmatic_debloater import debloat_protocol_slice
+from src.document_ingestion.rfc_header_filter import (
+    FRONTMATTER_CRYPTO_REGEX,
+    FRONTMATTER_PROTOCOL_REGEX,
+)
+from src.document_ingestion.rfc_toc_parser import TOCSectionEntry, parse_table_of_contents
+from src.document_ingestion.verbatim_section_slicer import slice_verbatim_sections
+from src.logging_config import get_pipeline_logger
+from src.prompt_loader import PROMPT_BOOK_SPLITTER, build_schema_system_prompt, load_prompt_spec, parse_llm_json
+from src.system_config import SYSTEM_CONFIG
+
+logger = get_pipeline_logger("pdf_book_splitter")
+
+SUPPORTED_BOOK_EXTENSIONS = {".pdf", ".txt", ".md", ".markdown", ".html", ".htm", ".docx", ".mediawiki", ".rst"}
+
+# Headings indicating a distinct cryptographic handshake or security procedure inside a multi-protocol book
+_PROTOCOL_HEADING_KEYWORDS = (
+    "authentication",
+    "authenticated",
+    "key agreement",
+    "key establishment",
+    "key exchange",
+    "key management",
+    "key transport",
+    "key wrapping",
+    "key derivation",
+    "over-the-air rekeying",
+    "rekey",
+    "otar",
+    "handshake",
+    "pairing",
+    "bonding",
+    "provisioning",
+    "commissioning",
+    "onboarding",
+    "session establishment",
+    "session setup",
+    "secure channel",
+    "security mode",
+    "security association",
+    "registration",
+    "handover",
+    "bootstrapping",
+    "challenge",
+    "attestation",
+    "enrollment",
+    "certificate request",
+    "ticket",
+    "token exchange",
+    "pase",
+    "case",
+    "pace",
+    "chip authentication",
+    "terminal authentication",
+    "active authentication",
+    "basic access control",
+    "spake",
+    "aka",
+    "eap-",
+    "ntor",
+    "x3dh",
+    "pqxdh",
+    "ratchet",
+    "olm",
+    "megolm",
+    "secret connection",
+    "join procedure",
+    "join-request",
+    "rlpx",
+    "bip-324",
+    "noise_",
+    "protocol flow",
+    "message exchange",
+    "login",
+    "mutual",
+)
+
+_SUPPORTING_SECTION_KEYWORDS = (
+    "key derivation",
+    "kdf",
+    "hkdf",
+    "prf",
+    "cryptographic algorithms",
+    "cipher suite",
+    "pdu format",
+    "message format",
+    "frame format",
+    "security header",
+    "cryptogram",
+)
+
+_EXCLUDED_SPLIT_HEADINGS = (
+    "scope",
+    "introduction",
+    "normative references",
+    "informative references",
+    "references",
+    "terms, definitions",
+    "terms and definitions",
+    "abbreviations",
+    "abbreviated terms",
+    "acronyms",
+    "conventions",
+    "foreword",
+    "change history",
+    "revision history",
+    "document history",
+    "table of contents",
+    "contents",
+    "list of figures",
+    "list of tables",
+    "bibliography",
+    "acknowledgements",
+    "acknowledgments",
+    "annex a (informative)",
+    "glossary",
+    "requirements",
+    "compliance",
+    "conformance",
+)
+
+
+class LLMBookProtocolBundle(BaseModel):
+    protocol_slug: str = Field(..., description="Short snake_case filename slug")
+    protocol_title: str = Field(..., description="Descriptive protocol title")
+    section_ids: List[str] = Field(..., description="Exact section IDs from the TOC")
+
+
+class LLMBookSplitPlan(BaseModel):
+    protocols: List[LLMBookProtocolBundle] = Field(default_factory=list)
+
+
+class _StructuredHTMLTextExtractor(HTMLParser):
+    """Converts HTML specs into structured plain text while preserving headings and <pre> ladders."""
+
+    _BLOCK_TAGS = {"p", "div", "section", "article", "h1", "h2", "h3", "h4", "h5", "h6", "li", "tr", "pre", "br", "hr"}
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._skip_depth = 0
+        self._in_pre = False
+        self._chunks: List[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list) -> None:
+        t = tag.lower()
+        if t in {"script", "style", "nav", "footer", "svg"}:
+            self._skip_depth += 1
+            return
+        if self._skip_depth > 0:
+            return
+        if t == "pre":
+            self._in_pre = True
+            self._chunks.append("\n")
+        elif t in self._BLOCK_TAGS:
+            self._chunks.append("\n")
+        elif t in {"td", "th"}:
+            self._chunks.append("  ")
+
+    def handle_endtag(self, tag: str) -> None:
+        t = tag.lower()
+        if t in {"script", "style", "nav", "footer", "svg"} and self._skip_depth > 0:
+            self._skip_depth -= 1
+            return
+        if self._skip_depth > 0:
+            return
+        if t == "pre":
+            self._in_pre = False
+            self._chunks.append("\n")
+        elif t in {"p", "h1", "h2", "h3", "h4", "h5", "h6", "tr", "li"}:
+            self._chunks.append("\n")
+
+    def handle_data(self, data: str) -> None:
+        if self._skip_depth > 0:
+            return
+        if self._in_pre:
+            self._chunks.append(data)
+        else:
+            collapsed = re.sub(r"[ \t\r\n]+", " ", data)
+            if collapsed.strip():
+                self._chunks.append(collapsed)
+
+    def get_text(self) -> str:
+        raw = html.unescape("".join(self._chunks))
+        return re.sub(r"\n{3,}", "\n\n", raw).strip()
+
+
+def sanitize_filename_token(text: str, max_len: int = 64) -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9]+", "_", (text or "").strip().lower()).strip("_")
+    if len(cleaned) > max_len:
+        cleaned = cleaned[:max_len].rstrip("_")
+    return cleaned or "protocol"
+
+
+def _infer_org_and_doc_id(source_path: Path, raw_text: str) -> Tuple[str, str]:
+    stem = source_path.stem
+    parent = source_path.parent.name.upper()
+    head = "\n".join(raw_text.splitlines()[:120])
+
+    if re.search(r"CCSDS\s+\d+\.\d+-[A-Z]-\d+", head, re.I) or "ccsds" in stem.lower() or "SPACE" in parent:
+        m = re.search(r"(CCSDS\s+\d+\.\d+-[A-Z]-\d+)", head, re.I)
+        return "CCSDS", (m.group(1).replace(" ", "_") if m else stem)
+    if re.search(r"3GPP\s+TS\s+\d+\.\d+|ETSI\s+TS\s+1\d{2}\s+\d+", head, re.I) or "3gpp" in str(source_path).lower() or "etsi" in str(source_path).lower():
+        m = re.search(r"(?:3GPP\s+TS|ETSI\s+(?:TS|EN|GS))\s+[\d.\s]+", head, re.I)
+        org = "ETSI" if "etsi" in str(source_path).lower() and "3gpp" not in head.lower() else "3GPP"
+        return org, (m.group(0).strip().replace(" ", "_") if m else stem)
+    if re.search(r"\[MS-[A-Z0-9]+\]|Microsoft Corporation", head, re.I) or stem.lower().startswith("ms-") or "[ms-" in stem.lower():
+        m = re.search(r"(MS-[A-Z0-9]+)", head + " " + stem, re.I)
+        return "MICROSOFT", (m.group(1).upper() if m else stem)
+    if re.search(r"\bNIST\s+(?:SP|FIPS)\s+[\w.-]+", head, re.I) or "nist" in str(source_path).lower():
+        m = re.search(r"((?:NIST\s+)?(?:SP|FIPS)\s+[\w.-]+)", head, re.I)
+        return "NIST", (m.group(1).replace(" ", "_") if m else stem)
+    if re.search(r"\bDSP\d{4}\b|\bSPDM\b", head, re.I) or "dsp0" in stem.lower():
+        m = re.search(r"(DSP\d{4})", head + " " + stem, re.I)
+        return "DMTF", (m.group(1).upper() if m else stem)
+    if re.search(r"\bBSI\s+TR-\d+|\bICAO\s+Doc\s+9303\b", head, re.I):
+        return "GOV_ID", stem
+    if "ietf" in str(source_path).lower() or stem.lower().startswith("draft-"):
+        return "IETF_DRAFT", stem
+    return (parent if parent and parent not in {"RAW_SPECS", "TMP"} else "STD"), stem
+
+
+def extract_text_and_bookmarks_from_pdf(pdf_path: Path) -> Tuple[str, List[Tuple[int, str, int]]]:
+    """Extracts layout-preserved text (`pdftotext -layout`, fallback `pymupdf`) and PDF outline bookmarks."""
+    bookmarks: List[Tuple[int, str, int]] = []
+    doc_title_meta = ""
+    try:
+        with pymupdf.open(str(pdf_path)) as doc:
+            doc_title_meta = (doc.metadata or {}).get("title") or ""
+            raw_toc = doc.get_toc() or []
+            for item in raw_toc:
+                if len(item) >= 3:
+                    bookmarks.append((int(item[0]), str(item[1]).strip(), int(item[2])))
+    except Exception as exc:
+        logger.debug("pymupdf outline inspection skipped for %s: %s", pdf_path.name, exc)
+
+    extracted_text = ""
+    pdftotext_bin = shutil.which("pdftotext")
+    if pdftotext_bin:
+        try:
+            proc = subprocess.run(
+                [pdftotext_bin, "-layout", "-enc", "UTF-8", str(pdf_path), "-"],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            if proc.returncode == 0 and proc.stdout.strip():
+                extracted_text = proc.stdout
+        except Exception as exc:
+            logger.debug("pdftotext failed on %s (%s); falling back to pymupdf", pdf_path.name, exc)
+
+    if not extracted_text.strip():
+        pages_txt: List[str] = []
+        with pymupdf.open(str(pdf_path)) as doc:
+            for page in doc:
+                pages_txt.append(page.get_text("text"))
+        extracted_text = "\n\f\n".join(pages_txt)
+
+    if doc_title_meta and doc_title_meta.strip() and doc_title_meta.strip().lower() not in extracted_text[:800].lower():
+        extracted_text = f"{doc_title_meta.strip()}\n\n{extracted_text}"
+
+    return extracted_text, bookmarks
+
+
+def extract_text_from_docx(docx_path: Path) -> str:
+    """Extracts structured plain text (headings, paragraphs, tables) from a `.docx` archive using stdlib."""
+    ns_w = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    lines: List[str] = []
+    with zipfile.ZipFile(docx_path, "r") as zf:
+        if "word/document.xml" not in zf.namelist():
+            return ""
+        xml_bytes = zf.read("word/document.xml")
+    root = ET.fromstring(xml_bytes)
+    body = root.find(f"{ns_w}body")
+    if body is None:
+        return ""
+    for child in body:
+        tag = child.tag
+        if tag == f"{ns_w}p":
+            txt = "".join(t.text or "" for t in child.iter(f"{ns_w}t")).strip()
+            if txt:
+                lines.append(txt)
+        elif tag == f"{ns_w}tbl":
+            for tr in child.findall(f".//{ns_w}tr"):
+                cells = []
+                for tc in tr.findall(f".//{ns_w}tc"):
+                    cell_txt = " ".join("".join(t.text or "" for t in p.iter(f"{ns_w}t")).strip() for p in tc.findall(f".//{ns_w}p"))
+                    if cell_txt.strip():
+                        cells.append(cell_txt.strip())
+                if cells:
+                    lines.append(" | ".join(cells))
+            lines.append("")
+    return "\n".join(lines)
+
+
+def extract_text_from_any_document(doc_path: Path) -> Tuple[str, List[Tuple[int, str, int]]]:
+    """Reads `.pdf`, `.docx`, `.html`, `.md`, or `.txt` into plain UTF-8 text + optional outline bookmarks."""
+    suffix = doc_path.suffix.lower()
+    if suffix == ".pdf":
+        return extract_text_and_bookmarks_from_pdf(doc_path)
+    if suffix == ".docx":
+        return extract_text_from_docx(doc_path), []
+    raw = doc_path.read_text(encoding="utf-8", errors="ignore")
+    if suffix in {".html", ".htm"}:
+        parser = _StructuredHTMLTextExtractor()
+        parser.feed(raw)
+        return parser.get_text(), []
+    if suffix in {".md", ".markdown", ".mediawiki", ".rst"}:
+        # Convert Markdown headings (`## 3.2 Handshake`) cleanly to column-0 numbered/titled lines when numbered
+        converted_lines = []
+        for line in raw.splitlines():
+            m = re.match(r"^(#{1,6})\s+(.+?)\s*$", line)
+            if m:
+                converted_lines.append(m.group(2).strip())
+            else:
+                converted_lines.append(line)
+        return "\n".join(converted_lines), []
+    return raw, []
+
+
+def _bookmarks_to_toc_entries(bookmarks: List[Tuple[int, str, int]]) -> List[TOCSectionEntry]:
+    entries: List[TOCSectionEntry] = []
+    for level, title, page in bookmarks:
+        m = re.match(
+            r"^\s*(?:Section\s+|Clause\s+)?((?:\d+(?:\.\d+)*)|(?:(?:Annex|Appendix)\s+[A-Z](?:\.\d+)*)|(?:[A-Z]\.\d+(?:\.\d+)*))(?:\.|:|\s+-)?\s+(.+)$",
+            title,
+            re.IGNORECASE,
+        )
+        if m:
+            sec_id = re.sub(r"^(?:Appendix|Annex)\s+", "App-", m.group(1).strip(), flags=re.IGNORECASE).rstrip(".")
+            sec_title = m.group(2).strip()
+            entries.append(TOCSectionEntry(section_id=sec_id, title=sec_title, page_number=page, indent_level=max(0, level - 1)))
+    return entries
+
+
+def _looks_like_noise_protocol_section(text: str) -> bool:
+    """Quick $0 gate verifying a split section actually has interactive cryptographic protocol terms."""
+    if len(text.splitlines()) < 15 or len(text) < 500:
+        return False
+    return bool(FRONTMATTER_CRYPTO_REGEX.search(text) and FRONTMATTER_PROTOCOL_REGEX.search(text))
+
+
+def _format_standard_dossier(
+    doc_id: str,
+    org: str,
+    source_doc_name: str,
+    proto_title: str,
+    selected_sections: Sequence[str],
+    abstract_excerpt: str,
+    toc_lines: Sequence[str],
+    body_text: str,
+) -> str:
+    clean_body, _ = debloat_protocol_slice(body_text, is_non_rfc=True)
+    header = [
+        f"Document-ID: {doc_id}",
+        f"Source-Organization: {org}",
+        f"Source-Document: {source_doc_name}",
+        "Category: Standards Track",
+        f"Protocol-Title: {proto_title}",
+        f"Source-Sections: {', '.join(selected_sections) if selected_sections else 'ALL'}",
+        "",
+        "Abstract",
+        "",
+    ]
+    for al in (abstract_excerpt or f"Extracted protocol specification section from {source_doc_name}.").splitlines()[:18]:
+        header.append(f"   {al.strip()}" if al.strip() else "")
+    header.extend(["", "Table of Contents", ""])
+    for tl in toc_lines[:45]:
+        header.append(f"   {tl}")
+    header.extend(["", clean_body.strip(), ""])
+    return "\n".join(header)
+
+
+def _deterministic_split_single_doc(
+    doc_path: Path,
+    out_dir: Path,
+    org_override: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Splits one PDF/DOCX/HTML/MD/TXT specification into 1 or more standalone `.txt` protocol dossiers ($0)."""
+    raw_text, bookmarks = extract_text_and_bookmarks_from_pdf(doc_path) if doc_path.suffix.lower() == ".pdf" else extract_text_from_any_document(doc_path)
+    if not raw_text.strip() or len(raw_text.splitlines()) < 30:
+        return {"source": str(doc_path), "emitted_files": [], "skipped_reason": "empty_or_too_short"}
+
+    org, doc_id_base = _infer_org_and_doc_id(doc_path, raw_text)
+    if org_override:
+        org = org_override
+
+    lines = raw_text.splitlines()
+    # Extract a compact Abstract / Scope snippet
+    abstract_lines: List[str] = []
+    for idx, ln in enumerate(lines[:350]):
+        if re.match(r"^\s*(?:\d+(?:\.\d+)*\s+)?(?:Abstract|Scope|Executive Summary|1\.?\s+Introduction|1\.?\s+Overview)\s*$", ln, re.IGNORECASE):
+            abstract_lines = [l.strip() for l in lines[idx + 1 : idx + 25] if l.strip()]
+            break
+    if not abstract_lines:
+        abstract_lines = [l.strip() for l in lines[:20] if l.strip()][:10]
+    abstract_excerpt = "\n".join(abstract_lines[:12])
+
+    # Build combined TOC (explicit TOC or PDF bookmarks, merging missing top-level bookmarks)
+    toc_entries = parse_table_of_contents(raw_text)
+    bm_entries = _bookmarks_to_toc_entries(bookmarks)
+    if len(bm_entries) > len(toc_entries):
+        toc_entries = bm_entries
+    elif bm_entries:
+        existing_ids = {e.section_id for e in toc_entries}
+        merged_bm = [e for e in bm_entries if e.section_id not in existing_ids]
+        if merged_bm:
+            toc_entries = merged_bm + toc_entries
+
+    # Identify shared cryptographic supporting sections (KDF, algorithms, PDU formats)
+    supporting_ids: List[str] = []
+    for e in toc_entries:
+        t_low = e.title.lower().strip()
+        if any(ex in t_low for ex in _EXCLUDED_SPLIT_HEADINGS):
+            continue
+        if e.section_id.count(".") <= 1 and any(sk in t_low for sk in _SUPPORTING_SECTION_KEYWORDS):
+            if e.section_id not in supporting_ids:
+                supporting_ids.append(e.section_id)
+        if len(supporting_ids) >= 2:
+            break
+
+    # Identify candidate distinct protocol procedures
+    candidate_bundles: List[Tuple[str, str, List[str]]] = []
+    seen_prefixes: set = set()
+    for e in toc_entries:
+        t_low = e.title.lower().strip()
+        if any(t_low == ex or t_low.startswith(ex + " ") or t_low.startswith(ex + ":") for ex in _EXCLUDED_SPLIT_HEADINGS):
+            continue
+        # Avoid creating nested duplicates when parent section is already selected
+        if any(e.section_id == p or e.section_id.startswith(p + ".") for p in seen_prefixes):
+            continue
+        if e.section_id.count(".") <= 2 and any(kw in t_low for kw in _PROTOCOL_HEADING_KEYWORDS):
+            sec_bundle = [e.section_id]
+            for s_id in supporting_ids:
+                if s_id != e.section_id and not s_id.startswith(e.section_id + ".") and not e.section_id.startswith(s_id + "."):
+                    sec_bundle.append(s_id)
+            candidate_bundles.append((sanitize_filename_token(e.title, max_len=48), e.title, sec_bundle))
+            seen_prefixes.add(e.section_id)
+
+    emitted: List[Dict[str, str]] = []
+    out_dir.mkdir(parents=True, exist_ok=True)
+    file_prefix = f"{sanitize_filename_token(org, 18)}_{sanitize_filename_token(doc_id_base, 40)}"
+
+    # If the document is already a focused single-protocol spec (or <= 950 lines and <= 1 bundle) -> emit 1 dossier
+    if len(lines) <= 950 or len(candidate_bundles) <= 1:
+        if not _looks_like_noise_protocol_section(raw_text):
+            return {"source": str(doc_path), "emitted_files": [], "skipped_reason": "no_crypto_protocol_vocab"}
+
+        proto_title = (
+            candidate_bundles[0][1]
+            if candidate_bundles
+            else next((l.strip() for l in lines[:35] if len(l.strip()) > 6 and not re.match(r"^(?:page|ccsds|3gpp|etsi|nist|rfc)\b", l.strip(), re.I)), doc_path.stem)
+        )
+        proto_title = re.sub(r"\s+", " ", proto_title)[:140]
+        if len(lines) <= 1800 or not candidate_bundles:
+            body_text = raw_text
+            sel_secs = ["ALL"]
+        else:
+            try:
+                body_text = slice_verbatim_sections(raw_text, candidate_bundles[0][2])
+                sel_secs = candidate_bundles[0][2]
+            except Exception:
+                body_text = "\n".join(lines[:1800])
+                sel_secs = ["ALL"]
+
+        if not _looks_like_noise_protocol_section(body_text):
+            return {"source": str(doc_path), "emitted_files": [], "skipped_reason": "slice_lacks_crypto"}
+
+        toc_lines = [f"{e.section_id}  {e.title}" for e in toc_entries] or ["1.  Specification"]
+        out_name = f"{file_prefix}.txt"
+        out_path = out_dir / out_name
+        dossier = _format_standard_dossier(
+            doc_id=f"{org}-{doc_id_base}",
+            org=org,
+            source_doc_name=doc_path.name,
+            proto_title=proto_title,
+            selected_sections=sel_secs,
+            abstract_excerpt=abstract_excerpt,
+            toc_lines=toc_lines,
+            body_text=body_text,
+        )
+        out_path.write_text(dossier, encoding="utf-8")
+        emitted.append({
+            "filename": out_name,
+            "path": str(out_path),
+            "org": org,
+            "doc_id": f"{org}-{doc_id_base}",
+            "protocol_title": proto_title,
+            "source_sections": ";".join(sel_secs),
+            "chars": str(len(dossier)),
+            "source_file": str(doc_path),
+        })
+        return {"source": str(doc_path), "emitted_files": emitted, "skipped_reason": ""}
+
+    # Multi-protocol book mode: emit one clean .txt dossier per detected procedure (cap at 30 per single book)
+    toc_map = {e.section_id: e.title for e in toc_entries}
+    for idx_b, (p_slug, p_title, sec_ids) in enumerate(candidate_bundles[:30], 1):
+        try:
+            sliced = slice_verbatim_sections(raw_text, sec_ids)
+        except Exception:
+            continue
+        if len(sliced.splitlines()) > 2600:
+            # Guard against bloated catch-all chapters by truncating only supporting tail or keeping primary section
+            try:
+                sliced = slice_verbatim_sections(raw_text, [sec_ids[0]])
+            except Exception:
+                continue
+        if not _looks_like_noise_protocol_section(sliced):
+            continue
+
+        toc_lines = [f"{sid}  {toc_map.get(sid, proto)}" for sid, proto in [(s, p_title) for s in sec_ids]]
+        out_name = f"{file_prefix}__{p_slug}.txt"
+        out_path = out_dir / out_name
+        if out_path.exists():
+            out_name = f"{file_prefix}__{idx_b:02d}_{p_slug}.txt"
+            out_path = out_dir / out_name
+
+        dossier = _format_standard_dossier(
+            doc_id=f"{org}-{doc_id_base}-{p_slug[:24]}",
+            org=org,
+            source_doc_name=doc_path.name,
+            proto_title=p_title[:140],
+            selected_sections=sec_ids,
+            abstract_excerpt=abstract_excerpt,
+            toc_lines=toc_lines,
+            body_text=sliced,
+        )
+        out_path.write_text(dossier, encoding="utf-8")
+        emitted.append({
+            "filename": out_name,
+            "path": str(out_path),
+            "org": org,
+            "doc_id": f"{org}-{doc_id_base}-{p_slug[:24]}",
+            "protocol_title": p_title[:140],
+            "source_sections": ";".join(sec_ids),
+            "chars": str(len(dossier)),
+            "source_file": str(doc_path),
+        })
+
+    return {
+        "source": str(doc_path),
+        "emitted_files": emitted,
+        "skipped_reason": "" if emitted else "no_crypto_sections_matched",
+    }
+
+
+def _llm_split_single_doc(
+    doc_path: Path,
+    out_dir: Path,
+    model: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Optional `--llm-split` handler using `prompts/00_book_protocol_splitter.md`."""
+    raw_text, bookmarks = extract_text_from_any_document(doc_path)
+    toc_entries = parse_table_of_contents(raw_text) or _bookmarks_to_toc_entries(bookmarks)
+    if not toc_entries:
+        return _deterministic_split_single_doc(doc_path, out_dir)
+
+    prompt_spec = load_prompt_spec(PROMPT_BOOK_SPLITTER)
+    model_name = model or prompt_spec.model
+    system_prompt = build_schema_system_prompt(PROMPT_BOOK_SPLITTER, LLMBookSplitPlan)
+    toc_str = "\n".join(f"{e.section_id} {e.title}" for e in toc_entries[:300])
+    user_prompt = f"Document: {doc_path.name}\n\nTable of Contents:\n{toc_str}"
+
+    try:
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            model_name,
+            temperature=prompt_spec.temperature if prompt_spec.temperature is not None else 0.0,
+            max_tokens=prompt_spec.max_tokens,
+            json_mode=True,
+        )
+        resp = litellm.completion(
+            **llm_kwargs,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            timeout=prompt_spec.timeout,
+        )
+        plan = LLMBookSplitPlan.model_validate(parse_llm_json(resp.choices[0].message.content))
+    except Exception as exc:
+        logger.warning("LLM book splitter failed on %s (%s); using deterministic splitter.", doc_path.name, exc)
+        return _deterministic_split_single_doc(doc_path, out_dir)
+
+    if not plan.protocols:
+        return _deterministic_split_single_doc(doc_path, out_dir)
+
+    org, doc_id_base = _infer_org_and_doc_id(doc_path, raw_text)
+    file_prefix = f"{sanitize_filename_token(org, 18)}_{sanitize_filename_token(doc_id_base, 40)}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    toc_map = {e.section_id: e.title for e in toc_entries}
+    emitted: List[Dict[str, str]] = []
+    for b in plan.protocols:
+        try:
+            sliced = slice_verbatim_sections(raw_text, b.section_ids)
+        except Exception:
+            continue
+        if not _looks_like_noise_protocol_section(sliced):
+            continue
+        p_slug = sanitize_filename_token(b.protocol_slug, max_len=48)
+        out_name = f"{file_prefix}__{p_slug}.txt"
+        out_path = out_dir / out_name
+        dossier = _format_standard_dossier(
+            doc_id=f"{org}-{doc_id_base}-{p_slug[:24]}",
+            org=org,
+            source_doc_name=doc_path.name,
+            proto_title=b.protocol_title[:140],
+            selected_sections=b.section_ids,
+            abstract_excerpt=f"Extracted via LLM book splitter from {doc_path.name}.",
+            toc_lines=[f"{sid}  {toc_map.get(sid, '')}" for sid in b.section_ids],
+            body_text=sliced,
+        )
+        out_path.write_text(dossier, encoding="utf-8")
+        emitted.append({
+            "filename": out_name,
+            "path": str(out_path),
+            "org": org,
+            "doc_id": f"{org}-{doc_id_base}-{p_slug[:24]}",
+            "protocol_title": b.protocol_title[:140],
+            "source_sections": ";".join(b.section_ids),
+            "chars": str(len(dossier)),
+            "source_file": str(doc_path),
+        })
+    return {"source": str(doc_path), "emitted_files": emitted, "skipped_reason": "" if emitted else "no_crypto_sections"}
+
+
+def split_books_directory(
+    targets: Sequence[Path],
+    output_dir: Optional[Path] = None,
+    workers: Optional[int] = None,
+    use_llm: bool = False,
+    model: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Converts and splits one or more files/directories into standalone `.txt` protocol files.
+
+    Uses all available CPU cores via `ProcessPoolExecutor` in deterministic `$0.00` mode.
+    """
+    out_dir = output_dir or (SYSTEM_CONFIG.PROJECT_ROOT / "refrences" / "global_standards" / "protocols_txt")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    candidate_files: List[Path] = []
+    for t in targets:
+        if t.is_file():
+            if t.suffix.lower() in SUPPORTED_BOOK_EXTENSIONS:
+                candidate_files.append(t)
+        elif t.is_dir():
+            for p in sorted(t.rglob("*")):
+                if p.is_file() and p.suffix.lower() in SUPPORTED_BOOK_EXTENSIONS:
+                    candidate_files.append(p)
+
+    # Deduplicate resolved paths
+    seen: set = set()
+    unique_files: List[Path] = []
+    for p in candidate_files:
+        rp = p.resolve()
+        if rp not in seen:
+            seen.add(rp)
+            unique_files.append(p)
+
+    all_emitted: List[Dict[str, str]] = []
+    skipped: List[Tuple[str, str]] = []
+
+    if use_llm:
+        for fpath in unique_files:
+            res = _llm_split_single_doc(fpath, out_dir, model=model)
+            if res["emitted_files"]:
+                all_emitted.extend(res["emitted_files"])
+            else:
+                skipped.append((str(fpath), res.get("skipped_reason", "skipped")))
+    else:
+        max_w = max(1, min(workers or (os.cpu_count() or 8), len(unique_files) or 1))
+        if max_w == 1 or len(unique_files) <= 2:
+            for fpath in unique_files:
+                res = _deterministic_split_single_doc(fpath, out_dir)
+                if res["emitted_files"]:
+                    all_emitted.extend(res["emitted_files"])
+                else:
+                    skipped.append((str(fpath), res.get("skipped_reason", "skipped")))
+        else:
+            with ProcessPoolExecutor(max_workers=max_w) as pool:
+                futs = {pool.submit(_deterministic_split_single_doc, fpath, out_dir): fpath for fpath in unique_files}
+                for fut in as_completed(futs):
+                    fpath = futs[fut]
+                    try:
+                        res = fut.result()
+                        if res["emitted_files"]:
+                            all_emitted.extend(res["emitted_files"])
+                        else:
+                            skipped.append((str(fpath), res.get("skipped_reason", "skipped")))
+                    except Exception as exc:
+                        skipped.append((str(fpath), f"error: {exc}"))
+
+    # Write INDEX.csv inside out_dir
+    index_csv = out_dir / "INDEX.csv"
+    fieldnames = ["filename", "org", "doc_id", "protocol_title", "source_sections", "chars", "source_file", "path"]
+    all_emitted.sort(key=lambda r: r["filename"])
+    with open(index_csv, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(all_emitted)
+
+    return {
+        "input_files_scanned": len(unique_files),
+        "emitted_protocols_count": len(all_emitted),
+        "skipped_count": len(skipped),
+        "output_dir": str(out_dir),
+        "index_csv": str(index_csv),
+        "emitted_files": all_emitted,
+        "skipped": skipped,
+    }
+```
+
+---
+
+### `src/document_ingestion/programmatic_debloater.py`
+
+*sha256:`12025a60210b` · 162 lines · 6.4 KB (~1,631 tokens) · lang:`python`*
+
+```python
+"""Zero-Cost Deterministic Protocol Specification De-Bloater.
+
+Strips mechanical formatting noise, running page headers/footers, non-protocol
+back-matter, and broken PDF table whitespace at $0.00 cost BEFORE `--rfc-style`
+or Stage 2 extraction sees the slice—never mutating field names, variable names,
+normative security clauses, cryptographic formulas, or ASCII ladder diagrams.
+"""
+
+from __future__ import annotations
+
+import re
+from typing import Any, Dict, Tuple
+
+# Lines preserved untouched because whitespace encodes column/arrow alignment
+_ASCII_DIAGRAM_LINE_RE = re.compile(
+    r"(?:--->|<---|<-->|===>|<===|\+--\+|\+---|\|.*\|)"
+)
+
+# Mechanical pagination headers/footers across IETF RFCs and global SDOs
+_PAGINATION_LINE_PATTERNS = [
+    re.compile(r"^\s*\[Page\s+\d+\]\s*$", re.IGNORECASE),
+    re.compile(r"^\s*Page\s+\d+(?:\s+of\s+\d+)?\s*$", re.IGNORECASE),
+    re.compile(r"^\s*-\s*\d+\s*-\s*$"),
+    re.compile(r"^\s*RFC\s+\d+\s+.*\b(?:19|20)\d{2}\s*$"),
+    re.compile(r"^\s*Internet-Draft\s+.*(?:Expires|19\d{2}|20\d{2}).*$", re.IGNORECASE),
+    re.compile(r"^\s*CCSDS\s+\d+\.\d+-[A-Z]-\d+(?:\s+Page\s+[\dA-Za-z-]+.*)?$", re.IGNORECASE),
+    re.compile(r"^\s*Page\s+[A-Z0-9-]+\s+CCSDS\s+\d+\.\d+-[A-Z]-\d+.*$", re.IGNORECASE),
+    re.compile(r"^\s*(?:3GPP\s+TS|ETSI\s+(?:TS|EN|GS)|ITU-T\s+Rec\.?|DMTF\s+DSP\d+)\s+[^\n]{0,90}\s*$"),
+    re.compile(r"^\s*(?:3GPP|ETSI)\s+\d+(?:\.\d+)*\s+Release\s+\d+.*$", re.IGNORECASE),
+    re.compile(r"^\s*Copyright\s*(?:\(c\)|©)?\s*(?:19|20)\d{2}.*(?:All rights reserved|IETF Trust|ETSI|CCSDS|3GPP|DMTF|Microsoft|NIST|EMVCo|FIDO).*$", re.IGNORECASE),
+    re.compile(r"^\s*(?:CONFIDENTIAL|PROPRIETARY|FOR INFORMATION ONLY)\s*$", re.IGNORECASE),
+    re.compile(r"^\s*[A-Za-z0-9._-]+\s+(?:Standards Track|Informational|Experimental|Best Current Practice)\s+\[Page\s+\d+\]\s*$", re.IGNORECASE),
+]
+
+# Non-protocol administrative tail headings that add zero cryptographic protocol semantics
+_ADMIN_SECTION_START_RE = re.compile(
+    r"^\s*(?:(?:\d+(?:\.\d+)*|[A-Z](?:\.\d+)*)\.?[\s\-]+)?(?:"
+    r"Change\s+History|Revision\s+History|Document\s+History|"
+    r"Acknowledg(?:e)?ments|Bibliography|Informative\s+References|"
+    r"Author(?:'s|s')?\s+Address(?:es)?|Editor(?:'s|s')?\s+Address(?:es)?|"
+    r"Intellectual\s+Property(?:\s+Rights)?|Patent\s+Statement|"
+    r"Full\s+Copyright\s+Statement|Disclaimer\s+of\s+Validity|"
+    r"Contributors?"
+    r")\s*:?\s*$",
+    re.IGNORECASE,
+)
+
+# Next structural numbered heading that terminates a skipped admin subsection
+_NUMBERED_HEADING_RE = re.compile(
+    r"^\s*(?:(?:\d+(?:\.\d+)*)|(?:Appendix\s+[A-Z](?:\.\d+)*)|(?:Annex\s+[A-Z](?:\.\d+)*))(?:\.|\s+-)?\s+[A-Z]"
+)
+
+# Pure decorative horizontal divider or empty table grid row
+_EMPTY_TABLE_OR_RULE_RE = re.compile(
+    r"^\s*(?:\|(?:[\s\-\+\=_\|]*\|)+\s*|[-=_~*]{12,})\s*$"
+)
+_TOC_DOT_LEADER_LINE_RE = re.compile(
+    r"^(?!.*(?:--->|<---|===)).*\s(?:\.{4,}|(?:\.\s+){4,})\s*\d+\s*$"
+)
+_EXCESS_SPACES_RE = re.compile(r"(?<=\S)[ \t]{6,}(?=\S)")
+
+
+def _is_pagination_noise(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped:
+        return False
+    for pat in _PAGINATION_LINE_PATTERNS:
+        if pat.match(line):
+            return True
+    if _EMPTY_TABLE_OR_RULE_RE.match(line):
+        return True
+    if _TOC_DOT_LEADER_LINE_RE.match(line):
+        return True
+    return False
+
+
+def debloat_protocol_slice(raw_slice: str, is_non_rfc: bool = False) -> Tuple[str, Dict[str, Any]]:
+    """Deterministically de-bloats a verbatim protocol slice at $0.00 cost.
+
+    Preserves 100% of normative specification sentences, field/variable names,
+    cryptographic formulas, and ASCII ladder diagrams while stripping pagination
+    headers/footers, form-feed artifacts, broken PDF whitespace, dot leaders,
+    and purely administrative trailing sections.
+    """
+    if not raw_slice:
+        return "", {
+            "raw_chars": 0,
+            "debloated_chars": 0,
+            "saved_chars": 0,
+            "saved_pct": 0.0,
+            "raw_lines": 0,
+            "debloated_lines": 0,
+        }
+
+    raw_chars = len(raw_slice)
+    normalized_text = raw_slice.replace("\r\n", "\n").replace("\r", "\n").replace("\x0c", "\n")
+    raw_lines = normalized_text.splitlines()
+
+    filtered_lines = []
+    skipping_admin_block = False
+    blank_streak = 0
+
+    for idx, line in enumerate(raw_lines):
+        stripped = line.strip()
+
+        if skipping_admin_block:
+            if _NUMBERED_HEADING_RE.match(line) and not _ADMIN_SECTION_START_RE.match(line):
+                skipping_admin_block = False
+            else:
+                continue
+
+        if _ADMIN_SECTION_START_RE.match(line):
+            skipping_admin_block = True
+            continue
+
+        if _is_pagination_noise(line):
+            continue
+
+        # Strip standalone indented PDF page numbers isolated by blank lines (e.g. "    4")
+        if re.match(r"^\s{2,}\d{1,4}\s*$", line):
+            prev_blank = idx == 0 or not raw_lines[idx - 1].strip()
+            next_blank = idx + 1 == len(raw_lines) or not raw_lines[idx + 1].strip()
+            if is_non_rfc or (prev_blank and next_blank):
+                continue
+
+        if not stripped:
+            blank_streak += 1
+            if blank_streak <= 1:
+                filtered_lines.append("")
+            continue
+
+        blank_streak = 0
+
+        # Preserve indentation and spacing on ASCII message ladders and box diagrams
+        if _ASCII_DIAGRAM_LINE_RE.search(line):
+            filtered_lines.append(line.rstrip())
+            continue
+
+        # Compress wide intra-line PDF column gaps without altering prose tokens
+        compacted = _EXCESS_SPACES_RE.sub("  ", line.rstrip())
+        if is_non_rfc and compacted.startswith("          "):
+            # Trim excessive uniform PDF left margins while keeping shallow structural indent
+            compacted = "    " + compacted.lstrip()
+        filtered_lines.append(compacted)
+
+    cleaned_text = "\n".join(filtered_lines).strip()
+    if cleaned_text:
+        cleaned_text += "\n"
+
+    debloated_chars = len(cleaned_text)
+    saved_chars = max(0, raw_chars - debloated_chars)
+    saved_pct = round((saved_chars / raw_chars) * 100.0, 2) if raw_chars > 0 else 0.0
+
+    stats: Dict[str, Any] = {
+        "raw_chars": raw_chars,
+        "debloated_chars": debloated_chars,
+        "saved_chars": saved_chars,
+        "saved_pct": saved_pct,
+        "raw_lines": len(raw_lines),
+        "debloated_lines": len(cleaned_text.splitlines()),
+    }
+    return cleaned_text, stats
+```
+
+---
+
 ### `src/document_ingestion/protocol_applicability_gate.py`
 
 *sha256:`bc190bacc005` · 142 lines · 5.3 KB (~1,358 tokens) · lang:`python`*
@@ -6136,7 +7127,7 @@ def evaluate_protocol_applicability(
 
 ### `src/document_ingestion/rfc_header_filter.py`
 
-*sha256:`ee1e8df89d04` · 183 lines · 7.2 KB (~1,855 tokens) · lang:`python`*
+*sha256:`095a0339efcc` · 201 lines · 8.5 KB (~2,181 tokens) · lang:`python`*
 
 ```python
 """RFC Header and Frontmatter Metadata Filter (Tier 0 Filter)."""
@@ -6201,7 +7192,9 @@ FRONTMATTER_CRYPTO_REGEX = re.compile(
     r"authentication|authenticated|authenticator|certificate|x\.509|pkix|"
     r"tls|dtls|ipsec|ike|ikev2|isakmp|oakley|kerberos|edhoc|oscore|wireguard|ssh|secsh|"
     r"sasl|gss-api|gssapi|eap|pana|hip\b|mls\b|acme|ntpsec|nts\b|dnscurve|dnssec|rpki|"
-    r"s/mime|openpgp|cms\b|cose|jose|jwt|jws|jwe|oauth|openid|spake|pake|srp\b|ake\b)\b",
+    r"s/mime|openpgp|cms\b|cose|jose|jwt|jws|jwe|oauth|openid|spake|pake|srp\b|ake\b|"
+    r"rekeying|otar|attestation|spdm|suci|apdu|cryptogram|commissioning|provisioning|"
+    r"pairing|noise\b|x3dh|pqxdh|double\s+ratchet|olm|megolm)\b",
     re.IGNORECASE,
 )
 
@@ -6221,20 +7214,27 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
 
     # 1. Line count check (trivial errata / 1-page stubs)
     total_lines = len(raw_rfc_text.splitlines())
-    if total_lines < 60:
+    is_non_rfc_hint = bool(re.search(r"^Document-ID:", header_text, re.MULTILINE | re.IGNORECASE)) and not bool(
+        re.search(r"Request for Comments:\s*#?\d+", header_text, re.IGNORECASE)
+    )
+    min_lines_threshold = 30 if is_non_rfc_hint else 60
+    if total_lines < min_lines_threshold:
         logger.info("Tier 0 REJECT: File has only %d lines (trivial stub)", total_lines)
         return HeaderFilterResult(
             is_eligible=False,
             disqualification_reason=f"Document is too short to be a protocol ({total_lines} lines)",
         )
 
-    # 2. Extract RFC ID
+    # 2. Extract RFC ID (or standardized non-RFC Document-ID)
     rfc_match = re.search(r"Request for Comments:\s*#?(\d+)", header_text, re.IGNORECASE)
-    rfc_id = f"RFC {rfc_match.group(1)}" if rfc_match else None
+    doc_id_match = re.search(r"^Document-ID:\s*(.+)$", header_text, re.MULTILINE | re.IGNORECASE)
+    proto_title_match = re.search(r"^Protocol-Title:\s*(.+)$", header_text, re.MULTILINE | re.IGNORECASE)
+    is_non_rfc_spec = bool(doc_id_match) and not bool(rfc_match)
+    rfc_id = f"RFC {rfc_match.group(1)}" if rfc_match else (doc_id_match.group(1).strip() if doc_id_match else None)
 
     # 3. Extract Category (stop at multiple spaces before right-column date)
     category_match = re.search(r"Category:\s*([A-Za-z\s]+?)(?:\s{2,}|\n|$)", header_text, re.IGNORECASE)
-    category = category_match.group(1).strip() if category_match else "Unknown"
+    category = category_match.group(1).strip() if category_match else ("Standards Track" if is_non_rfc_spec else "Unknown")
 
     for dis_cat in DISQUALIFIED_CATEGORIES:
         if dis_cat.lower() in category.lower():
@@ -6286,9 +7286,17 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
         title = " ".join(title_candidate_lines)
 
     # 5. Check Title Keywords
+    if proto_title_match and not title:
+        title = proto_title_match.group(1).strip()
     if title:
         title_lower = title.lower()
-        for kw in DISQUALIFIED_TITLE_KEYWORDS:
+        _non_rfc_allowed = {"architecture", "framework", "framework for", "security mechanisms", "data model"}
+        _active_keywords = (
+            [kw for kw in DISQUALIFIED_TITLE_KEYWORDS if kw.strip().lower() not in _non_rfc_allowed]
+            if is_non_rfc_spec
+            else DISQUALIFIED_TITLE_KEYWORDS
+        )
+        for kw in _active_keywords:
             if kw in title_lower:
                 logger.info("Tier 0 REJECT: Title '%s' matches blacklist keyword '%s'", title, kw)
                 return HeaderFilterResult(
@@ -6300,7 +7308,8 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
                 )
 
     # 6. Fast Frontmatter / Abstract / TOC Cryptographic & Protocol Vocabulary Gate
-    frontmatter_slice = "\n".join(raw_rfc_text.splitlines()[:350])
+    frontmatter_limit = 1200 if is_non_rfc_spec else 350
+    frontmatter_slice = "\n".join(raw_rfc_text.splitlines()[:frontmatter_limit])
     if not FRONTMATTER_CRYPTO_REGEX.search(frontmatter_slice) or not FRONTMATTER_PROTOCOL_REGEX.search(frontmatter_slice):
         logger.info(
             "Tier 0 REJECT: %s ('%s') lacks cryptographic/authentication protocol vocabulary in frontmatter/TOC",
@@ -6326,9 +7335,298 @@ def filter_rfc_header(raw_rfc_text: str) -> HeaderFilterResult:
 
 ---
 
+### `src/document_ingestion/rfc_style_distiller.py`
+
+*sha256:`546b74249730` · 280 lines · 10.7 KB (~2,734 tokens) · lang:`python`*
+
+````python
+"""Lossless RFC-Style Protocol Slice Distiller & Shared-Stem Companion Cache.
+
+Produces `<stem>__rfc_style.txt` paired side-by-side with `<stem>__verbatim.txt`
+and `<stem>__debloated.txt` inside per-protocol directories:
+`refrences/global_standards/paired_slices/<stem>/` and `<run>/<stem>/<stem>_slices/`,
+linked by `Verbatim-SHA256` for $0.00 cross-run cache hits.
+"""
+
+from __future__ import annotations
+
+import csv
+import datetime as dt
+import hashlib
+import re
+from pathlib import Path
+from typing import Dict, Optional, Tuple
+import litellm
+
+from src.document_ingestion.programmatic_debloater import debloat_protocol_slice
+from src.logging_config import get_pipeline_logger
+from src.prompt_loader import (
+    PROMPT_RFC_STYLE_DISTILLER,
+    load_prompt_spec,
+)
+from src.system_config import SYSTEM_CONFIG
+
+logger = get_pipeline_logger("rfc_style_distiller")
+
+PAIRED_INDEX_HEADER = [
+    "stem",
+    "doc_id",
+    "protocol_title",
+    "source_file",
+    "verbatim_file",
+    "debloated_file",
+    "rfc_style_file",
+    "verbatim_sha256",
+    "raw_chars",
+    "debloated_chars",
+    "rfc_style_chars",
+    "distiller_model",
+    "updated_at_utc",
+]
+
+_HEADER_DIVIDER = "=" * 72
+
+
+def get_paired_slices_dir(paired_dir: Optional[Path] = None) -> Path:
+    target = paired_dir or (SYSTEM_CONFIG.PROJECT_ROOT / "refrences" / "global_standards" / "paired_slices")
+    target.mkdir(parents=True, exist_ok=True)
+    return target
+
+
+def sanitize_paired_stem(raw_stem: str) -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9._-]+", "_", (raw_stem or "protocol").strip()).strip("_.")
+    return (cleaned[:96] or "protocol").lower()
+
+
+def compute_text_sha256(text: str) -> str:
+    return hashlib.sha256((text or "").encode("utf-8")).hexdigest()
+
+
+def _parse_cached_sha256(cached_text: str) -> Optional[str]:
+    for line in cached_text.splitlines()[:20]:
+        if line.startswith("Verbatim-SHA256:"):
+            return line.split(":", 1)[1].strip().lower()
+    return None
+
+
+def _strip_distiller_preamble(raw_response: str) -> str:
+    text = (raw_response or "").strip()
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE).strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:text|txt|markdown|md|rfc)?\s*\n?", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\n?```\s*$", "", text).strip()
+    return text
+
+
+def _upsert_paired_index(index_path: Path, entry: Dict[str, str]) -> None:
+    rows = []
+    if index_path.exists() and index_path.stat().st_size > 0:
+        try:
+            with open(index_path, "r", encoding="utf-8", errors="ignore", newline="") as f:
+                rows = [r for r in csv.DictReader(f) if r.get("stem")]
+        except Exception:
+            rows = []
+
+    updated = False
+    for idx, row in enumerate(rows):
+        if row.get("stem") == entry["stem"]:
+            rows[idx] = entry
+            updated = True
+            break
+    if not updated:
+        rows.append(entry)
+
+    tmp = index_path.with_suffix(".csv.tmp")
+    with open(tmp, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=PAIRED_INDEX_HEADER, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+    tmp.replace(index_path)
+
+
+def synthesize_or_load_rfc_style_slice(
+    stem: str,
+    doc_id: str,
+    protocol_name: str,
+    verbatim_slice: str,
+    debloated_slice: Optional[str] = None,
+    source_file: Optional[Path] = None,
+    selected_sections: Optional[list] = None,
+    run_output_dir: Optional[Path] = None,
+    paired_dir: Optional[Path] = None,
+    model: Optional[str] = None,
+    refresh: bool = False,
+) -> Tuple[str, Dict[str, object]]:
+    """Generates or loads cached `<stem>__rfc_style.txt` paired with `<stem>__verbatim.txt`.
+
+    Returns `(rfc_style_text, metadata_dict)` where `metadata_dict["cache_hit"]` is True
+    when the cached companion in `paired_slices/` matched `Verbatim-SHA256` at $0.00 cost.
+    """
+    canon_stem = sanitize_paired_stem(stem)
+    cache_dir = get_paired_slices_dir(paired_dir)
+    proto_cache_dir = cache_dir / canon_stem
+    proto_cache_dir.mkdir(parents=True, exist_ok=True)
+    verbatim_sha = compute_text_sha256(verbatim_slice)
+
+    if debloated_slice is None:
+        is_non_rfc = not re.match(r"^rfc\s*\d+$", (doc_id or "").strip(), re.IGNORECASE)
+        debloated_slice, debloat_stats = debloat_protocol_slice(verbatim_slice, is_non_rfc=is_non_rfc)
+    else:
+        debloat_stats = {
+            "raw_chars": len(verbatim_slice),
+            "debloated_chars": len(debloated_slice),
+            "saved_chars": max(0, len(verbatim_slice) - len(debloated_slice)),
+        }
+
+    cache_verbatim_path = proto_cache_dir / f"{canon_stem}__verbatim.txt"
+    cache_debloated_path = proto_cache_dir / f"{canon_stem}__debloated.txt"
+    cache_rfc_style_path = proto_cache_dir / f"{canon_stem}__rfc_style.txt"
+
+    # Auto-migrate legacy flat paired_slices/<stem>__*.txt into paired_slices/<stem>/
+    for suffix, dest_path in (
+        ("verbatim", cache_verbatim_path),
+        ("debloated", cache_debloated_path),
+        ("rfc_style", cache_rfc_style_path),
+    ):
+        legacy_flat = cache_dir / f"{canon_stem}__{suffix}.txt"
+        if legacy_flat.exists() and not dest_path.exists():
+            legacy_flat.replace(dest_path)
+
+    prompt_spec = load_prompt_spec(PROMPT_RFC_STYLE_DISTILLER)
+    model_name = (model or "").strip() or prompt_spec.model
+
+    cache_hit = False
+    rfc_style_text = ""
+
+    if not refresh and cache_rfc_style_path.exists():
+        existing = cache_rfc_style_path.read_text(encoding="utf-8", errors="ignore")
+        cached_sha = _parse_cached_sha256(existing)
+        if cached_sha == verbatim_sha and existing.strip():
+            rfc_style_text = existing
+            cache_hit = True
+            logger.info(
+                "RFC-Style Cache HIT ($0.00): %s/%s (sha256=%s...)",
+                canon_stem,
+                cache_rfc_style_path.name,
+                verbatim_sha[:12],
+            )
+
+    if not cache_hit:
+        logger.info(
+            "Synthesizing RFC-style slice for %s ('%s') via %s (input %d -> %d debloated chars)",
+            doc_id,
+            protocol_name,
+            model_name,
+            len(verbatim_slice),
+            len(debloated_slice),
+        )
+        sections_str = ", ".join(selected_sections or []) or "all"
+        user_prompt = (
+            f"Document ID: {doc_id}\n"
+            f"Protocol Name: {protocol_name}\n"
+            f"Source Sections: {sections_str}\n\n"
+            "Convert the following $0-debloated verbatim specification slice into the clean RFC-Style "
+            "cryptographic specification format without altering any field names, cryptographic formulas, "
+            "or omitted checks:\n\n"
+            f"{debloated_slice}"
+        )
+        llm_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            model_name,
+            temperature=prompt_spec.temperature if prompt_spec.temperature is not None else 0.0,
+            max_tokens=prompt_spec.max_tokens,
+            json_mode=False,
+        )
+        response = litellm.completion(
+            **llm_kwargs,
+            messages=[
+                {"role": "system", "content": prompt_spec.body},
+                {"role": "user", "content": user_prompt},
+            ],
+            timeout=prompt_spec.timeout,
+        )
+        from src.cost_tracker import GLOBAL_COST_TRACKER
+        GLOBAL_COST_TRACKER.record_llm_call(response, role="distiller", model_name=model_name, stage=1)
+
+        body = _strip_distiller_preamble(response.choices[0].message.content or "")
+        if not body:
+            body = debloated_slice
+
+        try:
+            portable_src = str(source_file.resolve().relative_to(SYSTEM_CONFIG.PROJECT_ROOT.resolve())) if source_file else ""
+        except Exception:
+            portable_src = str(source_file or "")
+
+        provenance_header = "\n".join([
+            f"Document-ID: {doc_id}",
+            f"Protocol-Title: {protocol_name}",
+            f"Source-File: {portable_src}",
+            f"Verbatim-Companion: {canon_stem}__verbatim.txt",
+            f"Debloated-Companion: {canon_stem}__debloated.txt",
+            f"Verbatim-SHA256: {verbatim_sha}",
+            f"Source-Sections: {sections_str}",
+            f"Distiller-Model: {model_name}",
+            _HEADER_DIVIDER,
+            "",
+        ])
+        rfc_style_text = provenance_header + body.rstrip() + "\n"
+
+        # Persist paired companions inside per-protocol cache directory
+        cache_verbatim_path.write_text(verbatim_slice, encoding="utf-8")
+        cache_debloated_path.write_text(debloated_slice, encoding="utf-8")
+        cache_rfc_style_path.write_text(rfc_style_text, encoding="utf-8")
+
+        _upsert_paired_index(
+            cache_dir / "PAIRED_INDEX.csv",
+            {
+                "stem": canon_stem,
+                "doc_id": doc_id,
+                "protocol_title": protocol_name,
+                "source_file": portable_src,
+                "verbatim_file": f"{canon_stem}/{cache_verbatim_path.name}",
+                "debloated_file": f"{canon_stem}/{cache_debloated_path.name}",
+                "rfc_style_file": f"{canon_stem}/{cache_rfc_style_path.name}",
+                "verbatim_sha256": verbatim_sha,
+                "raw_chars": str(len(verbatim_slice)),
+                "debloated_chars": str(len(debloated_slice)),
+                "rfc_style_chars": str(len(rfc_style_text)),
+                "distiller_model": model_name,
+                "updated_at_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            },
+        )
+    else:
+        if not cache_verbatim_path.exists():
+            cache_verbatim_path.write_text(verbatim_slice, encoding="utf-8")
+        if not cache_debloated_path.exists():
+            cache_debloated_path.write_text(debloated_slice, encoding="utf-8")
+
+    run_rfc_style_path: Optional[Path] = None
+    if run_output_dir is not None:
+        run_slices_dir = run_output_dir / f"{canon_stem}_slices"
+        run_slices_dir.mkdir(parents=True, exist_ok=True)
+        (run_slices_dir / f"{canon_stem}__verbatim.txt").write_text(verbatim_slice, encoding="utf-8")
+        (run_slices_dir / f"{canon_stem}__debloated.txt").write_text(debloated_slice, encoding="utf-8")
+        run_rfc_style_path = run_slices_dir / f"{canon_stem}__rfc_style.txt"
+        run_rfc_style_path.write_text(rfc_style_text, encoding="utf-8")
+
+    return rfc_style_text, {
+        "stem": canon_stem,
+        "cache_hit": cache_hit,
+        "distiller_model": model_name,
+        "verbatim_sha256": verbatim_sha,
+        "debloat_stats": debloat_stats,
+        "cache_rfc_style_path": str(cache_rfc_style_path),
+        "run_rfc_style_path": str(run_rfc_style_path) if run_rfc_style_path else None,
+        "verbatim_chars": len(verbatim_slice),
+        "debloated_chars": len(debloated_slice),
+        "rfc_style_chars": len(rfc_style_text),
+    }
+````
+
+---
+
 ### `src/document_ingestion/rfc_toc_parser.py`
 
-*sha256:`4920983a2cc9` · 127 lines · 5.8 KB (~1,495 tokens) · lang:`python`*
+*sha256:`22b2775082d0` · 130 lines · 6.2 KB (~1,575 tokens) · lang:`python`*
 
 ```python
 """RFC Table of Contents (TOC) Parser."""
@@ -6364,7 +7662,7 @@ TOC_HEADER_PATTERN = re.compile(r"^\s*(Table of Contents|CONTENTS)\s*$", re.IGNO
 TOC_LINE_PATTERN = re.compile(
     r"^(?P<indent>\s*)(?P<sec_id>(?:(?:[0-9]+(?:\.[0-9]+)*)|(?:Appendix\s+[A-Z](?:\.[0-9]+)*)|(?:[A-Z]\.[0-9]+)|(?:[A-Z](?=\.\s+\S+.*(?:\.{2,}|\.\s+\.)))))(?:\.|\s+-)?\s+"
     r"(?P<title>.+?)"
-    r"(?:\s*(?:\.{2,}|(?:\.\s+){2,}|\.\s+)\s*(?P<page>[0-9]+))?\s*$",
+    r"(?:\s*(?:\.{2,}|(?:\.\s+){2,}|\.\s+|\s{2,})\s*(?P<page>[0-9]+))?\s*$",
     re.IGNORECASE,
 )
 
@@ -6375,7 +7673,7 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
     toc_start_idx: Optional[int] = None
 
     # Step 1: Find the TOC Header within the first 250 lines
-    for idx, line in enumerate(lines[:250]):
+    for idx, line in enumerate(lines[:1500]):
         if TOC_HEADER_PATTERN.match(line):
             toc_start_idx = idx + 1
             break
@@ -6389,10 +7687,12 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
         # Scan forward until the first section begins at column 0 (e.g. "1.  Introduction")
         for line in lines[toc_start_idx:]:
             # If we hit the actual start of Section 1 at column 0, TOC has ended
-            if re.match(r"^1(?:\.|\s+-)?\s+[A-Z]", line):
+            if re.match(r"^1(?:\.|\s+-)?\s+[A-Z0-9]", line) and not re.search(
+                r"(?:\.{2,}|(?:\.\s+){2,}|[A-Za-z\)\]]\s{2,})\s*[0-9]+\s*$", line.strip()
+            ):
                 break
             # Or if we hit 500 entries without stopping
-            if len(entries) > 500:
+            if len(entries) > 1500:
                 break
 
             match = TOC_LINE_PATTERN.match(line)
@@ -6417,8 +7717,9 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
                 if (
                     "\x0c" in line
                     or re.search(r"\[Page\s+\d+\]", stripped_line, re.IGNORECASE)
+                    or re.search(r"^Page\s+\d+(?:\s+of\s+\d+)?$", stripped_line, re.IGNORECASE)
                     or re.search(r"\b(Standards Track|Informational|Experimental)\b", stripped_line, re.IGNORECASE)
-                    or re.search(r"^RFC\s+\d+", stripped_line, re.IGNORECASE)
+                    or re.search(r"^(?:RFC\s+\d+|CCSDS\s+\d+\.\d+-[A-Z]-\d+|3GPP\s+TS\s+\d|ETSI\s+(?:TS|EN|GS)\s+)", stripped_line, re.IGNORECASE)
                 ):
                     continue
 
@@ -6445,7 +7746,7 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
     if not entries:
         logger.info("No explicit TOC block found. Scanning body headings for synthetic TOC...")
         body_heading_pattern = re.compile(
-            r"^(?P<sec_id>(?:[0-9]+\.[0-9]+(?:\.[0-9]+)*(?:\.|\s+-)?)|(?:[0-9]+(?:\.|\s+-))|(?:Appendix\s+[A-Z](?:\.[0-9]+)*\.?)|(?:[A-Z]\.[0-9]+\.?))\s+"
+            r"^(?P<sec_id>(?:[0-9]+\.[0-9]+(?:\.[0-9]+)*(?:\.|\s+-)?)|(?:[0-9]+(?:\.|\s+-|\s(?=\s+[A-Za-z0-9])))|(?:Appendix\s+[A-Z](?:\.[0-9]+)*\.?)|(?:[A-Z]\.[0-9]+\.?))\s+"
             r"(?P<title>[A-Za-z0-9][A-Za-z0-9\s\-_,:()'\"/]{2,70})$"
         )
         for line in lines:
@@ -6464,7 +7765,7 @@ def parse_table_of_contents(raw_rfc_text: str) -> List[TOCSectionEntry]:
 
 ### `src/document_ingestion/verbatim_section_slicer.py`
 
-*sha256:`ebee5f9bcfae` · 217 lines · 9.2 KB (~2,349 tokens) · lang:`python`*
+*sha256:`f62969f736db` · 235 lines · 10.1 KB (~2,593 tokens) · lang:`python`*
 
 ```python
 """Verbatim RFC Section Boundary Slicer."""
@@ -6480,17 +7781,23 @@ _ANY_SECTION_HEADING_RE = re.compile(
     r"^(?:(\d+(?:\.\d+)+)(?:\.|\s+-)?|(\d+)(?:\.|\s+-)|(\d+)|Appendix\s+([A-Z](?:\.\d+)*)\.?|([A-Z](?:\.\d+)+)\.?|([A-Z])\.)\s+"
     r"(?=[A-Za-z0-9\"'\(\[])"
 )
-_TOC_DOT_LEADER_RE = re.compile(r"(?:\.{3,}|(?:\.\s+){3,})\s*\d+\s*$")
+_TOC_DOT_LEADER_RE = re.compile(
+    r"(?:(?:\.{2,}|(?:\.\s+){2,})\s*\d+|[A-Za-z\)\]]\s{2,}\d{1,4})\s*$"
+)
 
 
 def _is_rfc_page_break(line: str) -> bool:
-    """Detects RFC pagination artifacts (form feeds, header/footer lines)."""
+    """Detects RFC and global SDO pagination artifacts (form feeds, header/footer lines)."""
     stripped = line.strip()
     if "\x0c" in line:
         return True
     if re.search(r"\[Page\s+\d+\]$", stripped, re.IGNORECASE):
         return True
+    if re.search(r"^Page\s+\d+(?:\s+of\s+\d+)?$", stripped, re.IGNORECASE):
+        return True
     if re.search(r"^RFC\s+\d+", stripped, re.IGNORECASE):
+        return True
+    if re.search(r"^(?:CCSDS\s+\d+\.\d+-[A-Z]-\d+|Page\s+[A-Z0-9-]+\s+CCSDS|3GPP\s+TS\s+\d|ETSI\s+(?:TS|EN|GS)\s+)", stripped, re.IGNORECASE):
         return True
     return False
 
@@ -6518,7 +7825,7 @@ def _find_section_start(lines: List[str], section_id: str, search_from_line: int
         )
     else:
         pattern = re.compile(
-            rf"^(?:{escaped_id}(?:\.|\s+-)\s+[A-Za-z0-9\"'\(\[]|{escaped_id}\s+[A-Za-z]|Appendix\s+{escaped_id}\.?\s+[A-Za-z0-9\"'\(\[])",
+            rf"^(?:{escaped_id}(?:\.|\s+-)\s+[A-Za-z0-9\"'\(\[]|{escaped_id}\s{{2,}}[A-Za-z0-9\"'\(\[]|{escaped_id}\s+[A-Za-z]|Appendix\s+{escaped_id}\.?\s+[A-Za-z0-9\"'\(\[])",
             re.IGNORECASE,
         )
 
@@ -6540,8 +7847,12 @@ def _find_section_end(lines: List[str], section_id: str, start_line_idx: int) ->
             continue
         match = _ANY_SECTION_HEADING_RE.match(line)
         if match:
-            # If matched group(3) (bare integer without dot), require uppercase letter start for title
-            if match.group(3) and not re.match(r"^\d+\s+[A-Z]", line):
+            # Skip numbered prose list sentences (e.g. "1. The initiator computes HMAC and sends it.")
+            stripped_cand = line.strip()
+            if len(stripped_cand) > 75 and stripped_cand.endswith("."):
+                continue
+            # If matched group(3) (bare integer without dot), require uppercase or 2+ spaces + alphanumeric start
+            if match.group(3) and not re.match(r"^\d+(?:\s+[A-Z]|\s{2,}[0-9][A-Za-z])", line):
                 continue
             found_id = (
                 match.group(1)
@@ -6552,10 +7863,12 @@ def _find_section_end(lines: List[str], section_id: str, start_line_idx: int) ->
                 or match.group(6)
                 or ""
             ).rstrip(".")
+            if norm_id.isdigit() and found_id.isdigit() and int(found_id) < int(norm_id):
+                continue
             if found_id and found_id.lower() != norm_id.lower() and not found_id.lower().startswith(sub_prefix.lower()):
                 return idx
 
-    return min(start_line_idx + 600, len(lines))
+    return min(start_line_idx + 1500, len(lines))
 
 
 def _slice_unnumbered_rfc_body(lines: List[str], clean_page_breaks: bool = True) -> str:
@@ -6577,7 +7890,7 @@ def _slice_unnumbered_rfc_body(lines: List[str], clean_page_breaks: bool = True)
         ):
             end_idx = idx
             break
-    end_idx = min(end_idx, start_idx + 600)
+    end_idx = min(end_idx, start_idx + 1500)
     sliced = lines[start_idx:end_idx]
     if clean_page_breaks:
         sliced = [line for line in sliced if not _is_rfc_page_break(line)]
@@ -6600,10 +7913,16 @@ def slice_verbatim_sections(
         logger.warning("No target section IDs provided for slicing")
         return ""
 
-    # Step 1: Skip past the Table of Contents to avoid matching TOC entries as section starts
+    # Step 1: Skip past the Table of Contents (including internal PDF Contents blocks)
+    toc_scan_start = 0
+    for idx, line in enumerate(lines[:300]):
+        if re.match(r"^\s*(?:Table of Contents|Contents)\s*$", line, re.IGNORECASE):
+            toc_scan_start = idx + 1
+
     toc_end_idx = 100
-    for idx, line in enumerate(lines[:800]):
-        if re.match(r"^1(?:\.0)?\.?\s+[A-Z]", line) and not _TOC_DOT_LEADER_RE.search(line):
+    for idx in range(toc_scan_start, min(len(lines), 800)):
+        line = lines[idx]
+        if re.match(r"^1(?:\.0)?(?:\.|\s+-)?\s+[A-Z]", line) and not _TOC_DOT_LEADER_RE.search(line):
             toc_end_idx = idx
             break
 
@@ -6831,7 +8150,7 @@ if __name__ == "__main__":
 
 ### `src/generate_think/dspy_think_synthesizer.py`
 
-*sha256:`3c6700ca4133` · 758 lines · 35.3 KB (~9,039 tokens) · lang:`python`*
+*sha256:`f1da961aae1d` · 766 lines · 35.5 KB (~9,092 tokens) · lang:`python`*
 
 ```python
 """Phase 3 Agentic DSPy Hindsight Reasoning (<think>) Synthesizer.
@@ -7220,7 +8539,11 @@ def synthesize_reasoning_steps_via_dspy_or_llm(
     rfc_title = rfc_meta.get("rfc_title", "Unknown Protocol")
     principals = rfc_meta.get("participating_principals", [])
     sections = rfc_meta.get("selected_sections", [])
-    verbatim_slice = rfc_meta.get("verbatim_rfc_slice", "")
+    verbatim_slice = (
+        rfc_meta.get("rfc_style_slice")
+        or rfc_meta.get("debloated_rfc_slice")
+        or rfc_meta.get("verbatim_rfc_slice", "")
+    )
 
     final_out = trajectory_data.get("final_verified_output", {})
     final_ast = final_out.get("final_ast") or trajectory_data.get("stage2_initial_extraction", {}).get("initial_ast")
@@ -7338,7 +8661,11 @@ def _build_sft_and_dpo_records(
     rfc_meta = trajectory_data.get("rfc_metadata", {})
     rfc_id = rfc_meta.get("rfc_id", "Unknown RFC")
     rfc_title = rfc_meta.get("rfc_title", "Unknown Protocol")
-    verbatim_slice = rfc_meta.get("verbatim_rfc_slice", "")
+    verbatim_slice = (
+        rfc_meta.get("rfc_style_slice")
+        or rfc_meta.get("debloated_rfc_slice")
+        or rfc_meta.get("verbatim_rfc_slice", "")
+    )
 
     final_out = trajectory_data.get("final_verified_output", {})
     final_scm = (
@@ -10248,7 +11575,7 @@ class PipelineMetricsCSVLogger:
 
 ### `src/main_pipeline_orchestrator.py`
 
-*sha256:`8832cbbb4c95` · 1506 lines · 67.8 KB (~17,347 tokens) · lang:`python`*
+*sha256:`1e3ad068706b` · 1578 lines · 71.0 KB (~18,184 tokens) · lang:`python`*
 
 ```python
 """Main Pipeline Orchestrator for RFC-to-CPSA Synthesis.
@@ -10266,6 +11593,7 @@ Coordinates the 6-stage synthesis pipeline for a single RFC document:
 import datetime as dt
 import hashlib
 import json
+import re
 import time
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -10273,8 +11601,10 @@ from pydantic import BaseModel, Field
 
 from src.code_generation.cpsa_scheme_emitter import emit_cpsa_scheme, sanitize_protocol_stem
 from src.document_ingestion.handshake_section_router import route_handshake_sections
+from src.document_ingestion.programmatic_debloater import debloat_protocol_slice
 from src.document_ingestion.protocol_applicability_gate import evaluate_protocol_applicability
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
+from src.document_ingestion.rfc_style_distiller import sanitize_paired_stem, synthesize_or_load_rfc_style_slice
 from src.document_ingestion.rfc_toc_parser import parse_table_of_contents
 from src.document_ingestion.verbatim_section_slicer import slice_verbatim_sections
 from src.intermediate_representation.protocol_syntax_tree import CPSAProtocolSpecification
@@ -10289,6 +11619,7 @@ from src.prompt_loader import (
     PROMPT_COMPILER_REPAIR,
     PROMPT_PROTOCOL_EXTRACTION,
     PROMPT_RAG_QUERY_FORMULATION,
+    PROMPT_RFC_STYLE_DISTILLER,
     resolve_prompt_model,
 )
 from src.semantic_extraction import constrained_protocol_extractor
@@ -10732,6 +12063,9 @@ def run_rfc_translation_pipeline(
     run_root_dir: Optional[Path] = None,
     csv_path: Optional[Path] = None,
     resume_checkpoint: bool = False,
+    rfc_style: bool = False,
+    refresh_rfc_style: bool = False,
+    distill_model: Optional[str] = None,
 ) -> PipelineExecutionSummary:
     """Executes the end-to-end RFC to formally verified MITRE CPSA synthesis pipeline."""
     start_time = time.time()
@@ -10755,6 +12089,9 @@ def run_rfc_translation_pipeline(
     active_extraction_model = resolve_prompt_model(PROMPT_PROTOCOL_EXTRACTION, extraction_model)
     active_repair_model = resolve_prompt_model(PROMPT_COMPILER_REPAIR, repair_override)
     active_query_model = resolve_prompt_model(PROMPT_RAG_QUERY_FORMULATION, query_model)
+    active_distill_model = (
+        resolve_prompt_model(PROMPT_RFC_STYLE_DISTILLER, distill_model) if rfc_style else ""
+    )
 
     logger.info("================================================================")
     logger.info("Starting RFC-LLM Synthesis Pipeline for: %s", rfc_file_path.name)
@@ -10767,6 +12104,7 @@ def run_rfc_translation_pipeline(
         extraction_model=active_extraction_model,
         query_model=active_query_model,
         repair_model=active_repair_model,
+        distiller_model=active_distill_model,
     )
     GLOBAL_EVENT_BUS.set_run_directory(effective_run_root, is_live=True, csv_path=effective_csv_path)
     GLOBAL_EVENT_BUS.start_rfc(rfc_id=rfc_id, rfc_file=rfc_file_path.name)
@@ -11160,6 +12498,61 @@ def run_rfc_translation_pipeline(
         )
 
     # -------------------------------------------------------------------------
+    # STAGE 1f: Paired Slice Companions ($0.00 Debloat + Optional --rfc-style)
+    # -------------------------------------------------------------------------
+    paired_stem = sanitize_paired_stem(rfc_file_path.stem)
+    is_non_rfc_doc = not bool(re.search(r"Request for Comments:\s*#?\d+", raw_rfc_text[:3000], re.IGNORECASE))
+    run_slices_dir = target_output_dir / f"{paired_stem}_slices"
+    run_slices_dir.mkdir(parents=True, exist_ok=True)
+    paired_verbatim_file = run_slices_dir / f"{paired_stem}__verbatim.txt"
+    paired_debloated_file = run_slices_dir / f"{paired_stem}__debloated.txt"
+    paired_verbatim_file.write_text(verbatim_slice, encoding="utf-8")
+
+    debloated_slice, debloat_stats = debloat_protocol_slice(verbatim_slice, is_non_rfc=is_non_rfc_doc)
+    if not debloated_slice.strip():
+        debloated_slice = verbatim_slice
+    paired_debloated_file.write_text(debloated_slice, encoding="utf-8")
+    logger.info(
+        "Zero-cost programmatic de-bloating (%s): %d -> %d chars (saved %.1f%%)",
+        paired_stem,
+        debloat_stats.get("raw_chars", len(verbatim_slice)),
+        debloat_stats.get("debloated_chars", len(debloated_slice)),
+        debloat_stats.get("saved_pct", 0.0),
+    )
+
+    rfc_style_slice: Optional[str] = None
+    if rfc_style:
+        try:
+            rfc_style_slice, distill_meta = synthesize_or_load_rfc_style_slice(
+                stem=paired_stem,
+                doc_id=rfc_number_str,
+                protocol_name=final_protocol_name,
+                verbatim_slice=verbatim_slice,
+                debloated_slice=debloated_slice,
+                source_file=rfc_file_path,
+                selected_sections=target_sections,
+                run_output_dir=target_output_dir,
+                model=distill_model,
+                refresh=refresh_rfc_style,
+            )
+            modeling_slice = rfc_style_slice
+            logger.info(
+                "Using --rfc-style slice (%s, %d chars, cache_hit=%s)",
+                distill_meta.get("run_rfc_style_path") or f"{paired_stem}__rfc_style.txt",
+                len(rfc_style_slice),
+                distill_meta.get("cache_hit", False),
+            )
+        except Exception as distill_exc:
+            logger.warning(
+                "RFC-style distillation failed (%s); falling back to $0 de-bloated slice.",
+                distill_exc,
+            )
+            rfc_style_slice = None
+            modeling_slice = debloated_slice
+    else:
+        modeling_slice = debloated_slice
+
+    # -------------------------------------------------------------------------
     # STAGE 2: JSON CPSA Generation
     # -------------------------------------------------------------------------
     GLOBAL_EVENT_BUS.emit(
@@ -11185,7 +12578,7 @@ def run_rfc_translation_pipeline(
             )
         else:
             protocol_ast = extract_protocol_specification(
-                verbatim_slice=verbatim_slice,
+                verbatim_slice=modeling_slice,
                 protocol_name=final_protocol_name,
                 principals=participating_principals,
                 model=extraction_model,
@@ -11245,6 +12638,9 @@ def run_rfc_translation_pipeline(
             shapes_txt_path=None,
             solver_passed=False,
             intake_rationale=intake_rationale,
+            debloated_slice=debloated_slice,
+            rfc_style_slice=rfc_style_slice,
+            paired_stem=paired_stem,
         )
         update_run_metadata_index(
             run_root_dir=effective_run_root,
@@ -11458,7 +12854,7 @@ def run_rfc_translation_pipeline(
             protocol_ast=protocol_ast,
             scm_path=scm_path,
             target_output_dir=target_output_dir,
-            verbatim_slice=verbatim_slice,
+            verbatim_slice=modeling_slice,
             repair_model_override=repair_override,
             query_model_override=query_model,
         )
@@ -11470,7 +12866,7 @@ def run_rfc_translation_pipeline(
             protocol_ast=protocol_ast,
             scm_path=scm_path,
             target_output_dir=target_output_dir,
-            verbatim_slice=verbatim_slice,
+            verbatim_slice=modeling_slice,
             roletran_result=roletran_result,
             repair_model_override=repair_override,
             query_model_override=query_model,
@@ -11503,6 +12899,9 @@ def run_rfc_translation_pipeline(
         shapes_txt_path=shapes_txt_candidate if shapes_txt_candidate.exists() else None,
         solver_passed=artifacts is not None,
         intake_rationale=intake_rationale,
+        debloated_slice=debloated_slice,
+        rfc_style_slice=rfc_style_slice,
+        paired_stem=paired_stem,
     )
 
     quality_tier = "REJECTED"
@@ -11763,7 +13162,7 @@ def run_rfc_translation_pipeline(
 
 ### `src/pipeline.py`
 
-*sha256:`25920a3499ec` · 1126 lines · 48.3 KB (~12,354 tokens) · lang:`python`*
+*sha256:`45e8801a9b14` · 1257 lines · 54.6 KB (~13,982 tokens) · lang:`python`*
 
 ```python
 """Command-line interface for RFC-LLM synthesis pipeline supporting single RFCs and directory batching."""
@@ -11782,6 +13181,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from src.cost_tracker import GLOBAL_COST_TRACKER
+from src.document_ingestion.pdf_and_book_splitter import SUPPORTED_BOOK_EXTENSIONS, split_books_directory
 from src.document_ingestion.rfc_header_filter import filter_rfc_header
 from src.logging_config import PipelineMetricsCSVLogger
 from src.main_pipeline_orchestrator import PipelineExecutionSummary, run_rfc_translation_pipeline
@@ -11799,6 +13199,9 @@ def _print_cost_breakdown(cost_summary: dict, title: str = "COST & TOKEN TELEMET
         ("query", "Query/Searcher Model"),
         ("repair", "Repair Model"),
     ]
+    dist_b = roles.get("distiller", {}) or {}
+    if int(dist_b.get("calls", 0)) > 0 or float(dist_b.get("cost_usd", 0.0)) > 0.0:
+        role_labels.append(("distiller", "Distiller Model"))
     print(f"\n[{title}]")
     for role_key, label in role_labels:
         rb = roles.get(role_key, {})
@@ -12037,6 +13440,12 @@ def _build_resume_command_string(
         cmd.extend(["--repair-model", str(args.repair_model)])
     if getattr(args, "query_model", None):
         cmd.extend(["--query-model", str(args.query_model)])
+    if getattr(args, "distill_model", None):
+        cmd.extend(["--distill-model", str(args.distill_model)])
+    if getattr(args, "rfc_style", False):
+        cmd.append("--rfc-style")
+    if getattr(args, "refresh_rfc_style", False):
+        cmd.append("--refresh-rfc-style")
     if getattr(args, "limit", None) is not None:
         cmd.extend(["--limit", str(args.limit)])
     if getattr(args, "target_eligible", None) is not None:
@@ -12101,6 +13510,9 @@ def _save_run_manifest_and_last_run(
             "extraction_model": args.extraction_model,
             "repair_model": args.repair_model,
             "query_model": args.query_model,
+            "distill_model": getattr(args, "distill_model", None),
+            "rfc_style": bool(getattr(args, "rfc_style", False)),
+            "refresh_rfc_style": bool(getattr(args, "refresh_rfc_style", False)),
             "limit": args.limit,
             "target_eligible": args.target_eligible,
             "pattern": args.pattern,
@@ -12192,6 +13604,48 @@ def _build_parser(suppress_defaults: bool = False) -> argparse.ArgumentParser:
         type=str,
         default=d_none,
         help="Model identifier for RAG query formulation / conceptual abstraction",
+    )
+    parser.add_argument(
+        "--distill-model",
+        type=str,
+        default=d_none,
+        help="Model identifier for --rfc-style distillation (defaults to --model or prompt 08 model)",
+    )
+    parser.add_argument(
+        "--rfc-style",
+        action="store_true",
+        default=d_false,
+        help="Synthesize and feed a paired compact RFC-style slice alongside the untouched verbatim slice",
+    )
+    parser.add_argument(
+        "--refresh-rfc-style",
+        action="store_true",
+        default=d_false,
+        help="Bypass cached paired_slices/<stem>/<stem>__rfc_style.txt and regenerate it",
+    )
+    parser.add_argument(
+        "--split-books",
+        action="store_true",
+        default=d_false,
+        help="Convert/split PDF, DOCX, HTML, Markdown, or long TXT standards books into standalone .txt protocols and exit",
+    )
+    parser.add_argument(
+        "--split-out",
+        type=str,
+        default=d_none,
+        help="Output directory for --split-books standalone .txt files (default: refrences/global_standards/protocols_txt)",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=d_none,
+        help="Worker process count for multi-core --split-books (default: all CPU cores)",
+    )
+    parser.add_argument(
+        "--llm-split",
+        action="store_true",
+        default=d_false,
+        help="Use opt-in LLM TOC protocol splitting in --split-books (default is $0.00 deterministic splitter)",
     )
     parser.add_argument(
         "--no-visualize",
@@ -12474,7 +13928,7 @@ def main(argv: Optional[List[str]] = None):
 
         # Overlay any CLI flags explicitly passed on the current `-r` invocation
         if "model" in explicit_overrides:
-            for stage_m in ("router_model", "extraction_model", "repair_model", "query_model"):
+            for stage_m in ("router_model", "extraction_model", "repair_model", "query_model", "distill_model"):
                 if stage_m not in explicit_overrides:
                     setattr(base_args, stage_m, None)
         for k, v in explicit_overrides.items():
@@ -12529,6 +13983,31 @@ def main(argv: Optional[List[str]] = None):
     if args.csv and not Path(args.csv).exists():
         print(f"Error: Source --csv path does not exist: {args.csv}", file=sys.stderr)
         sys.exit(1)
+
+    # Standalone Multi-Protocol Book & PDF Splitting Mode (--split-books)
+    if getattr(args, "split_books", False):
+        split_out = (
+            Path(args.split_out)
+            if getattr(args, "split_out", None)
+            else (SYSTEM_CONFIG.PROJECT_ROOT / "refrences" / "global_standards" / "protocols_txt")
+        )
+        split_res = split_books_directory(
+            targets=targets,
+            output_dir=split_out,
+            workers=getattr(args, "workers", None),
+            use_llm=bool(getattr(args, "llm_split", False)),
+            model=getattr(args, "distill_model", None) or args.model,
+        )
+        print(f"\n{'='*70}")
+        print("[BOOK SPLITTER] Standalone Protocol Conversion & Splitting Complete")
+        print(f"{'='*70}")
+        print(f"- Input Files Scanned    : {split_res['input_files_scanned']}")
+        print(f"- Standalone .txt Emitted: {split_res['emitted_protocols_count']}")
+        print(f"- Skipped (Non-Protocol) : {split_res['skipped_count']}")
+        print(f"- Output Directory       : {split_res['output_dir']}")
+        print(f"- Protocol Index CSV     : {split_res['index_csv']}")
+        print(f"{'='*70}\n")
+        sys.exit(0)
 
     # Pre-flight verification of MITRE CPSA 4.4.9 compiler binaries before starting LLM synthesis
     missing_cpsa_bins = SYSTEM_CONFIG.verify_cpsa_toolchain()
@@ -12614,7 +14093,22 @@ def main(argv: Optional[List[str]] = None):
                 planned_rfc_files.append(rp)
 
     if not planned_rfc_files and (len(targets) > 1 or targets[0].is_file()):
-        planned_rfc_files = [t for t in targets if t.is_file()]
+        raw_file_targets = [t for t in targets if t.is_file()]
+        txt_files = [t for t in raw_file_targets if t.suffix.lower() == ".txt"]
+        non_txt_files = [t for t in raw_file_targets if t.suffix.lower() != ".txt" and t.suffix.lower() in SUPPORTED_BOOK_EXTENSIONS]
+        if non_txt_files:
+            split_res = split_books_directory(
+                targets=non_txt_files,
+                output_dir=run_root_dir / "_split_protocols",
+                workers=getattr(args, "workers", None),
+                use_llm=bool(getattr(args, "llm_split", False)),
+                model=getattr(args, "distill_model", None) or args.model,
+            )
+            txt_files.extend(Path(item["path"]) for item in split_res["emitted_files"])
+        planned_rfc_files = txt_files
+        if not planned_rfc_files:
+            print(f"Error: No eligible cryptographic protocol text could be extracted from {[str(t) for t in targets]}", file=sys.stderr)
+            sys.exit(1)
     elif not planned_rfc_files and targets[0].is_dir():
         target = targets[0]
         raw_candidates = [f for f in target.glob(args.pattern) if f.is_file()]
@@ -12625,10 +14119,35 @@ def main(argv: Optional[List[str]] = None):
         else:
             planned_rfc_files = sorted(raw_candidates, key=natural_rfc_sort_key)
         if not planned_rfc_files:
-            # Fallback to all existing txt files if pattern yielded zero
+            # Fallback to all existing txt files first, then any supported PDF/DOCX/HTML/MD standards
             planned_rfc_files = sorted([f for f in target.glob("*.txt") if f.is_file()], key=natural_rfc_sort_key)
         if not planned_rfc_files:
-            print(f"Error: No RFC text files found in directory {target}", file=sys.stderr)
+            non_txt_dir_files = sorted(
+                [f for f in target.iterdir() if f.is_file() and f.suffix.lower() in (SUPPORTED_BOOK_EXTENSIONS - {".txt"})],
+                key=natural_rfc_sort_key,
+            )
+            if non_txt_dir_files:
+                split_res = split_books_directory(
+                    targets=non_txt_dir_files,
+                    output_dir=run_root_dir / "_split_protocols",
+                    workers=getattr(args, "workers", None),
+                    use_llm=bool(getattr(args, "llm_split", False)),
+                    model=getattr(args, "distill_model", None) or args.model,
+                )
+                planned_rfc_files = [Path(item["path"]) for item in split_res["emitted_files"]]
+        non_txt_selected = [f for f in planned_rfc_files if f.suffix.lower() != ".txt"]
+        if non_txt_selected:
+            txt_only = [f for f in planned_rfc_files if f.suffix.lower() == ".txt"]
+            split_res = split_books_directory(
+                targets=non_txt_selected,
+                output_dir=run_root_dir / "_split_protocols",
+                workers=getattr(args, "workers", None),
+                use_llm=bool(getattr(args, "llm_split", False)),
+                model=getattr(args, "distill_model", None) or args.model,
+            )
+            planned_rfc_files = txt_only + [Path(item["path"]) for item in split_res["emitted_files"]]
+        if not planned_rfc_files:
+            print(f"Error: No RFC or protocol specification files found in directory {target}", file=sys.stderr)
             sys.exit(1)
 
         if not is_resuming:
@@ -12758,6 +14277,7 @@ def main(argv: Optional[List[str]] = None):
     cli_extraction_model = args.extraction_model or args.model
     cli_repair_model = args.repair_model or args.model
     cli_query_model = args.query_model or args.model
+    cli_distill_model = getattr(args, "distill_model", None) or args.model
 
     if is_resuming and args.target_eligible and args.target_eligible > 0 and prior_eligible_count >= args.target_eligible:
         print(
@@ -12773,6 +14293,15 @@ def main(argv: Optional[List[str]] = None):
             print(f"{'='*70}")
 
         rfc_output_dir = run_root_dir / rfc_file.stem.lower()
+        extra_pipeline_kwargs: Dict[str, Any] = {}
+        if getattr(args, "rfc_style", False):
+            extra_pipeline_kwargs["rfc_style"] = True
+            if cli_distill_model:
+                extra_pipeline_kwargs["distill_model"] = cli_distill_model
+        if getattr(args, "refresh_rfc_style", False):
+            extra_pipeline_kwargs["refresh_rfc_style"] = True
+        if getattr(args, "distill_model", None):
+            extra_pipeline_kwargs["distill_model"] = cli_distill_model
         try:
             summary = run_rfc_translation_pipeline(
                 rfc_file_path=rfc_file,
@@ -12784,6 +14313,7 @@ def main(argv: Optional[List[str]] = None):
                 run_root_dir=run_root_dir,
                 csv_path=run_csv_path,
                 resume_checkpoint=is_resuming,
+                **extra_pipeline_kwargs,
             )
         except Exception as exc:
             print(f"[ERROR] Unhandled exception on {rfc_file.name}: {exc}", file=sys.stderr)
@@ -13521,7 +15051,7 @@ GLOBAL_EVENT_BUS = PipelineEventBus()
 
 ### `src/prompt_loader.py`
 
-*sha256:`9934cc0348f8` · 292 lines · 12.7 KB (~3,251 tokens) · lang:`python`*
+*sha256:`862b4ab5d438` · 305 lines · 13.6 KB (~3,491 tokens) · lang:`python`*
 
 ````python
 """Dynamic Markdown & YAML-Frontmatter Prompt Loader for RFC-LLM (prompts/ directory).
@@ -13554,6 +15084,7 @@ from src.logging_config import get_pipeline_logger
 logger = get_pipeline_logger("prompt_loader")
 
 # Canonical prompt filenames in prompts/
+PROMPT_BOOK_SPLITTER = "00_book_protocol_splitter.md"
 PROMPT_APPLICABILITY_GATE = "01_applicability_gate.md"
 PROMPT_SECTION_ROUTER = "02_section_router.md"
 PROMPT_PROTOCOL_EXTRACTION = "03_protocol_extraction.md"
@@ -13561,6 +15092,7 @@ PROMPT_SCHEMA_SELF_CORRECTION = "04_schema_self_correction.md"
 PROMPT_RAG_QUERY_FORMULATION = "05_rag_query_formulation.md"
 PROMPT_COMPILER_REPAIR = "06_compiler_repair.md"
 PROMPT_THINK_SYNTHESIZER = "07_think_token_synthesizer.md"
+PROMPT_RFC_STYLE_DISTILLER = "08_rfc_style_distiller.md"
 
 GLOBAL_FALLBACK_MODEL = "gemini/gemini-3.5-flash-lite"
 
@@ -13573,6 +15105,8 @@ _FALLBACK_METADATA: Dict[str, Dict[str, Any]] = {
     PROMPT_RAG_QUERY_FORMULATION: {"model": "strata/unsloth-iq4_xs", "timeout": 900, "max_tokens": 16384, "temperature": None},
     PROMPT_COMPILER_REPAIR: {"model": "strata/unsloth-iq4_xs", "timeout": 3600, "max_tokens": 65536, "temperature": None},
     PROMPT_THINK_SYNTHESIZER: {"model": "strata/unsloth-iq4_xs", "timeout": 3600, "max_tokens": 65536, "temperature": 0.2},
+    PROMPT_BOOK_SPLITTER: {"model": "strata/unsloth-iq4_xs", "timeout": 600, "max_tokens": 8192, "temperature": 0.0},
+    PROMPT_RFC_STYLE_DISTILLER: {"model": "strata/unsloth-iq4_xs", "timeout": 900, "max_tokens": 16384, "temperature": 0.0},
 }
 
 # Built-in fallback prompt bodies if a file in prompts/ is missing or empty
@@ -13616,6 +15150,15 @@ _FALLBACK_PROMPTS: Dict[str, str] = {
         "Never mention that you were provided the final AST or .scm output in advance; write strictly from a "
         "forward-looking, first-principles deduction perspective, incorporating compiler self-correction and "
         "backtracking steps where applicable."
+    ),
+    PROMPT_BOOK_SPLITTER: (
+        "You are a standards-document index analyst. Identify distinct cryptographic protocol sections in a "
+        "standards table of contents and return strict JSON listing start and end line numbers and protocol titles."
+    ),
+    PROMPT_RFC_STYLE_DISTILLER: (
+        "You are a cryptographic protocol specification technical writer converting a verbatim de-bloated "
+        "protocol slice into clean, compact IETF RFC style without omitting cryptographic operations, "
+        "key schedules, field encodings, validation checks, or specification weaknesses."
     ),
 }
 
@@ -16911,7 +18454,7 @@ def generate_snowball_autopsy_report(
 
 ### `src/verification_engine/trajectory_metadata_exporter.py`
 
-*sha256:`e2d2d046a6c0` · 1132 lines · 46.4 KB (~11,883 tokens) · lang:`python`*
+*sha256:`b62a37841d25` · 1138 lines · 46.7 KB (~11,949 tokens) · lang:`python`*
 
 ```python
 """Programmatic Trajectory & Formal Verification Metadata Exporter.
@@ -17792,6 +19335,9 @@ def write_trajectory_metadata_bundle(
     shapes_txt_path: Optional[Path],
     solver_passed: bool,
     intake_rationale: Optional[str] = None,
+    debloated_slice: Optional[str] = None,
+    rfc_style_slice: Optional[str] = None,
+    paired_stem: Optional[str] = None,
 ) -> Path:
     """Computes programmatic CPSA verification metrics, prepends `.scm` metadata headers,
     and writes `<protocol_stem>_trajectory.json` into `output_dir`.
@@ -17893,6 +19439,9 @@ def write_trajectory_metadata_bundle(
             "selected_sections": selected_sections,
             "sliced_lines_count": len(verbatim_slice.splitlines()),
             "verbatim_rfc_slice": verbatim_slice,
+            "debloated_rfc_slice": debloated_slice,
+            "rfc_style_slice": rfc_style_slice,
+            "paired_stem": paired_stem,
             "intake_rationale": intake_rationale,
         },
         "stage2_initial_extraction": stage2_record,
@@ -18061,7 +19610,7 @@ def update_run_metadata_index(
 
 ### `src/visualizer/server.py`
 
-*sha256:`08246d725f18` · 739 lines · 31.9 KB (~8,175 tokens) · lang:`python`*
+*sha256:`381ee94cbebd` · 756 lines · 32.8 KB (~8,404 tokens) · lang:`python`*
 
 ```python
 """Asynchronous web server for live and offline multi-RFC synthesis visualization."""
@@ -18189,10 +19738,24 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
     qa = traj.get("quality_assessment", {})
     final_out = traj.get("final_verified_output", {})
 
-    # 1. Verbatim RFC Slice
+    # 1. Verbatim RFC Slice + Paired Debloated / RFC-Style Companions
     verbatim_slice = meta.get("verbatim_rfc_slice") or ""
     if not verbatim_slice and rfc_dir and (rfc_dir / "verbatim_slice.txt").exists():
         verbatim_slice = (rfc_dir / "verbatim_slice.txt").read_text(encoding="utf-8", errors="ignore")
+
+    debloated_slice = meta.get("debloated_rfc_slice") or ""
+    if not debloated_slice and rfc_dir:
+        cand_deb = next(rfc_dir.glob("*_slices/*__debloated.txt"), None) or next(rfc_dir.glob("*__debloated.txt"), None)
+        if cand_deb and cand_deb.exists():
+            debloated_slice = cand_deb.read_text(encoding="utf-8", errors="ignore")
+
+    rfc_style_slice = meta.get("rfc_style_slice") or ""
+    if not rfc_style_slice and rfc_dir:
+        cand_style = next(rfc_dir.glob("*_slices/*__rfc_style.txt"), None) or next(rfc_dir.glob("*__rfc_style.txt"), None)
+        if cand_style and cand_style.exists():
+            rfc_style_slice = cand_style.read_text(encoding="utf-8", errors="ignore")
+
+    paired_stem = meta.get("paired_stem") or ""
 
     # Load Chronological Events early so we can reconstruct in-flight attempts for RUNNING tabs
     events: List[Dict[str, Any]] = []
@@ -18436,6 +19999,9 @@ def hydrate_tab_payload(tab_summary: Dict[str, Any]) -> Dict[str, Any]:
         "exploration_telemetry": s6.get("exploration_telemetry_from_txt") or {},
         "cost_telemetry": cost_telemetry,
         "verbatim_slice": verbatim_slice,
+        "debloated_slice": debloated_slice,
+        "rfc_style_slice": rfc_style_slice,
+        "paired_stem": paired_stem,
         "shapes_xhtml": shapes_xhtml,
         "attempts": attempts,
         "events": events,
@@ -18809,7 +20375,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
 ### `src/visualizer/static/index.html`
 
-*sha256:`996292c3b2cb` · 3649 lines · 153.1 KB (~39,176 tokens) · lang:`html`*
+*sha256:`15b69d5d01e2` · 3689 lines · 155.5 KB (~39,806 tokens) · lang:`html`*
 
 ```html
 <!DOCTYPE html>
@@ -20063,6 +21629,13 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         <pre><code id="code-ast">// Pydantic JSON AST will appear here...</code></pre>
       </div>
       <div class="tab-viewport" id="tab-slice" style="display:none;">
+        <div id="slice-mode-bar" style="display:flex; gap:6px; padding:6px 10px; border-bottom:1px solid var(--border); background:var(--panel-alt, #111622); font-family:var(--mono); font-size:11px; align-items:center;">
+          <span style="color:var(--text-muted); margin-right:4px;">Slice View:</span>
+          <button type="button" class="mini-btn active" id="slice-btn-verbatim" onclick="setSliceViewMode('verbatim')">Verbatim</button>
+          <button type="button" class="mini-btn" id="slice-btn-debloated" onclick="setSliceViewMode('debloated')">$0 Debloated</button>
+          <button type="button" class="mini-btn" id="slice-btn-rfc-style" onclick="setSliceViewMode('rfc_style')">RFC-Style</button>
+          <span id="slice-paired-stem" style="color:var(--text-muted); margin-left:auto;"></span>
+        </div>
         <pre><code id="code-slice">Verbatim RFC section slice will appear here...</code></pre>
       </div>
       <div class="tab-viewport" id="tab-rag" style="display:none; padding:12px; overflow-y:auto;">
@@ -20514,7 +22087,15 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         setDiagnosisBadge(tab.error_message ? 'Failed (See Attempt Banner)' : 'Halted', 'syntax');
       }
 
-      if (payload.verbatim_slice) {
+      window._currentSlicePayloads = {
+        verbatim: payload.verbatim_slice || '',
+        debloated: payload.debloated_slice || '',
+        rfc_style: payload.rfc_style_slice || '',
+        stem: payload.paired_stem || ''
+      };
+      if (typeof setSliceViewMode === 'function') {
+        setSliceViewMode('verbatim');
+      } else if (payload.verbatim_slice) {
         document.getElementById('code-slice').innerText = payload.verbatim_slice;
       }
 
@@ -20541,6 +22122,28 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       if (currentAttemptsList.length > 0) {
         selectAttemptSnapshot(currentAttemptsList.length - 1);
       }
+    }
+
+    function setSliceViewMode(mode) {
+      const store = window._currentSlicePayloads || {};
+      let content = store.verbatim || '';
+      if (mode === 'debloated') {
+        content = store.debloated || store.verbatim || '';
+      } else if (mode === 'rfc_style') {
+        content = store.rfc_style || '[No --rfc-style companion generated for this run. Re-run with --rfc-style to synthesize.]';
+      }
+      const codeEl = document.getElementById('code-slice');
+      if (codeEl) codeEl.innerText = content || 'Verbatim RFC section slice will appear here...';
+      ['verbatim', 'debloated', 'rfc_style'].forEach(m => {
+        const btn = document.getElementById(`slice-btn-${m.replace('_', '-')}`);
+        if (btn) btn.classList.toggle('active', m === mode);
+      });
+      const debBtn = document.getElementById('slice-btn-debloated');
+      if (debBtn) debBtn.style.opacity = store.debloated ? '1' : '0.45';
+      const styleBtn = document.getElementById('slice-btn-rfc-style');
+      if (styleBtn) styleBtn.style.opacity = store.rfc_style ? '1' : '0.45';
+      const stemEl = document.getElementById('slice-paired-stem');
+      if (stemEl) stemEl.innerText = store.stem ? `stem: ${store.stem}` : '';
     }
 
     // =========================================================================
@@ -21037,7 +22640,10 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         if (fetchLiveArtifacts && evt.data && evt.data.slice_path) {
           fetch(`api/artifact?path=${encodeURIComponent(evt.data.slice_path)}`)
             .then(r => r.text())
-            .then(txt => { document.getElementById('code-slice').innerText = txt; })
+            .then(txt => {
+              window._currentSlicePayloads = Object.assign(window._currentSlicePayloads || {}, { verbatim: txt });
+              document.getElementById('code-slice').innerText = txt;
+            })
             .catch(() => {});
         }
       } else if (evt.event_type === 'repair_attempt') {

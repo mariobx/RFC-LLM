@@ -2,17 +2,17 @@
 
 ## 1. System Overview
 
-RFC-LLM translates raw, unstructured IETF RFC documents into formally verified MITRE CPSA 4.4.9 models (`.scm`), programmatic verification trajectories (`<protocol>_trajectory.json`), and Phase 3 `<think>` reasoning datasets (`<protocol>_think.json`, `sft_train.jsonl`, `dpo_pairs.jsonl`).
+RFC-LLM translates raw, unstructured IETF RFC documents and global standards (`.txt`, `.pdf`, `.docx`, `.html`, `.md`) into formally verified MITRE CPSA 4.4.9 models (`.scm`), programmatic verification trajectories (`<protocol>_trajectory.json`), paired specification companions (`<stem>_slices/` & `paired_slices/`), and Phase 3 `<think>` reasoning datasets (`<protocol>_think.json`, `sft_train.jsonl`, `dpo_pairs.jsonl`).
 
 RFC specifications combine English prose, ASCII sequence diagrams, and byte-level packet layouts, whereas CPSA requires order-sorted algebraic S-expressions under strict Dolev-Yao strand space semantics. Passing an RFC straight to an LLM produces hallucinated operators, invalid sort assignments, and uncompilable Scheme code.
 
 RFC-LLM decomposes translation into six discrete compiler stages in `./rfc-llm` ([`src/main_pipeline_orchestrator.py`](../src/main_pipeline_orchestrator.py)) followed by Phase 3 hindsight reasoning synthesis in `./rfc-think` ([`src/generate_think/`](../src/generate_think/)):
 
 ```
-[RFC Text]
+[RFC / Standard (.txt/.pdf/.docx/.html/.md)]   (--split-books converts books across CPU cores at $0)
    |
    v
-[Stage 1: Document Intake] ──────── (Tier 0 Regex Filter -> TOC -> Gatekeeper -> Section Router -> Verbatim Slicer)
+[Stage 1: Document Intake & Paired Slice] ─ (1a Header -> 1b TOC -> 1c Gate -> 1d Router -> 1e Verbatim Slicer -> 1f $0 Debloat / --rfc-style)
    |
    v
 [Stage 2: JSON CPSA Generation] ─── (prompts/03_protocol_extraction.md + Hybrid RAG -> Scoped Pydantic AST)
@@ -42,26 +42,30 @@ RFC-LLM decomposes translation into six discrete compiler stages in `./rfc-llm` 
 
 ## 2. Phase 2 Synthesis Pipeline Stages (`./rfc-llm`)
 
-### Stage 1: Document Intake
+### Stage 1: Document Intake & Paired Slice Preparation
+- **Standalone Multi-Format Book Splitter (`--split-books`)** ([`src/document_ingestion/pdf_and_book_splitter.py`](../src/document_ingestion/pdf_and_book_splitter.py), [`prompts/00_book_protocol_splitter.md`](../prompts/00_book_protocol_splitter.md)): Extracts layout-preserved text and bookmarks from `.pdf`, `.docx`, `.html`, `.md`, and `.txt` specifications and decomposes multi-protocol books across CPU cores (`--workers`) into standalone `.txt` dossiers at `$0.00` cost (or via opt-in `--llm-split`). Single non-`.txt` inputs passed to `./rfc-llm` convert in-memory before Stage 1a.
 1. **Stage 1a — Tier 0 Header & Frontmatter Filter** ([`src/document_ingestion/rfc_header_filter.py`](../src/document_ingestion/rfc_header_filter.py)):
-   - Inspects the first 100 lines of the RFC using deterministic regular expressions (<1 ms, zero LLM calls).
-   - Rejects documents under 60 lines, `Historic` or `Best Current Practice` categories, and administrative/data-definition titles (`MIB`, `Management Information Base`, `Managed Objects`, `Architecture`, `Applicability Statement`, `Problem Statement`, `Requirements for`, `Guidelines for`, `Meeting Minutes`).
+   - Inspects the first 100 lines using deterministic regular expressions (<1 ms, zero LLM calls), recognizing both IETF RFCs and `Document-ID:` / `Protocol-Title:` global standards headers (`min_lines = 30` for non-RFC dossiers, `60` for RFCs).
+   - Rejects `Historic` or `Best Current Practice` categories and non-protocol administrative/data-definition titles (`MIB`, `Management Information Base`, `Managed Objects`, `Architecture`, `Applicability Statement`, `Problem Statement`, `Requirements for`, `Guidelines for`, `Meeting Minutes`).
 2. **Stage 1b — Table of Contents Parser** ([`src/document_ingestion/rfc_toc_parser.py`](../src/document_ingestion/rfc_toc_parser.py)):
-   - Parses hierarchical dotted section identifiers (`5.2`, `A.1`), titles, page numbers, and indentation levels from the TOC block, falling back to column-0 header scanning if no formal TOC exists.
+   - Parses hierarchical dotted section identifiers (`5.2`, `A.1`), titles, and page numbers from both RFC dot-leader TOCs and PDF space-separated `Contents` blocks (`<title>  <page>`), falling back to column-0 header scanning if no formal TOC exists.
 3. **Stage 1c — Protocol Applicability Gate** ([`src/document_ingestion/protocol_applicability_gate.py`](../src/document_ingestion/protocol_applicability_gate.py)):
    - Configured via [`prompts/01_applicability_gate.md`](../prompts/01_applicability_gate.md) (`timeout: 180`).
-   - Evaluates RFC metadata, abstract, and TOC to confirm the document defines an interactive cryptographic protocol with principals, keys, or nonces.
-   - **Deferred Directory Creation**: Ineligible RFCs rejected at Stage 1a or Stage 1c are recorded in `metadata_index.json` (`filtered_rfcs`) and `logs/pipeline_runs.csv` without creating empty per-RFC directories or allocating visualizer tabs.
+   - Evaluates specification metadata, abstract, and TOC to confirm the document defines an interactive cryptographic protocol with principals, keys, or nonces.
+   - **Deferred Directory Creation**: Ineligible documents rejected at Stage 1a or Stage 1c are recorded in `metadata_index.json` (`filtered_rfcs`) and `logs/pipeline_runs.csv` without creating empty per-protocol directories or allocating visualizer tabs.
 4. **Stage 1d — Handshake Section Router** ([`src/document_ingestion/handshake_section_router.py`](../src/document_ingestion/handshake_section_router.py)):
    - Configured via [`prompts/02_section_router.md`](../prompts/02_section_router.md) (`timeout: 180`).
    - Selects the exact section numbers defining the cryptographic message exchange (excluding introductory prose, security considerations, and IANA registries).
 5. **Stage 1e — Verbatim Section Slicer** ([`src/document_ingestion/verbatim_section_slicer.py`](../src/document_ingestion/verbatim_section_slicer.py)):
-   - Extracts the selected sections verbatim (typically 200-600 lines out of 10,000+ lines), strips form feeds (`\x0c`) and page headers/footers, and writes `<rfc_dir>/verbatim_slice.txt`.
+   - Skips past dot-leader and PDF two-space TOC blocks (`<title>  <page>`), extracts the selected sections verbatim, strips pagination breaks, and writes `<rfc_dir>/verbatim_slice.txt`.
+6. **Stage 1f — `$0` Programmatic De-Bloater & Paired `--rfc-style` Distiller** ([`src/document_ingestion/programmatic_debloater.py`](../src/document_ingestion/programmatic_debloater.py), [`src/document_ingestion/rfc_style_distiller.py`](../src/document_ingestion/rfc_style_distiller.py), [`prompts/08_rfc_style_distiller.md`](../prompts/08_rfc_style_distiller.md)):
+   - Runs a deterministic `$0.00` pre-debloater (stripping pagination noise, isolated indented PDF page numbers, administrative back-matter, and wide column whitespace while preserving all cryptographic fields, formulas, and ASCII ladders) before Stage 2 or `--rfc-style`.
+   - Always writes paired `<stem>__verbatim.txt` and `<stem>__debloated.txt` into `<rfc_dir>/<stem>_slices/`. When `--rfc-style` is passed, synthesizes (or loads at `$0.00` via matching `Verbatim-SHA256` from `refrences/global_standards/paired_slices/<stem>/` and `PAIRED_INDEX.csv`) `<stem>__rfc_style.txt` into both directories and feeds that compact slice to Stage 2/5/6 and `./rfc-think`.
 
 ### Stage 2: JSON CPSA Generation
 - **Files**: [`src/semantic_extraction/constrained_protocol_extractor.py`](../src/semantic_extraction/constrained_protocol_extractor.py), [`src/intermediate_representation/protocol_syntax_tree.py`](../src/intermediate_representation/protocol_syntax_tree.py)
 - **Prompts**: [`prompts/03_protocol_extraction.md`](../prompts/03_protocol_extraction.md) (initial extraction, `timeout: 180`), [`prompts/04_schema_self_correction.md`](../prompts/04_schema_self_correction.md) (1-shot retry, `timeout: 180`).
-- **Input**: `verbatim_slice.txt` + top-2 hybrid RAG reference chunks + mandatory `CPSAProtocolSpecification` JSON schema.
+- **Input**: Stage 1f active modeling slice (`<stem>__rfc_style.txt` when `--rfc-style` is enabled, otherwise `$0`-debloated slice) + top-2 hybrid RAG reference chunks + mandatory `CPSAProtocolSpecification` JSON schema.
 - **Core Constraints**:
   - Order-sorted variables (`name`, `text`, `data`, `skey`, `akey`, `chan`, `locn`, `tag`, `mesg`, plus `rndx`, `expt`, `base` under `diffie-hellman`). Logic sorts (`strd`, `indx`, `fact`) are forbidden in `(vars ...)`.
   - Strict atom terms (`term ::= id | integer | [op, ...args]`), Equation 10.1 enforcement (`mesg` forbidden as encryption key in `enc`), and positional keyword scoping between roles and preskeletons.
@@ -129,8 +133,12 @@ output/run_YYYY-MM-DD_HH-MM-SS/
 ├── metadata_index.json               # Master run manifest (accepted tab runs[] + filtered_rfcs[])
 ├── sft_train.jsonl                   # Consolidated Phase 3 SFT chat dataset (written by ./rfc-think)
 ├── dpo_pairs.jsonl                   # Consolidated Phase 3 contrastive DPO pairs (written by ./rfc-think)
-└── rfc9528/                          # Created ONLY for eligible RFCs passing Stage 1a & 1c
-    ├── verbatim_slice.txt            # Sliced RFC handshake specification text
+└── rfc9528/                          # Created ONLY for eligible specs passing Stage 1a & 1c
+    ├── verbatim_slice.txt            # Sliced verbatim handshake specification text (checkpoint)
+    ├── rfc9528_slices/               # Paired companions grouped per protocol
+    │   ├── rfc9528__verbatim.txt     # Untouched sliced source text
+    │   ├── rfc9528__debloated.txt    # $0 deterministic de-bloated text
+    │   └── rfc9528__rfc_style.txt    # Lossless RFC-style spec (when --rfc-style is enabled)
     ├── events.jsonl                  # Compact per-RFC telemetry stream for O(1)-RAM visualizer hydration
     ├── run.log                       # Per-RFC execution log
     ├── Makefile & cpsa4.mk           # Initialized by cpsa4init
@@ -161,7 +169,7 @@ output/run_YYYY-MM-DD_HH-MM-SS/
   - **Virtualized `#1..#N` Tab Bar**: Renders only visible tab buttons inside the horizontal scroll viewport (`O(1)` browser DOM nodes across 5,000+ tabs), displaying tab `#`, RFC ID, quality tier badge, and protocol name, plus live search and status filtering (`ALL`, `VERIFIED`, `PARTIAL`, `FAILED`).
   - **Collapsible `Filtered / Skipped` Drawer**: Paginated (`100` entries/page) and searchable table inspecting Tier 0 and Stage 1c rejected RFCs and disqualification rationales.
   - **6-Stage Horizontal Stepper**: Tracks live timing, active model slugs, and status across `01 Document Intake`, `02 JSON CPSA Generation`, `03 CPSA4JSON -> .scm`, `04 Roletran Check`, `05 Self-Healing Loop`, and `06 CPSA Compilation`.
-  - **Per-Attempt Time-Travel Stepper**: Hydrates any tab on demand from `events.jsonl` + `<protocol>_trajectory.json` to step through `Attempt 0 | Initial` -> `Attempt 1..K` -> `Final`, complete with a `Show Rejected Input .scm` toggle, Pydantic JSON AST viewer, compiler diagnostic banner, retrieved MITRE manual RAG chunks, and interactive SVG shape diagrams.
+  - **Per-Attempt Time-Travel Stepper**: Hydrates any tab on demand from `events.jsonl` + `<protocol>_trajectory.json` to step through `Attempt 0 | Initial` -> `Attempt 1..K` -> `Final`, complete with a `Show Rejected Input .scm` toggle, a **Verbatim / `$0 Debloated` / `RFC-Style`** slice toggle, Pydantic JSON AST viewer, compiler diagnostic banner, retrieved MITRE manual RAG chunks, and interactive SVG shape diagrams.
 - **HTTP & SSE Endpoints**:
   - `GET /`: Serves the single-page dashboard (`src/visualizer/static/index.html`).
   - `GET /api/events`: Live Server-Sent Events (SSE) stream.

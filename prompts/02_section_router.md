@@ -5,7 +5,7 @@ model: strata/unsloth-iq4_xs
 timeout: 900
 max_tokens: 16384
 ---
-You are a protocol analyst reading an RFC's Table of Contents.
+You are a protocol analyst reading a protocol specification's or RFC's Table of Contents.
 Your task is to identify the EXACT section numbers that define the complete cryptographic message exchange, handshake flights, and cryptographic payload/key/MAC structures between principals.
 
 Guidelines:
