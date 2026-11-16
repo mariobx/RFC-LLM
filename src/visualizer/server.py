@@ -13,6 +13,7 @@ from aiohttp import web
 
 from src.logging_config import PipelineMetricsCSVLogger
 from src.pipeline_events import GLOBAL_EVENT_BUS, PipelineEvent
+from src.prompt_loader import PROMPT_BOOK_SPLITTER, PROMPT_RFC_STYLE_DISTILLER, load_prompt_spec
 from src.system_config import SYSTEM_CONFIG
 from src.verification_engine.trajectory_metadata_exporter import compute_security_findings
 
@@ -533,6 +534,68 @@ def _load_csv_analytics_payload() -> Dict[str, Any]:
     }
 
 
+_XHTML_FRAGMENT_JUMP_SNIPPET = """<style type="text/css">
+svg text[onclick], a[href^="#"] { cursor: pointer; }
+</style>
+<script type="application/javascript">//<![CDATA[
+(function() {
+  function jumpToHash(raw) {
+    if (!raw || typeof raw !== 'string') return false;
+    var idx = raw.indexOf('#');
+    if (idx < 0) return false;
+    var id = decodeURIComponent(raw.slice(idx + 1));
+    if (!id) return false;
+    var target = document.getElementById(id) || document.getElementsByName(id)[0];
+    if (target) {
+      target.scrollIntoView({ behavior: 'auto', block: 'start' });
+      return true;
+    }
+    return false;
+  }
+  var origOpen = window.open;
+  window.open = function(url, target, features) {
+    if (typeof url === 'string' && url.charAt(0) === '#') {
+      jumpToHash(url);
+      return window;
+    }
+    return origOpen ? origOpen.call(window, url, target, features) : null;
+  };
+  document.addEventListener('click', function(e) {
+    var el = e.target;
+    while (el && el !== document) {
+      if (el.getAttribute) {
+        var oc = el.getAttribute('onclick') || '';
+        var m = oc.match(/#[A-Za-z0-9_.:-]+/);
+        if (m && jumpToHash(m[0])) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        var hr = el.getAttribute('href') || '';
+        if (hr.charAt(0) === '#' && jumpToHash(hr)) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+      }
+      el = el.parentNode;
+    }
+  }, true);
+})();
+//]]></script>"""
+
+
+def _inject_xhtml_fragment_jump_script(body: str) -> str:
+    """Enables reliable in-frame fragment jumps in MITRE CPSA XHTML even inside restricted iframes."""
+    if "jumpToHash" in body:
+        return body
+    if "</body>" in body:
+        return body.replace("</body>", _XHTML_FRAGMENT_JUMP_SNIPPET + "\n</body>", 1)
+    if "</BODY>" in body:
+        return body.replace("</BODY>", _XHTML_FRAGMENT_JUMP_SNIPPET + "\n</BODY>", 1)
+    return body
+
+
 class VisualizerServer:
     """Manages SSE streaming, lazy per-tab hydration, and dashboard state."""
 
@@ -570,6 +633,8 @@ class VisualizerServer:
         return web.json_response({
             "router_model": SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL,
             "section_router_model": SYSTEM_CONFIG.DEFAULT_SECTION_ROUTER_MODEL,
+            "distill_model": load_prompt_spec(PROMPT_RFC_STYLE_DISTILLER).model,
+            "splitter_model": load_prompt_spec(PROMPT_BOOK_SPLITTER).model,
             "extraction_model": SYSTEM_CONFIG.DEFAULT_EXTRACTION_MODEL,
             "correction_model": SYSTEM_CONFIG.DEFAULT_CORRECTION_MODEL,
             "repair_model": SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL,
@@ -681,6 +746,9 @@ class VisualizerServer:
 
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             body = f.read()
+
+        if path.suffix in (".xhtml", ".html"):
+            body = _inject_xhtml_fragment_jump_script(body)
 
         return web.Response(text=body, content_type=content_type)
 

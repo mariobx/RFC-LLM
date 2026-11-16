@@ -2,44 +2,17 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-16 18:13:53 UTC · Git: `main` @ `f1ef8ddb44ad` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~31,660*
+*Generated: 2026-11-16 18:14:29 UTC · Git: `main` @ `3c1b894d9db8` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~31,660*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `f1ef8ddb44ad` — feat(resume): make run_manifest.json and metadata_index paths portable across PCs
-- **Added (6):**
-  - `prompts/00_book_protocol_splitter.md`
-  - `prompts/08_rfc_style_distiller.md`
-  - `src/document_ingestion/pdf_and_book_splitter.py`
-  - `src/document_ingestion/programmatic_debloater.py`
-  - `src/document_ingestion/rfc_style_distiller.py`
-  - `tests/test_non_rfc_and_rfc_style.py`
-- **Modified (22):**
-  - `.gitignore`
-  - `README.md`
-  - `docs/ARCHITECTURE.md`
-  - `docs/MASTER_BLUEPRINT.md`
-  - `docs/QUICKSTART_AND_OPERATIONS.md`
-  - `docs/README.md`
-  - `docs/TIERED_MODEL_ROUTING.md`
-  - `prompts/01_applicability_gate.md`
-  - `prompts/02_section_router.md`
-  - `prompts/03_protocol_extraction.md`
-  - `prompts/README.md`
-  - `src/cost_tracker.py`
-  - `src/document_ingestion/rfc_header_filter.py`
-  - `src/document_ingestion/rfc_toc_parser.py`
-  - `src/document_ingestion/verbatim_section_slicer.py`
-  - `src/generate_think/dspy_think_synthesizer.py`
-  - `src/main_pipeline_orchestrator.py`
-  - `src/pipeline.py`
-  - `src/prompt_loader.py`
-  - `src/verification_engine/trajectory_metadata_exporter.py`
-  - `src/visualizer/server.py`
-  - `src/visualizer/static/index.html`
+- **Git commit:** `3c1b894d9db8` — feat(ingestion,cli,docs): add global standards splitter, $0 debloater, and paired --rfc-style mode
+- No file changes detected since the previous sync.
+- **Added (0):** none
+- **Modified (0):** none
 - **Deleted (0):** none
 
 ---
