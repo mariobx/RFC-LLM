@@ -239,6 +239,61 @@ def extract_protocol_specification(
                 or "Extracted specification contains zero cryptographic primitives (cleartext or transport-delegated protocol)."
             )
 
+    # Stage 2 Secrecy Listener Coverage Gate: every verifiable protocol MUST declare either at least one
+    # confidential target in `primary_secrecy_goals` / `skeletons[].listeners`, OR an explicit
+    # `auth_only_rationale` explaining why the exchange is authentication-only with no secret.
+    has_declared_listener_goal = bool(specification.primary_secrecy_goals) or any(
+        bool(skel.listeners) for skel in specification.skeletons
+    )
+    has_auth_rationale = bool((specification.auth_only_rationale or "").strip())
+    if (
+        specification.is_verifiable_protocol
+        and specification.roles
+        and not has_declared_listener_goal
+        and not has_auth_rationale
+    ):
+        secrecy_gate_error = (
+            "Extracted verifiable protocol omitted BOTH `primary_secrecy_goals` (and any `listeners` skeleton) "
+            "AND `auth_only_rationale`. Whenever the specification establishes or transmits a session key (`skey`), "
+            "derived key (`[\"hash\", ...]`), DH shared secret (`[\"exp\", ...]`), or encrypted confidential token, "
+            "populate `primary_secrecy_goals` with that confidential term (never a long-term `non-orig` key). "
+            "If and ONLY if the protocol is strictly authentication-only with zero confidential keys/secrets, "
+            "leave `primary_secrecy_goals: []` and populate `auth_only_rationale`."
+        )
+        LAST_EXTRACTION_METADATA["schema_self_correction_triggered"] = True
+        LAST_EXTRACTION_METADATA["schema_validation_error"] = secrecy_gate_error
+        logger.warning(
+            "Stage 2 extracted protocol '%s' omitted primary_secrecy_goals and auth_only_rationale. Triggering 1-shot listener gate...",
+            protocol_name,
+        )
+        corr_spec = load_prompt_spec(PROMPT_SCHEMA_SELF_CORRECTION)
+        corr_model = model or corr_spec.model
+        corr_kwargs = SYSTEM_CONFIG.get_llm_kwargs(
+            corr_model,
+            temperature=corr_spec.temperature,
+            max_tokens=corr_spec.max_tokens,
+            json_mode=True,
+        )
+        try:
+            correction_response = litellm.completion(
+                **corr_kwargs,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                    {"role": "assistant", "content": specification.model_dump_json()},
+                    {"role": "user", "content": secrecy_gate_error},
+                ],
+                timeout=corr_spec.timeout,
+                num_retries=0,
+            )
+            from src.cost_tracker import GLOBAL_COST_TRACKER
+            GLOBAL_COST_TRACKER.record_llm_call(correction_response, role="extraction", model_name=corr_model, stage=2)
+            corrected_data = parse_llm_json(correction_response.choices[0].message.content)
+            specification = CPSAProtocolSpecification.model_validate(corrected_data)
+            logger.info("Stage 2 secrecy listener self-correction SUCCEEDED")
+        except Exception as exc:
+            logger.warning("Stage 2 secrecy listener self-correction skipped (%s); continuing.", exc)
+
     if not specification.is_verifiable_protocol or not specification.roles:
         logger.info(
             "Stage 2 determined '%s' is not a verifiable cryptographic protocol: %s",

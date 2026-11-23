@@ -22,7 +22,7 @@ ABSOLUTE 1-TO-1 VERBATIM SPECIFICATION GROUNDING MANDATE (ZERO HALLUCINATION):
 - NEVER substitute generic textbook terms (do NOT inject `client_random`, `server_random`, or `premaster_secret` unless the RFC is literally TLS). Name every variable after the exact field, attribute, header, or key terminology used in the RFC text, and cite the exact RFC field name in `rfc_field`.
 - If the RFC specifies a 2-message exchange, model 2 messages; if it specifies 4 messages, model 4 messages. Do NOT add or remove protocol flights.
 - MANDATORY CRYPTOGRAPHIC STRUCTURE (NO DEGENERATE PLAINTEXT-ONLY PROTOCOLS): Whenever `"is_verifiable_protocol": true`, your specification MUST model the RFC's cryptographic flights (such as `CertificateVerify`, `Finished`, `ClientKeyExchange`, `Signature`, `MAC`, `HMAC`, `AUTH`, encrypted payloads, or Diffie-Hellman key agreement) using CPSA cryptographic operators (`["enc", ..., ["privk", ...]]`, `["enc", ..., ["pubk", ...]]`, `["enc", ..., ["ltk", ...]]`, `["hash", ...]`, `["exp", ...]`) and declare the corresponding uncompromised keys in `non_originating`. NEVER flatten cryptographic handshake flights into bare plaintext `data` variables—doing so allows the Dolev-Yao adversary to forge every flight by itself in a degenerate 1-strand shape!
-- If the RFC exchange only performs authentication (e.g., via keyed hash/MAC or digital signature) and does NOT transmit or establish a confidential secret or session key, set `primary_secrecy_goals: []` and do NOT create a `deflistener` skeleton. NEVER invent a fake secret variable or place a pre-shared `non-orig` key inside `deflistener`.
+- Whenever the RFC establishes or transmits a confidential secret, session key (`skey`), derived key (`["hash", ...]`), Diffie-Hellman shared secret (`["exp", ...]`), or encrypted confidential payload/token, you MUST list it in `primary_secrecy_goals` AND create a dedicated Secrecy `defskeleton` with `listeners`. If and ONLY if the RFC exchange strictly performs authentication (e.g., challenge-response MAC/signature) and transmits or derives ZERO confidential keys or secrets, set `primary_secrecy_goals: []` and populate `auth_only_rationale` explaining why. NEVER invent a fake secret variable or place a pre-shared `non-orig` key inside `deflistener`.
 
 CRITICAL MITRE CPSA 4.4.9 MANUAL GROUNDING (Chapters 2, 3, 4, 10 - Tables 10.1 through 10.6):
 Every extracted construct must strictly obey the MITRE CPSA formal syntax:
@@ -81,9 +81,10 @@ Every extracted construct must strictly obey the MITRE CPSA formal syntax:
      * "outputs": Established return terms (e.g. negotiated session tokens). Must NEVER repeat an "inputs" variable.
      * "unique_originating": Fresh nonces or secrets (sort "text", "data", "skey", "akey") generated and first sent by this role.
 
-4. Primary Secrecy & Confidentiality Goals (1-to-1 with RFC):
-   - If and ONLY if the RFC exchange transmits or establishes a confidential secret or session key, list that RFC variable in `primary_secrecy_goals`.
-   - If the RFC exchange is authentication-only and does NOT establish or transmit a confidential secret, set `primary_secrecy_goals: []`. NEVER place a pre-shared/long-term `non_originating` key into `primary_secrecy_goals` or `listeners` (in CPSA, placing a `non-orig` key in `deflistener` is a fatal compiler error: `Skeleton not well formed: non-orig <key> carried`).
+4. Primary Secrecy & Confidentiality Goals (1-to-1 with RFC — Mandatory Coverage):
+   - Whenever the RFC transmits, derives, or establishes a session key (`skey`), derived key (`["hash", ...]`), Diffie-Hellman shared secret (`["exp", ...]`), premaster secret, or confidential payload, you MUST list that target term in `primary_secrecy_goals` and include Secrecy Skeleton 3 with `listeners`.
+   - Only if the RFC exchange is strictly authentication-only and does NOT establish or transmit any confidential key or secret: set `primary_secrecy_goals: []` AND populate `auth_only_rationale` with a concise 1-sentence reason.
+   - NEVER place a pre-shared/long-term `non_originating` key (`ltk`/`privk`) into `primary_secrecy_goals` or `listeners` (in CPSA, placing a `non-orig` key in `deflistener` is a fatal compiler error: `Skeleton not well formed: non-orig <key> carried`).
 
 5. Point-of-View Preskeletons (Chapters 3 & 6):
    - POV Skeleton 1 (Initiator POV - Realized Handshake Shape):
@@ -96,7 +97,7 @@ Every extracted construct must strictly obey the MITRE CPSA formal syntax:
      * non_originating: uncompromised long-term/private keys from the RFC
      * unique_originating: [] (rely on the role's `unique_originating` declarations)
      * listeners: [] (STRICTLY EMPTY)
-   - Secrecy Skeleton 3 (Confidentiality Proof — ONLY when the RFC establishes/transmits a confidential secret):
+   - Secrecy Skeleton 3 (Confidentiality Proof — required whenever `primary_secrecy_goals` is non-empty):
      * strands: [defstrandmax for the role that originates or holds the secret, with `variable_bindings` mapping every role variable `(var -> var)`]
      * listeners: [the confidential secret established/transmitted in the RFC] (Yes: in MITRE CPSA, `(deflistener <secret>)` MUST reside inside the same Secrecy `defskeleton` alongside `(defstrandmax <Role> ...)` so that an honest strand originates the secret while CPSA tests whether the adversary can learn it!)
      * non_originating: uncompromised long-term/private keys (must NEVER overlap with `listeners`)

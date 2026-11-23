@@ -2,7 +2,7 @@
 
 > Tier 1/3 Domain Reference — Zero-hallucination CPSA 4.4.9 core operational rules (`refrences/cpsa_kb/01_core_rules/`), JSON AST to Scheme S-expression mapping, exhaustive compiler/solver diagnostic catalog, and the 5 consolidated official MITRE manuals (`refrences/cpsa_kb/02_manuals/`).
 
-*Generated: 2026-11-16 18:14:29 UTC · Git: `main` @ `3c1b894d9db8` · Tier: Tier 1/3 — Domain Reference Documentation & Modeling Guides · Files: 13 · Estimated Tokens: ~176,071*
+*Generated: 2026-11-16 21:02:18 UTC · Git: `main` @ `84cc2f9f3547` · Tier: Tier 1/3 — Domain Reference Documentation & Modeling Guides · Files: 13 · Estimated Tokens: ~176,071*
 
 ## Table of Contents
 

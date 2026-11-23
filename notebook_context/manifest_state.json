@@ -3,7 +3,10 @@
   "delta_of_this_sync": {
     "added": [],
     "deleted": [],
-    "modified": []
+    "modified": [
+      "src/visualizer/server.py",
+      "src/visualizer/static/index.html"
+    ]
   },
   "files": {
     ".env.example": {
@@ -1454,14 +1457,14 @@
     },
     "src/visualizer/server.py": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "381ee94cbebd3fffb87f5e0abc234ed576e7bb177d26ce3a3af12c38ee693e8d",
-      "size_bytes": 33617,
+      "sha256": "602419d9db00454139aab373f1b5db2821d54534051c415ac1e2ebf4a6a935cd",
+      "size_bytes": 35959,
       "status": "included"
     },
     "src/visualizer/static/index.html": {
       "bundle": "01_CORE_SOURCE_AND_CLI.md",
-      "sha256": "15b69d5d01e22c7c150f95250ec0d6c3f93a826cb223b2c2a9ddb809a623671d",
-      "size_bytes": 159270,
+      "sha256": "b9f48191c6414502d856e4f48997e906c777f19f9f1195f60c9552311ca05025",
+      "size_bytes": 226236,
       "status": "included"
     },
     "tests/conftest.py": {
@@ -1531,15 +1534,15 @@
       "status": "included"
     }
   },
-  "generated_at": "2026-11-16 18:14:29 UTC",
+  "generated_at": "2026-11-16 21:02:18 UTC",
   "git": {
     "branch": "main",
-    "commit": "3c1b894d9db81f084f2c4aa93738e4b51a4744e1",
-    "subject": "feat(ingestion,cli,docs): add global standards splitter, $0 debloater, and paired --rfc-style mode"
+    "commit": "84cc2f9f3547a0480a3f31c7c9e8eb13b6540e91",
+    "subject": "Redesign visualizer in Apple true-black dark mode with standalone folder loader, CPSA XHTML dark invert & fragment jumps, Stage/KB split, and X/Y Explorer modes"
   },
   "previous_git": {
     "branch": "main",
-    "commit": "f1ef8ddb44add6c44a2e14dd80db47bbfbaf200b",
-    "subject": "feat(resume): make run_manifest.json and metadata_index paths portable across PCs"
+    "commit": "3c1b894d9db81f084f2c4aa93738e4b51a4744e1",
+    "subject": "feat(ingestion,cli,docs): add global standards splitter, $0 debloater, and paired --rfc-style mode"
   }
 }

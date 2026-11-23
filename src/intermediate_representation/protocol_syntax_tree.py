@@ -1086,6 +1086,13 @@ class CPSAProtocolSpecification(BaseModel):
             "semantically identified by the LLM from the RFC whose confidentiality must be verified via listener strands."
         ),
     )
+    auth_only_rationale: Optional[str] = Field(
+        default=None,
+        description=(
+            "Concise explanation required when is_verifiable_protocol is True and primary_secrecy_goals is empty "
+            "(strictly authentication-only protocol with no confidential secret or session key)."
+        ),
+    )
     skeletons: List[CPSAPreskeleton] = Field(
         default_factory=list,
         description="Analysis preskeletons / points of view",

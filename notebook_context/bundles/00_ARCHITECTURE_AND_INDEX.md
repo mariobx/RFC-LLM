@@ -2,17 +2,18 @@
 
 > Tier 1 — Master repository index, executive Gemini ingestion guide, delta changelog since last sync, automated AST symbol and CLI script registry, heavy/binary asset inventory, architecture specifications, and root project configuration manifests.
 
-*Generated: 2026-11-16 18:14:29 UTC · Git: `main` @ `3c1b894d9db8` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~31,660*
+*Generated: 2026-11-16 21:02:18 UTC · Git: `main` @ `84cc2f9f3547` · Tier: Tier 1 — Architecture, Documentation & Project Configs · Files: 15 · Estimated Tokens: ~31,660*
 
 ---
 
 ## Changes Since Last Sync
 
 - **Git branch:** `main`
-- **Git commit:** `3c1b894d9db8` — feat(ingestion,cli,docs): add global standards splitter, $0 debloater, and paired --rfc-style mode
-- No file changes detected since the previous sync.
+- **Git commit:** `84cc2f9f3547` — Redesign visualizer in Apple true-black dark mode with standalone folder loader, CPSA XHTML dark invert & fragment jumps, Stage/KB split, and X/Y Explorer modes
 - **Added (0):** none
-- **Modified (0):** none
+- **Modified (2):**
+  - `src/visualizer/server.py`
+  - `src/visualizer/static/index.html`
 - **Deleted (0):** none
 
 ---
@@ -38,12 +39,12 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | Bundle | Title | Files | Size | Estimated Tokens | Tier |
 |---|---|---|---|---|---|
 | `00_ARCHITECTURE_AND_INDEX.md` | RFC-LLM Master Index, Architecture & Project Configuration | 15 | 123.9 KB | ~31,660 | Tier 1 — Architecture, Documentation & Project Configs |
-| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 53 | 1045.1 KB | ~267,465 | Tier 2 — Core Source Code & CLI Entrypoints |
+| `01_CORE_SOURCE_AND_CLI.md` | RFC-LLM Core Source Code, Compilers, IR & CLI Entrypoints | 53 | 1112.7 KB | ~284,782 | Tier 2 — Core Source Code & CLI Entrypoints |
 | `02_RAG_SCRIPTS_AND_TESTS.md` | CPSA Knowledge Base TOC & Pytest Verification Suites | 12 | 222.5 KB | ~56,720 | Tier 3 — Knowledge Base Index & Test Suites |
 | `03_CPSA_DOMAIN_KNOWLEDGE_AND_GUIDES.md` | CPSA 4.4.9 Core Rules, Compiler Diagnostics & Official Manuals | 13 | 694.5 KB | ~176,071 | Tier 1/3 — Domain Reference Documentation & Modeling Guides |
 | `04_CPSA_SCM_EXAMPLES_CORPUS.md` | Official MITRE CPSA Scheme (.scm) Protocol Examples & Catalog (151 Files) | 155 | 915.3 KB | ~234,169 | Tier 3 — Domain Reference Code Corpus (.scm) |
 
-**Total Ingested Context Payload:** ~766,085 tokens across all bundles (76.6% of Gemini 1M context window)
+**Total Ingested Context Payload:** ~783,402 tokens across all bundles (78.3% of Gemini 1M context window)
 
 ---
 
@@ -91,7 +92,7 @@ This unified repository context is optimized for ingestion into Gemini / LLM Not
 | `src/verification_engine/snowball_autopsy.py` | CPSA 4.4.9 State-Space Snowball Classifier, Herald Injector, | — | `is_snowball_state_error`, `inject_herald_options_into_scm`, `_extract_balanced_sexp`, `_normalize_primed_identifiers`, `_parse_skeleton_records`, `_extract_primed_variable_stats` … | — |
 | `src/verification_engine/trajectory_metadata_exporter.py` | Programmatic Trajectory & Formal Verification Metadata Expor | — | `split_top_level_sexprs`, `_extract_int_clause`, `_has_flag_clause`, `_extract_clause_block`, `_extract_root_deflisteners`, `_extract_root_deflistener` … | — |
 | `src/visualizer/__init__.py` | RFC-LLM Live Visualization and Interactive Dashboard Module. | — | — | — |
-| `src/visualizer/server.py` | Asynchronous web server for live and offline multi-RFC synth | `VisualizerServer` | `_get_manual_chunk_lookup`, `_resolve_chunks_by_ids`, `hydrate_tab_payload`, `_synthesize_events_from_trajectory`, `_load_csv_analytics_payload`, `run_visualizer_in_background` | — |
+| `src/visualizer/server.py` | Asynchronous web server for live and offline multi-RFC synth | `VisualizerServer` | `_get_manual_chunk_lookup`, `_resolve_chunks_by_ids`, `hydrate_tab_payload`, `_synthesize_events_from_trajectory`, `_load_csv_analytics_payload`, `_inject_xhtml_fragment_jump_script` … | — |
 | `tests/conftest.py` | Global pytest fixtures ensuring hermetic test execution with | — | `_hermetic_logs_directory` | — |
 | `tests/test_code_generation_and_verification.py` | Unit and Integration Tests for Code Generation and Verificat | — | `valid_unilateral_spec`, `unexecutable_spec`, `test_scheme_emitter_generates_valid_scm`, `test_roletran_gate_accepts_valid_protocol`, `test_roletran_gate_rejects_unexecutable_protocol`, `test_mitre_build_orchestrator_compiles_artifacts` … | — |
 | `tests/test_cpsa_kb_and_agentic_searcher.py` | Unit & Integration Tests for the CPSA 4.4.9 Knowledge Base,  | — | `_make_sample_spec`, `test_production_cpsa_kb_completeness_and_toc_flag`, `test_toc_rebuild_flag_lifecycle_in_isolated_kb`, `test_cpsa_kb_four_tools_precision`, `test_agentic_searcher_multi_tool_loop`, `test_two_speed_repair_trigger_skips_searcher_on_fast_attempt_and_escalates` … | — |

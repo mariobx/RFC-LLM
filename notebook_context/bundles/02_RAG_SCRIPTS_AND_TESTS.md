@@ -2,7 +2,7 @@
 
 > Tier 3 — Master CPSA 4.4.9 Knowledge Base Table of Contents (`refrences/cpsa_kb/TOC.md`) with `rebuild_toc` YAML flag, and the complete pytest unit and integration test suite (`tests/`).
 
-*Generated: 2026-11-16 18:14:29 UTC · Git: `main` @ `3c1b894d9db8` · Tier: Tier 3 — Knowledge Base Index & Test Suites · Files: 12 · Estimated Tokens: ~56,720*
+*Generated: 2026-11-16 21:02:18 UTC · Git: `main` @ `84cc2f9f3547` · Tier: Tier 3 — Knowledge Base Index & Test Suites · Files: 12 · Estimated Tokens: ~56,720*
 
 ## Table of Contents
 

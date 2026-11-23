@@ -104,6 +104,45 @@ def _extract_root_deflisteners(sexpr: str) -> List[str]:
     return terms
 
 
+def _extract_skeleton_assumptions(sexpr: str) -> Dict[str, List[str]]:
+    """Extracts active CPSA cryptographic assumptions (`non-orig`, `uniq-orig`, `uniq-gen`, `conf`, `auth`) from a root skeleton."""
+    op_block = _extract_clause_block(sexpr, "operation")
+    cleaned = sexpr.replace(op_block, "") if op_block else sexpr
+    stripped = cleaned.strip()
+    inner_body = (
+        stripped[1:-1]
+        if (stripped.startswith("(") and stripped.endswith(")"))
+        else stripped
+    )
+    assumptions: Dict[str, List[str]] = {
+        "non_orig": [],
+        "pen_non_orig": [],
+        "uniq_orig": [],
+        "uniq_gen": [],
+        "conf": [],
+        "auth": [],
+    }
+    clause_map = {
+        "non-orig": "non_orig",
+        "pen-non-orig": "pen_non_orig",
+        "uniq-orig": "uniq_orig",
+        "uniq-gen": "uniq_gen",
+        "conf": "conf",
+        "auth": "auth",
+    }
+    for sub in split_top_level_sexprs(inner_body):
+        for kw, key in clause_map.items():
+            if re.match(rf"^\(\s*{re.escape(kw)}\b", sub):
+                inner = re.sub(rf"^\(\s*{re.escape(kw)}\s+", "", sub[:-1]).strip()
+                if inner:
+                    for item in split_top_level_sexprs(inner) or [inner]:
+                        tok = item.strip()
+                        if tok and tok not in assumptions[key]:
+                            assumptions[key].append(tok)
+                break
+    return assumptions
+
+
 def _extract_root_deflistener(sexpr: str) -> Optional[str]:
     """Extracts the first listener term from a root preskeleton if `(deflistener ...)` is present outside `(operation ...)`."""
     terms = _extract_root_deflisteners(sexpr)
@@ -438,10 +477,12 @@ def analyze_shapes_txt(shapes_txt_path: Optional[Path]) -> Dict[str, Any]:
                 "skeleton_index": group_idx,
                 "root_label": lbl,
                 "skeleton_type": "secrecy_listener_pov" if has_listener else "participant_pov",
+                "pov_role": initial_strands[0]["role"] if initial_strands else None,
                 "comment": _extract_comment_string(block),
                 "has_deflistener": has_listener,
                 "listener_term": listener_term,
                 "listener_terms": listener_terms,
+                "assumptions": _extract_skeleton_assumptions(block),
                 "initial_strand_count": len(initial_strands),
                 "realized_shape_labels": [],
                 "realized_shapes_count": 0,
@@ -538,6 +579,7 @@ def compute_security_findings(
     shapes_analysis: Dict[str, Any],
     exploration_telemetry: Optional[Dict[str, Any]] = None,
     sas_formulas: Optional[List[str]] = None,
+    auth_only_rationale: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Produces an exhaustive, CPSA-4.4.9-manual-grounded formal security verdict report
     orthogonal to `quality_tier` (which grades translation & compilation fidelity).
@@ -620,32 +662,112 @@ def compute_security_findings(
     any_same_role_refl = any(bool(o.get("has_same_role_reflection")) for o in participant_povs)
     reflection_status = "SAME_ROLE_REFLECTION_DETECTED" if any_same_role_refl else "NO_REFLECTION"
 
-    # 5. Secrecy Analysis
+    # 5. Secrecy Analysis & Trustworthiness Triage
     protected_secrets: List[str] = []
     leaked_secrets: List[str] = []
+    secrecy_proof_details: List[Dict[str, Any]] = []
     for l_pov in listener_povs:
         terms = l_pov.get("listener_terms") or (
             [l_pov["listener_term"]]
             if l_pov.get("listener_term")
             else [f"listener_label_{l_pov.get('root_label')}"]
         )
-        if l_pov.get("realized_shapes_count", 0) == 0:
+        assumptions = l_pov.get("assumptions") or {}
+        non_orig_list = (assumptions.get("non_orig") or []) + (assumptions.get("pen_non_orig") or [])
+        conf_list = assumptions.get("conf") or []
+        shapes_cnt = int(l_pov.get("realized_shapes_count", 0))
+        max_s = int(l_pov.get("max_strands_in_realized_shape", 0) or 0)
+        leak_labels = list(l_pov.get("realized_shape_labels") or [])
+        pov_role = l_pov.get("pov_role")
+
+        if shapes_cnt == 0:
+            verdict = "PROVED"
+            confidence = "PROVED"
+            triage_reason = "0 adversary listener shapes realized under declared assumptions."
             for term in terms:
                 if term not in protected_secrets:
                     protected_secrets.append(term)
         else:
+            verdict = "LEAKED"
+            if not non_orig_list and not conf_list:
+                confidence = "LOW_CONFIDENCE_MODEL_OMISSION"
+                triage_reason = "No non-orig keys or confidential channels declared in listener skeleton."
+            elif max_s <= 1:
+                confidence = "LOW_CONFIDENCE_MODEL_OMISSION"
+                triage_reason = "Secret leaked in a trivial 1-strand shape without honest peer interaction."
+            else:
+                confidence = "HIGH_CONFIDENCE_FLAW"
+                triage_reason = "Adversary extracted secret despite non-orig/channel assumptions across multi-strand execution."
             for term in terms:
                 if term not in leaked_secrets:
                     leaked_secrets.append(term)
 
+        for term in terms:
+            secrecy_proof_details.append({
+                "root_label": l_pov.get("root_label"),
+                "secret_term": term,
+                "pov_role": pov_role,
+                "assumptions": assumptions,
+                "realized_shapes_count": shapes_cnt,
+                "leak_shape_labels": leak_labels,
+                "max_strands": max_s,
+                "verdict": verdict,
+                "confidence": confidence,
+                "triage_reason": triage_reason,
+            })
+
+    clean_auth_rationale = (auth_only_rationale or "").strip() or None
     if not listener_povs:
-        secrecy_status = "NOT_APPLICABLE_NO_LISTENER"
+        secrecy_status = "AUTH_ONLY_NO_SECRET" if clean_auth_rationale else "NOT_APPLICABLE_NO_LISTENER"
     elif protected_secrets and not leaked_secrets:
         secrecy_status = "SECRECY_PROVED"
     elif leaked_secrets and not protected_secrets:
         secrecy_status = "SECRECY_LEAK_DETECTED"
     else:
         secrecy_status = "PARTIAL_SECRECY"
+
+    # Plain-English formal summary for direct Security-tab readability
+    plain_english_summary: List[str] = []
+    if auth_profile == "MUTUAL_MULTI_STRAND":
+        plain_english_summary.append("Authentication: All participant POVs required at least one peer strand (mutual authentication proved).")
+    elif auth_profile == "UNILATERAL_AUTHENTICATED":
+        plain_english_summary.append("Authentication: Unilateral — some participant POVs proved peer interaction while at least one completed on 1 strand.")
+    elif auth_profile == "CONDITIONAL_BRANCHED_AUTHENTICATION":
+        plain_english_summary.append("Authentication: Branched — at least one POV admitted both a 1-strand unauthenticated shape and a >=2-strand shape.")
+    else:
+        plain_english_summary.append("Authentication: Single-strand or cleartext execution only (no peer strand guaranteed).")
+
+    if param_agreement_status == "FULL_PARAMETER_AGREEMENT":
+        plain_english_summary.append("Agreement: Counterparty strands agreed on all shared session parameters.")
+    elif all_disagreements:
+        ex = all_disagreements[0]
+        plain_english_summary.append(
+            f"Agreement: Counterparty disagreement on {ex.get('parameter')} "
+            f"({ex.get('pov_role')}={ex.get('pov_value')} vs {ex.get('peer_role')}={ex.get('peer_value')} in Shape #{ex.get('shape_label')})."
+        )
+
+    if secrecy_status == "SECRECY_PROVED":
+        plain_english_summary.append(
+            f"Secrecy: Proved (0 leak shapes) for {', '.join(protected_secrets)}."
+        )
+    elif secrecy_proof_details and leaked_secrets:
+        hi = [d for d in secrecy_proof_details if d["confidence"] == "HIGH_CONFIDENCE_FLAW"]
+        lo = [d for d in secrecy_proof_details if d["confidence"] == "LOW_CONFIDENCE_MODEL_OMISSION"]
+        if hi:
+            d0 = hi[0]
+            lbls = ", ".join(f"#{x}" for x in d0["leak_shape_labels"])
+            plain_english_summary.append(
+                f"Secrecy Leak (High Confidence): {d0['secret_term']} exposed in shape(s) {lbls} despite active assumptions."
+            )
+        if lo:
+            d0 = lo[0]
+            plain_english_summary.append(
+                f"Secrecy Warning (Low Confidence / Modeling Gap): {d0['secret_term']} leaked — {d0['triage_reason']}"
+            )
+    elif clean_auth_rationale:
+        plain_english_summary.append(f"Secrecy: Authentication-only specification ({clean_auth_rationale}).")
+    else:
+        plain_english_summary.append("Secrecy: No listener skeleton declared (confidentiality untested).")
 
     # 6. Explicit `defgoal` Satisfaction
     goal_verdicts = [o.get("goal_satisfied") for o in outcomes if o.get("goal_satisfied") is not None]
@@ -708,6 +830,9 @@ def compute_security_findings(
         "secrecy_status": secrecy_status,
         "protected_secrets": protected_secrets,
         "leaked_secrets": leaked_secrets,
+        "secrecy_proof_details": secrecy_proof_details,
+        "auth_only_rationale": clean_auth_rationale,
+        "plain_english_summary": plain_english_summary,
         "defgoal_satisfaction_status": defgoal_status,
         "authentication_tests_summary": auth_tests,
         "shape_analysis_sentences_count": len(sas_list),
@@ -807,9 +932,18 @@ def compute_quality_assessment(
                 sec_report.setdefault("vulnerabilities_and_anomalies", []).append(anomaly_msg)
                 sec_report["anomalies_count"] = len(sec_report["vulnerabilities_and_anomalies"])
 
+    any_listener_leaked = any(
+        o.get("realized_shapes_count", 0) > 0 for o in listener_povs
+    ) or bool((sec_report or {}).get("leaked_secrets"))
+
     if not all_povs_realized or not has_cryptographic_primitives or any_preseeded_no_progress:
         tier = "BRONZE"
-    elif roletran_passed and causal_multi_pov_count >= 1 and not has_dangling_response_flight:
+    elif (
+        roletran_passed
+        and causal_multi_pov_count >= 1
+        and not has_dangling_response_flight
+        and not any_listener_leaked
+    ):
         tier = "GOLD"
     else:
         tier = "SILVER"
@@ -901,6 +1035,7 @@ def write_trajectory_metadata_bundle(
         shapes_analysis=shapes_analysis,
         exploration_telemetry=exploration_telemetry,
         sas_formulas=sas_formulas,
+        auth_only_rationale=final_spec.auth_only_rationale if final_spec else None,
     )
 
     stage5_attempts = stage5_record.get("repair_attempts", [])

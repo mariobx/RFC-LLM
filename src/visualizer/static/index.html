@@ -2852,12 +2852,127 @@
       const zeroPovs = (sf.unrealized_pov_roles || []).join(', ') || 'None';
       const protSecrets = (sf.protected_secrets || []).join(', ') || 'None';
       const leakSecrets = (sf.leaked_secrets || []).join(', ') || 'None';
+      const authRationale = sf.auth_only_rationale || (payload.attempts && payload.attempts.find(a => a.ast && a.ast.auth_only_rationale)?.ast?.auth_only_rationale) || '';
       const anomalies = sf.vulnerabilities_and_anomalies || [];
       const disagreements = sf.disagreed_parameters || sf.parameter_disagreements || [];
       const reflections = sf.role_reflections || [];
       const authTests = sf.authentication_tests_summary || {};
       const sasList = sf.shape_analysis_sentences || sf.shape_analysis_sentences_defgoals || [];
       const perSkel = shapesAnalysis.per_preskeleton_outcomes || shapesAnalysis.per_preskeleton || [];
+
+      // Synthesize client-side Plain-English Summary if not supplied by older trajectory JSONs
+      const summaryLines = Array.isArray(sf.plain_english_summary) && sf.plain_english_summary.length > 0
+        ? sf.plain_english_summary
+        : (() => {
+            const out = [];
+            const ap = String(sf.authentication_profile || '');
+            if (ap === 'MUTUAL_MULTI_STRAND') out.push('Authentication: Mutual authentication proved across all participant POVs (>=2 strands).');
+            else if (ap === 'UNILATERAL_AUTHENTICATED') out.push('Authentication: Unilateral — at least one role proved peer interaction while another completed locally.');
+            else if (ap === 'CONDITIONAL_BRANCHED_AUTHENTICATION') out.push('Authentication: Branched — a role admitted both 1-strand and >=2-strand realizations.');
+            else out.push('Authentication: Single-strand or cleartext execution only (no peer strand guaranteed).');
+
+            if (disagreements.length > 0) {
+              const d0 = disagreements[0];
+              out.push(`Agreement: Disagreement on ${d0.parameter || d0.param} (${d0.pov_role || 'POV'}=${d0.pov_value || d0.pov_val} vs ${d0.peer_role || 'Peer'}=${d0.peer_value || d0.peer_val}${d0.shape_label !== undefined ? ` in Shape #${d0.shape_label}` : ''}).`);
+            } else if (sf.parameter_agreement_status === 'FULL_PARAMETER_AGREEMENT') {
+              out.push('Agreement: Counterparty strands agreed on all shared session parameters.');
+            }
+
+            if ((sf.leaked_secrets || []).length > 0) {
+              out.push(`Secrecy: Adversary listener realized shape(s) exposing ${sf.leaked_secrets.join(', ')}.`);
+            } else if ((sf.protected_secrets || []).length > 0) {
+              out.push(`Secrecy: Proved (0 leak shapes) for ${sf.protected_secrets.join(', ')}.`);
+            } else if (authRationale) {
+              out.push(`Secrecy: Authentication-only exchange (${authRationale}).`);
+            } else {
+              out.push('Secrecy: No listener skeleton declared (confidentiality untested).');
+            }
+            return out;
+          })();
+
+      const summaryHtml = `
+        <div class="sec-banner" style="border-color:var(--border-strong);">
+          <div style="margin-bottom:6px; font-weight:600; color:var(--text);">Plain-English Security Verdict</div>
+          <ul style="padding-left:18px; color:var(--text-secondary); display:flex; flex-direction:column; gap:3px;">
+            ${summaryLines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+
+      // Build Per-Secret Proof & Trust Triage Table (supports new `secrecy_proof_details` + legacy runs)
+      let proofDetails = Array.isArray(sf.secrecy_proof_details) && sf.secrecy_proof_details.length > 0
+        ? sf.secrecy_proof_details
+        : [];
+      if (proofDetails.length === 0) {
+        perSkel.filter(sk => Boolean(sk.is_secrecy_listener || sk.skeleton_type === 'secrecy_listener_pov' || (sk.listener_vars || sk.listener_terms || []).length > 0)).forEach(sk => {
+          const terms = sk.listener_vars || sk.listener_terms || (sk.listener_term ? [sk.listener_term] : ['(unknown)']);
+          const realCnt = sk.shapes_realized ?? sk.realized_shapes_count ?? 0;
+          const maxS = sk.max_strands_in_realized_shape ?? sk.max_strands_in_any_shape ?? 0;
+          const assump = sk.assumptions || {};
+          const hasProt = ((assump.non_orig || []).length + (assump.pen_non_orig || []).length + (assump.conf || []).length) > 0;
+          let conf = realCnt === 0 ? 'PROVED' : (maxS === 1 ? 'LOW_CONFIDENCE_MODEL_OMISSION' : 'HIGH_CONFIDENCE_FLAW');
+          let reason = realCnt === 0
+            ? '0 adversary listener shapes realized.'
+            : (maxS === 1
+                ? 'Leaked in 1-strand shape without peer interaction (check non-orig / channel assumptions).'
+                : (!hasProt && Object.keys(assump).length === 0 ? 'Check listener non-orig keys in Scheme/Shapes before escalating.' : 'Listener realized multi-strand leak shapes.'));
+          terms.forEach(term => {
+            proofDetails.push({
+              root_label: sk.root_label ?? sk.skeleton_label,
+              secret_term: term,
+              pov_role: sk.pov_role || 'Secrecy POV',
+              assumptions: assump,
+              realized_shapes_count: realCnt,
+              leak_shape_labels: sk.realized_shape_labels || [],
+              max_strands: maxS,
+              verdict: realCnt === 0 ? 'PROVED' : 'LEAKED',
+              confidence: conf,
+              triage_reason: reason
+            });
+          });
+        });
+      }
+
+      const fmtAssumptions = a => {
+        if (!a || typeof a !== 'object') return 'Inspect .scm';
+        const parts = [];
+        if ((a.non_orig || []).length) parts.push(`non-orig: ${a.non_orig.join(', ')}`);
+        if ((a.conf || []).length) parts.push(`conf: ${a.conf.join(', ')}`);
+        if ((a.uniq_orig || []).length) parts.push(`uniq-orig: ${a.uniq_orig.join(', ')}`);
+        if ((a.uniq_gen || []).length) parts.push(`uniq-gen: ${a.uniq_gen.join(', ')}`);
+        return parts.length ? parts.join(' | ') : 'None declared';
+      };
+
+      const secrecyRowsHtml = proofDetails.length > 0
+        ? proofDetails.map(d => {
+            const dotCls = d.verdict === 'PROVED' ? 'verified' : (d.confidence === 'HIGH_CONFIDENCE_FLAW' ? 'failed' : 'warn');
+            const confLabel = d.confidence === 'PROVED'
+              ? 'PROVED'
+              : (d.confidence === 'HIGH_CONFIDENCE_FLAW' ? 'HIGH CONFIDENCE FLAW' : 'LOW CONFIDENCE (MODEL GAP)');
+            const lblStr = (d.leak_shape_labels || []).length ? ` (${d.leak_shape_labels.map(x => `#${x}`).join(', ')})` : '';
+            const resText = d.verdict === 'PROVED' ? '0 shapes (Unrealized)' : `${d.realized_shapes_count} shape(s)${lblStr}`;
+            return `
+              <tr>
+                <td>#${escapeHtml(String(d.root_label ?? '--'))}</td>
+                <td style="color:var(--text); font-weight:600;">${escapeHtml(d.secret_term || '')}</td>
+                <td>${escapeHtml(d.pov_role || '--')}</td>
+                <td style="white-space:normal; max-width:260px;">${escapeHtml(fmtAssumptions(d.assumptions))}</td>
+                <td><span class="dot ${dotCls}" style="margin-right:6px;"></span>${escapeHtml(resText)}</td>
+                <td style="white-space:normal; max-width:280px;">
+                  <div style="color:var(--text); font-weight:600;">${escapeHtml(confLabel)}</div>
+                  <div style="color:var(--text-muted); font-size:10.5px;">${escapeHtml(d.triage_reason || '')}</div>
+                </td>
+                <td><button type="button" class="btn" style="padding:2px 8px; font-size:10.5px;" onclick="switchProtoTab('graph')">Inspect</button></td>
+              </tr>
+            `;
+          }).join('')
+        : `<tr><td colspan="7" style="color:var(--text-muted);">${authRationale ? `Authentication-only specification: ${escapeHtml(authRationale)}` : 'No secrecy listener skeleton declared in this specification.'}</td></tr>`;
+
+      const disagreementDetailsHtml = disagreements.length > 0
+        ? `<ul style="padding-left:16px; margin-top:4px; color:var(--text-secondary);">
+             ${disagreements.map(d => `<li>Shape #${escapeHtml(String(d.shape_label ?? '?'))}: ${escapeHtml(d.pov_role || '')} vs ${escapeHtml(d.peer_role || '')} on <strong style="color:var(--text);">${escapeHtml(d.parameter || d.param || '')}</strong> (${escapeHtml(d.pov_value || d.pov_val || '')} != ${escapeHtml(d.peer_value || d.peer_val || '')})</li>`).join('')}
+           </ul>`
+        : 'All peer strands agreed (0 disagreements).';
 
       const anomaliesHtml = anomalies.length === 0
         ? `<div class="sec-banner"><span class="dot verified" style="margin-right:6px;"></span><strong style="color:var(--text);">0 Formal Anomalies Detected:</strong> No parameter disagreements, reflection attacks, or secrecy leaks observed.</div>`
@@ -2878,7 +2993,7 @@
             const isSecList = Boolean(sk.is_secrecy_listener || sk.query_type === 'SECRECY_LISTENER' || (sk.listener_vars || sk.listener_terms || []).length > 0);
             const listVars = sk.listener_vars || sk.listener_terms || [];
             const realCount = sk.shapes_realized ?? sk.realized_shapes_count ?? 0;
-            const hasMulti = Boolean(sk.has_multi_strand_shape || (sk.max_strands_in_any_shape || 0) >= 2);
+            const hasMulti = Boolean(sk.has_multi_strand_shape || (sk.max_strands_in_any_shape || sk.max_strands_in_realized_shape || 0) >= 2);
             const hasSingle = Boolean(sk.has_single_strand_shape || (realCount > 0 && !hasMulti));
             const hasRefl = Boolean(sk.has_same_role_reflection || sk.has_self_reflection_split || (sk.role_reflections || []).length > 0);
             const refStr = hasRefl ? (sk.has_same_role_reflection ? 'Same-Role Reflection' : 'Branched 1-Strand') : 'Distinct Peers';
@@ -2912,9 +3027,35 @@
           <span>Anomalies: <span class="tier-pill">${anomalies.length}</span></span>
         </div>
 
+        ${summaryHtml}
+
+        <div class="panel-card" style="padding:10px 12px; margin-bottom:12px;">
+          <div class="panel-card-head" style="padding-bottom:6px;">
+            <span class="panel-card-title">Secrecy Proof &amp; Trust Triage</span>
+            <span class="panel-card-sub">${proofDetails.length} Listener Goal${proofDetails.length === 1 ? '' : 's'}</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Skel</th>
+                  <th>Secret Term</th>
+                  <th>Origin Role</th>
+                  <th>Declared Assumptions</th>
+                  <th>CPSA Result</th>
+                  <th>Trust / Triage</th>
+                  <th>Shapes</th>
+                </tr>
+              </thead>
+              <tbody>${secrecyRowsHtml}</tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="sec-banner">
           ${rationale ? `<div><strong style="color:var(--text);">Intake Rationale:</strong> ${escapeHtml(rationale)}</div>` : ''}
           ${qa.tier_rationale ? `<div style="margin-top:4px;"><strong style="color:var(--text);">Quality Tier Rationale:</strong> ${escapeHtml(qa.tier_rationale)}</div>` : ''}
+          ${authRationale ? `<div style="margin-top:4px;"><strong style="color:var(--text);">Auth-Only Rationale:</strong> ${escapeHtml(authRationale)}</div>` : ''}
         </div>
 
         ${anomaliesHtml}
@@ -2945,7 +3086,7 @@
               <span>3. Parameter Agreement</span>
               <span class="tier-pill" data-tooltip-key="${escapeHtml(sf.parameter_agreement_status || '')}">${escapeHtml(sf.parameter_agreement_status || 'N/A')}</span>
             </div>
-            <div class="sec-card-body">Disagreements: ${disagreements.length} (hover pill for CPSA definition)</div>
+            <div class="sec-card-body">${disagreementDetailsHtml}</div>
           </div>
 
           <div class="sec-card">

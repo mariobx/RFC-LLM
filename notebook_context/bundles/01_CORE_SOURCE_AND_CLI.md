@@ -2,7 +2,7 @@
 
 > Tier 2 — Complete core synthesis and Phase 3 <think> curation pipeline (`src/` and `prompts/`), including YAML-frontmatter prompt templates, RFC document ingestion, order-sorted message algebra intermediate representation (IR), constrained protocol extraction, CPSA 4.4.9 JSON/Scheme code generation, roletran & compiler self-healing verification engine, trajectory & quality-tier exporter, DSPy hindsight `<think>` synthesizer (`src/generate_think/`), virtualized multi-RFC web visualizer, root `rfc-llm` and `rfc-think` CLI entrypoints, and the benchmark EDHOC input RFC.
 
-*Generated: 2026-11-16 18:14:29 UTC · Git: `main` @ `3c1b894d9db8` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 53 · Estimated Tokens: ~267,465*
+*Generated: 2026-11-16 21:02:18 UTC · Git: `main` @ `84cc2f9f3547` · Tier: Tier 2 — Core Source Code & CLI Entrypoints · Files: 53 · Estimated Tokens: ~284,782*
 
 ## Table of Contents
 
@@ -19610,7 +19610,7 @@ def update_run_metadata_index(
 
 ### `src/visualizer/server.py`
 
-*sha256:`381ee94cbebd` · 756 lines · 32.8 KB (~8,404 tokens) · lang:`python`*
+*sha256:`602419d9db00` · 824 lines · 35.1 KB (~8,989 tokens) · lang:`python`*
 
 ```python
 """Asynchronous web server for live and offline multi-RFC synthesis visualization."""
@@ -19628,6 +19628,7 @@ from aiohttp import web
 
 from src.logging_config import PipelineMetricsCSVLogger
 from src.pipeline_events import GLOBAL_EVENT_BUS, PipelineEvent
+from src.prompt_loader import PROMPT_BOOK_SPLITTER, PROMPT_RFC_STYLE_DISTILLER, load_prompt_spec
 from src.system_config import SYSTEM_CONFIG
 from src.verification_engine.trajectory_metadata_exporter import compute_security_findings
 
@@ -20148,6 +20149,68 @@ def _load_csv_analytics_payload() -> Dict[str, Any]:
     }
 
 
+_XHTML_FRAGMENT_JUMP_SNIPPET = """<style type="text/css">
+svg text[onclick], a[href^="#"] { cursor: pointer; }
+</style>
+<script type="application/javascript">//<![CDATA[
+(function() {
+  function jumpToHash(raw) {
+    if (!raw || typeof raw !== 'string') return false;
+    var idx = raw.indexOf('#');
+    if (idx < 0) return false;
+    var id = decodeURIComponent(raw.slice(idx + 1));
+    if (!id) return false;
+    var target = document.getElementById(id) || document.getElementsByName(id)[0];
+    if (target) {
+      target.scrollIntoView({ behavior: 'auto', block: 'start' });
+      return true;
+    }
+    return false;
+  }
+  var origOpen = window.open;
+  window.open = function(url, target, features) {
+    if (typeof url === 'string' && url.charAt(0) === '#') {
+      jumpToHash(url);
+      return window;
+    }
+    return origOpen ? origOpen.call(window, url, target, features) : null;
+  };
+  document.addEventListener('click', function(e) {
+    var el = e.target;
+    while (el && el !== document) {
+      if (el.getAttribute) {
+        var oc = el.getAttribute('onclick') || '';
+        var m = oc.match(/#[A-Za-z0-9_.:-]+/);
+        if (m && jumpToHash(m[0])) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        var hr = el.getAttribute('href') || '';
+        if (hr.charAt(0) === '#' && jumpToHash(hr)) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+      }
+      el = el.parentNode;
+    }
+  }, true);
+})();
+//]]></script>"""
+
+
+def _inject_xhtml_fragment_jump_script(body: str) -> str:
+    """Enables reliable in-frame fragment jumps in MITRE CPSA XHTML even inside restricted iframes."""
+    if "jumpToHash" in body:
+        return body
+    if "</body>" in body:
+        return body.replace("</body>", _XHTML_FRAGMENT_JUMP_SNIPPET + "\n</body>", 1)
+    if "</BODY>" in body:
+        return body.replace("</BODY>", _XHTML_FRAGMENT_JUMP_SNIPPET + "\n</BODY>", 1)
+    return body
+
+
 class VisualizerServer:
     """Manages SSE streaming, lazy per-tab hydration, and dashboard state."""
 
@@ -20185,6 +20248,8 @@ class VisualizerServer:
         return web.json_response({
             "router_model": SYSTEM_CONFIG.DEFAULT_ROUTER_MODEL,
             "section_router_model": SYSTEM_CONFIG.DEFAULT_SECTION_ROUTER_MODEL,
+            "distill_model": load_prompt_spec(PROMPT_RFC_STYLE_DISTILLER).model,
+            "splitter_model": load_prompt_spec(PROMPT_BOOK_SPLITTER).model,
             "extraction_model": SYSTEM_CONFIG.DEFAULT_EXTRACTION_MODEL,
             "correction_model": SYSTEM_CONFIG.DEFAULT_CORRECTION_MODEL,
             "repair_model": SYSTEM_CONFIG.DEFAULT_REPAIR_MODEL,
@@ -20297,6 +20362,9 @@ class VisualizerServer:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             body = f.read()
 
+        if path.suffix in (".xhtml", ".html"):
+            body = _inject_xhtml_fragment_jump_script(body)
+
         return web.Response(text=body, content_type=content_type)
 
     async def handle_sse(self, request: web.Request) -> web.StreamResponse:
@@ -20375,7 +20443,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
 ### `src/visualizer/static/index.html`
 
-*sha256:`15b69d5d01e2` · 3689 lines · 155.5 KB (~39,806 tokens) · lang:`html`*
+*sha256:`b9f48191c641` · 5221 lines · 220.9 KB (~56,538 tokens) · lang:`html`*
 
 ```html
 <!DOCTYPE html>
@@ -20383,309 +20451,1109 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RFC-LLM Pipeline Monitor</title>
+  <title>RFC-LLM Monitor</title>
   <style>
     :root {
-      --bg-base: #0d1117;
-      --bg-surface: #161b22;
-      --bg-panel: #1b2129;
-      --bg-code: #0b0e14;
-      --border-color: #30363d;
-      --border-focus: #58a6ff;
-      --text-main: #e6edf3;
-      --text-muted: #8b949e;
-      --color-blue: #58a6ff;
-      --color-green: #3fb950;
-      --color-yellow: #d29922;
-      --color-red: #f85149;
-      --color-purple: #bc8cff;
-      --mono: "JetBrains Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --bg-black: #000000;
+      --bg-surface: #121214;
+      --bg-elevated: #18181b;
+      --bg-active: #242428;
+      --bg-code: #070709;
+      --border: rgba(255, 255, 255, 0.14);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.36);
+      --text: #f5f5f7;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --dot-ok: #30d158;
+      --dot-bad: #ff453a;
+      --dot-warn: #ffd60a;
+      --dot-live: #f5f5f7;
+      --dot-idle: #52525b;
+      --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      --mono: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+      --radius-lg: 10px;
+      --radius-md: 8px;
+      --radius-sm: 6px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg-base);
-      color: var(--text-main);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+    html, body {
+      height: 100%;
+      background: var(--bg-black);
+      color: var(--text);
+      font-family: var(--sans);
       font-size: 13px;
-    }
-
-    /* Top Utility Bar */
-    header {
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border-color);
-      padding: 7px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      gap: 12px;
-    }
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      white-space: nowrap;
-    }
-    .header-title {
-      font-weight: 700;
-      font-size: 14px;
-      letter-spacing: -0.01em;
-    }
-    .run-dir-label {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--text-muted);
-      background: var(--bg-base);
-      border: 1px solid var(--border-color);
-      padding: 2px 6px;
-      max-width: 280px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-family: var(--mono);
-      font-size: 11px;
-      flex-wrap: nowrap;
-    }
-    .status-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      font-weight: 700;
-      font-size: 11px;
-      border: 1px solid var(--border-color);
-      text-transform: uppercase;
-    }
-    .status-badge.idle { background: #21262d; color: var(--text-muted); }
-    .status-badge.running { background: #0c2d6b; color: #58a6ff; border-color: #1f6feb; }
-    .status-badge.success { background: #0e4429; color: #3fb950; border-color: #238636; }
-    .status-badge.partial { background: #3b2300; color: #d29922; border-color: #9e6a03; }
-    .status-badge.failed { background: #490202; color: #f85149; border-color: #da3633; }
-
-    /* Virtualized Numbered RFC Tab Bar */
-    .rfc-tabbar {
-      display: flex;
-      align-items: stretch;
-      background: #10141b;
-      border-bottom: 1px solid var(--border-color);
-      height: 44px;
-      flex-shrink: 0;
-      user-select: none;
-    }
-    .live-pin-btn {
+    body {
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      padding: 4px 12px;
-      min-width: 145px;
-      max-width: 185px;
-      background: var(--bg-surface);
-      border: none;
-      border-right: 1px solid var(--border-color);
-      color: var(--text-muted);
+    }
+    .mono {
       font-family: var(--mono);
-      cursor: pointer;
-      text-align: left;
-      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
     }
-    .live-pin-btn:hover {
-      background: #1c222d;
-      color: var(--text-main);
-    }
-    .live-pin-btn.active {
-      background: #0d2149;
-      color: var(--text-main);
-      border-bottom: 2px solid var(--color-blue);
-    }
-    .live-pin-btn.replay-mode {
-      cursor: default;
-      background: #161b22;
-    }
-    .live-pin-top {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-    .live-pin-sub {
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-top: 1px;
-    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: var(--bg-black); }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.32); }
+
+    /* Status Dots (only functional color signal outside monochrome palette) */
     .dot {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       display: inline-block;
       flex-shrink: 0;
+      background: var(--dot-idle);
     }
-    .dot.running { background: var(--color-blue); box-shadow: 0 0 6px var(--color-blue); }
-    .dot.verified { background: var(--color-green); }
-    .dot.partial { background: var(--color-yellow); }
-    .dot.failed { background: var(--color-red); }
-    .dot.idle { background: var(--text-muted); }
+    .dot.verified, .dot.ok { background: var(--dot-ok); }
+    .dot.failed, .dot.bad { background: var(--dot-bad); }
+    .dot.partial, .dot.warn { background: var(--dot-warn); }
+    .dot.running, .dot.live { background: var(--dot-live); }
+    .dot.idle { background: var(--dot-idle); }
 
-    /* Virtual Scroll Viewport */
-    .vtab-scroll {
-      flex: 1;
-      overflow-x: auto;
-      overflow-y: hidden;
-      position: relative;
-      scrollbar-width: thin;
-      scrollbar-color: #30363d #10141b;
-    }
-    .vtab-scroll::-webkit-scrollbar { height: 5px; }
-    .vtab-scroll::-webkit-scrollbar-track { background: #10141b; }
-    .vtab-scroll::-webkit-scrollbar-thumb { background: #30363d; }
-    .vtab-spacer {
-      position: relative;
-      height: 100%;
-    }
-    .vtab-empty {
-      height: 100%;
-      display: flex;
-      align-items: center;
-      padding: 0 14px;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    .rfc-vtab {
-      position: absolute;
-      top: 0;
-      height: 100%;
-      width: 230px;
-      padding: 4px 10px;
-      background: #121720;
-      border: none;
-      border-right: 1px solid var(--border-color);
-      color: var(--text-muted);
-      font-family: var(--mono);
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      text-align: left;
-    }
-    .rfc-vtab:hover {
-      background: #1b2230;
-      color: var(--text-main);
-    }
-    .rfc-vtab.active {
-      background: var(--bg-panel);
-      color: var(--text-main);
-      border-bottom: 2px solid var(--color-blue);
-    }
-    .rfc-vtab-top {
+    /* Top Header & 3-Mode Segmented Control */
+    header.topbar {
+      height: 52px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 6px;
-      width: 100%;
-    }
-    .rfc-vtab-id {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-main);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .rfc-vtab-num {
-      color: var(--color-blue);
-    }
-    .rfc-vtab-tier {
-      font-size: 9px;
-      font-weight: 700;
-      padding: 0 4px;
-      border: 1px solid var(--border-color);
+      gap: 16px;
       flex-shrink: 0;
     }
-    .rfc-vtab-tier.GOLD, .rfc-vtab-tier.VERIFIED { color: #3fb950; border-color: #238636; background: #0e442966; }
-    .rfc-vtab-tier.SILVER { color: #58a6ff; border-color: #1f6feb; background: #0c2d6b66; }
-    .rfc-vtab-tier.BRONZE, .rfc-vtab-tier.PARTIAL { color: #d29922; border-color: #9e6a03; background: #3b230066; }
-    .rfc-vtab-tier.REJECTED, .rfc-vtab-tier.FAILED, .rfc-vtab-tier.INTERRUPTED { color: #f85149; border-color: #da3633; background: #49020266; }
-    .rfc-vtab-tier.PENDING, .rfc-vtab-tier.RUNNING { color: #bc8cff; border-color: #8957e5; background: #bc8cff18; }
-    .rfc-vtab-proto {
-      font-size: 10px;
-      color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-top: 2px;
-      width: 100%;
-    }
-    .rfc-vtab.active .rfc-vtab-proto {
-      color: #c9d1d9;
-    }
-
-    /* Right Controls on Tab Bar */
-    .tabbar-controls {
+    .brand-group {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 0 10px;
-      background: var(--bg-surface);
-      border-left: 1px solid var(--border-color);
-      flex-shrink: 0;
+      gap: 10px;
+      min-width: 0;
     }
-    .ctrl-input, .ctrl-select {
-      background: var(--bg-base);
-      border: 1px solid var(--border-color);
-      color: var(--text-main);
+    .brand-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .run-pill {
       font-family: var(--mono);
       font-size: 11px;
-      padding: 4px 7px;
+      color: var(--text-secondary);
+      background: var(--bg-black);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 3px 8px;
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .top-segment-group {
+      display: inline-flex;
+      background: var(--bg-black);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 3px;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+    .top-segment-btn {
+      appearance: none;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    }
+    .top-segment-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .top-segment-btn.active {
+      background: var(--bg-active);
+      border-color: var(--border-strong);
+      color: var(--text);
+      font-weight: 600;
+    }
+    .seg-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+    .top-segment-btn.active .seg-count {
+      color: var(--text);
+    }
+
+    .topbar-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    .hdr-stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--bg-black);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Monochrome Buttons & Inputs */
+    .btn {
+      appearance: none;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-family: var(--sans);
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 5px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    }
+    .btn:hover {
+      background: var(--bg-active);
+      border-color: rgba(255, 255, 255, 0.24);
+      color: var(--text);
+    }
+    .btn.active {
+      background: var(--bg-active);
+      border-color: var(--border-strong);
+      color: var(--text);
+      font-weight: 600;
+    }
+    .input, .select {
+      background: var(--bg-black);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 12px;
+      padding: 5px 9px;
       outline: none;
     }
-    .ctrl-input:focus, .ctrl-select:focus {
-      border-color: var(--border-focus);
+    .input:focus, .select:focus {
+      border-color: var(--border-strong);
     }
-    .ctrl-input { width: 165px; }
-    .ctrl-btn {
-      background: #21262d;
-      border: 1px solid var(--border-color);
-      color: var(--text-main);
+    .select:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+      color: var(--text-muted);
+    }
+    .input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* Monochrome Pills */
+    .tier-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 1px 7px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-secondary);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .tier-pill.GOLD, .tier-pill.VERIFIED {
+      border-color: rgba(255, 255, 255, 0.34);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+    }
+    .tier-pill.SILVER {
+      border-color: rgba(255, 255, 255, 0.22);
+      color: #e4e4e7;
+    }
+    .tier-pill.BRONZE, .tier-pill.PARTIAL {
+      border-color: rgba(255, 255, 255, 0.16);
+      color: var(--text-secondary);
+    }
+    .tier-pill.REJECTED, .tier-pill.FAILED, .tier-pill.INTERRUPTED {
+      border-color: rgba(255, 255, 255, 0.16);
+      color: var(--text-secondary);
+    }
+    .tier-pill[data-tooltip-key] {
+      cursor: help;
+    }
+
+    /* Main Mode Containers */
+    .top-view {
+      flex: 1;
+      min-height: 0;
+      display: none;
+      overflow: hidden;
+    }
+    .top-view.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ======================================================================= */
+    /* TOP VIEW 1: LIVE VIEW                                                   */
+    /* ======================================================================= */
+    .live-banner {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+    .live-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .live-rfc-title {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .live-diag-text {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      padding: 2px 8px;
+      background: var(--bg-black);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .live-banner-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+    .live-cost-strip {
+      background: #0a0a0c;
+      border-bottom: 1px solid var(--border);
+      padding: 5px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .live-cost-roles {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      white-space: nowrap;
+    }
+    .live-cost-val {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .live-cost-tok {
+      color: var(--text-muted);
+      font-size: 10px;
+      margin-left: 3px;
+    }
+
+    .stepper {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--bg-black);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .step-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .step-item.active {
+      background: var(--bg-elevated);
+      border-color: var(--border-strong);
+    }
+    .step-item.passed {
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+    .step-item.failed {
+      border-color: rgba(255, 69, 58, 0.55);
+    }
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .step-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .step-model {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .step-status {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .live-split {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+    }
+    .live-log-col {
+      width: 40%;
+      border-right: 1px solid var(--border);
+      background: var(--bg-black);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .live-preview-col {
+      width: 60%;
+      background: var(--bg-black);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .col-header {
+      padding: 8px 12px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .offline-notice {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin: 24px auto;
+      max-width: 540px;
+      text-align: center;
+    }
+    .offline-notice h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .offline-notice p {
+      color: var(--text-secondary);
+      font-size: 12.5px;
+      margin-bottom: 14px;
+    }
+
+    /* ======================================================================= */
+    /* TOP VIEW 2: PER-PROTOCOL VIEW (Left Vertical Scroll + Right Compartments) */
+    /* ======================================================================= */
+    .protocol-layout {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+    }
+    .proto-sidebar {
+      width: 320px;
+      flex-shrink: 0;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .sidebar-top {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .sidebar-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .sidebar-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .sidebar-filters {
+      display: flex;
+      gap: 6px;
+    }
+    .sidebar-filters .input {
+      flex: 1;
+      min-width: 0;
+    }
+    .sidebar-filters .select {
+      width: 112px;
+    }
+
+    /* Virtualized Vertical Protocol List (O(1) DOM Nodes) */
+    .vlist-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+      background: var(--bg-black);
+    }
+    .vlist-spacer {
+      position: relative;
+      width: 100%;
+    }
+    .vlist-empty {
+      padding: 20px 14px;
+      color: var(--text-muted);
+      font-size: 12px;
+      text-align: center;
+    }
+    .proto-row {
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      height: 54px;
+      padding: 8px 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: background 0.1s ease, border-color 0.1s ease;
+    }
+    .proto-row:hover {
+      background: var(--bg-elevated);
+      border-color: rgba(255, 255, 255, 0.22);
+      color: var(--text);
+    }
+    .proto-row.active {
+      background: var(--bg-active);
+      border-color: var(--border-strong);
+      color: var(--text);
+    }
+    .proto-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+    }
+    .proto-row-id {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-family: var(--mono);
       font-size: 11px;
       font-weight: 600;
-      padding: 4px 9px;
-      cursor: pointer;
+      color: var(--text);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .ctrl-btn:hover {
-      background: #2d333b;
-      border-color: #484f58;
+    .proto-row-num {
+      color: var(--text-muted);
+      font-weight: 500;
     }
-    .ctrl-btn.active {
-      background: #0c2d6b;
-      border-color: var(--color-blue);
-      color: var(--color-blue);
+    .proto-row-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+    }
+    .proto-row-name {
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+    .proto-row-meta {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
-    /* Collapsible Filtered / Rejected Drawer */
+    /* Right Workspace in Per-Protocol View */
+    .proto-main {
+      flex: 1;
+      min-width: 0;
+      background: var(--bg-black);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .proto-header-bar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .proto-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .proto-main-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .proto-cost-summary {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .proto-cost-summary strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Outlined Sub-Tabs */
+    .subtab-bar {
+      background: #09090b;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+    .subtab-btn {
+      appearance: none;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    }
+    .subtab-btn:hover {
+      background: var(--bg-elevated);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: var(--text);
+    }
+    .subtab-btn.active {
+      background: var(--bg-active);
+      border-color: var(--border-strong);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Compartmentalized Attempt Bar (Shown ONLY inside Scheme & AST) */
+    .attempt-toolbar {
+      display: none;
+      flex-direction: column;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .attempt-toolbar.visible {
+      display: flex;
+    }
+    .attempt-stepper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      overflow-x: auto;
+    }
+    .attempt-label {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-right: 4px;
+      flex-shrink: 0;
+    }
+    .attempt-pill {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      background: var(--bg-black);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-family: var(--mono);
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .attempt-pill:hover {
+      border-color: rgba(255, 255, 255, 0.28);
+      color: var(--text);
+    }
+    .attempt-pill.active {
+      background: var(--bg-active);
+      border-color: var(--border-strong);
+      color: var(--text);
+      font-weight: 600;
+    }
+    .attempt-banner {
+      display: none;
+      padding: 8px 16px;
+      background: #0c0c0e;
+      border-top: 1px solid var(--border-subtle);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .attempt-banner.visible {
+      display: block;
+    }
+    .attempt-banner-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .attempt-banner-diag {
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 90px;
+      overflow-y: auto;
+    }
+    .attempt-banner-rag {
+      color: var(--text-muted);
+      font-size: 10.5px;
+      margin-top: 4px;
+    }
+
+    /* Compartmentalized Sub-Tab Viewports */
+    .tab-viewport {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 14px 16px;
+      background: var(--bg-code);
+      display: none;
+    }
+    .tab-viewport.active {
+      display: block;
+    }
+    .tab-viewport.svg-mode {
+      padding: 0;
+      overflow: hidden;
+      background: var(--bg-black);
+    }
+    .tab-viewport.svg-mode.active {
+      display: flex;
+    }
+    .svg-viewport-wrap {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      background: var(--bg-black);
+    }
+    .svg-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #ffffff;
+      transition: filter 0.15s ease;
+    }
+    .svg-frame.inverted {
+      filter: invert(0.92) hue-rotate(180deg);
+    }
+    .svg-invert-toggle {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      z-index: 12;
+      appearance: none;
+      background: rgba(18, 18, 20, 0.9);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      padding: 4px 9px;
+      cursor: pointer;
+    }
+    .svg-invert-toggle:hover {
+      background: var(--bg-active);
+      color: var(--text);
+    }
+    .empty-placeholder {
+      height: 100%;
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-align: center;
+      padding: 24px;
+    }
+    pre code {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.58;
+      color: var(--text);
+      white-space: pre;
+    }
+
+    /* Protocol Text Switcher (Verbatim | $0 Debloated | RFC-Style) */
+    .slice-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .slice-meta {
+      margin-left: auto;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    /* Log & KB Feeds */
+    .log-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .log-entry {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      line-height: 1.45;
+    }
+    .log-entry.log-info { border-left-color: #0a84ff; }
+    .log-entry.log-ok { border-left-color: #30d158; }
+    .log-entry.log-warn { border-left-color: #ff9f0a; }
+    .log-entry.log-err { border-left-color: #ff453a; }
+    .log-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 10.5px;
+      margin-bottom: 4px;
+    }
+    .log-type {
+      font-weight: 600;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .log-entry.log-info .log-type { color: #64d2ff; }
+    .log-entry.log-ok .log-type { color: #30d158; }
+    .log-entry.log-warn .log-type { color: #ffd60a; }
+    .log-entry.log-err .log-type { color: #ff453a; }
+    .log-data {
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text-secondary);
+    }
+
+    .rag-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid #bf5af2;
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .rag-card.snowball-alert {
+      border-left-color: #ff453a;
+    }
+    .rag-purpose-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 1px 7px;
+      border-radius: 5px;
+      border: 1px solid rgba(191, 90, 242, 0.45);
+      background: rgba(191, 90, 242, 0.12);
+      color: #d8b4fe;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .rag-purpose-pill.alert {
+      border-color: rgba(255, 69, 58, 0.5);
+      background: rgba(255, 69, 58, 0.12);
+      color: #ff6961;
+    }
+    .rag-query-box {
+      background: var(--bg-black);
+      border: 1px solid var(--border);
+      border-left: 2px solid #64d2ff;
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      word-break: break-word;
+    }
+    .rag-query-box.fix-brief {
+      border-left-color: #30d158;
+    }
+    .rag-turn-card {
+      padding: 6px 8px;
+      background: var(--bg-black);
+      border: 1px solid var(--border-subtle);
+      border-left: 2px solid #0a84ff;
+      border-radius: 4px;
+      margin-top: 4px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .rag-chunk-card {
+      background: var(--bg-black);
+      border: 1px solid var(--border);
+      border-left: 2px solid rgba(100, 210, 255, 0.5);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 11.5px;
+    }
+    .rag-chunk-snippet {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: #0a0a0c;
+      padding: 6px 8px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 5px;
+    }
+
+    details.monochrome-details {
+      margin-top: 6px;
+      background: var(--bg-black);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    details.monochrome-details summary {
+      cursor: pointer;
+      color: var(--text);
+      font-weight: 600;
+      user-select: none;
+    }
+    details.monochrome-details pre {
+      margin-top: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text-secondary);
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    /* Security Tab Only */
+    .sec-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .sec-banner {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+    }
+    .sec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .sec-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .sec-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .sec-card-body {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Tables (Security + Global Statistics + Filtered Drawer) */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .data-table th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      text-align: left;
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 10.5px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .data-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      vertical-align: top;
+    }
+    .data-table tr.clickable:hover td {
+      background: var(--bg-elevated);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    /* Filtered Drawer Overlay inside Per-Protocol Sidebar/Top */
     .filtered-drawer {
       display: none;
       flex-direction: column;
-      background: #11161d;
-      border-bottom: 2px solid var(--color-blue);
-      max-height: 290px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-strong);
+      max-height: 280px;
       flex-shrink: 0;
     }
     .filtered-drawer.open {
@@ -20695,1065 +21563,807 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 6px 14px;
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border-color);
-      font-family: var(--mono);
-      font-size: 11px;
-    }
-    .drawer-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .drawer-table-wrap {
-      overflow-y: auto;
-      flex: 1;
-    }
-    .drawer-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-family: var(--mono);
-      font-size: 11px;
-    }
-    .drawer-table th {
-      position: sticky;
-      top: 0;
-      background: #161b22;
-      color: var(--text-muted);
-      text-align: left;
-      padding: 5px 10px;
-      border-bottom: 1px solid var(--border-color);
-      font-size: 10px;
-      text-transform: uppercase;
-    }
-    .drawer-table td {
-      padding: 5px 10px;
-      border-bottom: 1px solid #21262d;
-      color: #c9d1d9;
-      vertical-align: top;
-    }
-    .drawer-table tr:hover td {
-      background: #1b2129;
-    }
-
-    /* Pipeline Stages Strip */
-    .stepper {
-      display: flex;
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border-color);
-      flex-shrink: 0;
-    }
-    .step-item {
-      flex: 1;
-      padding: 7px 12px;
-      border-right: 1px solid var(--border-color);
-      background: var(--bg-surface);
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-    .step-item:last-child { border-right: none; }
-    .step-item.active {
-      background: #111a2c;
-      border-bottom: 2px solid var(--color-blue);
-    }
-    .step-item.passed {
-      border-bottom: 2px solid var(--color-green);
-    }
-    .step-item.failed {
-      background: #231215;
-      border-bottom: 2px solid var(--color-red);
-    }
-    .step-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      font-family: var(--mono);
-      color: var(--text-muted);
-    }
-    .step-name {
-      font-weight: 600;
-      font-size: 12px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .step-status {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-family: var(--mono);
-    }
-    .step-model {
-      font-size: 10px;
-      color: var(--color-purple);
-      font-family: var(--mono);
-      background: #bc8cff14;
-      border: 1px solid #bc8cff33;
-      padding: 1px 5px;
-      margin-top: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .model-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      font-weight: 600;
-      font-size: 11px;
-      color: var(--color-purple);
-      background: #bc8cff18;
-      border: 1px solid #bc8cff44;
-      font-family: var(--mono);
-      max-width: 240px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      vertical-align: middle;
-    }
-    .timer-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      font-weight: 700;
-      font-size: 11px;
-      color: var(--color-blue);
-      background: #58a6ff18;
-      border: 1px solid #58a6ff44;
-      font-family: var(--mono);
-      min-width: 68px;
-      text-align: center;
-    }
-    .diag-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      font-weight: 600;
-      font-size: 11px;
-      font-family: var(--mono);
-      border: 1px solid var(--border-color);
-      background: #21262d;
-      color: var(--text-muted);
-    }
-    .diag-badge.normal { color: #58a6ff; background: #0c2d6b88; border-color: #1f6feb; }
-    .diag-badge.syntax { color: #d29922; background: #3b2300aa; border-color: #d29922; }
-    .diag-badge.snowball { color: #f85149; background: #490202cc; border-color: #f85149; animation: pulse-warn 1.2s infinite; }
-    @keyframes pulse-warn {
-      0%, 100% { opacity: 1.0; }
-      50% { opacity: 0.65; }
-    }
-
-    /* Cost & Token Telemetry Strip */
-    .cost-strip {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
       gap: 10px;
-      padding: 4px 14px;
-      background: #11161e;
-      border-bottom: 1px solid var(--border-color);
-      font-family: var(--mono);
-      font-size: 10.5px;
-      flex-shrink: 0;
-      overflow-x: auto;
     }
-    .cost-roles {
+
+    /* ======================================================================= */
+    /* TOP VIEW 3: GLOBAL STATISTICS (Whole Run & Spacious Grey Widgets)       */
+    /* ======================================================================= */
+    .global-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 20px 28px;
+      background: var(--bg-black);
+    }
+    .global-wrap {
+      max-width: 1620px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .global-head {
       display: flex;
       align-items: center;
-      gap: 12px;
-      white-space: nowrap;
-    }
-    .cost-totals {
-      display: flex;
-      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
       gap: 10px;
-      white-space: nowrap;
     }
-    .cost-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--text-muted);
-    }
-    .cost-val {
-      color: var(--text-main);
-      font-weight: 700;
-    }
-    .cost-val.highlight {
-      color: var(--color-green);
-      background: #0e442955;
-      border: 1px solid #23863688;
-      padding: 1px 6px;
-    }
-    .cost-val.batch {
-      color: var(--color-blue);
-      background: #0c2d6b55;
-      border: 1px solid #1f6feb88;
-      padding: 1px 6px;
-    }
-    .cost-tok {
-      color: var(--text-muted);
-      font-size: 10px;
-    }
-
-    /* Main Grid */
-    .main-grid {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    /* Left: Live Terminal & Diagnostics */
-    .log-panel {
-      width: 42%;
-      border-right: 1px solid var(--border-color);
-      display: flex;
-      flex-direction: column;
-      background: var(--bg-panel);
-    }
-    .panel-heading {
-      padding: 6px 12px;
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border-color);
-      font-size: 11px;
-      font-weight: 700;
-      font-family: var(--mono);
-      text-transform: uppercase;
-      color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .log-feed {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-family: var(--mono);
-      font-size: 11px;
-    }
-    .log-entry {
-      background: var(--bg-base);
-      border: 1px solid var(--border-color);
-      padding: 6px 8px;
-      line-height: 1.45;
-    }
-    .log-entry.repair { border-left: 3px solid var(--color-yellow); }
-    .log-entry.cycle { border-left: 3px solid var(--color-purple); }
-    .log-entry.error { border-left: 3px solid var(--color-red); }
-    .log-entry.success { border-left: 3px solid var(--color-green); }
-    .log-meta {
-      display: flex;
-      justify-content: space-between;
-      color: var(--text-muted);
-      font-size: 10px;
-      margin-bottom: 4px;
-    }
-    .log-type {
-      font-weight: 700;
-      color: var(--color-blue);
-    }
-    .log-data {
-      white-space: pre-wrap;
-      word-break: break-word;
-      color: #c9d1d9;
-    }
-
-    /* Right: Code & Model Inspection */
-    .viewer-panel {
-      width: 58%;
-      display: flex;
-      flex-direction: column;
-      background: var(--bg-code);
-      min-width: 0;
-    }
-    .tab-strip {
-      display: flex;
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border-color);
-      flex-shrink: 0;
-    }
-    .tab {
-      padding: 8px 13px;
-      background: transparent;
-      border: none;
-      border-right: 1px solid var(--border-color);
-      color: var(--text-muted);
-      font-family: var(--mono);
-      font-size: 11px;
-      cursor: pointer;
+    .global-head h2 {
+      font-size: 16px;
       font-weight: 600;
+      letter-spacing: -0.015em;
     }
-    .tab.active {
-      color: var(--text-main);
-      background: var(--bg-code);
-      border-top: 2px solid var(--color-blue);
-      margin-top: -1px;
-    }
-
-    /* Per-Attempt Time-Travel Stepper Bar */
-    .attempt-stepper {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      background: #121720;
-      border-bottom: 1px solid var(--border-color);
-      overflow-x: auto;
-      flex-shrink: 0;
-      scrollbar-width: thin;
-    }
-    .attempt-stepper-label {
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-right: 4px;
-      flex-shrink: 0;
-    }
-    .attempt-pill {
-      padding: 3px 9px;
-      background: #1b2129;
-      border: 1px solid var(--border-color);
-      color: var(--text-muted);
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .attempt-pill:hover {
-      color: var(--text-main);
-      border-color: #484f58;
-    }
-    .attempt-pill.passed, .attempt-pill.verified {
-      border-left: 3px solid var(--color-green);
-    }
-    .attempt-pill.rejected, .attempt-pill.failed {
-      border-left: 3px solid var(--color-red);
-    }
-    .attempt-pill.cycle {
-      border-left: 3px solid var(--color-purple);
-    }
-    .attempt-pill.active {
-      background: #0c2d6b;
-      color: #ffffff;
-      border-color: var(--color-blue);
-    }
-
-    /* Per-Attempt Context & Diagnostic Banner */
-    .attempt-banner {
-      display: none;
-      padding: 7px 12px;
-      background: #151b24;
-      border-bottom: 1px solid var(--border-color);
-      font-family: var(--mono);
-      font-size: 11px;
-      line-height: 1.45;
-      flex-shrink: 0;
-    }
-    .attempt-banner.visible {
-      display: block;
-    }
-    .attempt-banner-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 3px;
-    }
-    .attempt-banner-diag {
-      color: #f0883e;
-      white-space: pre-wrap;
-      word-break: break-word;
-      max-height: 85px;
-      overflow-y: auto;
-    }
-    .attempt-banner-rag {
-      color: var(--color-purple);
-      font-size: 10px;
-      margin-top: 3px;
-    }
-
-    .tab-viewport {
-      flex: 1;
-      overflow: auto;
-      padding: 12px;
-      position: relative;
-    }
-    pre code {
-      font-family: var(--mono);
-      font-size: 12px;
-      line-height: 1.55;
-      color: #e6edf3;
-      white-space: pre;
-    }
-    .svg-frame {
-      width: 100%;
-      height: 100%;
-      border: none;
-      background: #ffffff;
-    }
-
-    /* RAG Tab Styles */
-    .rag-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      padding: 10px 12px;
-      margin-bottom: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .rag-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    .rag-purpose {
-      font-weight: 700;
-      color: var(--color-purple);
-      text-transform: uppercase;
-      font-family: var(--mono);
-      font-size: 10px;
-      border: 1px solid var(--border-color);
-      padding: 1px 6px;
-      background: var(--bg-base);
-    }
-    .rag-query-box {
-      background: var(--bg-code);
-      border: 1px solid var(--border-color);
-      padding: 8px 10px;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--color-blue);
-      line-height: 1.45;
-      word-break: break-word;
-    }
-    .rag-chunks-container {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 4px;
-    }
-    .rag-chunk-card {
-      background: var(--bg-base);
-      border: 1px solid var(--border-color);
-      padding: 8px 10px;
-      font-size: 11px;
-    }
-    .rag-chunk-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
-      font-family: var(--mono);
-      font-size: 10px;
-    }
-    .rag-chunk-id {
-      background: #1f6feb22;
-      color: var(--color-blue);
-      border: 1px solid #1f6feb66;
-      padding: 1px 5px;
-      font-weight: 700;
-    }
-    .rag-chunk-source { color: var(--text-muted); }
-    .rag-chunk-title {
-      font-weight: 600;
-      color: var(--text-main);
-      margin-bottom: 4px;
-    }
-    .rag-chunk-snippet {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: #8b949e;
-      background: #06090e;
-      padding: 6px 8px;
-      border: 1px solid #21262d;
-      white-space: pre-wrap;
-      word-break: break-word;
-      line-height: 1.4;
-    }
-
-    /* Floating ~300ms Hover Tooltip Popover */
-    .rating-tooltip {
-      position: fixed;
-      z-index: 99999;
-      max-width: 390px;
-      background: #0d1117f2;
-      border: 1px solid #58a6ff;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
-      padding: 9px 11px;
-      font-family: var(--mono);
-      font-size: 11px;
-      line-height: 1.45;
-      color: var(--text-main);
-      pointer-events: none;
-      display: none;
-    }
-    .rating-tooltip-title {
-      font-weight: 700;
-      font-size: 11.5px;
-      color: var(--color-blue);
-      margin-bottom: 4px;
-      border-bottom: 1px solid #30363d;
-      padding-bottom: 3px;
-    }
-    .rating-tooltip-desc {
-      color: #c9d1d9;
-      white-space: pre-wrap;
-    }
-
-    /* Always-Visible Compact Security Verdict Strip */
-    .security-verdict-strip {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 5px 12px;
-      background: #0e131a;
-      border-bottom: 1px solid var(--border-color);
-      font-family: var(--mono);
-      font-size: 10.5px;
-      flex-shrink: 0;
-      overflow-x: auto;
-      white-space: nowrap;
-    }
-    .sec-strip-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--text-muted);
-    }
-    .sec-pill {
-      display: inline-block;
-      padding: 1px 6px;
-      font-size: 10px;
-      font-weight: 700;
-      border: 1px solid var(--border-color);
-      background: #21262d;
-      color: var(--text-muted);
-      cursor: help;
-    }
-    .sec-pill.ok { color: #3fb950; border-color: #238636; background: #0e442955; }
-    .sec-pill.info { color: #58a6ff; border-color: #1f6feb; background: #0c2d6b55; }
-    .sec-pill.warn { color: #d29922; border-color: #9e6a03; background: #3b230066; }
-    .sec-pill.bad { color: #f85149; border-color: #da3633; background: #49020266; }
-
-    /* Collapsible Snowball Autopsy Details */
-    details.snowball-details {
-      margin-top: 5px;
-      background: #0b0e14;
-      border: 1px solid #30363d;
-      padding: 4px 8px;
-      font-family: var(--mono);
-      font-size: 10.5px;
-    }
-    details.snowball-details summary {
-      cursor: pointer;
-      color: var(--color-purple);
-      font-weight: 600;
-      user-select: none;
-    }
-    details.snowball-details pre {
-      margin-top: 6px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      color: #8b949e;
-      max-height: 220px;
-      overflow-y: auto;
-    }
-
-    /* Security Findings (CPSA) Sub-Tab */
-    .sec-grid {
+    .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
       gap: 10px;
-      margin-bottom: 12px;
-    }
-    .sec-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .sec-card-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-    }
-    .sec-card-body {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: #c9d1d9;
-      line-height: 1.45;
-    }
-    .sec-banner-box {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      border-left: 3px solid var(--color-blue);
-      padding: 9px 12px;
-      margin-bottom: 12px;
-      font-family: var(--mono);
-      font-size: 11px;
-      line-height: 1.45;
-    }
-    .sec-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-family: var(--mono);
-      font-size: 11px;
-      margin-top: 6px;
-    }
-    .sec-table th {
-      background: #161b22;
-      color: var(--text-muted);
-      text-align: left;
-      padding: 6px 8px;
-      border: 1px solid var(--border-color);
-      font-size: 10px;
-      text-transform: uppercase;
-    }
-    .sec-table td {
-      padding: 6px 8px;
-      border: 1px solid #21262d;
-      color: #c9d1d9;
-      vertical-align: top;
-    }
-
-    /* CSV Analytics (Live) Sub-Tab */
-    .analytics-kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
-      gap: 8px;
-      margin-bottom: 12px;
     }
     .kpi-card {
       background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      padding: 8px 10px;
-      font-family: var(--mono);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
     }
     .kpi-label {
-      font-size: 10px;
+      font-size: 11px;
+      font-weight: 500;
       color: var(--text-muted);
-      text-transform: uppercase;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
     .kpi-val {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-main);
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
     }
     .kpi-sub {
-      font-size: 10px;
-      color: var(--text-muted);
-      margin-top: 2px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 4px;
     }
-    .charts-grid {
+
+    .info-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
       gap: 12px;
-      margin-bottom: 14px;
     }
-    .chart-card {
+    .panel-card {
       background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      min-height: 235px;
+      gap: 10px;
     }
-    .chart-title {
+    .panel-card-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .panel-card-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .panel-card-sub {
       font-family: var(--mono);
       font-size: 11px;
-      font-weight: 700;
-      color: var(--text-main);
-      border-bottom: 1px solid #21262d;
-      padding-bottom: 5px;
-    }
-    .chart-sub {
-      font-size: 10px;
       color: var(--text-muted);
-      font-weight: 400;
+    }
+    .kv-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 8px;
+    }
+    .kv-box {
+      background: var(--bg-black);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+    }
+    .kv-k {
+      font-size: 10.5px;
+      color: var(--text-muted);
+    }
+    .kv-v {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--text);
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 1120px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+    .chart-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 270px;
     }
     .chart-svg-wrap {
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 180px;
       width: 100%;
+      min-height: 210px;
+    }
+    .chart-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* Floating Hover Tooltip */
+    .rating-tooltip {
+      position: fixed;
+      z-index: 99999;
+      max-width: 360px;
+      background: #121214f5;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8);
+      padding: 10px 12px;
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: var(--text);
+      pointer-events: none;
+      display: none;
+    }
+    .rating-tooltip-title {
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 11px;
+      color: var(--text);
+      margin-bottom: 5px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rating-tooltip-desc {
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+    }
+
+    /* Per-Protocol Interactive Stage Telemetry & Grouped Stage Logs */
+    .proto-stage-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .stepper.proto-stepper {
+      padding: 0;
+      border-bottom: none;
+      margin-bottom: 14px;
+      background: transparent;
+    }
+    .proto-stepper .step-item {
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease;
+    }
+    .proto-stepper .step-item:hover {
+      background: var(--bg-elevated);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+    .proto-stepper .step-item.selected-stage {
+      background: var(--bg-active);
+      border-color: var(--border-strong);
+    }
+    .step-cost {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stage-log-group {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .stage-log-group summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: var(--bg-surface);
+      font-family: var(--mono);
+      font-size: 11px;
+      user-select: none;
+    }
+    .stage-log-group summary::-webkit-details-marker { display: none; }
+    .stage-log-group summary:hover {
+      background: var(--bg-elevated);
+    }
+    .stage-log-body {
+      padding: 10px;
+      background: var(--bg-black);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Standalone Client-Side Run Directory Loader */
+    .standalone-landing {
+      position: fixed;
+      top: 52px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 500;
+      background: var(--bg-black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .landing-card {
+      width: 100%;
+      max-width: 580px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .landing-card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+    }
+    .landing-card p {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .drop-zone {
+      background: var(--bg-black);
+      border: 1px dashed rgba(255, 255, 255, 0.28);
+      border-radius: var(--radius-md);
+      padding: 30px 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      background: var(--bg-elevated);
+      border-color: rgba(255, 255, 255, 0.55);
+    }
+    .landing-status {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      min-height: 16px;
     }
   </style>
 </head>
 <body>
-  <!-- Floating ~300ms Hover Tooltip Popover -->
   <div id="rating-tooltip" class="rating-tooltip">
     <div id="rating-tooltip-title" class="rating-tooltip-title"></div>
     <div id="rating-tooltip-desc" class="rating-tooltip-desc"></div>
   </div>
 
-  <!-- Top Utility Bar -->
-  <header>
-    <div class="header-left">
-      <span class="header-title">RFC-LLM Pipeline Monitor</span>
-      <span class="run-dir-label" id="run-dir-badge" title="Active Run Directory">Initializing...</span>
+  <!-- Top Navigation Bar (3 Clean Top-Level Modes) -->
+  <header class="topbar">
+    <div class="brand-group">
+      <span class="dot idle" id="hdr-conn-dot"></span>
+      <span class="brand-title">RFC-LLM</span>
+      <span class="run-pill" id="run-dir-badge" title="Active Run Directory">Loading...</span>
+      <button type="button" class="btn" id="btn-open-folder" onclick="onOpenFolderClick()" title="Open a local RFC-LLM run directory (opens isolated tab if a live run is active)">Open Folder</button>
+      <input type="file" id="folder-picker-input" webkitdirectory directory multiple style="display:none;" onchange="handleFolderInputFiles(this.files)" />
     </div>
-    <div class="header-right">
-      <div>Stage Diagnosis: <span id="stage-diagnosis" class="diag-badge">Idle</span></div>
-      <div>Attempt Timer: <span id="attempt-timer" class="timer-badge">0.0s</span></div>
-      <div>Active Model: <span id="active-model" class="model-badge">nous/z-ai/glm-5.3</span></div>
-      <div>RFC: <span id="rfc-name" style="color:var(--text-main); font-weight:700;">Waiting...</span></div>
-      <div id="pipeline-status" class="status-badge idle">IDLE</div>
+
+    <nav class="top-segment-group" aria-label="Workspace View">
+      <button type="button" class="top-segment-btn active" id="top-btn-live" onclick="setTopMode('live')">
+        <span class="dot idle" id="top-live-dot"></span>
+        <span>Live View</span>
+      </button>
+      <button type="button" class="top-segment-btn" id="top-btn-protocol" onclick="setTopMode('protocol')">
+        <span>Per-Protocol View</span>
+        <span class="seg-count" id="top-proto-count">(0)</span>
+      </button>
+      <button type="button" class="top-segment-btn" id="top-btn-global" onclick="setTopMode('global')">
+        <span>Global Statistics</span>
+        <span class="seg-count" id="top-global-cost">$0.0000</span>
+      </button>
+    </nav>
+
+    <div class="topbar-status">
+      <span class="hdr-stat-pill" id="hdr-summary-pill">Waiting for run...</span>
     </div>
   </header>
 
-  <!-- Live & Per-RFC Cost & Token Telemetry Strip -->
-  <div class="cost-strip" id="cost-strip">
-    <div class="cost-roles">
-      <span class="cost-item" title="Stage 1b/1c Router & Applicability Gate Cost">
-        Router: <span class="cost-val" id="cost-router">$0.0000</span><span class="cost-tok" id="tok-router">(0 tok)</span>
-      </span>
-      <span class="cost-item" title="Stage 2 Initial Extraction & Schema Correction Cost">
-        Extraction: <span class="cost-val" id="cost-extraction">$0.0000</span><span class="cost-tok" id="tok-extraction">(0 tok)</span>
-      </span>
-      <span class="cost-item" title="Stage 5/6 Agentic CPSA KB Searcher Cost">
-        Query/Searcher: <span class="cost-val" id="cost-query">$0.0000</span><span class="cost-tok" id="tok-query">(0 tok)</span>
-      </span>
-      <span class="cost-item" title="Stage 5/6 Compiler & Solver Diagnostic Repair Cost">
-        Repair: <span class="cost-val" id="cost-repair">$0.0000</span><span class="cost-tok" id="tok-repair">(0 tok)</span>
-      </span>
-    </div>
-    <div class="cost-totals">
-      <span class="cost-item" title="Total USD Cost & Tokens for Currently Viewed RFC">
-        RFC Run Total: <span class="cost-val highlight" id="cost-rfc-total">$0.0000</span><span class="cost-tok" id="tok-rfc-total">(0 tok)</span>
-      </span>
-      <span class="cost-item" title="Cumulative USD Cost & Tokens Across Entire Batch">
-        Batch Total: <span class="cost-val batch" id="cost-batch-total">$0.0000</span><span class="cost-tok" id="tok-batch-total">(0 tok)</span>
-      </span>
+  <!-- Standalone Client-Side Run Directory Loader (Zero Server Needed) -->
+  <div id="standalone-landing" class="standalone-landing" style="display:none;">
+    <div class="landing-card">
+      <div>
+        <h2>Load RFC-LLM Run Directory</h2>
+        <p style="margin-top:6px;">
+          Select or drop any RFC-LLM output directory (batch run folder containing <span class="mono">metadata_index.json</span> / <span class="mono">pipeline_runs.csv</span> / protocol subdirectories, or an individual protocol directory). Runs are hydrated completely in local browser memory.
+        </p>
+      </div>
+      <div id="standalone-dropzone" class="drop-zone" onclick="document.getElementById('folder-picker-input').click()" ondragover="onDropzoneDragOver(event)" ondragleave="onDropzoneDragLeave(event)" ondrop="onDropzoneDrop(event)">
+        <strong style="font-size:13px; color:var(--text);">Drop Run Directory Here</strong>
+        <span style="font-size:11.5px; color:var(--text-secondary);">Includes .scm schemas, AST JSONs, verbatim / RFC-style slices, CPSA XHTML shapes, stages, KB cards, and 67-col CSV metrics.</span>
+        <button type="button" class="btn active" style="margin-top:4px;" onclick="event.stopPropagation(); document.getElementById('folder-picker-input').click()">Browse Run Directory...</button>
+      </div>
+      <div id="standalone-status-line" class="landing-status">Ready.</div>
     </div>
   </div>
 
-  <!-- Virtualized Numbered Accepted-RFC Tab Strip (#1..#N) -->
-  <div class="rfc-tabbar">
-    <button class="live-pin-btn active" id="btn-live-follow" onclick="selectLiveFollow()">
-      <div class="live-pin-top">
-        <span class="dot idle" id="live-pin-dot"></span>
-        <span id="live-pin-label">LIVE STREAM</span>
-      </div>
-      <div class="live-pin-sub" id="live-pin-rfc">Waiting for RFC...</div>
-    </button>
-
-    <div class="vtab-scroll" id="vtab-scroll">
-      <div class="vtab-spacer" id="vtab-spacer">
-        <div class="vtab-empty" id="vtab-empty">No accepted cryptographic protocol tabs yet.</div>
-      </div>
-    </div>
-
-    <div class="tabbar-controls">
-      <input
-        type="text"
-        id="tab-search-input"
-        class="ctrl-input"
-        placeholder="Jump # or filter RFC/proto..."
-        oninput="onTabFilterChange()"
-        onkeydown="onTabSearchKeydown(event)"
-      />
-      <select id="tab-status-filter" class="ctrl-select" onchange="onTabFilterChange()">
-        <option value="ALL">ALL TABS (0)</option>
-        <option value="GOLD">GOLD</option>
-        <option value="SILVER">SILVER</option>
-        <option value="BRONZE">BRONZE</option>
-        <option value="VERIFIED">VERIFIED</option>
-        <option value="PARTIAL">PARTIAL</option>
-        <option value="FAILED">FAILED</option>
-      </select>
-      <button class="ctrl-btn" id="btn-filtered-toggle" onclick="toggleFilteredDrawer()">
-        Filtered / Skipped (0)
-      </button>
-    </div>
-  </div>
-
-  <!-- Collapsible Filtered / Disqualified RFC Drawer -->
+  <!-- Collapsible Filtered / Skipped Drawer (shared triggerable panel) -->
   <div class="filtered-drawer" id="filtered-drawer">
     <div class="drawer-header">
-      <div>
-        <strong>FILTERED / DISQUALIFIED RFCS</strong>
-        <span id="filtered-range-label" style="color:var(--text-muted); margin-left:8px;">0 entries</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <strong style="font-size:12px;">Filtered / Skipped Specs</strong>
+        <span id="filtered-range-label" class="mono" style="font-size:11px; color:var(--text-muted);">0 entries</span>
       </div>
-      <div class="drawer-controls">
-        <input
-          type="text"
-          id="filtered-search-input"
-          class="ctrl-input"
-          placeholder="Search filtered RFCs..."
-          oninput="onFilteredSearchInput()"
-        />
-        <button class="ctrl-btn" onclick="pageFiltered(-100)">Prev 100</button>
-        <button class="ctrl-btn" onclick="pageFiltered(100)">Next 100</button>
-        <button class="ctrl-btn" onclick="toggleFilteredDrawer()">Close</button>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <input type="text" id="filtered-search-input" class="input" style="width:200px;" placeholder="Search filtered specs..." oninput="onFilteredSearchInput()" />
+        <button type="button" class="btn" onclick="pageFiltered(-100)">Prev 100</button>
+        <button type="button" class="btn" onclick="pageFiltered(100)">Next 100</button>
+        <button type="button" class="btn" onclick="toggleFilteredDrawer(false)">Close</button>
       </div>
     </div>
-    <div class="drawer-table-wrap">
-      <table class="drawer-table">
+    <div style="overflow-y:auto; flex:1;">
+      <table class="data-table">
         <thead>
           <tr>
-            <th style="width:55px;">#</th>
-            <th style="width:110px;">RFC ID</th>
+            <th style="width:52px;">#</th>
+            <th style="width:150px;">Document ID</th>
             <th style="width:260px;">Title</th>
-            <th style="width:190px;">Rejection Gate</th>
+            <th style="width:180px;">Rejection Gate</th>
             <th>Disqualification Rationale</th>
           </tr>
         </thead>
         <tbody id="filtered-tbody">
-          <tr><td colspan="5" style="color:var(--text-muted);">No filtered RFCs recorded yet.</td></tr>
+          <tr><td colspan="5" style="color:var(--text-muted);">No filtered protocols recorded.</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- Horizontal Pipeline Stepper -->
-  <div class="stepper">
-    <div class="step-item" id="step-1">
-      <div class="step-header"><span>01</span><span id="step-1-time">--:--</span></div>
-      <div class="step-name">Document Intake</div>
-      <div class="step-model" id="step-1-model" title="Router & Gatekeeper Model">nous/z-ai/glm-5.3</div>
-      <div class="step-status" id="step-1-status">Pending</div>
-    </div>
-    <div class="step-item" id="step-2">
-      <div class="step-header"><span>02</span><span id="step-2-time">--:--</span></div>
-      <div class="step-name">JSON CPSA Generation</div>
-      <div class="step-model" id="step-2-model" title="JSON CPSA Generation Model">nous/google/gemini-4-argon</div>
-      <div class="step-status" id="step-2-status">Pending</div>
-    </div>
-    <div class="step-item" id="step-3">
-      <div class="step-header"><span>03</span><span id="step-3-time">--:--</span></div>
-      <div class="step-name">CPSA4json -> scm</div>
-      <div class="step-model" id="step-3-model" title="Deterministic Code Emitter">cpsa_scheme_emitter.py</div>
-      <div class="step-status" id="step-3-status">Pending</div>
-    </div>
-    <div class="step-item" id="step-4">
-      <div class="step-header"><span>04</span><span id="step-4-time">--:--</span></div>
-      <div class="step-name">Roletran Check</div>
-      <div class="step-model" id="step-4-model" title="Pre-flight Executability Binary">cpsa4roletran + cpsa4 -l 1</div>
-      <div class="step-status" id="step-4-status">Pending</div>
-    </div>
-    <div class="step-item" id="step-5">
-      <div class="step-header"><span>05</span><span id="step-5-time">--:--</span></div>
-      <div class="step-name">Self-Healing Loop</div>
-      <div class="step-model" id="step-5-model" title="Repair + RAG Query Models">gemini-3.8-flash + haiku-5.5</div>
-      <div class="step-status" id="step-5-status">Pending</div>
-    </div>
-    <div class="step-item" id="step-6">
-      <div class="step-header"><span>06</span><span id="step-6-time">--:--</span></div>
-      <div class="step-name">CPSA Compilation</div>
-      <div class="step-model" id="step-6-model" title="CPSA4 Compiler + Graph Builder">cpsa4 + cpsa4graph</div>
-      <div class="step-status" id="step-6-status">Pending</div>
-    </div>
-  </div>
-
-  <!-- Main Single Shared Viewport (O(1) DOM Nodes regardless of 5 or 5,000 RFC tabs) -->
-  <div class="main-grid">
-    <!-- Left: Event Stream -->
-    <div class="log-panel">
-      <div class="panel-heading">
-        <span id="log-panel-title" style="display:inline-flex; align-items:center; gap:6px;"><span class="dot failed" style="box-shadow:0 0 6px var(--color-red);"></span>LIVE</span>
-        <span id="event-counter" style="color:var(--text-muted); font-size:10px;">0 Events</span>
+  <!-- ===================================================================== -->
+  <!-- TOP VIEW 1: LIVE VIEW (Active Synthesizing Run Only)                  -->
+  <!-- ===================================================================== -->
+  <section class="top-view active" id="view-live">
+    <div id="live-offline-notice" class="offline-notice" style="display:none;">
+      <h3>Offline Replay Mode</h3>
+      <p>No active synthesis process is attached to this session. Inspect individual models and CPSA shapes in Per-Protocol View, or analyze whole-run metrics in Global Statistics.</p>
+      <div style="display:flex; gap:8px; justify-content:center;">
+        <button type="button" class="btn active" onclick="setTopMode('protocol')">Open Per-Protocol View</button>
+        <button type="button" class="btn" onclick="setTopMode('global')">Open Global Statistics</button>
       </div>
-      <div class="log-feed" id="log-feed"></div>
     </div>
 
-    <!-- Right: Code, Per-Attempt Stepper, and Proof Inspection -->
-    <div class="viewer-panel">
-      <div class="tab-strip">
-        <button class="tab active" data-subtab="scm" onclick="switchTab('scm')">CPSA Scheme (.scm)</button>
-        <button class="tab" data-subtab="ast" onclick="switchTab('ast')">Pydantic AST (JSON)</button>
-        <button class="tab" data-subtab="slice" onclick="switchTab('slice')">RFC Sliced Text</button>
-        <button class="tab" data-subtab="rag" id="tab-btn-rag" onclick="switchTab('rag')">RAG Knowledge</button>
-        <button class="tab" data-subtab="graph" onclick="switchTab('graph')">Verified Shapes (SVG)</button>
-        <button class="tab" data-subtab="security" id="tab-btn-security" onclick="switchTab('security')">Security Findings (CPSA)</button>
-        <button class="tab" data-subtab="analytics" id="tab-btn-analytics" onclick="switchTab('analytics')">CSV Analytics (Live)</button>
+    <div id="live-workspace" style="display:flex; flex-direction:column; flex:1; min-height:0;">
+      <div class="live-banner">
+        <div class="live-banner-left">
+          <span class="dot idle" id="live-status-dot"></span>
+          <span class="live-rfc-title" id="live-rfc-name">Waiting for active protocol...</span>
+          <span class="live-diag-text" id="live-diagnosis">Idle</span>
+        </div>
+        <div class="live-banner-right">
+          <span id="live-active-model" class="tier-pill">--</span>
+          <span id="live-timer" class="tier-pill">0.0s</span>
+          <span id="live-status-badge" class="tier-pill">IDLE</span>
+        </div>
       </div>
 
-      <!-- Always-Visible Compact Security & Quality Verdict Strip -->
-      <div class="security-verdict-strip" id="security-verdict-strip">
-        <span class="sec-strip-item">Quality: <span class="sec-pill" id="strip-quality" data-tooltip-key="PENDING">PENDING</span></span>
-        <span class="sec-strip-item">Auth Profile: <span class="sec-pill" id="strip-auth" data-tooltip-key="PENDING">PENDING</span></span>
-        <span class="sec-strip-item">Param Agreement: <span class="sec-pill" id="strip-agreement" data-tooltip-key="PENDING">PENDING</span></span>
-        <span class="sec-strip-item">Secrecy: <span class="sec-pill" id="strip-secrecy" data-tooltip-key="PENDING">PENDING</span></span>
-        <span class="sec-strip-item">Anomalies: <span class="sec-pill" id="strip-anomalies" style="cursor:pointer;" onclick="switchTab('security')">--</span></span>
+      <div class="live-cost-strip">
+        <div class="live-cost-roles">
+          <span>Router: <span class="live-cost-val" id="live-cost-router">$0.0000</span><span class="live-cost-tok" id="live-tok-router">(0 tok)</span></span>
+          <span>Distiller: <span class="live-cost-val" id="live-cost-distiller">$0.0000</span><span class="live-cost-tok" id="live-tok-distiller">(0 tok)</span></span>
+          <span>Extraction: <span class="live-cost-val" id="live-cost-extraction">$0.0000</span><span class="live-cost-tok" id="live-tok-extraction">(0 tok)</span></span>
+          <span>Searcher: <span class="live-cost-val" id="live-cost-query">$0.0000</span><span class="live-cost-tok" id="live-tok-query">(0 tok)</span></span>
+          <span>Repair: <span class="live-cost-val" id="live-cost-repair">$0.0000</span><span class="live-cost-tok" id="live-tok-repair">(0 tok)</span></span>
+        </div>
+        <div>
+          <span>Active Run Total: <span class="live-cost-val" id="live-cost-total">$0.0000</span><span class="live-cost-tok" id="live-tok-total">(0 tok)</span></span>
+        </div>
       </div>
 
-      <!-- Per-Attempt Time-Travel Stepper -->
-      <div class="attempt-stepper" id="attempt-stepper">
-        <span class="attempt-stepper-label">Attempts:</span>
-        <span style="color:var(--text-muted); font-family:var(--mono); font-size:10px;">Waiting for synthesis...</span>
+      <div class="stepper">
+        <div class="step-item" id="step-1">
+          <div class="step-header"><span>01</span><span id="step-1-time">--</span></div>
+          <div class="step-name">Document Intake</div>
+          <div class="step-model" id="step-1-model">--</div>
+          <div class="step-status" id="step-1-status">Pending</div>
+        </div>
+        <div class="step-item" id="step-2">
+          <div class="step-header"><span>02</span><span id="step-2-time">--</span></div>
+          <div class="step-name">CPSA AST Extraction</div>
+          <div class="step-model" id="step-2-model">--</div>
+          <div class="step-status" id="step-2-status">Pending</div>
+        </div>
+        <div class="step-item" id="step-3">
+          <div class="step-header"><span>03</span><span id="step-3-time">--</span></div>
+          <div class="step-name">CPSA4JSON -> .scm</div>
+          <div class="step-model" id="step-3-model">cpsa_scheme_emitter.py</div>
+          <div class="step-status" id="step-3-status">Pending</div>
+        </div>
+        <div class="step-item" id="step-4">
+          <div class="step-header"><span>04</span><span id="step-4-time">--</span></div>
+          <div class="step-name">Roletran Check</div>
+          <div class="step-model" id="step-4-model">cpsa4roletran / -l 1</div>
+          <div class="step-status" id="step-4-status">Pending</div>
+        </div>
+        <div class="step-item" id="step-5">
+          <div class="step-header"><span>05</span><span id="step-5-time">--</span></div>
+          <div class="step-name">Self-Healing Loop</div>
+          <div class="step-model" id="step-5-model">--</div>
+          <div class="step-status" id="step-5-status">Pending</div>
+        </div>
+        <div class="step-item" id="step-6">
+          <div class="step-header"><span>06</span><span id="step-6-time">--</span></div>
+          <div class="step-name">CPSA Compilation</div>
+          <div class="step-model" id="step-6-model">cpsa4 + cpsa4graph</div>
+          <div class="step-status" id="step-6-status">Pending</div>
+        </div>
       </div>
 
-      <!-- Per-Attempt Diagnostic & RAG Context Banner -->
-      <div class="attempt-banner" id="attempt-banner">
-        <div class="attempt-banner-head">
-          <strong id="attempt-banner-stage">Attempt</strong>
-          <div style="display:flex; gap:6px; align-items:center;">
-            <button class="ctrl-btn" id="btn-toggle-rejected-scm" style="display:none; padding:1px 6px; font-size:10px;" onclick="toggleRejectedScmView()">
-              Show Rejected Input .scm
-            </button>
-            <span id="attempt-banner-status" class="status-badge idle">PENDING</span>
+      <div class="live-split">
+        <div class="live-log-col">
+          <div class="col-header">
+            <span>Live Event Stream</span>
+            <span class="mono" id="live-event-counter" style="color:var(--text-muted); font-size:11px;">0 Events</span>
+          </div>
+          <div style="flex:1; overflow-y:auto; padding:10px;">
+            <div class="log-feed" id="live-log-feed"></div>
           </div>
         </div>
-        <div class="attempt-banner-diag" id="attempt-banner-diag"></div>
-        <div class="attempt-banner-rag" id="attempt-banner-rag"></div>
-      </div>
 
-      <div class="tab-viewport" id="tab-scm">
-        <pre><code id="code-scm">; CPSA Scheme model output will appear here...</code></pre>
-      </div>
-      <div class="tab-viewport" id="tab-ast" style="display:none;">
-        <pre><code id="code-ast">// Pydantic JSON AST will appear here...</code></pre>
-      </div>
-      <div class="tab-viewport" id="tab-slice" style="display:none;">
-        <div id="slice-mode-bar" style="display:flex; gap:6px; padding:6px 10px; border-bottom:1px solid var(--border); background:var(--panel-alt, #111622); font-family:var(--mono); font-size:11px; align-items:center;">
-          <span style="color:var(--text-muted); margin-right:4px;">Slice View:</span>
-          <button type="button" class="mini-btn active" id="slice-btn-verbatim" onclick="setSliceViewMode('verbatim')">Verbatim</button>
-          <button type="button" class="mini-btn" id="slice-btn-debloated" onclick="setSliceViewMode('debloated')">$0 Debloated</button>
-          <button type="button" class="mini-btn" id="slice-btn-rfc-style" onclick="setSliceViewMode('rfc_style')">RFC-Style</button>
-          <span id="slice-paired-stem" style="color:var(--text-muted); margin-left:auto;"></span>
-        </div>
-        <pre><code id="code-slice">Verbatim RFC section slice will appear here...</code></pre>
-      </div>
-      <div class="tab-viewport" id="tab-rag" style="display:none; padding:12px; overflow-y:auto;">
-        <div id="rag-feed" style="display:flex; flex-direction:column; gap:10px;">
-          <div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
-            RAG queries and retrieved manual chunks will appear here...
+        <div class="live-preview-col">
+          <div class="subtab-bar">
+            <button type="button" class="subtab-btn active" data-livesub="scm" onclick="switchLiveSubtab('scm')">Scheme (.scm)</button>
+            <button type="button" class="subtab-btn" data-livesub="ast" onclick="switchLiveSubtab('ast')">AST (JSON)</button>
+            <button type="button" class="subtab-btn" data-livesub="slice" onclick="switchLiveSubtab('slice')">Protocol Text</button>
+            <button type="button" class="subtab-btn" data-livesub="graph" onclick="switchLiveSubtab('graph')">Shapes (SVG)</button>
+            <button type="button" class="subtab-btn" data-livesub="rag" onclick="switchLiveSubtab('rag')">KB / Searcher</button>
+          </div>
+          <div class="tab-viewport active" id="live-tab-scm"><pre><code id="live-code-scm">; Live CPSA Scheme model will stream here...</code></pre></div>
+          <div class="tab-viewport" id="live-tab-ast"><pre><code id="live-code-ast">// Live Pydantic JSON AST will appear here...</code></pre></div>
+          <div class="tab-viewport" id="live-tab-slice"><pre><code id="live-code-slice">Sliced protocol specification will appear here...</code></pre></div>
+          <div class="tab-viewport svg-mode" id="live-tab-graph">
+            <div id="live-graph-container" style="width:100%; height:100%;"><div class="empty-placeholder">Shapes graph renders here upon CPSA compilation.</div></div>
+          </div>
+          <div class="tab-viewport" id="live-tab-rag">
+            <div id="live-rag-feed"><div class="empty-placeholder">No KB retrievals recorded for active run yet.</div></div>
           </div>
         </div>
       </div>
-      <div class="tab-viewport" id="tab-graph" style="display:none; padding:0; height:100%;">
-        <div id="graph-container" style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-family:var(--mono); font-size:11px;">
-          MITRE CPSA shapes graph will render here upon successful verification.
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TOP VIEW 2: PER-PROTOCOL VIEW (Left Scroll Panel + Compartmentalized Tabs) -->
+  <!-- ===================================================================== -->
+  <section class="top-view" id="view-protocol">
+    <div class="protocol-layout">
+      <!-- Left: Vertical Protocol Scroll Selector (replaces old Live Log position) -->
+      <aside class="proto-sidebar">
+        <div class="sidebar-top">
+          <div class="sidebar-head-row">
+            <span class="sidebar-title" id="sidebar-proto-heading">Protocols (0)</span>
+            <button type="button" class="btn" id="btn-filtered-toggle" onclick="toggleFilteredDrawer()">Filtered (0)</button>
+          </div>
+          <div class="sidebar-filters">
+            <input type="text" id="tab-search-input" class="input" placeholder="Jump # or filter..." oninput="onTabFilterChange()" onkeydown="onTabSearchKeydown(event)" />
+            <select id="tab-status-filter" class="select" onchange="onTabFilterChange()">
+              <option value="ALL">All</option>
+              <option value="GOLD">GOLD</option>
+              <option value="SILVER">SILVER</option>
+              <option value="BRONZE">BRONZE</option>
+              <option value="VERIFIED">Verified</option>
+              <option value="PARTIAL">Partial</option>
+              <option value="FAILED">Failed</option>
+            </select>
+          </div>
         </div>
-      </div>
-      <div class="tab-viewport" id="tab-security" style="display:none; padding:12px; overflow-y:auto;">
-        <div id="security-findings-container" style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
-          Formal CPSA 4.4.9 security findings, Stage 1 intake rationale, parameter agreement maplets, and shape analysis sentences (`cpsa4sas`) will appear here upon protocol verification.
+
+        <div class="vlist-scroll" id="vtab-scroll">
+          <div class="vlist-spacer" id="vtab-spacer">
+            <div class="vlist-empty">No accepted protocols yet.</div>
+          </div>
         </div>
-      </div>
-      <div class="tab-viewport" id="tab-analytics" style="display:none; padding:12px; overflow-y:auto;">
-        <div id="analytics-container">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-family:var(--mono); font-size:11px;">
-            <div>
-              <strong style="color:var(--text-main);">LIVE CSV ANALYTICS &amp; GRAPH SUITE (OFF-MAIN-THREAD WEB WORKER)</strong>
-              <span id="analytics-csv-label" style="color:var(--text-muted); margin-left:8px;">Loading CSV...</span>
+      </aside>
+
+      <!-- Right: Single Selected Protocol Workspace (Strictly Compartmentalized) -->
+      <main class="proto-main">
+        <div class="proto-header-bar">
+          <div class="proto-title-wrap">
+            <span class="dot idle" id="proto-hdr-dot"></span>
+            <span class="proto-main-title" id="proto-hdr-title">Select a protocol</span>
+            <span class="tier-pill" id="proto-hdr-tier" style="display:none;">--</span>
+          </div>
+          <div class="proto-cost-summary" id="proto-hdr-cost"></div>
+        </div>
+
+        <div class="subtab-bar" id="proto-subtab-bar">
+          <button type="button" class="subtab-btn active" data-subtab="scm" onclick="switchProtoTab('scm')">Scheme (.scm)</button>
+          <button type="button" class="subtab-btn" data-subtab="ast" onclick="switchProtoTab('ast')">AST (JSON)</button>
+          <button type="button" class="subtab-btn" data-subtab="slice" onclick="switchProtoTab('slice')">Protocol Text</button>
+          <button type="button" class="subtab-btn" data-subtab="graph" onclick="switchProtoTab('graph')">Shapes (SVG)</button>
+          <button type="button" class="subtab-btn" data-subtab="security" onclick="switchProtoTab('security')">Security</button>
+          <button type="button" class="subtab-btn" data-subtab="stages" onclick="switchProtoTab('stages')">Stages &amp; Log <span id="subtab-evt-count" style="color:var(--text-muted); font-size:11px;"></span></button>
+          <button type="button" class="subtab-btn" data-subtab="kb" onclick="switchProtoTab('kb')">KB / Searcher <span id="subtab-kb-count" style="color:var(--text-muted); font-size:11px;"></span></button>
+        </div>
+
+        <!-- Attempts Time-Travel Bar (Strictly ONLY visible on Scheme and AST tabs) -->
+        <div class="attempt-toolbar visible" id="attempt-toolbar">
+          <div class="attempt-stepper" id="attempt-stepper">
+            <span class="attempt-label">Attempts:</span>
+            <span class="attempt-label">No snapshots</span>
+          </div>
+          <div class="attempt-banner" id="attempt-banner">
+            <div class="attempt-banner-head">
+              <strong id="attempt-banner-stage" style="color:var(--text);">Attempt</strong>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="button" class="btn" id="btn-toggle-rejected-scm" style="display:none; padding:2px 8px; font-size:10.5px;" onclick="toggleRejectedScmView()">Show Rejected Input .scm</button>
+                <span id="attempt-banner-status" class="tier-pill">INFO</span>
+              </div>
             </div>
-            <button class="ctrl-btn" onclick="refreshCsvAnalytics(true)">Refresh CSV Graphs</button>
+            <div class="attempt-banner-diag" id="attempt-banner-diag"></div>
+            <div class="attempt-banner-rag" id="attempt-banner-rag"></div>
           </div>
-          <div id="analytics-kpis" class="analytics-kpi-grid"></div>
-          <div id="analytics-charts" class="charts-grid"></div>
-          <div id="analytics-custom-explorer" style="margin-bottom:14px;"></div>
-          <div id="analytics-table-section"></div>
+        </div>
+
+        <!-- Tab 1: Scheme (.scm) -->
+        <div class="tab-viewport active" id="proto-tab-scm">
+          <pre><code id="code-scm">; Select a protocol to inspect CPSA 4.4.9 Scheme code...</code></pre>
+        </div>
+
+        <!-- Tab 2: AST (JSON) -->
+        <div class="tab-viewport" id="proto-tab-ast">
+          <pre><code id="code-ast">// Pydantic CPSAProtocolSpecification JSON will appear here...</code></pre>
+        </div>
+
+        <!-- Tab 3: Protocol Text (Verbatim | $0 Debloated | RFC-Style) -->
+        <div class="tab-viewport" id="proto-tab-slice">
+          <div class="slice-toolbar">
+            <span style="color:var(--text-muted); margin-right:4px;">View:</span>
+            <button type="button" class="btn active" id="slice-btn-verbatim" onclick="setSliceViewMode('verbatim')">Verbatim</button>
+            <button type="button" class="btn" id="slice-btn-debloated" onclick="setSliceViewMode('debloated')">$0 Debloated</button>
+            <button type="button" class="btn" id="slice-btn-rfc-style" onclick="setSliceViewMode('rfc_style')">RFC-Style</button>
+            <span class="slice-meta" id="slice-paired-meta"></span>
+          </div>
+          <pre><code id="code-slice">Sliced protocol specification will appear here...</code></pre>
+        </div>
+
+        <!-- Tab 4: Shapes (SVG) — MITRE CPSA XHTML with Dark Invert Toggle -->
+        <div class="tab-viewport svg-mode" id="proto-tab-graph">
+          <div id="graph-container" style="width:100%; height:100%;"><div class="empty-placeholder">No MITRE CPSA shapes graph generated for this protocol.</div></div>
+        </div>
+
+        <!-- Tab 5: Security (Exclusively holds all Security verdicts & findings) -->
+        <div class="tab-viewport" id="proto-tab-security">
+          <div id="security-findings-container">
+            <div class="empty-placeholder">Select a protocol to inspect CPSA formal security findings.</div>
+          </div>
+        </div>
+
+        <!-- Tab 6: Stages & Log (6-Stage Telemetry Cards + Per-Stage Grouped Logs) -->
+        <div class="tab-viewport" id="proto-tab-stages">
+          <div style="max-width:1180px;">
+            <div class="proto-stage-toolbar">
+              <span class="mono" style="font-size:11px; color:var(--text-secondary);">Pipeline Stage Telemetry (Click stage card to filter log)</span>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <span class="mono" id="proto-event-counter" style="color:var(--text-muted); font-size:11px;">0 Events</span>
+                <button type="button" class="btn active" id="btn-stage-filter-all" onclick="setProtoStageFilter(0)">All 6 Stages</button>
+              </div>
+            </div>
+            <div class="stepper proto-stepper" id="proto-stage-strip"></div>
+            <div id="proto-stage-log-groups">
+              <div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">Select a protocol to inspect stage execution logs.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 7: KB / Searcher (Agentic RAG Retrievals & Snowball Diagnostics) -->
+        <div class="tab-viewport" id="proto-tab-kb">
+          <div style="max-width:1180px;">
+            <div class="col-header" style="border:1px solid var(--border); border-radius:var(--radius-md) var(--radius-md) 0 0;">
+              <span>Agentic KB Retrievals, Searcher Turns &amp; Snowball Diagnostics</span>
+              <span class="mono" id="proto-rag-counter" style="color:var(--text-muted);">0 Lookups</span>
+            </div>
+            <div style="border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius-md) var(--radius-md); padding:10px; background:var(--bg-black);">
+              <div id="proto-rag-feed"><div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">No KB retrievals recorded.</div></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TOP VIEW 3: GLOBAL STATISTICS (Whole Run, Whole CSV, Whole Cost)      -->
+  <!-- ===================================================================== -->
+  <section class="top-view" id="view-global">
+    <div class="global-scroll">
+      <div class="global-wrap">
+        <div class="global-head">
+          <div>
+            <h2>Global Run Statistics</h2>
+            <div class="mono" id="analytics-csv-label" style="font-size:11px; color:var(--text-muted);">Loading run metrics...</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button type="button" class="btn" id="global-filtered-btn" onclick="toggleFilteredDrawer()">Filtered / Skipped (0)</button>
+            <button type="button" class="btn" onclick="refreshCsvAnalytics(true)">Refresh CSV</button>
+          </div>
+        </div>
+
+        <div id="analytics-kpis" class="kpi-grid"></div>
+
+        <div class="info-row">
+          <div class="panel-card">
+            <div class="panel-card-head">
+              <span class="panel-card-title">Whole-Batch Cost &amp; Token Share by Role</span>
+              <span class="panel-card-sub" id="global-cost-sub">0 calls · 0 tok</span>
+            </div>
+            <div class="kv-grid" id="global-role-cost-grid"></div>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-card-head">
+              <span class="panel-card-title">Pipeline Stage Models &amp; Solver Bounds</span>
+              <span class="panel-card-sub" id="global-timeout-sub">CPSA Cap: 15s</span>
+            </div>
+            <div class="kv-grid" id="global-models-grid"></div>
+          </div>
+        </div>
+
+        <div id="analytics-charts" class="charts-grid"></div>
+
+        <div class="panel-card" id="analytics-table-card">
+          <div class="panel-card-head">
+            <div>
+              <span class="panel-card-title" id="csv-table-heading">CSV Ledger Explorer</span>
+              <span class="panel-card-sub" style="margin-left:8px;">Click an eligible row to open in Per-Protocol View</span>
+            </div>
+            <input type="text" id="csv-table-search" class="input" style="width:260px;" placeholder="Filter RFC, tier, verdict, error..." oninput="renderCsvTableUI()" />
+          </div>
+          <div style="overflow:auto; max-height:380px; border:1px solid var(--border-subtle); border-radius:var(--radius-sm);">
+            <table class="data-table" id="csv-ledger-table">
+              <thead><tr><th>Loading CSV...</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
   <script>
     // =========================================================================
-    // Global State (Bounded O(1) DOM & 20-entry LRU Tab Cache)
+    // Core State & Utilities
     // =========================================================================
-    const VTAB_WIDTH = 230;
+    const VROW_STEP = 60; // 54px card + 6px vertical spacing
     const LRU_MAX_TABS = 20;
 
-    let viewMode = 'live';           // 'live' | 'tab'
+    let topMode = 'live';           // 'live' | 'protocol' | 'global'
+    let currentProtoSubtab = 'scm'; // 'scm' | 'ast' | 'slice' | 'graph' | 'security' | 'stages' | 'kb'
+    let currentLiveSubtab = 'scm';
     let isServerLive = true;
     let selectedTabIndex = null;
     let liveActiveTabIndex = null;
     let liveActiveRfcId = null;
 
-    // Compact summary array of all accepted tabs (~150 bytes each -> 5,000 tabs = ~750 KB)
+    let cpsaDarkInvert = true;
+    let protoStageFilter = 0;
+    let currentHydratedPayload = null;
+
+    const isStandaloneClientModeInitial = (
+      window.location.protocol === 'file:' ||
+      new URLSearchParams(window.location.search).get('standalone') === '1'
+    );
+    let isStandaloneClientMode = isStandaloneClientModeInitial;
+    let isClientFolderLoaded = false;
+    const clientHydratedTabs = new Map();
+    let clientFilteredItems = [];
+    let clientBlobUrls = [];
+
     let acceptedTabs = [];
     const acceptedTabsByIndex = new Map();
+    const acceptedTabsByNormId = new Map();
     let visibleFilteredTabs = [];
     let filteredTotalCount = 0;
 
-    // 20-entry LRU cache mapping tab_index -> hydrated /api/tab/:idx payload
     const tabLruCache = new Map();
+    let defaultModelCfg = {
+      router_model: 'strata/unsloth-iq4_xs',
+      distill_model: 'strata/unsloth-iq4_xs',
+      splitter_model: 'strata/unsloth-iq4_xs',
+      extraction_model: 'strata/unsloth-iq4_xs',
+      query_model: 'strata/unsloth-iq4_xs',
+      repair_model: 'strata/unsloth-iq4_xs',
+      think_model: 'strata/unsloth-iq4_xs',
+      cpsa_timeout_seconds: 15
+    };
+    let latestBatchCostTelemetry = null;
 
-    // Active viewport state
-    const seenEventKeys = new Set();
-    let eventCount = 0;
+    // Live View state
+    const liveSeenEventKeys = new Set();
+    let liveEventCount = 0;
+    let liveFirstRag = true;
     let pipelineRunning = false;
     let currentStageNum = 1;
     let activeAttemptEpoch = null;
     let currentActivityMode = 'idle';
     let currentRepairAttempt = 0;
     const stageStartEpochs = {};
-    let ragFirstEvent = true;
 
-    // Attempt time-travel state for currently displayed tab
+    // Per-Protocol Attempt Time-Travel state
     let currentAttemptsList = [];
     let selectedAttemptIdx = -1;
     let showingRejectedScm = false;
 
-    let defaultModelCfg = {
-      router_model: 'nous/z-ai/glm-5.3',
-      extraction_model: 'nous/google/gemini-4-argon',
-      repair_model: 'nous/google/gemini-3.8-flash',
-      query_model: 'nous/anthropic/claude-haiku-5.5'
-    };
-    let latestBatchCostTelemetry = null;
-
-    function formatUsd(val) {
-      const n = Number(val || 0);
-      return `$${n.toFixed(4)}`;
+    function normId(val) {
+      return String(val || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '');
     }
 
-    function formatTok(val) {
-      const n = Number(val || 0);
-      return `(${n.toLocaleString()} tok)`;
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     }
 
-    function renderCostTelemetry(rfcCost, batchCost) {
-      if (batchCost && typeof batchCost === 'object') {
-        latestBatchCostTelemetry = batchCost;
-      }
-      if (rfcCost && typeof rfcCost === 'object') {
-        const roles = rfcCost.roles || {};
-        ['router', 'extraction', 'query', 'repair'].forEach(roleKey => {
-          const rb = roles[roleKey] || {};
-          const costEl = document.getElementById(`cost-${roleKey}`);
-          const tokEl = document.getElementById(`tok-${roleKey}`);
-          if (costEl) costEl.innerText = formatUsd(rb.cost_usd);
-          if (tokEl) tokEl.innerText = formatTok(rb.total_tokens);
-        });
-        const rfcTotEl = document.getElementById('cost-rfc-total');
-        const rfcTokEl = document.getElementById('tok-rfc-total');
-        if (rfcTotEl) rfcTotEl.innerText = formatUsd(rfcCost.total_cost_usd);
-        if (rfcTokEl) rfcTokEl.innerText = formatTok(rfcCost.total_tokens);
-      }
-      const effBatch = latestBatchCostTelemetry || rfcCost;
-      if (effBatch && typeof effBatch === 'object') {
-        const bTotEl = document.getElementById('cost-batch-total');
-        const bTokEl = document.getElementById('tok-batch-total');
-        if (bTotEl) bTotEl.innerText = formatUsd(effBatch.total_cost_usd);
-        if (bTokEl) bTokEl.innerText = formatTok(effBatch.total_tokens);
-      }
+    function fmtUsd(val) {
+      return `$${Number(val || 0).toFixed(4)}`;
+    }
+
+    function fmtTok(val) {
+      return `${Number(val || 0).toLocaleString()} tok`;
+    }
+
+    function dotClassForStatus(status, tier) {
+      const s = String(status || '').toUpperCase();
+      const t = String(tier || '').toUpperCase();
+      if (s === 'RUNNING' || t === 'RUNNING') return 'running';
+      if (s === 'VERIFIED' || t === 'GOLD' || t === 'SILVER') return 'verified';
+      if (s === 'PARTIAL' || t === 'BRONZE') return 'warn';
+      if (s === 'FAILED' || s === 'INTERRUPTED' || t === 'REJECTED') return 'failed';
+      return 'idle';
     }
 
     function lruGet(tabIdx) {
@@ -21768,26 +22378,92 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       if (tabLruCache.has(tabIdx)) tabLruCache.delete(tabIdx);
       tabLruCache.set(tabIdx, payload);
       if (tabLruCache.size > LRU_MAX_TABS) {
-        const oldestKey = tabLruCache.keys().next().value;
-        tabLruCache.delete(oldestKey);
+        tabLruCache.delete(tabLruCache.keys().next().value);
       }
     }
 
     // =========================================================================
-    // Virtualized Horizontal Tab Bar (Handles 5,000+ Tabs with ~25 DOM Nodes)
+    // Top-Level View Switching (Live View | Per-Protocol View | Global Stats)
+    // =========================================================================
+    function setTopMode(mode) {
+      topMode = mode;
+      ['live', 'protocol', 'global'].forEach(m => {
+        const btn = document.getElementById(`top-btn-${m}`);
+        const view = document.getElementById(`view-${m}`);
+        if (btn) btn.classList.toggle('active', m === mode);
+        if (view) view.classList.toggle('active', m === mode);
+      });
+      if (mode === 'protocol') {
+        renderVirtualProtocolList();
+        if (selectedTabIndex === null && acceptedTabs.length > 0) {
+          selectNumberedTab(acceptedTabs[0].tab_index);
+        }
+      } else if (mode === 'global') {
+        refreshCsvAnalytics(false);
+      } else if (mode === 'live') {
+        syncLiveOfflineNotice();
+      }
+    }
+
+    function syncLiveOfflineNotice() {
+      const offEl = document.getElementById('live-offline-notice');
+      const wsEl = document.getElementById('live-workspace');
+      const showOffline = !isServerLive && liveEventCount === 0;
+      if (offEl) offEl.style.display = showOffline ? 'block' : 'none';
+      if (wsEl) wsEl.style.display = showOffline ? 'none' : 'flex';
+    }
+
+    function updateTopCountsAndStatus() {
+      const pcEl = document.getElementById('top-proto-count');
+      if (pcEl) pcEl.innerText = `(${acceptedTabs.length})`;
+      const sbHead = document.getElementById('sidebar-proto-heading');
+      if (sbHead) sbHead.innerText = `Protocols (${acceptedTabs.length})`;
+      const batchCost = latestBatchCostTelemetry ? Number(latestBatchCostTelemetry.total_cost_usd || 0) : 0;
+      const gcEl = document.getElementById('top-global-cost');
+      if (gcEl) gcEl.innerText = fmtUsd(batchCost);
+
+      const connDot = document.getElementById('hdr-conn-dot');
+      const topLiveDot = document.getElementById('top-live-dot');
+      const hdrPill = document.getElementById('hdr-summary-pill');
+      if (isServerLive) {
+        if (connDot) connDot.className = pipelineRunning ? 'dot verified' : 'dot live';
+        if (topLiveDot) topLiveDot.className = pipelineRunning ? 'dot live' : 'dot idle';
+        if (hdrPill) hdrPill.innerText = pipelineRunning ? `Live: ${liveActiveRfcId || 'Running'}` : 'Connected · Idle';
+      } else {
+        if (connDot) connDot.className = 'dot idle';
+        if (topLiveDot) topLiveDot.className = 'dot idle';
+        if (hdrPill) hdrPill.innerText = `${acceptedTabs.length} Protocols · ${filteredTotalCount} Filtered`;
+      }
+    }
+
+    function openProtocolByIdentifier(rfcIdOrName) {
+      const targetNorm = normId(rfcIdOrName);
+      let hit = acceptedTabsByNormId.get(targetNorm);
+      if (!hit) {
+        const lower = String(rfcIdOrName || '').toLowerCase();
+        hit = acceptedTabs.find(t =>
+          (t.rfc_id || '').toLowerCase() === lower ||
+          (t.protocol_name || '').toLowerCase() === lower
+        );
+      }
+      if (!hit) return;
+      setTopMode('protocol');
+      selectNumberedTab(hit.tab_index);
+      scrollTabIntoView(hit.tab_index);
+    }
+
+    // =========================================================================
+    // Left Virtualized Vertical Protocol Selector (Per-Protocol View)
     // =========================================================================
     function recomputeVisibleTabs() {
       const q = (document.getElementById('tab-search-input')?.value || '').trim().toLowerCase();
       const statusFilter = document.getElementById('tab-status-filter')?.value || 'ALL';
 
-      const allOption = document.querySelector('#tab-status-filter option[value="ALL"]');
-      if (allOption) allOption.innerText = `ALL TABS (${acceptedTabs.length})`;
-
       visibleFilteredTabs = acceptedTabs.filter(t => {
         if (statusFilter !== 'ALL') {
-          if (['GOLD', 'SILVER', 'BRONZE'].includes(statusFilter)) {
-            if ((t.quality_tier || '') !== statusFilter) return false;
-          } else if (t.status !== statusFilter) {
+          if (['GOLD', 'SILVER', 'BRONZE', 'REJECTED'].includes(statusFilter)) {
+            if ((t.quality_tier || '').toUpperCase() !== statusFilter) return false;
+          } else if ((t.status || '').toUpperCase() !== statusFilter) {
             return false;
           }
         }
@@ -21802,91 +22478,69 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         );
       });
 
-      renderVirtualTabs();
+      renderVirtualProtocolList();
     }
 
-    function renderVirtualTabs() {
+    function renderVirtualProtocolList() {
       const scrollEl = document.getElementById('vtab-scroll');
       const spacerEl = document.getElementById('vtab-spacer');
       if (!scrollEl || !spacerEl) return;
 
       const total = visibleFilteredTabs.length;
       if (total === 0) {
-        spacerEl.style.width = '100%';
-        const msg = acceptedTabs.length === 0
-          ? 'No accepted cryptographic protocol tabs yet.'
-          : 'No tabs match current filter.';
-        spacerEl.innerHTML = `<div class="vtab-empty">${msg}</div>`;
+        spacerEl.style.height = 'auto';
+        spacerEl.innerHTML = `<div class="vlist-empty">${acceptedTabs.length === 0 ? 'No accepted protocols yet.' : 'No matching protocols.'}</div>`;
         return;
       }
 
-      const totalWidth = total * VTAB_WIDTH;
-      spacerEl.style.width = `${totalWidth}px`;
-
-      const scrollLeft = scrollEl.scrollLeft;
-      const viewportW = scrollEl.clientWidth || 1200;
-      const firstIdx = Math.max(0, Math.floor(scrollLeft / VTAB_WIDTH) - 4);
-      const lastIdx = Math.min(total - 1, Math.ceil((scrollLeft + viewportW) / VTAB_WIDTH) + 4);
+      spacerEl.style.height = `${total * VROW_STEP + 10}px`;
+      const scrollTop = scrollEl.scrollTop;
+      const viewportH = scrollEl.clientHeight || 600;
+      const firstIdx = Math.max(0, Math.floor(scrollTop / VROW_STEP) - 4);
+      const lastIdx = Math.min(total - 1, Math.ceil((scrollTop + viewportH) / VROW_STEP) + 4);
 
       const frag = document.createDocumentFragment();
       for (let i = firstIdx; i <= lastIdx; i++) {
         const t = visibleFilteredTabs[i];
         const btn = document.createElement('button');
-        const isSelected = (viewMode === 'tab' && selectedTabIndex === t.tab_index)
-          || (viewMode === 'live' && liveActiveTabIndex === t.tab_index);
-        btn.className = `rfc-vtab${isSelected ? ' active' : ''}`;
-        btn.style.left = `${i * VTAB_WIDTH}px`;
+        btn.type = 'button';
+        btn.className = `proto-row${selectedTabIndex === t.tab_index ? ' active' : ''}`;
+        btn.style.top = `${6 + i * VROW_STEP}px`;
         btn.onclick = () => selectNumberedTab(t.tab_index);
 
-        const dotClass = t.status === 'VERIFIED' ? 'verified'
-          : (t.status === 'PARTIAL' ? 'partial'
-          : (t.status === 'RUNNING' ? 'running' : 'failed'));
-        const badgeText = (t.status === 'RUNNING') ? 'LIVE' : (t.quality_tier || t.status || '');
-        const badgeClass = (t.status === 'RUNNING') ? 'RUNNING' : (t.quality_tier || t.status || '');
-        const protoDisplay = t.protocol_name || t.rfc_title || t.rfc_id;
-        const tabCostStr = (typeof t.cost_usd === 'number' && t.cost_usd > 0) ? ` | $${t.cost_usd.toFixed(4)}` : '';
+        const dotCls = dotClassForStatus(t.status, t.quality_tier);
+        const tierLabel = t.status === 'RUNNING' ? 'LIVE' : (t.quality_tier || t.status || '');
+        const protoName = t.protocol_name || t.rfc_title || t.rfc_id;
+        const costTxt = typeof t.cost_usd === 'number' ? fmtUsd(t.cost_usd) : '$0.0000';
+        const durTxt = `${Number(t.duration_seconds || 0).toFixed(0)}s`;
 
-        btn.title = [
-          `Tab #${t.tab_index} | ${t.rfc_id}`,
-          `Protocol: ${protoDisplay}`,
-          t.rfc_title && t.rfc_title !== protoDisplay ? `Title: ${t.rfc_title}` : null,
-          `Status: ${t.status} | Tier: ${t.quality_tier}`,
-          `Repairs: ${t.total_attempts || 0} | Shapes: ${t.shapes_count || 0} | Time: ${t.duration_seconds || 0}s${tabCostStr}`
-        ].filter(Boolean).join('\n');
+        btn.title = `#${t.tab_index} ${t.rfc_id}\n${protoName}\nTier: ${tierLabel} · ${costTxt} · ${durTxt}`;
 
-        const topDiv = document.createElement('div');
-        topDiv.className = 'rfc-vtab-top';
-
-        const idSpan = document.createElement('div');
-        idSpan.className = 'rfc-vtab-id';
-        idSpan.innerHTML = `<span class="dot ${dotClass}"></span><span class="rfc-vtab-num">#${t.tab_index}</span><span>${escapeHtml(t.rfc_id)}</span>`;
-
-        const tierSpan = document.createElement('span');
-        tierSpan.className = `rfc-vtab-tier ${badgeClass}`;
-        tierSpan.setAttribute('data-tooltip-key', badgeClass);
-        tierSpan.innerText = badgeText;
-
-        topDiv.appendChild(idSpan);
-        topDiv.appendChild(tierSpan);
-
-        const protoDiv = document.createElement('div');
-        protoDiv.className = 'rfc-vtab-proto';
-        protoDiv.innerText = `${protoDisplay}${tabCostStr}`;
-
-        btn.appendChild(topDiv);
-        btn.appendChild(protoDiv);
+        btn.innerHTML = `
+          <div class="proto-row-top">
+            <div class="proto-row-id">
+              <span class="dot ${dotCls}"></span>
+              <span class="proto-row-num">#${t.tab_index}</span>
+              <span>${escapeHtml(t.rfc_id)}</span>
+            </div>
+            <span class="tier-pill ${escapeHtml(tierLabel)}" data-tooltip-key="${escapeHtml(tierLabel)}">${escapeHtml(tierLabel)}</span>
+          </div>
+          <div class="proto-row-bottom">
+            <span class="proto-row-name">${escapeHtml(protoName)}</span>
+            <span class="proto-row-meta">${costTxt} · ${durTxt}</span>
+          </div>
+        `;
         frag.appendChild(btn);
       }
-
       spacerEl.innerHTML = '';
       spacerEl.appendChild(frag);
     }
 
     document.getElementById('vtab-scroll').addEventListener('scroll', () => {
-      window.requestAnimationFrame(renderVirtualTabs);
+      window.requestAnimationFrame(renderVirtualProtocolList);
     });
     window.addEventListener('resize', () => {
-      window.requestAnimationFrame(renderVirtualTabs);
+      window.requestAnimationFrame(renderVirtualProtocolList);
     });
 
     function onTabFilterChange() {
@@ -21910,132 +22564,202 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       const pos = visibleFilteredTabs.findIndex(t => t.tab_index === tabIndex);
       if (pos < 0) return;
       const scrollEl = document.getElementById('vtab-scroll');
-      const targetLeft = pos * VTAB_WIDTH;
-      if (targetLeft < scrollEl.scrollLeft || targetLeft + VTAB_WIDTH > scrollEl.scrollLeft + scrollEl.clientWidth) {
-        scrollEl.scrollLeft = Math.max(0, targetLeft - VTAB_WIDTH);
+      const targetTop = pos * VROW_STEP;
+      if (targetTop < scrollEl.scrollTop || targetTop + VROW_STEP > scrollEl.scrollTop + scrollEl.clientHeight) {
+        scrollEl.scrollTop = Math.max(0, targetTop - VROW_STEP);
       }
     }
 
     function upsertTabSummary(tabObj) {
       if (!tabObj || !tabObj.tab_index) return;
       if (acceptedTabsByIndex.has(tabObj.tab_index)) {
-        const existing = acceptedTabsByIndex.get(tabObj.tab_index);
-        Object.assign(existing, tabObj);
+        Object.assign(acceptedTabsByIndex.get(tabObj.tab_index), tabObj);
       } else {
         acceptedTabs.push(tabObj);
         acceptedTabs.sort((a, b) => a.tab_index - b.tab_index);
         acceptedTabsByIndex.set(tabObj.tab_index, tabObj);
       }
+      acceptedTabsByNormId.set(normId(tabObj.rfc_id), acceptedTabsByIndex.get(tabObj.tab_index));
       tabLruCache.delete(tabObj.tab_index);
+      updateTopCountsAndStatus();
       recomputeVisibleTabs();
     }
 
     function updateFilteredButtonCount(count) {
       filteredTotalCount = count;
-      const btn = document.getElementById('btn-filtered-toggle');
-      if (btn) btn.innerText = `Filtered / Skipped (${count})`;
-    }
-
-    function updateLivePinButton() {
-      const btn = document.getElementById('btn-live-follow');
-      const dot = document.getElementById('live-pin-dot');
-      const lbl = document.getElementById('live-pin-label');
-      const sub = document.getElementById('live-pin-rfc');
-      if (!btn) return;
-
-      btn.classList.toggle('active', viewMode === 'live');
-      if (!isServerLive) {
-        btn.classList.add('replay-mode');
-        dot.className = 'dot idle';
-        lbl.innerText = 'OFFLINE REPLAY';
-        sub.innerText = `${acceptedTabs.length} Accepted Tabs`;
-      } else {
-        btn.classList.remove('replay-mode');
-        dot.className = pipelineRunning ? 'dot running' : 'dot idle';
-        lbl.innerText = liveActiveTabIndex ? `LIVE | TAB #${liveActiveTabIndex}` : 'LIVE STREAM';
-        sub.innerText = liveActiveRfcId || 'Waiting...';
-      }
+      const b1 = document.getElementById('btn-filtered-toggle');
+      const b2 = document.getElementById('global-filtered-btn');
+      if (b1) b1.innerText = `Filtered (${count})`;
+      if (b2) b2.innerText = `Filtered / Skipped (${count})`;
+      updateTopCountsAndStatus();
     }
 
     // =========================================================================
-    // Viewport Reset & Switching Between [LIVE] and Historical Tab #1..#N
+    // Per-Protocol Sub-Tabs & Strict Compartmentalization
     // =========================================================================
-    function resetViewportDom(headerTitle) {
-      seenEventKeys.clear();
-      eventCount = 0;
-      ragFirstEvent = true;
-      currentAttemptsList = [];
-      selectedAttemptIdx = -1;
-      showingRejectedScm = false;
+    function switchProtoTab(tabId) {
+      currentProtoSubtab = tabId;
+      document.querySelectorAll('#proto-subtab-bar .subtab-btn').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-subtab') === tabId);
+      });
+      document.querySelectorAll('#view-protocol .tab-viewport').forEach(v => v.classList.remove('active'));
+      const target = document.getElementById(`proto-tab-${tabId}`);
+      if (target) target.classList.add('active');
 
-      document.getElementById('event-counter').innerText = '0 Events';
-      const titleEl = document.getElementById('log-panel-title');
-      if (!headerTitle || headerTitle === 'LIVE') {
-        titleEl.innerHTML = '<span class="dot failed" style="box-shadow:0 0 6px var(--color-red);"></span>LIVE';
-      } else {
-        titleEl.innerText = headerTitle;
-      }
-      document.getElementById('log-feed').innerHTML = '';
-      document.getElementById('rag-feed').innerHTML = `
-        <div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">
-          No RAG manual retrievals recorded for this protocol yet.
-        </div>`;
-      document.getElementById('code-scm').innerText = '; CPSA Scheme model output will appear here...';
-      document.getElementById('code-ast').innerText = '// Pydantic JSON AST will appear here...';
-      document.getElementById('code-slice').innerText = 'Verbatim RFC section slice will appear here...';
-      document.getElementById('graph-container').innerHTML =
-        'MITRE CPSA shapes graph will render here upon successful verification.';
-      document.getElementById('security-findings-container').innerHTML =
-        '<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">Formal CPSA 4.4.9 security findings, Stage 1 intake rationale, parameter agreement maplets, and shape analysis sentences (`cpsa4sas`) will appear here upon protocol verification.</div>';
-      renderSecurityVerdictStrip('PENDING', null);
-      document.getElementById('attempt-banner').classList.remove('visible');
-      document.getElementById('attempt-stepper').innerHTML =
-        '<span class="attempt-stepper-label">Attempts:</span><span style="color:var(--text-muted); font-family:var(--mono); font-size:10px;">Live synthesis...</span>';
-
-      for (let s = 1; s <= 6; s++) {
-        const el = document.getElementById(`step-${s}`);
-        if (el) el.classList.remove('active', 'passed', 'failed');
-        const st = document.getElementById(`step-${s}-status`);
-        if (st) st.innerText = 'Pending';
-        const tm = document.getElementById(`step-${s}-time`);
-        if (tm) tm.innerText = '--:--';
+      // Show Attempt Time-Travel Bar ONLY on Scheme (.scm) and AST (JSON)
+      const attemptBar = document.getElementById('attempt-toolbar');
+      if (attemptBar) {
+        attemptBar.classList.toggle('visible', tabId === 'scm' || tabId === 'ast');
       }
     }
 
-    function selectLiveFollow() {
-      if (!isServerLive) {
-        if (acceptedTabs.length > 0) selectNumberedTab(acceptedTabs[0].tab_index);
-        return;
-      }
-      viewMode = 'live';
-      selectedTabIndex = null;
-      updateLivePinButton();
-      renderVirtualTabs();
-      resetViewportDom('LIVE');
+    function switchLiveSubtab(tabId) {
+      currentLiveSubtab = tabId;
+      document.querySelectorAll('#view-live .subtab-btn').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-livesub') === tabId);
+      });
+      document.querySelectorAll('#view-live .tab-viewport').forEach(v => v.classList.remove('active'));
+      const target = document.getElementById(`live-tab-${tabId}`);
+      if (target) target.classList.add('active');
+    }
 
-      fetch('api/active')
-        .then(r => r.json())
-        .then(state => {
-          if (state && Array.isArray(state.events)) {
-            state.events.forEach(evt => renderEventIntoViewport(evt, true));
+    function shortModelLabel(modelId) {
+      const s = String(modelId || '').trim();
+      if (!s) return '--';
+      const parts = s.split('/').filter(Boolean);
+      return parts.length ? parts[parts.length - 1] : s;
+    }
+
+    function collectProtocolModels(payload) {
+      const tab = (payload && payload.tab) || {};
+      const ct = (payload && payload.cost_telemetry) || tab.cost_telemetry || {};
+      const roles = ct.roles || {};
+      const evts = (payload && payload.events) || [];
+      const pipeStart = evts.find(e => e && e.event_type === 'pipeline_started' && e.data) || { data: {} };
+      const psd = pipeStart.data || {};
+      const stModel = {};
+      evts.forEach(e => {
+        if (e && e.event_type === 'stage_started' && e.stage && e.data && e.data.model) {
+          stModel[e.stage] = e.data.model;
+        }
+      });
+      return {
+        router: (roles.router && roles.router.model) || psd.router_model || stModel[1] || defaultModelCfg.router_model,
+        distiller: (roles.distiller && roles.distiller.model) || (payload && payload.rfc_style_slice ? defaultModelCfg.distill_model : ''),
+        extraction: (roles.extraction && roles.extraction.model) || psd.extraction_model || stModel[2] || defaultModelCfg.extraction_model,
+        query: (roles.query && roles.query.model) || defaultModelCfg.query_model,
+        repair: (roles.repair && roles.repair.model) || psd.repair_model || stModel[5] || stModel[6] || defaultModelCfg.repair_model
+      };
+    }
+
+    function injectCpsaJumpScript(xhtmlText) {
+      const raw = String(xhtmlText || '');
+      if (!raw || raw.includes('jumpToHash')) return raw;
+      const snippet = [
+        '<style type="text/css">svg text[onclick], a[href^="#"] { cursor: pointer; }</style>',
+        '<script type="application/javascript">//<![CDATA[',
+        '(function(){',
+        'function jumpToHash(raw){if(!raw||typeof raw!=="string")return false;var i=raw.indexOf("#");if(i<0)return false;var id=decodeURIComponent(raw.slice(i+1));if(!id)return false;var el=document.getElementById(id)||document.getElementsByName(id)[0];if(el){el.scrollIntoView({behavior:"auto",block:"start"});return true;}return false;}',
+        'var origOpen=window.open;window.open=function(u,t,f){if(typeof u==="string"&&u.charAt(0)==="#"){jumpToHash(u);return window;}return origOpen?origOpen.call(window,u,t,f):null;};',
+        'document.addEventListener("click",function(e){var el=e.target;while(el&&el!==document){if(el.getAttribute){var oc=el.getAttribute("onclick")||"";var m=oc.match(/#[A-Za-z0-9_.:-]+/);if(m&&jumpToHash(m[0])){e.preventDefault();e.stopPropagation();return;}var hr=el.getAttribute("href")||"";if(hr.charAt(0)==="#"&&jumpToHash(hr)){e.preventDefault();e.stopPropagation();return;}}el=el.parentNode;}},true);',
+        '})();',
+        '//]]><' + '/script>'
+      ].join('\n');
+      if (raw.includes('</body>')) return raw.replace('</body>', snippet + '\n</body>');
+      if (raw.includes('</BODY>')) return raw.replace('</BODY>', snippet + '\n</BODY>');
+      return raw;
+    }
+
+    function bindSameOriginIframeJumps(fr) {
+      try {
+        const doc = fr && fr.contentDocument;
+        const win = fr && fr.contentWindow;
+        if (!doc || !win || doc._cpsaJumpBound) return;
+        doc._cpsaJumpBound = true;
+        const jumpTo = raw => {
+          if (!raw || typeof raw !== 'string') return false;
+          const idx = raw.indexOf('#');
+          if (idx < 0) return false;
+          const id = decodeURIComponent(raw.slice(idx + 1));
+          const tgt = doc.getElementById(id) || doc.getElementsByName(id)[0];
+          if (tgt) { tgt.scrollIntoView({ behavior: 'auto', block: 'start' }); return true; }
+          return false;
+        };
+        const origOpen = win.open;
+        win.open = function(url, target, features) {
+          if (typeof url === 'string' && url.charAt(0) === '#') {
+            jumpTo(url);
+            return win;
           }
-        })
-        .catch(() => {});
+          return origOpen ? origOpen.call(win, url, target, features) : null;
+        };
+        doc.addEventListener('click', e => {
+          let el = e.target;
+          while (el && el !== doc) {
+            if (el.getAttribute) {
+              const oc = el.getAttribute('onclick') || '';
+              const m = oc.match(/#[A-Za-z0-9_.:-]+/);
+              if (m && jumpTo(m[0])) { e.preventDefault(); e.stopPropagation(); return; }
+              const hr = el.getAttribute('href') || '';
+              if (hr.charAt(0) === '#' && jumpTo(hr)) { e.preventDefault(); e.stopPropagation(); return; }
+            }
+            el = el.parentNode;
+          }
+        }, true);
+      } catch (err) {}
+    }
+
+    function buildShapesIframeHtml(iframeSrc) {
+      const toggleLabel = cpsaDarkInvert ? 'Raw Light XHTML' : 'Dark Invert XHTML';
+      return `<div class="svg-viewport-wrap"><button type="button" class="svg-invert-toggle" onclick="toggleCpsaInvert()">${toggleLabel}</button><iframe class="svg-frame${cpsaDarkInvert ? ' inverted' : ''}" src="${iframeSrc}" onload="bindSameOriginIframeJumps(this)"></iframe></div>`;
+    }
+
+    function toggleCpsaInvert() {
+      cpsaDarkInvert = !cpsaDarkInvert;
+      const toggleLabel = cpsaDarkInvert ? 'Raw Light XHTML' : 'Dark Invert XHTML';
+      document.querySelectorAll('.svg-frame').forEach(fr => fr.classList.toggle('inverted', cpsaDarkInvert));
+      document.querySelectorAll('.svg-invert-toggle').forEach(btn => { btn.innerText = toggleLabel; });
+    }
+
+    function resetProtocolWorkspace(headerTitle) {
+      currentAttemptsList = [];
+      currentHydratedPayload = null;
+      selectedAttemptIdx = -1;
+      protoStageFilter = 0;
+      showingRejectedScm = false;
+      document.getElementById('proto-hdr-title').innerText = headerTitle || 'Loading...';
+      document.getElementById('proto-hdr-dot').className = 'dot idle';
+      document.getElementById('proto-hdr-tier').style.display = 'none';
+      document.getElementById('proto-hdr-cost').innerHTML = '';
+
+      document.getElementById('code-scm').innerText = '; Loading CPSA Scheme...';
+      document.getElementById('code-ast').innerText = '// Loading Pydantic JSON AST...';
+      document.getElementById('code-slice').innerText = 'Loading sliced specification...';
+      document.getElementById('graph-container').innerHTML = '<div class="empty-placeholder">No MITRE CPSA shapes graph generated.</div>';
+      document.getElementById('security-findings-container').innerHTML = '<div class="empty-placeholder">No security findings loaded.</div>';
+      document.getElementById('proto-stage-strip').innerHTML = '';
+      document.getElementById('proto-stage-log-groups').innerHTML = '';
+      document.getElementById('proto-rag-feed').innerHTML = '<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">No KB retrievals recorded.</div>';
+      document.getElementById('proto-event-counter').innerText = '0 Events';
+      document.getElementById('proto-rag-counter').innerText = '0 Lookups';
+      const subEvt = document.getElementById('subtab-evt-count');
+      const subKb = document.getElementById('subtab-kb-count');
+      if (subEvt) subEvt.innerText = '';
+      if (subKb) subKb.innerText = '';
+      document.getElementById('attempt-banner').classList.remove('visible');
+      document.getElementById('attempt-stepper').innerHTML = '<span class="attempt-label">Attempts:</span><span class="attempt-label">Loading...</span>';
     }
 
     function selectNumberedTab(tabIndex) {
+      selectedTabIndex = tabIndex;
       const summary = acceptedTabsByIndex.get(tabIndex);
-      if (isServerLive && tabIndex === liveActiveTabIndex && summary && summary.status === 'RUNNING') {
-        selectLiveFollow();
+      renderVirtualProtocolList();
+      resetProtocolWorkspace(summary ? `#${tabIndex} · ${summary.rfc_id} — ${summary.protocol_name || ''}` : `#${tabIndex}`);
+
+      if (isClientFolderLoaded && clientHydratedTabs.has(tabIndex)) {
+        applyHydratedTabPayload(clientHydratedTabs.get(tabIndex));
         return;
       }
-      viewMode = 'tab';
-      selectedTabIndex = tabIndex;
-      pipelineRunning = false;
-      updateLivePinButton();
-      renderVirtualTabs();
-
-      resetViewportDom(summary ? `Tab #${tabIndex} | ${summary.rfc_id} (${summary.protocol_name})` : `Tab #${tabIndex}`);
 
       const cached = lruGet(tabIndex);
       if (cached) {
@@ -22043,97 +22767,104 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         return;
       }
 
-      document.getElementById('stage-diagnosis').innerText = `Loading Tab #${tabIndex}...`;
       fetch(`api/tab/${tabIndex}`)
         .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
         .then(payload => {
           if (payload.tab && payload.tab.status !== 'RUNNING') {
             lruSet(tabIndex, payload);
           }
-          if (viewMode === 'tab' && selectedTabIndex === tabIndex) {
+          if (selectedTabIndex === tabIndex) {
             applyHydratedTabPayload(payload);
           }
         })
         .catch(err => {
-          document.getElementById('code-scm').innerText = `; Failed to load Tab #${tabIndex}: ${err}`;
+          document.getElementById('code-scm').innerText = `; Failed to load #${tabIndex}: ${err}`;
         });
     }
 
     function applyHydratedTabPayload(payload) {
+      currentHydratedPayload = payload;
       const tab = payload.tab || {};
-      document.getElementById('rfc-name').innerText = `#${tab.tab_index} ${tab.rfc_id} (${tab.protocol_name || ''})`;
-      document.getElementById('attempt-timer').innerText = `${(tab.duration_seconds || 0).toFixed(1)}s`;
+      const qTier = (payload.quality_assessment || {}).quality_tier || tab.quality_tier || tab.status || 'REJECTED';
+      document.getElementById('proto-hdr-dot').className = `dot ${dotClassForStatus(tab.status, qTier)}`;
+      document.getElementById('proto-hdr-title').innerText = `#${tab.tab_index} · ${tab.rfc_id} — ${tab.protocol_name || tab.rfc_title || ''}`;
+      const tierBadge = document.getElementById('proto-hdr-tier');
+      tierBadge.style.display = 'inline-flex';
+      tierBadge.className = `tier-pill ${qTier}`;
+      tierBadge.setAttribute('data-tooltip-key', qTier);
+      tierBadge.innerText = qTier;
 
-      const pill = document.getElementById('pipeline-status');
-      if (tab.status === 'VERIFIED') {
-        pill.className = 'status-badge success';
-        pill.innerText = `${tab.quality_tier || 'VERIFIED'}`;
-        pill.setAttribute('data-tooltip-key', tab.quality_tier || 'VERIFIED');
-        setDiagnosisBadge(`Verified (${tab.shapes_count || 0} Realized Shapes)`, 'normal');
-      } else if (tab.status === 'PARTIAL') {
-        pill.className = 'status-badge partial';
-        pill.innerText = 'PARTIAL';
-        pill.setAttribute('data-tooltip-key', 'PARTIAL');
-        setDiagnosisBadge('Roletran Passed | CPSA Failed', 'syntax');
-      } else if (tab.status === 'RUNNING') {
-        pill.className = 'status-badge running';
-        pill.innerText = 'RUNNING';
-        pill.setAttribute('data-tooltip-key', 'RUNNING');
-        setDiagnosisBadge('Active Synthesis...', 'normal');
-      } else {
-        pill.className = 'status-badge failed';
-        pill.innerText = tab.status || 'FAILED';
-        pill.setAttribute('data-tooltip-key', tab.quality_tier || tab.status || 'FAILED');
-        setDiagnosisBadge(tab.error_message ? 'Failed (See Attempt Banner)' : 'Halted', 'syntax');
-      }
+      // Per-protocol runtime model + cost & timing summary
+      const ct = payload.cost_telemetry || tab.cost_telemetry || {};
+      const roles = ct.roles || {};
+      const models = collectProtocolModels(payload);
+      const primaryModel = models.extraction || models.router || models.repair || '--';
+      const modelTooltip = [
+        `Router: ${models.router || '--'}`,
+        models.distiller ? `Distiller: ${models.distiller}` : null,
+        `Extraction: ${models.extraction || '--'}`,
+        `Searcher: ${models.query || '--'}`,
+        `Repair: ${models.repair || '--'}`
+      ].filter(Boolean).join('\n');
+      const totUsd = Number(ct.total_cost_usd ?? tab.cost_usd ?? 0);
+      const totTok = Number(ct.total_tokens || 0);
+      const parts = [];
+      parts.push(`<span class="tier-pill" title="${escapeHtml(modelTooltip)}">${escapeHtml(shortModelLabel(primaryModel))}</span>`);
+      parts.push(`<strong>${fmtUsd(totUsd)}</strong> (${totTok.toLocaleString()} tok)`);
+      if (roles.extraction && roles.extraction.cost_usd) parts.push(`Extr ${fmtUsd(roles.extraction.cost_usd)}`);
+      if (roles.repair && roles.repair.cost_usd) parts.push(`Rep ${fmtUsd(roles.repair.cost_usd)}`);
+      if (roles.distiller && roles.distiller.cost_usd) parts.push(`Distill ${fmtUsd(roles.distiller.cost_usd)}`);
+      parts.push(`${Number(tab.duration_seconds || 0).toFixed(1)}s`);
+      if (tab.shapes_count !== undefined) parts.push(`${tab.shapes_count} shapes`);
+      document.getElementById('proto-hdr-cost').innerHTML = parts.join(' · ');
 
+      // Protocol Text compartment
       window._currentSlicePayloads = {
         verbatim: payload.verbatim_slice || '',
         debloated: payload.debloated_slice || '',
         rfc_style: payload.rfc_style_slice || '',
         stem: payload.paired_stem || ''
       };
-      if (typeof setSliceViewMode === 'function') {
-        setSliceViewMode('verbatim');
-      } else if (payload.verbatim_slice) {
-        document.getElementById('code-slice').innerText = payload.verbatim_slice;
+      setSliceViewMode('verbatim');
+
+      // Shapes (SVG) compartment — MITRE CPSA XHTML iframe (supports live URL, Blob URL, and Dark Invert)
+      const graphEl = document.getElementById('graph-container');
+      const iframeSrc = payload.shapes_xhtml_blob_url
+        ? payload.shapes_xhtml_blob_url
+        : (payload.shapes_xhtml ? `api/artifact?path=${encodeURIComponent(payload.shapes_xhtml)}` : '');
+      if (iframeSrc) {
+        graphEl.innerHTML = buildShapesIframeHtml(iframeSrc);
+      } else {
+        graphEl.innerHTML = '<div class="empty-placeholder">No MITRE CPSA shapes graph generated for this protocol.</div>';
       }
 
-      if (payload.cost_telemetry || tab.cost_telemetry) {
-        renderCostTelemetry(payload.cost_telemetry || tab.cost_telemetry, latestBatchCostTelemetry);
-      }
-
-      if (Array.isArray(payload.events)) {
-        payload.events.forEach(evt => renderEventIntoViewport(evt, false));
-      }
-
-      if (payload.shapes_xhtml) {
-        document.getElementById('graph-container').innerHTML =
-          `<iframe class="svg-frame" src="api/artifact?path=${encodeURIComponent(payload.shapes_xhtml)}"></iframe>`;
-      }
-
-      const secFindings = payload.security_findings || (payload.quality_assessment || {}).security_findings || tab.security_findings || {};
-      const qTier = (payload.quality_assessment || {}).quality_tier || tab.quality_tier || tab.status || 'REJECTED';
-      renderSecurityVerdictStrip(qTier, secFindings);
+      // Security compartment
       renderSecurityFindingsTab(payload);
 
+      // Attempts (Scheme & AST) + compute stages/KB using resolved attempts
       currentAttemptsList = Array.isArray(payload.attempts) ? payload.attempts : [];
       renderAttemptStepper();
       if (currentAttemptsList.length > 0) {
         selectAttemptSnapshot(currentAttemptsList.length - 1);
+      } else {
+        document.getElementById('code-scm').innerText = '; No CPSA Scheme emitted.';
+        document.getElementById('code-ast').innerText = '// No Pydantic AST recorded.';
       }
+
+      // Stages & Log + KB / Searcher compartments
+      renderProtoStagesAndLog(payload);
+      renderProtoKbTab(payload);
     }
 
     function setSliceViewMode(mode) {
       const store = window._currentSlicePayloads || {};
       let content = store.verbatim || '';
-      if (mode === 'debloated') {
-        content = store.debloated || store.verbatim || '';
-      } else if (mode === 'rfc_style') {
-        content = store.rfc_style || '[No --rfc-style companion generated for this run. Re-run with --rfc-style to synthesize.]';
-      }
+      if (mode === 'debloated') content = store.debloated || store.verbatim || '';
+      else if (mode === 'rfc_style') content = store.rfc_style || '[No --rfc-style companion generated for this protocol.]';
+
       const codeEl = document.getElementById('code-slice');
-      if (codeEl) codeEl.innerText = content || 'Verbatim RFC section slice will appear here...';
+      if (codeEl) codeEl.innerText = content || 'No source slice available.';
+
       ['verbatim', 'debloated', 'rfc_style'].forEach(m => {
         const btn = document.getElementById(`slice-btn-${m.replace('_', '-')}`);
         if (btn) btn.classList.toggle('active', m === mode);
@@ -22142,35 +22873,323 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       if (debBtn) debBtn.style.opacity = store.debloated ? '1' : '0.45';
       const styleBtn = document.getElementById('slice-btn-rfc-style');
       if (styleBtn) styleBtn.style.opacity = store.rfc_style ? '1' : '0.45';
-      const stemEl = document.getElementById('slice-paired-stem');
-      if (stemEl) stemEl.innerText = store.stem ? `stem: ${store.stem}` : '';
+
+      const metaEl = document.getElementById('slice-paired-meta');
+      if (metaEl) {
+        const lineCnt = content ? content.split('\n').length : 0;
+        const stemStr = store.stem ? `${store.stem} · ` : '';
+        metaEl.innerText = `${stemStr}${lineCnt} lines · ${content.length.toLocaleString()} chars`;
+      }
+    }
+
+    function assignEventStage(evt) {
+      if (!evt) return 1;
+      const st = Number(evt.stage || 0);
+      if (st >= 1 && st <= 6) return st;
+      if (evt.event_type === 'pipeline_completed' || evt.event_type === 'pipeline_failed') return 6;
+      return 1;
+    }
+
+    function computeProtocolStageTelemetry(payload) {
+      const tab = (payload && payload.tab) || {};
+      const meta = (payload && payload.rfc_metadata) || {};
+      const evts = (payload && payload.events) || [];
+      const atts = (payload && payload.attempts) || [];
+      const ct = (payload && payload.cost_telemetry) || tab.cost_telemetry || {};
+      const roles = ct.roles || {};
+      const models = collectProtocolModels(payload);
+
+      const startTs = {};
+      const endTs = {};
+      const stageOutcome = {};
+      evts.forEach(e => {
+        if (!e) return;
+        const s = assignEventStage(e);
+        const ts = Number(e.timestamp || 0);
+        if (e.event_type === 'pipeline_started' && !startTs[1] && ts) startTs[1] = ts;
+        if ((e.event_type === 'stage_started' || e.event_type === 'compiler_check_started') && ts) {
+          if (!startTs[s] || ts < startTs[s]) startTs[s] = ts;
+        }
+        if ((e.event_type === 'stage_completed' || e.event_type === 'stage_failed') && ts) {
+          endTs[s] = Math.max(endTs[s] || 0, ts);
+          stageOutcome[s] = e.event_type === 'stage_completed' ? 'passed' : 'failed';
+        }
+        if (e.event_type === 'pipeline_completed' && ts) {
+          endTs[6] = Math.max(endTs[6] || 0, ts);
+          stageOutcome[6] = 'passed';
+        }
+        if (e.event_type === 'pipeline_failed' && ts) {
+          const fs = Number(e.stage || 6);
+          endTs[fs] = Math.max(endTs[fs] || 0, ts);
+          stageOutcome[fs] = 'failed';
+        }
+      });
+
+      const durFor = s => {
+        if (startTs[s] && endTs[s] && endTs[s] >= startTs[s]) {
+          const d = endTs[s] - startTs[s];
+          // Legacy synthesized events use artificial 0.05s-0.1s offsets
+          return d > 0.15 ? `${d.toFixed(1)}s` : '--';
+        }
+        return '--';
+      };
+
+      const s5Atts = atts.filter(a => String(a.attempt_id || '').startsWith('roletran_'));
+      const s6Atts = atts.filter(a => String(a.attempt_id || '').startsWith('solver_'));
+      const att0 = atts.find(a => a.attempt_id === 'attempt_0');
+      const finalAtt = atts.find(a => a.attempt_id === 'final');
+
+      const rRouter = roles.router || {};
+      const rDistill = roles.distiller || {};
+      const rExtr = roles.extraction || {};
+      const rQuery = roles.query || {};
+      const rRepair = roles.repair || {};
+
+      const s1Cost = Number(rRouter.cost_usd || 0) + Number(rDistill.cost_usd || 0);
+      const s1Tok = Number(rRouter.total_tokens || 0) + Number(rDistill.total_tokens || 0);
+      const s2Cost = Number(rExtr.cost_usd || 0);
+      const s2Tok = Number(rExtr.total_tokens || 0);
+
+      const totRepCost = Number(rQuery.cost_usd || 0) + Number(rRepair.cost_usd || 0);
+      const totRepTok = Number(rQuery.total_tokens || 0) + Number(rRepair.total_tokens || 0);
+      const totRepCalls = s5Atts.length + s6Atts.length;
+      const s5Share = totRepCalls > 0 ? (s5Atts.length / totRepCalls) : 1;
+      const s6Share = totRepCalls > 0 ? (s6Atts.length / totRepCalls) : 0;
+
+      const solverOk = Boolean((finalAtt && finalAtt.status === 'VERIFIED') || tab.status === 'VERIFIED');
+      const astForCount = (att0 && att0.ast) || (finalAtt && finalAtt.ast);
+      const astDesc = astForCount
+        ? `${(astForCount.roles || []).length}r · ${(astForCount.skeletons || []).length}s`
+        : '';
+
+      const s4PassedFirst = s5Atts.length === 0 && (stageOutcome[4] === 'passed' || stageOutcome[5] === 'passed' || solverOk || s6Atts.length > 0);
+      const s4Status = s5Atts.length > 0
+        ? 'Caught -> Stage 5'
+        : (s4PassedFirst ? 'Passed (0 err)' : (att0 && att0.status === 'FAILED' ? 'Skipped' : 'Checked'));
+
+      return [
+        {
+          stage: 1,
+          code: '01',
+          name: 'Document Intake',
+          model: models.router + (models.distiller ? ` + ${shortModelLabel(models.distiller)}` : ''),
+          elapsed: durFor(1),
+          cost: s1Cost,
+          tokens: s1Tok,
+          state: stageOutcome[1] || (payload.verbatim_slice ? 'passed' : 'idle'),
+          dot: stageOutcome[1] === 'failed' ? 'failed' : (payload.verbatim_slice || stageOutcome[1] === 'passed' ? 'verified' : 'idle'),
+          statusText: meta.sliced_lines_count ? `${meta.sliced_lines_count} lines` : (stageOutcome[1] === 'failed' ? 'Filtered' : 'Accepted')
+        },
+        {
+          stage: 2,
+          code: '02',
+          name: 'CPSA AST Extraction',
+          model: models.extraction || '--',
+          elapsed: durFor(2),
+          cost: s2Cost,
+          tokens: s2Tok,
+          state: stageOutcome[2] || (astForCount ? 'passed' : 'failed'),
+          dot: (stageOutcome[2] === 'failed' && !astForCount) ? 'failed' : (astForCount ? 'verified' : 'idle'),
+          statusText: astDesc || (stageOutcome[2] === 'failed' ? 'Schema Error' : 'Pending')
+        },
+        {
+          stage: 3,
+          code: '03',
+          name: 'CPSA4JSON -> .scm',
+          model: 'cpsa_scheme_emitter.py',
+          elapsed: durFor(3),
+          cost: 0,
+          tokens: 0,
+          state: (att0 && att0.scm && !att0.scm.startsWith('; Synthesizing')) ? 'passed' : (stageOutcome[3] || 'idle'),
+          dot: (att0 && att0.scm && !att0.scm.startsWith('; Synthesizing')) ? 'verified' : 'idle',
+          statusText: (att0 && att0.scm && !att0.scm.startsWith('; Synthesizing')) ? 'Emitted .scm' : 'Pending'
+        },
+        {
+          stage: 4,
+          code: '04',
+          name: 'Roletran Check',
+          model: 'cpsa4roletran',
+          elapsed: durFor(4),
+          cost: 0,
+          tokens: 0,
+          state: s4PassedFirst ? 'passed' : (s5Atts.length > 0 ? 'failed' : 'idle'),
+          dot: s4PassedFirst ? 'verified' : (s5Atts.length > 0 ? 'warn' : 'idle'),
+          statusText: s4Status
+        },
+        {
+          stage: 5,
+          code: '05',
+          name: 'Self-Healing Loop',
+          model: s5Atts.length > 0 ? (models.repair || '--') : 'Zero-Shot Skip',
+          elapsed: durFor(5),
+          cost: totRepCost * s5Share,
+          tokens: Math.round(totRepTok * s5Share),
+          state: (s5Atts.length === 0 && s4PassedFirst) || (s5Atts.length > 0 && s5Atts[s5Atts.length - 1].status === 'PASSED') ? 'passed' : (s5Atts.length > 0 ? 'failed' : 'idle'),
+          dot: s5Atts.length === 0 ? (s4PassedFirst ? 'verified' : 'idle') : (s5Atts[s5Atts.length - 1].status === 'PASSED' ? 'verified' : 'failed'),
+          statusText: s5Atts.length === 0 ? '0 Repairs' : `${s5Atts.length} Repair${s5Atts.length > 1 ? 's' : ''}`
+        },
+        {
+          stage: 6,
+          code: '06',
+          name: 'CPSA Compilation',
+          model: s6Atts.length > 0 && models.repair ? `cpsa4 + ${shortModelLabel(models.repair)}` : 'cpsa4 + cpsa4graph',
+          elapsed: durFor(6) !== '--' ? durFor(6) : `${Number(tab.duration_seconds || 0).toFixed(1)}s`,
+          cost: totRepCost * s6Share,
+          tokens: Math.round(totRepTok * s6Share),
+          state: solverOk ? 'passed' : (stageOutcome[6] === 'failed' || tab.status === 'FAILED' ? 'failed' : 'idle'),
+          dot: solverOk ? 'verified' : ((stageOutcome[6] === 'failed' || tab.status === 'FAILED') ? 'failed' : 'idle'),
+          statusText: solverOk ? `${tab.shapes_count ?? 0} Shapes` : (s6Atts.length ? `${s6Atts.length} Rep · Fail` : (tab.status || 'Pending'))
+        }
+      ];
+    }
+
+    function setProtoStageFilter(stageNum) {
+      protoStageFilter = (protoStageFilter === stageNum && stageNum !== 0) ? 0 : stageNum;
+      if (currentHydratedPayload) renderProtoStagesAndLog(currentHydratedPayload);
+    }
+
+    function renderProtoStagesAndLog(payload) {
+      const stripEl = document.getElementById('proto-stage-strip');
+      const groupsEl = document.getElementById('proto-stage-log-groups');
+      const evtCnt = document.getElementById('proto-event-counter');
+      const subEvt = document.getElementById('subtab-evt-count');
+      const allBtn = document.getElementById('btn-stage-filter-all');
+
+      const stages = computeProtocolStageTelemetry(payload);
+      const events = (payload && payload.events) || [];
+      const logEvents = events.filter(evt =>
+        evt && !['tab_accepted', 'tab_updated', 'rfc_filtered', 'cost_updated', 'csv_updated', 'rag_retrieval'].includes(evt.event_type)
+      );
+
+      if (allBtn) allBtn.classList.toggle('active', protoStageFilter === 0);
+
+      if (stripEl) {
+        stripEl.innerHTML = stages.map(st => {
+          const selCls = protoStageFilter === st.stage ? ' selected-stage' : '';
+          const stateCls = st.state && st.state !== 'idle' ? ` ${st.state}` : '';
+          const costStr = st.cost > 0 || st.tokens > 0 ? `${fmtUsd(st.cost)} · ${fmtTok(st.tokens)}` : 'Local / $0';
+          return `
+            <div class="step-item${stateCls}${selCls}" onclick="setProtoStageFilter(${st.stage})" title="Filter logs for Stage ${st.code}: ${escapeHtml(st.name)}&#10;Model: ${escapeHtml(st.model)}">
+              <div class="step-header"><span>${st.code}</span><span>${escapeHtml(st.elapsed)}</span></div>
+              <div class="step-name">${escapeHtml(st.name)}</div>
+              <div class="step-model">${escapeHtml(st.model)}</div>
+              <div class="step-cost">${escapeHtml(costStr)}</div>
+              <div class="step-status"><span class="dot ${st.dot}"></span><span>${escapeHtml(st.statusText)}</span></div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const grouped = new Map([[1, []], [2, []], [3, []], [4, []], [5, []], [6, []]]);
+      logEvents.forEach(evt => {
+        const s = assignEventStage(evt);
+        grouped.get(s).push(evt);
+      });
+
+      const filteredCount = protoStageFilter === 0 ? logEvents.length : (grouped.get(protoStageFilter) || []).length;
+      if (evtCnt) evtCnt.innerText = protoStageFilter === 0 ? `${logEvents.length} Events` : `Stage ${protoStageFilter}: ${filteredCount} / ${logEvents.length}`;
+      if (subEvt) subEvt.innerText = logEvents.length ? `(${logEvents.length})` : '';
+
+      if (!groupsEl) return;
+      if (!logEvents.length) {
+        groupsEl.innerHTML = '<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">No synthesis events recorded.</div>';
+        return;
+      }
+
+      const activeStages = stages.filter(st => {
+        if (protoStageFilter !== 0) return st.stage === protoStageFilter;
+        return (grouped.get(st.stage) || []).length > 0;
+      });
+
+      groupsEl.innerHTML = activeStages.map(st => {
+        const evList = grouped.get(st.stage) || [];
+        const bodyHtml = evList.length
+          ? evList.map(ev => buildLogEntryHtml(ev)).join('')
+          : '<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">No events emitted for this stage.</div>';
+        return `
+          <details class="stage-log-group" open>
+            <summary>
+              <span style="display:inline-flex; align-items:center; gap:8px;">
+                <span class="dot ${st.dot}"></span>
+                <strong style="color:var(--text);">Stage ${st.code}: ${escapeHtml(st.name)}</strong>
+                <span style="color:var(--text-muted);">· ${escapeHtml(shortModelLabel(st.model))}</span>
+              </span>
+              <span style="color:var(--text-secondary);">${evList.length} event${evList.length === 1 ? '' : 's'} · ${escapeHtml(st.statusText)}</span>
+            </summary>
+            <div class="stage-log-body">${bodyHtml}</div>
+          </details>
+        `;
+      }).join('') || '<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">No matching stage events.</div>';
+    }
+
+    function renderProtoKbTab(payload) {
+      const ragFeed = document.getElementById('proto-rag-feed');
+      const ragCnt = document.getElementById('proto-rag-counter');
+      const subKb = document.getElementById('subtab-kb-count');
+
+      const events = (payload && payload.events) || [];
+      const atts = (payload && payload.attempts) || [];
+
+      const ragCards = [];
+      events.forEach(evt => {
+        if (evt && evt.event_type === 'rag_retrieval') {
+          ragCards.push(buildRagCardHtml(evt));
+        }
+      });
+
+      // Surface Snowball State Autopsies and cycle triggers cleanly in KB / Searcher as well
+      const snowballCards = [];
+      atts.forEach(att => {
+        if (!att || !att.diagnostic) return;
+        const sp = splitSnowballDiagnostic(att.diagnostic);
+        if (!sp.autopsy && !att.cycle_detected) return;
+        snowballCards.push(`
+          <div class="rag-card snowball-alert">
+            <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--text-muted);">
+              <span class="rag-purpose-pill alert">${att.cycle_detected ? 'CYCLE PERTURBATION / SNOWBALL' : 'CPSA SNOWBALL AUTOPSY'}</span>
+              <span>${escapeHtml(att.label || '')}</span>
+            </div>
+            <div class="rag-query-box" style="border-left-color:#ff9f0a;"><strong style="color:#ff9f0a;">Trigger:</strong> ${escapeHtml(sp.headline)}</div>
+            ${sp.autopsy ? `<details class="monochrome-details" open><summary>Snowball State Autopsy Report</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>` : ''}
+          </div>
+        `);
+      });
+
+      const totalCount = ragCards.length + snowballCards.length;
+      if (ragCnt) ragCnt.innerText = `${ragCards.length} Lookups${snowballCards.length ? ` · ${snowballCards.length} Autopsies` : ''}`;
+      if (subKb) subKb.innerText = totalCount ? `(${totalCount})` : '';
+      if (ragFeed) {
+        const allCards = [...ragCards.reverse(), ...snowballCards];
+        ragFeed.innerHTML = allCards.length
+          ? allCards.join('')
+          : '<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">No Agentic KB retrievals or Snowball autopsies recorded for this protocol.</div>';
+      }
     }
 
     // =========================================================================
-    // Per-Attempt Time-Travel Stepper (#0 Initial -> #1..#K Repairs -> Final)
+    // Attempt Time-Travel Stepper (Scheme & AST Only)
     // =========================================================================
     function renderAttemptStepper() {
       const bar = document.getElementById('attempt-stepper');
       if (!bar) return;
       if (!currentAttemptsList.length) {
-        bar.innerHTML = '<span class="attempt-stepper-label">Attempts:</span><span style="color:var(--text-muted); font-family:var(--mono); font-size:10px;">No attempt snapshots recorded.</span>';
+        bar.innerHTML = '<span class="attempt-label">Attempts:</span><span class="attempt-label">No snapshots recorded</span>';
         return;
       }
 
       const frag = document.createDocumentFragment();
       const lbl = document.createElement('span');
-      lbl.className = 'attempt-stepper-label';
+      lbl.className = 'attempt-label';
       lbl.innerText = `Attempts (${currentAttemptsList.length}):`;
       frag.appendChild(lbl);
 
       currentAttemptsList.forEach((att, idx) => {
         const btn = document.createElement('button');
-        const stLow = (att.status || '').toLowerCase();
-        const cyc = att.cycle_detected ? ' cycle' : '';
-        const act = (idx === selectedAttemptIdx) ? ' active' : '';
-        btn.className = `attempt-pill ${stLow}${cyc}${act}`;
-        btn.innerText = att.label || `Attempt ${idx}`;
-        btn.title = `${att.stage}\nStatus: ${att.status}${att.cycle_detected ? ' (Cycle Perturbation)' : ''}`;
+        btn.type = 'button';
+        btn.className = `attempt-pill${idx === selectedAttemptIdx ? ' active' : ''}`;
+        const st = String(att.status || '').toUpperCase();
+        const dotCls = (st === 'VERIFIED' || st === 'PASSED') ? 'verified' : ((st === 'GENERATED') ? 'idle' : 'failed');
+        btn.innerHTML = `<span class="dot ${dotCls}"></span><span>${escapeHtml(att.label || `Attempt ${idx}`)}</span>`;
         btn.onclick = () => selectAttemptSnapshot(idx);
         frag.appendChild(btn);
       });
@@ -22184,9 +23203,10 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       const marker = '=== CPSA 4.4.9 SNOWBALL STATE AUTOPSY REPORT';
       const idx = diagStr.indexOf(marker);
       if (idx >= 0) {
-        const head = diagStr.slice(0, idx).trim();
-        const autopsy = diagStr.slice(idx).trim();
-        return { headline: head || 'CPSA state-space snowball timeout', autopsy };
+        return {
+          headline: diagStr.slice(0, idx).trim() || 'CPSA state-space snowball timeout',
+          autopsy: diagStr.slice(idx).trim()
+        };
       }
       return { headline: diagStr, autopsy: null };
     }
@@ -22199,9 +23219,7 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
       const att = currentAttemptsList[idx];
       document.getElementById('code-scm').innerText = att.scm || '; No .scm recorded for this attempt.';
-      document.getElementById('code-ast').innerText = att.ast
-        ? JSON.stringify(att.ast, null, 2)
-        : '// No JSON AST recorded for this attempt.';
+      document.getElementById('code-ast').innerText = att.ast ? JSON.stringify(att.ast, null, 2) : '// No JSON AST recorded.';
 
       const banner = document.getElementById('attempt-banner');
       const stageEl = document.getElementById('attempt-banner-stage');
@@ -22211,19 +23229,14 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       const toggleBtn = document.getElementById('btn-toggle-rejected-scm');
 
       banner.classList.add('visible');
-      stageEl.innerText = `${att.label} — ${att.stage}${att.cycle_detected ? ' [CYCLE PERTURBATION]' : ''}`;
+      stageEl.innerText = `${att.label} — ${att.stage}${att.cycle_detected ? ' · Cycle Perturbation' : ''}`;
 
-      if (att.status === 'VERIFIED' || att.status === 'PASSED') {
-        statusEl.className = 'status-badge success';
-      } else if (att.status === 'GENERATED') {
-        statusEl.className = 'status-badge running';
-      } else {
-        statusEl.className = 'status-badge failed';
-      }
-      statusEl.innerText = att.status || 'INFO';
+      const st = String(att.status || 'INFO').toUpperCase();
+      statusEl.className = `tier-pill ${st}`;
+      statusEl.innerHTML = `<span class="dot ${dotClassForStatus(st, st)}"></span><span>${escapeHtml(st)}</span>`;
 
       if (att.rejected_scm && att.rejected_scm !== att.scm) {
-        toggleBtn.style.display = 'inline-block';
+        toggleBtn.style.display = 'inline-flex';
         toggleBtn.innerText = 'Show Rejected Input .scm';
       } else {
         toggleBtn.style.display = 'none';
@@ -22231,24 +23244,19 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
 
       if (att.diagnostic) {
         const sp = splitSnowballDiagnostic(att.diagnostic);
-        diagEl.style.color = '#f0883e';
         if (sp.autopsy) {
           diagEl.innerHTML = `<div>Diagnostic: ${escapeHtml(sp.headline)}</div>` +
-            `<details class="snowball-details"><summary>▸ Show CPSA 4.4.9 Snowball State Autopsy Report</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
+            `<details class="monochrome-details"><summary>Show CPSA 4.4.9 Snowball State Autopsy Report</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
         } else {
           diagEl.innerText = `Diagnostic: ${att.diagnostic}`;
         }
       } else {
-        diagEl.style.color = '#3fb950';
-        diagEl.innerText = 'No compiler errors on this snapshot.';
+        diagEl.innerText = 'Compiled cleanly with no errors on this snapshot.';
       }
 
       if (att.rag_query || (att.retrieved_chunks && att.retrieved_chunks.length) || att.searcher_diagnosis) {
-        const cids = (att.retrieved_chunks || []).map(c => `${c.chunk_id}`).join(', ');
-        const diagLine = att.searcher_diagnosis ? `\nSearcher Fix Brief: ${att.searcher_diagnosis}` : '';
-        ragEl.innerText = `Agentic KB Tools: ${att.rag_query || 'direct'} | Retrieved: ${cids || 'none'}${diagLine}`;
-      } else if (att.attempt_number >= 1 && att.attempt_id !== 'final') {
-        ragEl.innerText = 'Fast Direct Repair Pass (Pinned CPSA System Header — Agentic Searcher skipped)';
+        const cids = (att.retrieved_chunks || []).map(c => c.chunk_id).join(', ');
+        ragEl.innerText = `KB Query: ${att.rag_query || 'direct'} · Chunks: ${cids || 'none'}${att.searcher_diagnosis ? ' · ' + att.searcher_diagnosis : ''}`;
       } else {
         ragEl.innerText = '';
       }
@@ -22260,26 +23268,320 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       if (!att.rejected_scm) return;
       showingRejectedScm = !showingRejectedScm;
       const toggleBtn = document.getElementById('btn-toggle-rejected-scm');
-      if (showingRejectedScm) {
-        document.getElementById('code-scm').innerText = att.rejected_scm;
-        toggleBtn.innerText = 'Show Repaired Output .scm';
-      } else {
-        document.getElementById('code-scm').innerText = att.scm;
-        toggleBtn.innerText = 'Show Rejected Input .scm';
-      }
+      document.getElementById('code-scm').innerText = showingRejectedScm ? att.rejected_scm : att.scm;
+      toggleBtn.innerText = showingRejectedScm ? 'Show Repaired Output .scm' : 'Show Rejected Input .scm';
     }
 
     // =========================================================================
-    // Collapsible Filtered / Disqualified RFC Drawer
+    // Security Tab Only (Strictly Compartmentalized)
+    // =========================================================================
+    function renderSecurityFindingsTab(payload) {
+      const container = document.getElementById('security-findings-container');
+      if (!container) return;
+      const tab = payload.tab || {};
+      const meta = payload.rfc_metadata || {};
+      const qa = payload.quality_assessment || {};
+      const sf = payload.security_findings || qa.security_findings || tab.security_findings || {};
+      const shapesAnalysis = payload.shapes_analysis || {};
+      const rationale = payload.intake_rationale || meta.intake_rationale || tab.intake_rationale || '';
+      const qTier = qa.quality_tier || tab.quality_tier || tab.status || 'PENDING';
+
+      if (!sf || Object.keys(sf).length === 0) {
+        container.innerHTML = `
+          ${rationale ? `<div class="sec-banner"><strong style="color:var(--text);">Stage 1 Intake Rationale:</strong> ${escapeHtml(rationale)}</div>` : ''}
+          <div class="empty-placeholder">No formal CPSA security findings recorded for this protocol.</div>
+        `;
+        return;
+      }
+
+      const deadRoles = (sf.dead_roles || []).join(', ') || 'None';
+      const multiPovs = (sf.multi_strand_pov_roles || []).join(', ') || 'None';
+      const singlePovs = (sf.single_strand_pov_roles || []).join(', ') || 'None';
+      const zeroPovs = (sf.unrealized_pov_roles || []).join(', ') || 'None';
+      const protSecrets = (sf.protected_secrets || []).join(', ') || 'None';
+      const leakSecrets = (sf.leaked_secrets || []).join(', ') || 'None';
+      const anomalies = sf.vulnerabilities_and_anomalies || [];
+      const disagreements = sf.disagreed_parameters || sf.parameter_disagreements || [];
+      const reflections = sf.role_reflections || [];
+      const authTests = sf.authentication_tests_summary || {};
+      const sasList = sf.shape_analysis_sentences || sf.shape_analysis_sentences_defgoals || [];
+      const perSkel = shapesAnalysis.per_preskeleton_outcomes || shapesAnalysis.per_preskeleton || [];
+
+      const anomaliesHtml = anomalies.length === 0
+        ? `<div class="sec-banner"><span class="dot verified" style="margin-right:6px;"></span><strong style="color:var(--text);">0 Formal Anomalies Detected:</strong> No parameter disagreements, reflection attacks, or secrecy leaks observed.</div>`
+        : `<div class="sec-banner" style="border-color:var(--border-strong);">
+             <div style="margin-bottom:6px;"><span class="dot warn" style="margin-right:6px;"></span><strong style="color:var(--text);">Detected Anomalies (${anomalies.length}):</strong></div>
+             <ul style="padding-left:18px; color:var(--text-secondary);">
+               ${anomalies.map(a => `<li>${escapeHtml(a)}</li>`).join('')}
+             </ul>
+           </div>`;
+
+      const skelRowsHtml = perSkel.length === 0
+        ? `<tr><td colspan="7" style="color:var(--text-muted);">No per-preskeleton breakdown recorded.</td></tr>`
+        : perSkel.map(sk => {
+            const rawDis = sk.disagreed_parameters || sk.parameter_disagreements || [];
+            const disList = rawDis.map(d =>
+              `${d.pov_role || ''}->${d.peer_role || ''}:${d.param || d.parameter || ''}(${d.pov_val || d.pov_value || ''}!=${d.peer_val || d.peer_value || ''})`
+            ).join('; ') || 'Full Agreement';
+            const isSecList = Boolean(sk.is_secrecy_listener || sk.query_type === 'SECRECY_LISTENER' || (sk.listener_vars || sk.listener_terms || []).length > 0);
+            const listVars = sk.listener_vars || sk.listener_terms || [];
+            const realCount = sk.shapes_realized ?? sk.realized_shapes_count ?? 0;
+            const hasMulti = Boolean(sk.has_multi_strand_shape || (sk.max_strands_in_any_shape || 0) >= 2);
+            const hasSingle = Boolean(sk.has_single_strand_shape || (realCount > 0 && !hasMulti));
+            const hasRefl = Boolean(sk.has_same_role_reflection || sk.has_self_reflection_split || (sk.role_reflections || []).length > 0);
+            const refStr = hasRefl ? (sk.has_same_role_reflection ? 'Same-Role Reflection' : 'Branched 1-Strand') : 'Distinct Peers';
+            const peerStr = hasMulti ? 'Multi-Strand (>=2)' : (hasSingle ? 'Single-Strand' : '0 Shapes');
+            return `
+              <tr>
+                <td>#${escapeHtml(String(sk.root_label ?? sk.skeleton_label ?? ''))}</td>
+                <td style="color:var(--text); font-weight:600;">${escapeHtml(sk.pov_role || (isSecList ? 'Secrecy Listener' : 'POV'))}</td>
+                <td>${isSecList ? `Listener (${escapeHtml(listVars.join(', '))})` : 'Participant POV'}</td>
+                <td>${escapeHtml(String(realCount))}</td>
+                <td>${peerStr}</td>
+                <td>${escapeHtml(disList)}</td>
+                <td>${escapeHtml(refStr)}</td>
+              </tr>
+            `;
+          }).join('');
+
+      const sasBlock = sasList.length > 0
+        ? `<details class="monochrome-details" style="margin-top:12px;" open>
+             <summary>CPSA4SAS Shape Analysis Sentences — (defgoal ...) (${sasList.length})</summary>
+             <pre>${escapeHtml(sasList.join('\n\n'))}</pre>
+           </details>`
+        : '';
+
+      container.innerHTML = `
+        <div class="sec-strip">
+          <span>Quality: <span class="tier-pill ${escapeHtml(qTier)}" data-tooltip-key="${escapeHtml(qTier)}">${escapeHtml(qTier)}</span></span>
+          <span>Auth: <span class="tier-pill" data-tooltip-key="${escapeHtml(sf.authentication_profile || '')}">${escapeHtml(sf.authentication_profile || 'N/A')}</span></span>
+          <span>Agreement: <span class="tier-pill" data-tooltip-key="${escapeHtml(sf.parameter_agreement_status || '')}">${escapeHtml(sf.parameter_agreement_status || 'N/A')}</span></span>
+          <span>Secrecy: <span class="tier-pill" data-tooltip-key="${escapeHtml(sf.secrecy_status || '')}">${escapeHtml(sf.secrecy_status || 'N/A')}</span></span>
+          <span>Anomalies: <span class="tier-pill">${anomalies.length}</span></span>
+        </div>
+
+        <div class="sec-banner">
+          ${rationale ? `<div><strong style="color:var(--text);">Intake Rationale:</strong> ${escapeHtml(rationale)}</div>` : ''}
+          ${qa.tier_rationale ? `<div style="margin-top:4px;"><strong style="color:var(--text);">Quality Tier Rationale:</strong> ${escapeHtml(qa.tier_rationale)}</div>` : ''}
+        </div>
+
+        ${anomaliesHtml}
+
+        <div class="sec-grid">
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>1. Role Executability</span>
+              <span class="tier-pill" data-tooltip-key="${escapeHtml(sf.role_executability || '')}">${escapeHtml(sf.role_executability || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">Dead Roles (${escapeHtml(String(sf.dead_roles_count ?? 0))}): ${escapeHtml(deadRoles)}</div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>2. Authentication Profile</span>
+              <span class="tier-pill" data-tooltip-key="${escapeHtml(sf.authentication_profile || '')}">${escapeHtml(sf.authentication_profile || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Multi-Strand: ${escapeHtml(multiPovs)}</div>
+              <div>Single-Strand: ${escapeHtml(singlePovs)}</div>
+              <div>Unrealized: ${escapeHtml(zeroPovs)}</div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>3. Parameter Agreement</span>
+              <span class="tier-pill" data-tooltip-key="${escapeHtml(sf.parameter_agreement_status || '')}">${escapeHtml(sf.parameter_agreement_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">Disagreements: ${disagreements.length} (hover pill for CPSA definition)</div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>4. Role Reflection</span>
+              <span class="tier-pill" data-tooltip-key="${escapeHtml(sf.role_reflection_status || '')}">${escapeHtml(sf.role_reflection_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">Self-Communication Instances: ${reflections.length}</div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>5. Secrecy &amp; Listeners</span>
+              <span class="tier-pill" data-tooltip-key="${escapeHtml(sf.secrecy_status || '')}">${escapeHtml(sf.secrecy_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>Protected: ${escapeHtml(protSecrets)}</div>
+              <div>Leaked: ${escapeHtml(leakSecrets)}</div>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-card-head">
+              <span>6. Security Goals &amp; SAS</span>
+              <span class="tier-pill" data-tooltip-key="${escapeHtml(sf.defgoal_satisfaction_status || '')}">${escapeHtml(sf.defgoal_satisfaction_status || 'N/A')}</span>
+            </div>
+            <div class="sec-card-body">
+              <div>SAS Defgoals: ${escapeHtml(String(sf.shape_analysis_sentences_count ?? sasList.length))}</div>
+              <div>Tests: enc=${escapeHtml(String(authTests.encryption_tests ?? 0))} · nonce=${escapeHtml(String(authTests.nonce_tests ?? 0))} · chan=${escapeHtml(String(authTests.channel_tests ?? 0))}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card" style="padding:10px 12px;">
+          <div class="panel-card-head" style="padding-bottom:6px;">
+            <span class="panel-card-title">Per-Preskeleton Outcome &amp; Agreement Table</span>
+            <span class="panel-card-sub">${perSkel.length} Skeletons</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Skeleton</th>
+                  <th>POV Role</th>
+                  <th>Query Type</th>
+                  <th>Shapes</th>
+                  <th>Peer Interaction</th>
+                  <th>Parameter Agreement</th>
+                  <th>Role Reflection</th>
+                </tr>
+              </thead>
+              <tbody>${skelRowsHtml}</tbody>
+            </table>
+          </div>
+        </div>
+        ${sasBlock}
+      `;
+    }
+
+    // =========================================================================
+    // Event Log & RAG Cards Helpers (Shared cleanly by Live View & Log/KB Tab)
+    // =========================================================================
+    function formatEventSummary(evt) {
+      const safe = Object.assign({}, evt.data || {});
+      delete safe.ast;
+      let label = evt.event_type;
+      let dotCls = 'idle';
+      let body = Object.keys(safe).length ? JSON.stringify(safe) : '';
+      let autopsy = '';
+
+      if (evt.event_type === 'pipeline_started') {
+        label = 'PIPELINE_INIT';
+        dotCls = 'live';
+        body = `Target: ${safe.rfc_file || safe.rfc_id || ''}`;
+      } else if (evt.event_type === 'stage_started') {
+        label = `STAGE_${evt.stage}_START`;
+        dotCls = 'live';
+        body = `${evt.stage_name || safe.stage_name || `Stage ${evt.stage}`}${safe.model ? ` · ${safe.model}` : ''}`;
+      } else if (evt.event_type === 'compiler_check_started') {
+        label = `COMPILER_RUN_${safe.attempt || 0}`;
+        dotCls = 'live';
+        body = `${safe.model || 'cpsa4'} · Attempt #${safe.attempt || 0}`;
+      } else if (evt.event_type === 'stage_completed') {
+        label = `STAGE_${evt.stage}_OK`;
+        dotCls = 'verified';
+        if (evt.stage === 1) body = `Confirmed: ${safe.protocol_name || ''} (${safe.rfc_id || ''})`;
+        else if (evt.stage === 2) body = `AST Generated (${safe.roles_count ?? safe.ast?.roles?.length ?? 0} roles, ${safe.skeletons_count ?? safe.ast?.skeletons?.length ?? 0} skeletons)`;
+        else if (evt.stage === 3) body = `Emitted ${(safe.scm_path || 'protocol.scm').split('/').pop()}`;
+        else if (evt.stage === 4 || evt.stage === 5) body = `Pre-flight executability passed${safe.attempts !== undefined ? ` (${safe.attempts} repairs)` : ''}`;
+      } else if (evt.event_type === 'slice_ready') {
+        label = 'SLICE_READY';
+        dotCls = 'verified';
+        body = `Sections: ${JSON.stringify(safe.sections)} · ${safe.line_count} lines`;
+      } else if (evt.event_type === 'repair_attempt') {
+        label = `REPAIR_${safe.attempt}_OF_${safe.max_attempts || 10}`;
+        dotCls = 'warn';
+        const sp = splitSnowballDiagnostic(safe.diagnostic || '');
+        body = `Diagnostic: ${sp.headline}${safe.cycle_detected ? '\nCycle Perturbation: YES' : ''}`;
+        autopsy = sp.autopsy || '';
+      } else if (evt.event_type === 'stage_failed' || evt.event_type === 'pipeline_failed') {
+        label = evt.event_type === 'pipeline_failed' ? 'PIPELINE_HALTED' : `STAGE_${evt.stage}_FAIL`;
+        dotCls = 'failed';
+        const sp = splitSnowballDiagnostic(safe.error_message || safe.reason || 'Failed');
+        body = sp.headline;
+        autopsy = sp.autopsy || '';
+      } else if (evt.event_type === 'pipeline_completed') {
+        label = 'VERIFIED';
+        dotCls = 'verified';
+        body = `${safe.protocol_name || ''} · Tier: ${safe.quality_tier || 'VERIFIED'} · Shapes: ${safe.shapes_count ?? 0}`;
+      }
+      return { label, dotCls, body, autopsy };
+    }
+
+    function buildLogEntryHtml(evt) {
+      const timeStr = new Date((evt.timestamp || Date.now() / 1000) * 1000).toLocaleTimeString([], { hour12: false });
+      const info = formatEventSummary(evt);
+      const isCycleErr = Boolean(evt && evt.data && evt.data.cycle_detected);
+      const clsMap = { verified: 'log-ok', warn: 'log-warn', failed: 'log-err', live: 'log-info', idle: 'log-info' };
+      const logCls = isCycleErr ? 'log-err' : (clsMap[info.dotCls] || 'log-info');
+      const autopsyHtml = info.autopsy
+        ? `<details class="monochrome-details"><summary>Show CPSA 4.4.9 Snowball State Autopsy</summary><pre>${escapeHtml(info.autopsy)}</pre></details>`
+        : '';
+      return `
+        <div class="log-entry ${logCls}">
+          <div class="log-meta">
+            <span class="log-type"><span class="dot ${info.dotCls}"></span>${escapeHtml(info.label)}</span>
+            <span>${escapeHtml(timeStr)}</span>
+          </div>
+          <div class="log-data">${escapeHtml(info.body)}</div>
+          ${autopsyHtml}
+        </div>
+      `;
+    }
+
+    function buildRagCardHtml(evt) {
+      const timeStr = new Date((evt.timestamp || Date.now() / 1000) * 1000).toLocaleTimeString([], { hour12: false });
+      const data = evt.data || {};
+      const chunks = data.chunks || [];
+      const turns = data.searcher_turns || [];
+
+      const turnsHtml = turns.map(t => `
+        <div class="rag-turn-card">
+          <div style="display:flex; justify-content:space-between; color:var(--text);">
+            <strong style="color:#0a84ff;">Turn #${escapeHtml(String(t.turn || 1))}</strong>
+            <span style="color:var(--text-muted);">${escapeHtml(t.status || '')}</span>
+          </div>
+          ${(t.tool_calls || []).map(tc => `<div style="color:var(--text-secondary); margin-top:3px;"><span style="color:#64d2ff;">${escapeHtml(tc.tool || 'tool')}</span>(${escapeHtml(tc.args || '')}) -&gt; ${escapeHtml(tc.retrieved || '')}</div>`).join('')}
+          ${t.ast_root_cause ? `<div style="color:#ff9f0a; margin-top:3px;">Cause: ${escapeHtml(t.ast_root_cause)}</div>` : ''}
+        </div>
+      `).join('');
+
+      const chunksHtml = chunks.map(chk => `
+        <div class="rag-chunk-card">
+          <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:10.5px; color:var(--text-muted); margin-bottom:3px;">
+            <span style="color:#64d2ff; font-weight:600;">${escapeHtml(String(chk.chunk_id || ''))}</span>
+            <span>${escapeHtml(chk.source_file || 'CPSA KB')}</span>
+          </div>
+          <div style="font-weight:600; color:var(--text); font-size:11.5px;">${escapeHtml(chk.title || '')}</div>
+          ${chk.snippet ? `<div class="rag-chunk-snippet">${escapeHtml(chk.snippet)}</div>` : ''}
+        </div>
+      `).join('');
+
+      return `
+        <div class="rag-card">
+          <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--text-muted);">
+            <span class="rag-purpose-pill">${escapeHtml(data.purpose || 'Agentic KB Search')}</span>
+            <span>${escapeHtml(timeStr)}</span>
+          </div>
+          ${data.query ? `<div class="rag-query-box"><strong style="color:#64d2ff;">Query:</strong> ${escapeHtml(data.query)}</div>` : ''}
+          ${turnsHtml}
+          ${data.searcher_diagnosis ? `<div class="rag-query-box fix-brief" style="color:var(--text);"><strong style="color:#30d158;">Fix Brief:</strong> ${escapeHtml(data.searcher_diagnosis)}</div>` : ''}
+          ${chunksHtml}
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // Filtered / Skipped Drawer
     // =========================================================================
     let filteredOffset = 0;
     let filteredDebounce = null;
 
-    function toggleFilteredDrawer() {
+    function toggleFilteredDrawer(explicitState) {
       const drawer = document.getElementById('filtered-drawer');
-      const btn = document.getElementById('btn-filtered-toggle');
-      const isOpen = drawer.classList.toggle('open');
-      btn.classList.toggle('active', isOpen);
+      if (!drawer) return;
+      const isOpen = (explicitState === undefined)
+        ? drawer.classList.toggle('open')
+        : (drawer.classList.toggle('open', explicitState), explicitState);
       if (isOpen) {
         filteredOffset = 0;
         fetchFilteredPage();
@@ -22299,108 +23601,117 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       fetchFilteredPage();
     }
 
-    function fetchFilteredPage() {
-      const q = encodeURIComponent(document.getElementById('filtered-search-input')?.value || '');
-      fetch(`api/filtered?offset=${filteredOffset}&limit=100&q=${q}`)
-        .then(r => r.json())
-        .then(data => {
-          updateFilteredButtonCount(data.total || 0);
-          const items = data.items || [];
-          const endIdx = Math.min(data.matching || 0, filteredOffset + items.length);
-          const startIdx = items.length ? filteredOffset + 1 : 0;
-          document.getElementById('filtered-range-label').innerText =
-            `Showing ${startIdx}-${endIdx} of ${data.matching || 0} matching (${data.total || 0} total)`;
-
-          const tbody = document.getElementById('filtered-tbody');
-          if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted);">No matching filtered RFCs.</td></tr>';
-            return;
-          }
-          tbody.innerHTML = items.map(it => `
+    function renderFilteredDrawerData(data) {
+      updateFilteredButtonCount(data.total || 0);
+      const items = data.items || [];
+      const startIdx = items.length ? filteredOffset + 1 : 0;
+      const endIdx = Math.min(data.matching || 0, filteredOffset + items.length);
+      document.getElementById('filtered-range-label').innerText = `${startIdx}-${endIdx} of ${data.matching || 0} matching (${data.total || 0} total)`;
+      const tbody = document.getElementById('filtered-tbody');
+      tbody.innerHTML = items.length
+        ? items.map(it => `
             <tr>
               <td>${it.index || ''}</td>
-              <td style="color:var(--color-blue); font-weight:700;">${escapeHtml(it.rfc_id || '')}</td>
+              <td style="color:var(--text); font-weight:600;">${escapeHtml(it.rfc_id || '')}</td>
               <td>${escapeHtml(it.title || '')}</td>
-              <td style="color:var(--color-yellow);">${escapeHtml(it.gate || '')}</td>
-              <td style="color:var(--text-muted);">${escapeHtml(it.reason || '')}</td>
+              <td><span class="tier-pill">${escapeHtml(it.gate || '')}</span></td>
+              <td style="white-space:normal; word-break:break-word;">${escapeHtml(it.reason || '')}</td>
             </tr>
-          `).join('');
-        })
+          `).join('')
+        : '<tr><td colspan="5" style="color:var(--text-muted);">No matching filtered entries.</td></tr>';
+    }
+
+    function fetchFilteredPage() {
+      const rawQ = (document.getElementById('filtered-search-input')?.value || '').trim();
+      if (isClientFolderLoaded || isStandaloneClientMode) {
+        const lower = rawQ.toLowerCase();
+        const matchingList = !lower
+          ? clientFilteredItems
+          : clientFilteredItems.filter(it =>
+              `${it.rfc_id || ''} ${it.title || ''} ${it.gate || ''} ${it.reason || ''}`.toLowerCase().includes(lower)
+            );
+        renderFilteredDrawerData({
+          total: clientFilteredItems.length,
+          matching: matchingList.length,
+          offset: filteredOffset,
+          limit: 100,
+          items: matchingList.slice(filteredOffset, filteredOffset + 100)
+        });
+        return;
+      }
+      const q = encodeURIComponent(rawQ);
+      fetch(`api/filtered?offset=${filteredOffset}&limit=100&q=${q}`)
+        .then(r => r.json())
+        .then(data => renderFilteredDrawerData(data))
         .catch(() => {});
     }
 
     // =========================================================================
-    // Live Timer, Stepper, and Real-Time SSE Event Dispatcher
+    // Live View Event Stream & SSE Handler
     // =========================================================================
-    function setDiagnosisBadge(text, styleClass) {
-      const el = document.getElementById('stage-diagnosis');
-      if (!el) return;
-      el.innerText = text;
-      el.className = `diag-badge ${styleClass || ''}`;
-    }
-
-    function updateLiveTimers() {
-      if (viewMode !== 'live' || !pipelineRunning || !activeAttemptEpoch) return;
-      const nowSec = Date.now() / 1000;
-      const elapsed = Math.max(0, nowSec - activeAttemptEpoch);
-      const timerEl = document.getElementById('attempt-timer');
-
-      if (currentActivityMode === 'solver' || (currentActivityMode === 'repair_timeout' && elapsed > 20)) {
-        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s / 60s`;
-        if (elapsed > 30) {
-          setDiagnosisBadge(`STATE-SPACE SNOWBALLING (${elapsed.toFixed(0)}s / 60s cap)`, 'snowball');
-        } else if (elapsed > 10) {
-          setDiagnosisBadge(`Deep CPSA4 Strand Search (${elapsed.toFixed(0)}s / 60s)`, 'syntax');
-        } else {
-          setDiagnosisBadge('CPSA4 Compiling & Solving...', 'normal');
-        }
-      } else if (currentActivityMode === 'repair_syntax') {
-        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
-        setDiagnosisBadge(`Fast Syntax/Roletran Reject -> LLM Repair #${currentRepairAttempt}`, 'syntax');
-      } else if (currentActivityMode === 'repair_timeout') {
-        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
-        setDiagnosisBadge(`60s Timeout (Snowball) -> LLM Repair #${currentRepairAttempt}`, 'snowball');
-      } else if (currentActivityMode === 'extraction') {
-        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
-        setDiagnosisBadge('Generating CPSA JSON...', 'normal');
-      } else {
-        if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
-      }
-
-      if (currentStageNum) {
-        const stepTimeEl = document.getElementById(`step-${currentStageNum}-time`);
-        const stageStart = stageStartEpochs[currentStageNum] || activeAttemptEpoch;
-        const stageElapsed = Math.max(0, nowSec - stageStart);
-        if (stepTimeEl) stepTimeEl.innerText = `${stageElapsed.toFixed(1)}s`;
-      }
-    }
-    setInterval(updateLiveTimers, 100);
-
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab').forEach(b => {
-        b.classList.toggle('active', b.getAttribute('data-subtab') === tabId);
+    function renderLiveCostBar(rfcCost) {
+      if (!rfcCost || typeof rfcCost !== 'object') return;
+      const roles = rfcCost.roles || {};
+      ['router', 'distiller', 'extraction', 'query', 'repair'].forEach(k => {
+        const rb = roles[k] || {};
+        const cEl = document.getElementById(`live-cost-${k}`);
+        const tEl = document.getElementById(`live-tok-${k}`);
+        if (cEl) cEl.innerText = fmtUsd(rb.cost_usd);
+        if (tEl) tEl.innerText = `(${fmtTok(rb.total_tokens)})`;
       });
-      document.querySelectorAll('.tab-viewport').forEach(v => v.style.display = 'none');
-      const targetView = document.getElementById(`tab-${tabId}`);
-      if (targetView) targetView.style.display = 'block';
-      if (tabId === 'analytics') {
-        refreshCsvAnalytics(false);
-      }
+      const totC = document.getElementById('live-cost-total');
+      const totT = document.getElementById('live-tok-total');
+      if (totC) totC.innerText = fmtUsd(rfcCost.total_cost_usd);
+      if (totT) totT.innerText = `(${fmtTok(rfcCost.total_tokens)})`;
     }
 
     function setStepState(stageNum, state, label) {
       const step = document.getElementById(`step-${stageNum}`);
       if (!step) return;
       step.classList.remove('active', 'passed', 'failed');
-      if (state === 'active') step.classList.add('active');
-      else if (state === 'passed') step.classList.add('passed');
-      else if (state === 'failed') step.classList.add('failed');
-
-      if (label) {
-        const statEl = document.getElementById(`step-${stageNum}-status`);
-        if (statEl) statEl.innerText = label;
+      if (state) step.classList.add(state);
+      const statEl = document.getElementById(`step-${stageNum}-status`);
+      if (statEl && label) {
+        const dCls = state === 'passed' ? 'verified' : (state === 'failed' ? 'failed' : (state === 'active' ? 'live' : 'idle'));
+        statEl.innerHTML = `<span class="dot ${dCls}"></span><span>${escapeHtml(label)}</span>`;
       }
     }
+
+    function resetLiveViewport() {
+      liveSeenEventKeys.clear();
+      liveEventCount = 0;
+      liveFirstRag = true;
+      document.getElementById('live-event-counter').innerText = '0 Events';
+      document.getElementById('live-log-feed').innerHTML = '';
+      document.getElementById('live-rag-feed').innerHTML = '<div class="empty-placeholder">No KB retrievals recorded for active run yet.</div>';
+      document.getElementById('live-code-scm').innerText = '; Live CPSA Scheme model will stream here...';
+      document.getElementById('live-code-ast').innerText = '// Live Pydantic JSON AST will appear here...';
+      document.getElementById('live-code-slice').innerText = 'Sliced protocol specification will appear here...';
+      document.getElementById('live-graph-container').innerHTML = '<div class="empty-placeholder" style="width:100%;">Shapes graph renders here upon CPSA compilation.</div>';
+      for (let s = 1; s <= 6; s++) {
+        setStepState(s, '', 'Pending');
+        const tm = document.getElementById(`step-${s}-time`);
+        if (tm) tm.innerText = '--';
+      }
+    }
+
+    function updateLiveTimers() {
+      if (!pipelineRunning || !activeAttemptEpoch) return;
+      const nowSec = Date.now() / 1000;
+      const elapsed = Math.max(0, nowSec - activeAttemptEpoch);
+      const timerEl = document.getElementById('live-timer');
+      if (timerEl) timerEl.innerText = `${elapsed.toFixed(1)}s`;
+      const diagEl = document.getElementById('live-diagnosis');
+      if (diagEl && currentActivityMode === 'solver') {
+        diagEl.innerText = elapsed > 20 ? `Deep Strand Search (${elapsed.toFixed(0)}s)` : 'CPSA4 Solving...';
+      }
+      if (currentStageNum) {
+        const stEl = document.getElementById(`step-${currentStageNum}-time`);
+        const stStart = stageStartEpochs[currentStageNum] || activeAttemptEpoch;
+        if (stEl) stEl.innerText = `${Math.max(0, nowSec - stStart).toFixed(1)}s`;
+      }
+    }
+    setInterval(updateLiveTimers, 200);
 
     function handleIncomingBusEvent(evt) {
       if (!evt || !evt.event_type) return;
@@ -22409,928 +23720,162 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         scheduleCsvAnalyticsRefresh();
         return;
       }
-
-      // Global tab & filtered registry updates ALWAYS apply regardless of whether viewing [LIVE] or Tab #k
       if (evt.event_type === 'tab_accepted' && evt.data && evt.data.tab) {
         liveActiveTabIndex = evt.data.tab.tab_index;
         liveActiveRfcId = evt.data.tab.rfc_id;
         upsertTabSummary(evt.data.tab);
-        updateLivePinButton();
         return;
       }
       if (evt.event_type === 'tab_updated' && evt.data && evt.data.tab) {
         upsertTabSummary(evt.data.tab);
-        updateLivePinButton();
         return;
       }
       if (evt.event_type === 'rfc_filtered' && evt.data) {
         updateFilteredButtonCount(evt.data.filtered_total || (filteredTotalCount + 1));
-        if (document.getElementById('filtered-drawer').classList.contains('open')) {
-          fetchFilteredPage();
-        }
+        if (document.getElementById('filtered-drawer').classList.contains('open')) fetchFilteredPage();
         scheduleCsvAnalyticsRefresh();
         return;
       }
       if (evt.event_type === 'cost_updated' && evt.data) {
-        if (evt.data.batch_cost) {
-          latestBatchCostTelemetry = evt.data.batch_cost;
-        }
+        if (evt.data.batch_cost) latestBatchCostTelemetry = evt.data.batch_cost;
         if (evt.tab_index && acceptedTabsByIndex.has(evt.tab_index) && evt.data.rfc_cost) {
-          const existing = acceptedTabsByIndex.get(evt.tab_index);
-          existing.cost_usd = Number(evt.data.rfc_cost.total_cost_usd || 0);
-          existing.cost_telemetry = evt.data.rfc_cost;
-          renderVirtualTabs();
+          const ex = acceptedTabsByIndex.get(evt.tab_index);
+          ex.cost_usd = Number(evt.data.rfc_cost.total_cost_usd || 0);
+          ex.cost_telemetry = evt.data.rfc_cost;
+          renderVirtualProtocolList();
         }
-        if (viewMode === 'live') {
-          renderCostTelemetry(evt.data.rfc_cost, evt.data.batch_cost);
-        } else if (evt.data.batch_cost) {
-          renderCostTelemetry(null, evt.data.batch_cost);
-        }
+        renderLiveCostBar(evt.data.rfc_cost);
+        updateTopCountsAndStatus();
         return;
       }
       if (evt.event_type === 'pipeline_started') {
+        isServerLive = true;
+        pipelineRunning = true;
         liveActiveRfcId = (evt.data && (evt.data.rfc_id || evt.data.rfc_file)) || evt.rfc_id;
         liveActiveTabIndex = null;
-        pipelineRunning = true;
-        updateLivePinButton();
-        if (viewMode === 'live') {
-          resetViewportDom('LIVE');
-          renderCostTelemetry({ total_cost_usd: 0, total_tokens: 0, roles: {} }, latestBatchCostTelemetry);
-        }
+        resetLiveViewport();
+        syncLiveOfflineNotice();
+        renderLiveCostBar({ total_cost_usd: 0, total_tokens: 0, roles: {} });
+        updateTopCountsAndStatus();
       }
       if (evt.event_type === 'pipeline_completed' || evt.event_type === 'pipeline_failed') {
         pipelineRunning = false;
-        updateLivePinButton();
+        updateTopCountsAndStatus();
         scheduleCsvAnalyticsRefresh();
       }
 
-      // Only mutate the shared DOM viewport if following [LIVE]
-      if (viewMode === 'live') {
-        renderEventIntoViewport(evt, true);
-      }
+      renderEventIntoLiveView(evt);
     }
 
-    function renderSnowballAutopsyCard(timestamp, attemptNum, autopsyText) {
-      if (!autopsyText) return;
-      const feed = document.getElementById('rag-feed');
-      if (!feed) return;
-      if (ragFirstEvent) {
-        feed.innerHTML = '';
-        ragFirstEvent = false;
-      }
-      const timeStr = new Date((timestamp || (Date.now() / 1000)) * 1000).toLocaleTimeString([], { hour12: false });
-      const card = document.createElement('div');
-      card.className = 'rag-card';
-      card.style.borderLeft = '3px solid var(--color-red)';
-      card.innerHTML = `
-        <div class="rag-card-header">
-          <span class="rag-purpose" style="color:var(--color-red); border-color:var(--color-red);">CPSA 4.4.9 SNOWBALL AUTOPSY (REPAIR #${escapeHtml(String(attemptNum || 1))})</span>
-          <span>${escapeHtml(timeStr)}</span>
-        </div>
-        <details class="snowball-details" open>
-          <summary>▸ Snowball State-Space Unification Autopsy Report</summary>
-          <pre>${escapeHtml(autopsyText)}</pre>
-        </details>
-      `;
-      feed.prepend(card);
-    }
-
-    function renderEventIntoViewport(evt, fetchLiveArtifacts) {
-      if (
-        evt.event_type === 'tab_accepted' ||
-        evt.event_type === 'tab_updated' ||
-        evt.event_type === 'rfc_filtered' ||
-        evt.event_type === 'cost_updated' ||
-        evt.event_type === 'csv_updated'
-      ) {
-        if (evt.event_type === 'cost_updated' && evt.data && evt.data.rfc_cost) {
-          renderCostTelemetry(evt.data.rfc_cost, evt.data.batch_cost || latestBatchCostTelemetry);
-        }
-        return;
-      }
+    function renderEventIntoLiveView(evt) {
+      if (['tab_accepted', 'tab_updated', 'rfc_filtered', 'cost_updated', 'csv_updated'].includes(evt.event_type)) return;
       const key = `${evt.timestamp}_${evt.event_type}_${evt.stage || 0}`;
-      if (seenEventKeys.has(key)) return;
-      seenEventKeys.add(key);
+      if (liveSeenEventKeys.has(key)) return;
+      liveSeenEventKeys.add(key);
 
-      // Route Agentic KB Search strictly to the RAG Knowledge tab (never into the LIVE feed)
       if (evt.event_type === 'rag_retrieval') {
         activeAttemptEpoch = evt.timestamp;
-        const ragMod = `${defaultModelCfg.query_model} (Agentic KB Searcher)`;
-        const badge = document.getElementById('active-model');
-        if (badge) badge.innerText = ragMod;
-        renderRagEvent(evt);
+        const mEl = document.getElementById('live-active-model');
+        if (mEl) mEl.innerText = defaultModelCfg.query_model || 'Searcher';
+        const feed = document.getElementById('live-rag-feed');
+        if (feed) {
+          if (liveFirstRag) { feed.innerHTML = ''; liveFirstRag = false; }
+          feed.insertAdjacentHTML('afterbegin', buildRagCardHtml(evt));
+        }
         return;
       }
 
-      eventCount++;
-      document.getElementById('event-counter').innerText = `${eventCount} Events`;
+      liveEventCount++;
+      syncLiveOfflineNotice();
+      document.getElementById('live-event-counter').innerText = `${liveEventCount} Events`;
 
-      const feed = document.getElementById('log-feed');
-      const item = document.createElement('div');
-      item.className = 'log-entry';
-
-      const timeStr = new Date(evt.timestamp * 1000).toLocaleTimeString([], { hour12: false });
-      let typeLabel = evt.event_type;
-      const safeData = Object.assign({}, evt.data || {});
-      delete safeData.ast;
-      let bodyText = Object.keys(safeData).length ? JSON.stringify(safeData) : '';
-      let extraAutopsyHtml = '';
-
-      const stageDefaultModels = {
-        1: document.getElementById('step-1-model')?.innerText || defaultModelCfg.router_model,
-        2: document.getElementById('step-2-model')?.innerText || defaultModelCfg.extraction_model,
-        3: 'cpsa_scheme_emitter.py',
-        4: 'cpsa4roletran + cpsa4 -l 1',
-        5: document.getElementById('step-5-model')?.innerText || `${defaultModelCfg.repair_model}`,
-        6: document.getElementById('step-6-model')?.innerText || 'cpsa4 + cpsa4graph'
-      };
-
-      function updateActiveModel(modelStr, stageNum) {
-        if (!modelStr) return;
-        const badge = document.getElementById('active-model');
-        if (badge) badge.innerText = modelStr;
-        if (stageNum) {
-          const stepModelEl = document.getElementById(`step-${stageNum}-model`);
-          if (stepModelEl) stepModelEl.innerText = modelStr;
-        }
-      }
-
+      const d = evt.data || {};
       if (evt.event_type === 'pipeline_started') {
-        typeLabel = 'PIPELINE_INIT';
-        bodyText = `Target: ${evt.data.rfc_file || evt.data.rfc_id || ''}`;
-        if (fetchLiveArtifacts) pipelineRunning = true;
-        currentStageNum = 1;
-        currentRepairAttempt = 0;
         activeAttemptEpoch = evt.timestamp;
         stageStartEpochs[1] = evt.timestamp;
+        currentStageNum = 1;
         currentActivityMode = 'intake';
-        if (fetchLiveArtifacts) {
-          setDiagnosisBadge('Screening RFC & TOC...', 'normal');
-          document.getElementById('rfc-name').innerText = evt.data.rfc_file || evt.data.rfc_id;
-          const pill = document.getElementById('pipeline-status');
-          pill.className = 'status-badge running';
-          pill.innerText = 'RUNNING';
-          pill.setAttribute('data-tooltip-key', 'RUNNING');
-        }
-        if (evt.data.router_model) document.getElementById('step-1-model').innerText = evt.data.router_model;
-        if (evt.data.extraction_model) document.getElementById('step-2-model').innerText = evt.data.extraction_model;
-        if (evt.data.repair_model) {
-          const qm = evt.data.query_model ? ` + ${evt.data.query_model.split('/').pop()}` : '';
-          document.getElementById('step-5-model').innerText = `${evt.data.repair_model}${qm}`;
-          document.getElementById('step-6-model').innerText = `cpsa4 + ${evt.data.repair_model}`;
-        }
-        updateActiveModel(evt.data.router_model || stageDefaultModels[1], 1);
-        setStepState(1, 'active', 'Started');
+        document.getElementById('live-rfc-name').innerText = d.rfc_file || d.rfc_id || 'Running...';
+        document.getElementById('live-status-dot').className = 'dot live';
+        document.getElementById('live-status-badge').innerText = 'RUNNING';
+        document.getElementById('live-diagnosis').innerText = 'Screening specification...';
+        if (d.router_model) document.getElementById('step-1-model').innerText = d.router_model;
+        if (d.extraction_model) document.getElementById('step-2-model').innerText = d.extraction_model;
+        if (d.repair_model) document.getElementById('step-5-model').innerText = d.repair_model;
+        setStepState(1, 'active', 'Running');
       } else if (evt.event_type === 'stage_started') {
-        typeLabel = `STAGE_${evt.stage}_START`;
-        const stgModel = (evt.data && evt.data.model) || stageDefaultModels[evt.stage] || '';
-        bodyText = `${evt.stage_name || (evt.data && evt.data.stage_name) || `Stage ${evt.stage}`} | Model: ${stgModel}`;
-        currentStageNum = evt.stage;
+        currentStageNum = evt.stage || 1;
         activeAttemptEpoch = evt.timestamp;
-        stageStartEpochs[evt.stage] = evt.timestamp;
-        if (fetchLiveArtifacts) {
-          if (evt.stage === 1) { currentActivityMode = 'intake'; setDiagnosisBadge('Screening RFC & TOC...', 'normal'); }
-          else if (evt.stage === 2) { currentActivityMode = 'extraction'; setDiagnosisBadge('Generating CPSA JSON...', 'normal'); }
-          else if (evt.stage === 4 || evt.stage === 5) { currentActivityMode = 'roletran'; setDiagnosisBadge('Roletran Check...', 'normal'); }
-          else if (evt.stage === 6) { currentActivityMode = 'solver'; setDiagnosisBadge('CPSA4 Compiling & Solving...', 'normal'); }
+        stageStartEpochs[currentStageNum] = evt.timestamp;
+        currentActivityMode = (currentStageNum === 6) ? 'solver' : ((currentStageNum === 2) ? 'extraction' : 'intake');
+        if (d.model) {
+          document.getElementById('live-active-model').innerText = d.model;
+          const smEl = document.getElementById(`step-${currentStageNum}-model`);
+          if (smEl) smEl.innerText = d.model;
         }
-        setStepState(evt.stage, 'active', 'Processing');
-        updateActiveModel(stgModel, evt.stage);
+        setStepState(currentStageNum, 'active', 'Running');
       } else if (evt.event_type === 'compiler_check_started') {
-        typeLabel = `COMPILER_RUN_${evt.data.attempt || 0}`;
-        bodyText = `Validator: ${evt.data.model || 'cpsa4'} | Attempt #${evt.data.attempt || 0}`;
         currentStageNum = evt.stage || 6;
         activeAttemptEpoch = evt.timestamp;
-        currentActivityMode = (evt.stage === 6) ? 'solver' : 'roletran';
-        updateActiveModel(evt.data.model || 'cpsa4 + cpsa4graph', evt.stage || 6);
-        setStepState(evt.stage || 6, 'active', `Testing #${evt.data.attempt || 0}`);
+        currentActivityMode = currentStageNum === 6 ? 'solver' : 'roletran';
+        setStepState(currentStageNum, 'active', `Check #${d.attempt || 0}`);
       } else if (evt.event_type === 'stage_completed') {
-        typeLabel = `STAGE_${evt.stage}_OK`;
         setStepState(evt.stage, 'passed', 'Passed');
-        if (evt.stage === 1) {
-          bodyText = `Confirmed Protocol: ${evt.data.protocol_name || ''} (${evt.data.rfc_id || ''})`;
-        } else if (evt.stage === 2) {
-          const rCount = evt.data.roles_count ?? (evt.data.ast?.roles?.length || 0);
-          const sCount = evt.data.skeletons_count ?? (evt.data.ast?.skeletons?.length || 0);
-          bodyText = `Synthesized Pydantic AST (${rCount} roles, ${sCount} skeletons)`;
-        } else if (evt.stage === 3) {
-          const scmName = (evt.data.scm_path || '').split('/').pop() || 'protocol.scm';
-          const repTag = evt.data.repair_attempt ? ` (Repair #${evt.data.repair_attempt})` : '';
-          bodyText = `Emitted CPSA Scheme: ${scmName}${repTag}`;
-        } else if (evt.stage === 4 || evt.stage === 5) {
-          bodyText = `Roletran Executability Passed${evt.data.attempts !== undefined ? ` (${evt.data.attempts} repair attempts)` : ''}`;
-        }
         if (stageStartEpochs[evt.stage]) {
-          const dur = Math.max(0, evt.timestamp - stageStartEpochs[evt.stage]);
-          const timeEl = document.getElementById(`step-${evt.stage}-time`);
-          if (timeEl) timeEl.innerText = `${dur.toFixed(1)}s`;
+          const tEl = document.getElementById(`step-${evt.stage}-time`);
+          if (tEl) tEl.innerText = `${Math.max(0, evt.timestamp - stageStartEpochs[evt.stage]).toFixed(1)}s`;
         }
-        if (fetchLiveArtifacts && evt.data && evt.data.ast) {
-          document.getElementById('code-ast').innerText = JSON.stringify(evt.data.ast, null, 2);
-        }
-        if (fetchLiveArtifacts && evt.data && evt.data.scm_path) {
-          fetch(`api/artifact?path=${encodeURIComponent(evt.data.scm_path)}`)
+        if (d.ast) document.getElementById('live-code-ast').innerText = JSON.stringify(d.ast, null, 2);
+        if (d.scm_path) {
+          fetch(`api/artifact?path=${encodeURIComponent(d.scm_path)}`)
             .then(r => r.text())
-            .then(txt => { document.getElementById('code-scm').innerText = txt; })
+            .then(txt => { document.getElementById('live-code-scm').innerText = txt; })
             .catch(() => {});
         }
-      } else if (evt.event_type === 'slice_ready') {
-        typeLabel = 'SLICE_EXTRACTED';
-        bodyText = `Sections: ${JSON.stringify(evt.data.sections)}\nLine count: ${evt.data.line_count}`;
-        if (fetchLiveArtifacts && evt.data && evt.data.slice_path) {
-          fetch(`api/artifact?path=${encodeURIComponent(evt.data.slice_path)}`)
-            .then(r => r.text())
-            .then(txt => {
-              window._currentSlicePayloads = Object.assign(window._currentSlicePayloads || {}, { verbatim: txt });
-              document.getElementById('code-slice').innerText = txt;
-            })
-            .catch(() => {});
-        }
+      } else if (evt.event_type === 'slice_ready' && d.slice_path) {
+        fetch(`api/artifact?path=${encodeURIComponent(d.slice_path)}`)
+          .then(r => r.text())
+          .then(txt => { document.getElementById('live-code-slice').innerText = txt; })
+          .catch(() => {});
       } else if (evt.event_type === 'repair_attempt') {
-        item.classList.add('repair');
-        if (evt.data.cycle_detected) item.classList.add('cycle');
-        typeLabel = `REPAIR_${evt.data.attempt}_OF_${evt.data.max_attempts}`;
         currentStageNum = evt.stage || 5;
-        currentRepairAttempt = evt.data.attempt || 1;
+        currentRepairAttempt = d.attempt || 1;
         activeAttemptEpoch = evt.timestamp;
-        const rawDiag = evt.data.diagnostic || '';
-        const sp = splitSnowballDiagnostic(rawDiag);
-        const diagStr = rawDiag.toLowerCase();
-        const isTimeout = diagStr.includes('timed out') || diagStr.includes('step limit');
-        currentActivityMode = isTimeout ? 'repair_timeout' : 'repair_syntax';
-        const failureTag = isTimeout ? '[60s TIMEOUT / STATE-SPACE SNOWBALL]' : '[FAST SYNTAX / ROLETRAN ERROR]';
-        const repMod = evt.data.model || defaultModelCfg.repair_model;
-        const qMod = evt.data.query_model || defaultModelCfg.query_model;
-        updateActiveModel(`${repMod} (RAG: ${qMod.split('/').pop()})`, evt.stage || 5);
-        bodyText = `${failureTag}\nRepair Model: ${repMod} | Query Model: ${qMod}\nDiagnostic: ${sp.headline}\nCycle Detected: ${evt.data.cycle_detected ? 'YES (Perturbation active)' : 'NO'}`;
-        if (sp.autopsy) {
-          renderSnowballAutopsyCard(evt.timestamp, evt.data.attempt, sp.autopsy);
-          extraAutopsyHtml = `<details class="snowball-details"><summary>▸ View Snowball State Autopsy Report (also in RAG Knowledge tab)</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
-        }
-        setStepState(evt.stage || 5, 'active', `Attempt ${evt.data.attempt}/${evt.data.max_attempts || 50}`);
+        currentActivityMode = 'repair';
+        document.getElementById('live-diagnosis').innerText = `Repair #${currentRepairAttempt}`;
+        setStepState(currentStageNum, 'active', `Repair #${currentRepairAttempt}`);
       } else if (evt.event_type === 'stage_failed') {
-        item.classList.add('error');
-        typeLabel = `STAGE_${evt.stage}_FAIL`;
-        const sp = splitSnowballDiagnostic(evt.data.error_message || evt.data.reason || 'Stage failed');
-        bodyText = sp.headline;
-        if (sp.autopsy) {
-          extraAutopsyHtml = `<details class="snowball-details"><summary>▸ View Snowball State Autopsy Report</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
-        }
         setStepState(evt.stage, 'failed', 'Failed');
       } else if (evt.event_type === 'pipeline_completed') {
-        item.classList.add('success');
-        if (fetchLiveArtifacts) {
-          pipelineRunning = false;
-          setDiagnosisBadge(`Verified (${evt.data.shapes_count} Realized Shapes)`, 'normal');
-          const pill = document.getElementById('pipeline-status');
-          pill.className = 'status-badge success';
-          pill.innerText = evt.data.quality_tier || 'VERIFIED';
-          pill.setAttribute('data-tooltip-key', evt.data.quality_tier || 'VERIFIED');
-          if (evt.data.shapes_xhtml) {
-            document.getElementById('graph-container').innerHTML =
-              `<iframe class="svg-frame" src="api/artifact?path=${encodeURIComponent(evt.data.shapes_xhtml)}"></iframe>`;
-          }
-          if (evt.data.security_findings) {
-            renderSecurityVerdictStrip(evt.data.quality_tier || 'VERIFIED', evt.data.security_findings);
-            renderSecurityFindingsTab({
-              tab: { rfc_id: evt.rfc_id, protocol_name: evt.data.protocol_name, quality_tier: evt.data.quality_tier, status: 'VERIFIED', shapes_count: evt.data.shapes_count },
-              intake_rationale: evt.data.intake_rationale,
-              security_findings: evt.data.security_findings,
-              quality_assessment: { quality_tier: evt.data.quality_tier, security_findings: evt.data.security_findings }
-            });
-          }
+        document.getElementById('live-status-dot').className = 'dot verified';
+        document.getElementById('live-status-badge').innerText = d.quality_tier || 'VERIFIED';
+        document.getElementById('live-diagnosis').innerText = `Verified (${d.shapes_count ?? 0} shapes)`;
+        setStepState(6, 'passed', `${d.shapes_count ?? 0} shapes`);
+        if (d.shapes_xhtml) {
+          document.getElementById('live-graph-container').innerHTML =
+            buildShapesIframeHtml(`api/artifact?path=${encodeURIComponent(d.shapes_xhtml)}`);
         }
-        typeLabel = 'SYNTHESIS_VERIFIED';
-        bodyText = `Protocol: ${evt.data.protocol_name || ''} | Tier: ${evt.data.quality_tier || 'VERIFIED'} | Shapes: ${evt.data.shapes_count ?? 0}`;
-        setStepState(6, 'passed', `Shapes: ${evt.data.shapes_count}`);
       } else if (evt.event_type === 'pipeline_failed') {
-        item.classList.add('error');
-        if (fetchLiveArtifacts) {
-          pipelineRunning = false;
-          setDiagnosisBadge('Halted / Max Attempts Reached', 'snowball');
-          const pill = document.getElementById('pipeline-status');
-          pill.className = 'status-badge failed';
-          pill.innerText = 'FAILED';
-          pill.setAttribute('data-tooltip-key', 'REJECTED');
-        }
-        typeLabel = 'PIPELINE_HALTED';
-        const sp = splitSnowballDiagnostic(evt.data.error_message || evt.data.reason || 'Pipeline halted');
-        bodyText = sp.headline;
-        if (sp.autopsy) {
-          extraAutopsyHtml = `<details class="snowball-details"><summary>▸ View Snowball State Autopsy Report</summary><pre>${escapeHtml(sp.autopsy)}</pre></details>`;
-        }
+        document.getElementById('live-status-dot').className = 'dot failed';
+        document.getElementById('live-status-badge').innerText = 'FAILED';
+        document.getElementById('live-diagnosis').innerText = 'Halted';
       }
 
-      item.innerHTML = `
-        <div class="log-meta">
-          <span class="log-type">${escapeHtml(typeLabel)}</span>
-          <span>${escapeHtml(timeStr)}</span>
-        </div>
-        <div class="log-data">${escapeHtml(bodyText)}</div>
-        ${extraAutopsyHtml}
-      `;
-
-      feed.appendChild(item);
-      feed.scrollTop = feed.scrollHeight;
-    }
-
-    function renderRagEvent(evt) {
-      const feed = document.getElementById('rag-feed');
-      if (!feed) return;
-      if (ragFirstEvent) {
-        feed.innerHTML = '';
-        ragFirstEvent = false;
+      const feed = document.getElementById('live-log-feed');
+      if (feed) {
+        feed.insertAdjacentHTML('beforeend', buildLogEntryHtml(evt));
+        feed.scrollTop = feed.scrollHeight;
       }
-
-      const card = document.createElement('div');
-      card.className = 'rag-card';
-
-      const timeStr = new Date(evt.timestamp * 1000).toLocaleTimeString([], { hour12: false });
-      const purpose = (evt.data && evt.data.purpose) || 'Agentic KB Search';
-      const query = (evt.data && evt.data.query) || '';
-      const searcherDiagnosis = (evt.data && evt.data.searcher_diagnosis) || '';
-      const searcherTurns = (evt.data && evt.data.searcher_turns) || [];
-      const chunks = (evt.data && evt.data.chunks) || [];
-
-      let turnsHtml = '';
-      if (searcherTurns.length > 0) {
-        let turnItems = '';
-        searcherTurns.forEach((t) => {
-          let toolsList = '';
-          (t.tool_calls || []).forEach((tc) => {
-            toolsList += `
-              <div style="margin-top:4px; padding:4px 6px; background:rgba(88,166,255,0.08); border-left:2px solid #58a6ff; font-family:var(--mono); font-size:11px;">
-                <span style="color:#58a6ff; font-weight:600;">${escapeHtml(tc.tool || 'tool')}</span>(${escapeHtml(tc.args || '')})
-                <div style="color:var(--text-muted); margin-top:2px;">↳ Retrieved: ${escapeHtml(tc.retrieved || '')}</div>
-              </div>
-            `;
-          });
-          turnItems += `
-            <div style="padding:6px 8px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:4px; margin-top:6px;">
-              <div style="display:flex; justify-content:space-between; font-size:11px; font-family:var(--mono);">
-                <strong style="color:#d2a8ff;">Searcher Turn #${escapeHtml(String(t.turn || 1))}</strong>
-                <span style="color:${t.is_final ? '#3fb950' : '#f0883e'};">${escapeHtml(t.status || '')}</span>
-              </div>
-              ${toolsList}
-              ${t.ast_root_cause ? `<div style="margin-top:4px; font-size:11px; color:var(--text-main);"><strong>Thought / Cause:</strong> ${escapeHtml(t.ast_root_cause)}</div>` : ''}
-            </div>
-          `;
-        });
-        turnsHtml = `
-          <div style="margin-bottom:8px;">
-            <div style="font-size:10px; color:var(--text-muted); font-family:var(--mono);">Agentic Searcher Tool-Use Trace (${searcherTurns.length} Turn${searcherTurns.length > 1 ? 's' : ''}):</div>
-            ${turnItems}
-          </div>
-        `;
-      }
-
-      const diagnosisHtml = searcherDiagnosis ? `
-        <div class="rag-query-box" style="border-left:3px solid #3fb950; background:rgba(63,185,80,0.08); white-space:pre-wrap; margin-bottom:8px;">
-          <strong style="color:#3fb950;">Compiled Fix Brief Passed to Repair LLM:</strong>\n${escapeHtml(searcherDiagnosis)}
-        </div>
-      ` : '';
-
-      let chunksHtml = '';
-      chunks.forEach((chk) => {
-        const cidStr = String(chk.chunk_id || '');
-        const isScm = cidStr.endsWith('.scm');
-        const badgeLabel = isScm ? `MITRE .scm Example` : `KB Section: ${cidStr}`;
-        chunksHtml += `
-          <div class="rag-chunk-card">
-            <div class="rag-chunk-meta">
-              <span class="rag-chunk-id">${escapeHtml(badgeLabel)}</span>
-              <span class="rag-chunk-source">${escapeHtml(chk.source_file || 'CPSA Knowledge Base')}</span>
-            </div>
-            <div class="rag-chunk-title">${escapeHtml(chk.title || '')}</div>
-            ${chk.snippet ? `<div class="rag-chunk-snippet">${escapeHtml(chk.snippet)}</div>` : ''}
-          </div>
-        `;
-      });
-
-      card.innerHTML = `
-        <div class="rag-card-header">
-          <span class="rag-purpose">${escapeHtml(purpose)}</span>
-          <span>${escapeHtml(timeStr)}</span>
-        </div>
-        <div class="rag-query-box"><strong>Executed Tool Calls / Queries:</strong> ${escapeHtml(query)}</div>
-        ${turnsHtml}
-        ${diagnosisHtml}
-        <div class="rag-chunks-container">
-          <div style="font-size:10px; color:var(--text-muted); font-family:var(--mono);">Retrieved CPSA Rules &amp; .scm Examples (${chunks.length}):</div>
-          ${chunksHtml}
-        </div>
-      `;
-
-      feed.prepend(card);
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
     }
 
     // =========================================================================
-    // Plain-English Hover Tooltips (~300ms Delay) for Quality Tiers & CPSA Verdicts
-    // =========================================================================
-    const RATING_TOOLTIPS = {
-      GOLD: {
-        title: 'GOLD — Full Multi-Party Interaction (Structural Quality)',
-        desc: 'Every participant role in the protocol compiled in CPSA, realized at least one valid execution shape, and interacted with at least one peer strand (>=2 strands in every point-of-view shape). Graded purely on structural fidelity — independent of whether the RFC protocol has security weaknesses.'
-      },
-      SILVER: {
-        title: 'SILVER — Partial Interaction / Local Execution',
-        desc: 'CPSA compiled the model and realized >=1 execution shape, and all defined roles are executable, but at least one point-of-view skeleton completed locally (single-strand) without requiring a peer response.'
-      },
-      BRONZE: {
-        title: 'BRONZE — Vacuous or Dead-Role Model',
-        desc: 'CPSA exited 0, but either 0 shapes were realized (contradictory assumptions), or the model contains dead/unused roles that were never instantiated in any skeleton.'
-      },
-      REJECTED: {
-        title: 'REJECTED — Uncompilable Model',
-        desc: 'The model failed CPSA syntax/executability checks or exhausted the 60s solver budget without compiling.'
-      },
-      PARTIAL: {
-        title: 'PARTIAL — Pre-Flight Passed, Solver Failed',
-        desc: 'Static role executability (cpsa4roletran / cpsa4 -l 1) succeeded, but full CPSA4 shape search failed or timed out.'
-      },
-      VERIFIED: {
-        title: 'VERIFIED — Formally Analyzed by CPSA4',
-        desc: 'MITRE CPSA4 completed shape analysis and generated formal execution shapes.'
-      },
-      FAILED: {
-        title: 'FAILED — Pipeline Halted',
-        desc: 'Synthesis or formal verification halted before producing a compiled CPSA shape graph.'
-      },
-      RUNNING: {
-        title: 'RUNNING — Live Synthesis in Progress',
-        desc: 'Currently executing synthesis and formal verification stages for this RFC.'
-      },
-      PENDING: {
-        title: 'PENDING — Awaiting CPSA Verification',
-        desc: 'Formal verification results have not been finalized yet.'
-      },
-      ALL_ROLES_EXECUTABLE: {
-        title: 'ALL_ROLES_EXECUTABLE (CPSA Role Executability)',
-        desc: 'Every defined role passed cpsa4roletran / cpsa4 -l 1 static executability and is instantiated in at least one preskeleton.'
-      },
-      PARTIAL_DEAD_ROLES: {
-        title: 'PARTIAL_DEAD_ROLES (CPSA Role Executability)',
-        desc: 'One or more defined roles were never instantiated in any preskeleton or realized shape.'
-      },
-      DEAD_ROLES_PRESENT: {
-        title: 'DEAD_ROLES_PRESENT (CPSA Role Executability)',
-        desc: 'One or more defined roles were never instantiated in any preskeleton or realized shape.'
-      },
-      NO_ROLES_EXECUTABLE: {
-        title: 'NO_ROLES_EXECUTABLE (CPSA Role Executability)',
-        desc: 'No participant roles realized an executable shape or static roletran failed.'
-      },
-      ROLETRAN_FAILED: {
-        title: 'ROLETRAN_FAILED (CPSA Role Executability)',
-        desc: 'At least one role failed static executability (e.g. sends a variable before receiving or originating it).'
-      },
-      MUTUAL_MULTI_STRAND: {
-        title: 'MUTUAL_MULTI_STRAND (CPSA Authentication Profile)',
-        desc: 'Every participant point-of-view skeleton realized >=1 shape and every realized shape required >=2 interacting strands (mutual peer authentication).'
-      },
-      MUTUAL_PEER_INTERACTION: {
-        title: 'MUTUAL_PEER_INTERACTION (CPSA Authentication Profile)',
-        desc: 'Every participant point-of-view skeleton realized >=1 shape and every realized shape required >=2 interacting strands (peer authentication).'
-      },
-      UNILATERAL_AUTHENTICATED: {
-        title: 'UNILATERAL_AUTHENTICATED (CPSA Authentication Profile)',
-        desc: 'At least one participant POV strictly required peer interaction (>=2 strands), while another POV completed locally (e.g. unilateral server-authenticated key exchange).'
-      },
-      UNILATERAL_PARTIAL: {
-        title: 'UNILATERAL_PARTIAL (CPSA Authentication Profile)',
-        desc: 'Some participant POVs required peer interaction (>=2 strands), while at least one POV completed locally (single-strand).'
-      },
-      CONDITIONAL_BRANCHED_AUTHENTICATION: {
-        title: 'CONDITIONAL_BRANCHED_AUTHENTICATION (Branched 1-Strand / 2-Strand Shapes)',
-        desc: 'A participant POV split into both a 2-strand peer-authenticated shape and a 1-strand self-communication/unauthenticated shape (e.g. missing principal inequality fact).'
-      },
-      UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE: {
-        title: 'UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE (Single-Strand Execution Only)',
-        desc: 'All realized shapes contained only a single strand — the POV role completed without CPSA proving any peer strand participated.'
-      },
-      LOCAL_ONLY: {
-        title: 'LOCAL_ONLY (CPSA Authentication Profile)',
-        desc: 'All realized shapes contained only a single strand (the POV role completed without proving any peer strand existed).'
-      },
-      NON_EXECUTABLE: {
-        title: 'NON_EXECUTABLE (0 Realized Shapes)',
-        desc: 'CPSA realized 0 shapes (preskeleton assumptions were contradictory or solver failed).'
-      },
-      NO_REALIZED_SHAPES: {
-        title: 'NO_REALIZED_SHAPES (CPSA Authentication Profile)',
-        desc: 'CPSA realized 0 shapes (preskeleton assumptions were contradictory or solver failed).'
-      },
-      FULL_PARAMETER_AGREEMENT: {
-        title: 'FULL_PARAMETER_AGREEMENT (Injective Parameter Agreement)',
-        desc: 'In every realized multi-strand shape, peer strands mapped identical values onto all shared protocol parameters (no MITM principal mismatch or parameter substitution).'
-      },
-      FULL_AGREEMENT: {
-        title: 'FULL_AGREEMENT (Injective Parameter Agreement)',
-        desc: 'In every realized shape, peer strands mapped identical values onto all shared protocol parameters (no parameter substitution or MITM mismatch).'
-      },
-      PRINCIPAL_DISAGREEMENT_MITM_OR_UKS: {
-        title: 'PRINCIPAL_DISAGREEMENT_MITM_OR_UKS (Lowe MITM / Unknown Key-Share)',
-        desc: 'CPSA realized a shape where the POV strand and a peer strand disagreed on a principal identity parameter (e.g. b vs b-0 in Needham-Schroeder Lowe MITM).'
-      },
-      PARAMETER_DISAGREEMENT_DETECTED: {
-        title: 'PARAMETER_DISAGREEMENT_DETECTED (Data/Key Parameter Substitution)',
-        desc: 'CPSA realized a shape where the POV strand and a peer strand bound different values (e.g. x vs x-0) to a shared non-principal parameter.'
-      },
-      DISAGREEMENT_DETECTED: {
-        title: 'DISAGREEMENT_DETECTED (Parameter Substitution / Mismatch)',
-        desc: 'CPSA realized a shape where the POV strand and a peer strand bound different values (e.g. n != n-0) to the same role parameter.'
-      },
-      NOT_APPLICABLE_SINGLE_STRAND: {
-        title: 'NOT_APPLICABLE_SINGLE_STRAND (Parameter Agreement)',
-        desc: 'No multi-strand shapes were realized, so cross-strand parameter agreement could not be evaluated.'
-      },
-      NO_PEER_STRANDS: {
-        title: 'NO_PEER_STRANDS (Parameter Agreement)',
-        desc: 'No multi-strand shapes were realized, so cross-strand parameter agreement could not be established.'
-      },
-      NO_REFLECTION: {
-        title: 'NO_REFLECTION (Role Reflection Check)',
-        desc: 'Principals and roles are properly separated; no POV shape instantiated multiple strands of the same role or collapsed distinct principals.'
-      },
-      DISTINCT_PEERS: {
-        title: 'DISTINCT_PEERS (Role Reflection Check)',
-        desc: 'Principals are properly separated; no peer strand collapsed its own sender/receiver principal variables onto the same identity.'
-      },
-      SAME_ROLE_REFLECTION_DETECTED: {
-        title: 'SAME_ROLE_REFLECTION_DETECTED (Same-Role / Symmetric Reflection)',
-        desc: 'CPSA satisfied a POV query by instantiating multiple strands of the same role (symmetric reflection attack where an initiator talks to another initiator).'
-      },
-      ROLE_REFLECTION_POSSIBLE: {
-        title: 'ROLE_REFLECTION_POSSIBLE (Self-Communication / Reflection)',
-        desc: 'A realized shape unified two distinct principal variables inside a strand onto the same identity (A = B reflection attack).'
-      },
-      SECRECY_PROVED: {
-        title: 'SECRECY_PROVED (Listener Secrecy Analysis)',
-        desc: 'Every (deflistener secret) query realized 0 shapes (dead tree), proving the Dolev-Yao adversary cannot derive any protected secret.'
-      },
-      ALL_SECRETS_PROTECTED: {
-        title: 'ALL_SECRETS_PROTECTED (Listener Secrecy Analysis)',
-        desc: 'Every (deflistener secret) query realized 0 shapes (dead tree), proving the Dolev-Yao adversary cannot derive the protected secret.'
-      },
-      PARTIAL_SECRECY: {
-        title: 'PARTIAL_SECRECY (Mixed Secrecy Verdict)',
-        desc: 'Some (deflistener ...) queries realized 0 shapes (secret protected), while at least one listener realized >=1 shape (secret leaked).'
-      },
-      SECRECY_LEAK_DETECTED: {
-        title: 'SECRECY_LEAK_DETECTED (Secrecy Breach)',
-        desc: 'A (deflistener secret) query realized >=1 shape, meaning the adversary learned the secret in a valid protocol execution.'
-      },
-      NOT_APPLICABLE_NO_LISTENER: {
-        title: 'NOT_APPLICABLE_NO_LISTENER (Secrecy Analysis)',
-        desc: 'The protocol model did not include any (deflistener ...) secrecy queries (e.g. pure authentication or integrity protocol).'
-      },
-      NO_SECRECY_CLAIMS_TESTED: {
-        title: 'NO_SECRECY_CLAIMS_TESTED (Secrecy Analysis)',
-        desc: 'The protocol model did not include any (deflistener ...) secrecy queries (e.g. pure authentication or integrity protocol).'
-      },
-      ALL_SATISFIED: {
-        title: 'ALL_SATISFIED (CPSA Security Goals)',
-        desc: 'All declared (defgoal ...) security sentences were satisfied with 0 counterexamples.'
-      },
-      ALL_DEFGOALS_SATISFIED: {
-        title: 'ALL_DEFGOALS_SATISFIED (CPSA Security Goals)',
-        desc: 'All (defgoal ...) security sentences were satisfied with 0 counterexamples.'
-      },
-      COUNTEREXAMPLE_FOUND: {
-        title: 'COUNTEREXAMPLE_FOUND (CPSA Security Goals)',
-        desc: 'CPSA found at least one shape violating a declared (defgoal ...) security sentence.'
-      },
-      NO_EXPLICIT_DEFGOALS: {
-        title: 'NO_EXPLICIT_DEFGOALS (Standard defskeleton Exploration)',
-        desc: 'Model used standard (defskeleton ...) point-of-view queries; cpsa4sas extracted the strongest satisfied (defgoal ...) shape analysis sentences automatically.'
-      },
-      NO_DEFGOALS: {
-        title: 'NO_DEFGOALS (Standard defskeleton Exploration)',
-        desc: 'Model used standard (defskeleton ...) point-of-view queries; cpsa4sas extracted the strongest satisfied (defgoal ...) shape analysis sentences automatically.'
-      }
-    };
-
-    let tooltipTimer = null;
-    let activeTooltipTarget = null;
-
-    function initHoverTooltips() {
-      const tipEl = document.getElementById('rating-tooltip');
-      const titleEl = document.getElementById('rating-tooltip-title');
-      const descEl = document.getElementById('rating-tooltip-desc');
-      if (!tipEl) return;
-
-      function positionTooltip(clientX, clientY) {
-        const pad = 14;
-        const rect = tipEl.getBoundingClientRect();
-        let left = clientX + pad;
-        let top = clientY + pad;
-        if (left + rect.width > window.innerWidth - 10) {
-          left = Math.max(8, clientX - rect.width - pad);
-        }
-        if (top + rect.height > window.innerHeight - 10) {
-          top = Math.max(8, clientY - rect.height - pad);
-        }
-        tipEl.style.left = `${left}px`;
-        tipEl.style.top = `${top}px`;
-      }
-
-      document.addEventListener('mouseover', (e) => {
-        const target = e.target.closest('[data-tooltip-key]');
-        if (!target) return;
-        const key = target.getAttribute('data-tooltip-key');
-        const info = RATING_TOOLTIPS[key];
-        if (!info) return;
-        activeTooltipTarget = target;
-        const startX = e.clientX;
-        const startY = e.clientY;
-        clearTimeout(tooltipTimer);
-        tooltipTimer = setTimeout(() => {
-          if (activeTooltipTarget !== target) return;
-          titleEl.innerText = info.title;
-          descEl.innerText = info.desc;
-          tipEl.style.display = 'block';
-          positionTooltip(startX, startY);
-        }, 280);
-      });
-
-      document.addEventListener('mousemove', (e) => {
-        if (tipEl.style.display === 'block') {
-          positionTooltip(e.clientX, e.clientY);
-        }
-      });
-
-      document.addEventListener('mouseout', (e) => {
-        const target = e.target.closest('[data-tooltip-key]');
-        if (target && target === activeTooltipTarget) {
-          const related = e.relatedTarget ? e.relatedTarget.closest('[data-tooltip-key]') : null;
-          if (related !== target) {
-            clearTimeout(tooltipTimer);
-            activeTooltipTarget = null;
-            tipEl.style.display = 'none';
-          }
-        }
-      });
-    }
-    initHoverTooltips();
-
-    // =========================================================================
-    // Part C: Compact Security Verdict Strip & Security Findings (CPSA) Sub-Tab
-    // =========================================================================
-    function verdictPillClass(val) {
-      const v = String(val || '').toUpperCase();
-      if ([
-        'GOLD', 'VERIFIED', 'ALL_ROLES_EXECUTABLE', 'MUTUAL_MULTI_STRAND', 'MUTUAL_PEER_INTERACTION',
-        'FULL_PARAMETER_AGREEMENT', 'FULL_AGREEMENT', 'NO_REFLECTION', 'DISTINCT_PEERS',
-        'SECRECY_PROVED', 'ALL_SECRETS_PROTECTED', 'ALL_SATISFIED', 'ALL_DEFGOALS_SATISFIED'
-      ].includes(v)) {
-        return 'ok';
-      }
-      if ([
-        'SILVER', 'UNILATERAL_AUTHENTICATED', 'NOT_APPLICABLE_NO_LISTENER', 'NO_SECRECY_CLAIMS_TESTED',
-        'NO_EXPLICIT_DEFGOALS', 'NO_DEFGOALS'
-      ].includes(v)) {
-        return 'info';
-      }
-      if ([
-        'BRONZE', 'PARTIAL', 'UNILATERAL_PARTIAL', 'CONDITIONAL_BRANCHED_AUTHENTICATION',
-        'UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE', 'LOCAL_ONLY', 'NOT_APPLICABLE_SINGLE_STRAND',
-        'NO_PEER_STRANDS', 'PARTIAL_DEAD_ROLES', 'DEAD_ROLES_PRESENT', 'PARTIAL_SECRECY'
-      ].includes(v)) {
-        return 'warn';
-      }
-      if ([
-        'REJECTED', 'FAILED', 'NO_ROLES_EXECUTABLE', 'ROLETRAN_FAILED', 'NON_EXECUTABLE',
-        'NO_REALIZED_SHAPES', 'PRINCIPAL_DISAGREEMENT_MITM_OR_UKS', 'PARAMETER_DISAGREEMENT_DETECTED',
-        'DISAGREEMENT_DETECTED', 'SAME_ROLE_REFLECTION_DETECTED', 'ROLE_REFLECTION_POSSIBLE',
-        'SECRECY_LEAK_DETECTED', 'COUNTEREXAMPLE_FOUND'
-      ].includes(v)) {
-        return 'bad';
-      }
-      return '';
-    }
-
-    function setStripPill(elId, val) {
-      const el = document.getElementById(elId);
-      if (!el) return;
-      const text = val || 'PENDING';
-      el.innerText = text;
-      el.className = `sec-pill ${verdictPillClass(text)}`;
-      el.setAttribute('data-tooltip-key', text);
-    }
-
-    function renderSecurityVerdictStrip(qualityTier, secFindings) {
-      const sf = secFindings || {};
-      setStripPill('strip-quality', qualityTier || 'PENDING');
-      setStripPill('strip-auth', sf.authentication_profile || 'PENDING');
-      setStripPill('strip-agreement', sf.parameter_agreement_status || 'PENDING');
-      setStripPill('strip-secrecy', sf.secrecy_status || 'PENDING');
-
-      const anomEl = document.getElementById('strip-anomalies');
-      if (anomEl) {
-        if (!secFindings || Object.keys(sf).length === 0) {
-          anomEl.innerText = '--';
-          anomEl.className = 'sec-pill';
-        } else {
-          const cnt = Number(sf.anomalies_count ?? (sf.vulnerabilities_and_anomalies || []).length ?? 0);
-          anomEl.innerText = `${cnt} Anomal${cnt === 1 ? 'y' : 'ies'}`;
-          anomEl.className = `sec-pill ${cnt === 0 ? 'ok' : 'warn'}`;
-        }
-      }
-    }
-
-    function renderSecurityFindingsTab(payload) {
-      const container = document.getElementById('security-findings-container');
-      if (!container) return;
-      const tab = payload.tab || {};
-      const meta = payload.rfc_metadata || {};
-      const qa = payload.quality_assessment || {};
-      const sf = payload.security_findings || qa.security_findings || tab.security_findings || {};
-      const shapesAnalysis = payload.shapes_analysis || {};
-      const expTel = payload.exploration_telemetry || {};
-      const rationale = payload.intake_rationale || meta.intake_rationale || tab.intake_rationale || '';
-      const qTier = qa.quality_tier || tab.quality_tier || tab.status || 'PENDING';
-
-      if (!sf || Object.keys(sf).length === 0) {
-        container.innerHTML = `
-          ${rationale ? `<div class="sec-banner-box"><strong style="color:var(--color-green);">Stage 1 Intake Rationale:</strong> Eligible: ${escapeHtml(rationale)}</div>` : ''}
-          <div style="color:var(--text-muted);">No formal CPSA security findings recorded for this tab yet.</div>
-        `;
-        return;
-      }
-
-      const deadRoles = (sf.dead_roles || []).join(', ') || 'None';
-      const multiPovs = (sf.multi_strand_pov_roles || []).join(', ') || 'None';
-      const singlePovs = (sf.single_strand_pov_roles || []).join(', ') || 'None';
-      const zeroPovs = (sf.unrealized_pov_roles || []).join(', ') || 'None';
-      const protSecrets = (sf.protected_secrets || []).join(', ') || 'None';
-      const leakSecrets = (sf.leaked_secrets || []).join(', ') || 'None';
-      const anomalies = sf.vulnerabilities_and_anomalies || [];
-      const disagreements = sf.disagreed_parameters || sf.parameter_disagreements || [];
-      const reflections = sf.role_reflections || [];
-      const authTests = sf.authentication_tests_summary || {};
-      const sasList = sf.shape_analysis_sentences || sf.shape_analysis_sentences_defgoals || [];
-      const perSkel = shapesAnalysis.per_preskeleton_outcomes || shapesAnalysis.per_preskeleton || [];
-
-      const anomaliesHtml = anomalies.length === 0
-        ? `<div class="sec-banner-box" style="border-left-color:var(--color-green);"><strong style="color:var(--color-green);">0 Formal Anomalies Detected:</strong> All POV roles interacted with distinct peer strands in full parameter agreement with no secrecy leaks.</div>`
-        : `<div class="sec-banner-box" style="border-left-color:var(--color-yellow);">
-             <strong style="color:var(--color-yellow);">Detected Protocol Vulnerabilities &amp; CPSA Anomalies (${anomalies.length}):</strong>
-             <ul style="margin-top:5px; padding-left:18px; color:#e6edf3;">
-               ${anomalies.map(a => `<li>${escapeHtml(a)}</li>`).join('')}
-             </ul>
-           </div>`;
-
-      const skelRowsHtml = perSkel.length === 0
-        ? `<tr><td colspan="7" style="color:var(--text-muted);">No per-preskeleton shape breakdown available.</td></tr>`
-        : perSkel.map(sk => {
-            const rawDis = sk.disagreed_parameters || sk.parameter_disagreements || [];
-            const disList = rawDis.map(d =>
-              `${d.pov_role || ''}->${d.peer_role || ''}:${d.param || d.parameter || ''}(${d.pov_val || d.pov_value || ''}!=${d.peer_val || d.peer_value || ''})`
-            ).join('; ') || 'Full Agreement';
-            const isSecList = Boolean(sk.is_secrecy_listener || sk.query_type === 'SECRECY_LISTENER' || (sk.listener_vars || sk.listener_terms || []).length > 0);
-            const listVars = sk.listener_vars || sk.listener_terms || [];
-            const realCount = sk.shapes_realized ?? sk.realized_shapes_count ?? 0;
-            const hasMulti = Boolean(sk.has_multi_strand_shape || (sk.max_strands_in_any_shape || 0) >= 2);
-            const hasSingle = Boolean(sk.has_single_strand_shape || (realCount > 0 && !hasMulti));
-            const hasRefl = Boolean(sk.has_same_role_reflection || sk.has_self_reflection_split || (sk.role_reflections || []).length > 0);
-            const refList = hasRefl
-              ? (sk.has_same_role_reflection ? 'Same-Role Reflection' : 'Branched 1-Strand Split')
-              : 'Distinct Peers';
-            return `
-              <tr>
-                <td>#${escapeHtml(String(sk.root_label ?? sk.skeleton_label ?? ''))}</td>
-                <td style="font-weight:700; color:var(--color-blue);">${escapeHtml(sk.pov_role || (isSecList ? 'Secrecy Listener' : 'POV'))}</td>
-                <td>${isSecList ? `Listener (${escapeHtml(listVars.join(', '))})` : 'Participant POV'}</td>
-                <td>${escapeHtml(String(realCount))}</td>
-                <td>${hasMulti ? '<span style="color:var(--color-green);">YES (>=2 strands)</span>' : (hasSingle ? '<span style="color:var(--color-yellow);">Single-Strand Only</span>' : '<span style="color:var(--text-muted);">0 Shapes</span>')}</td>
-                <td style="color:${rawDis.length ? 'var(--color-red)' : 'var(--color-green)'};">${escapeHtml(disList)}</td>
-                <td style="color:${hasRefl ? 'var(--color-yellow)' : 'var(--color-green)'};">${escapeHtml(refList)}</td>
-              </tr>
-            `;
-          }).join('');
-
-      const sasBlockHtml = sasList.length > 0
-        ? `<details class="snowball-details" style="margin-top:10px;" open>
-             <summary>▸ CPSA4SAS Extracted Shape Analysis Sentences — (defgoal ...) (${sasList.length})</summary>
-             <pre>${escapeHtml(sasList.join('\n\n'))}</pre>
-           </details>`
-        : '';
-
-      container.innerHTML = `
-        <div class="sec-banner-box">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <strong>${escapeHtml(tab.rfc_id || meta.rfc_id || '')} — ${escapeHtml(tab.protocol_name || meta.protocol_name || '')}</strong>
-            <span class="sec-pill ${verdictPillClass(qTier)}" data-tooltip-key="${escapeHtml(qTier)}">Structural Quality: ${escapeHtml(qTier)}</span>
-          </div>
-          ${rationale ? `<div><strong style="color:var(--color-green);">Stage 1 Intake Rationale:</strong> Eligible: ${escapeHtml(rationale)}</div>` : ''}
-          ${qa.tier_rationale ? `<div style="margin-top:3px; color:var(--text-muted);"><strong>Quality Tier Rationale:</strong> ${escapeHtml(qa.tier_rationale)}</div>` : ''}
-        </div>
-
-        ${anomaliesHtml}
-
-        <div class="sec-grid">
-          <div class="sec-card">
-            <div class="sec-card-head">
-              <span>1. Role Executability</span>
-              <span class="sec-pill ${verdictPillClass(sf.role_executability)}" data-tooltip-key="${escapeHtml(sf.role_executability || '')}">${escapeHtml(sf.role_executability || 'N/A')}</span>
-            </div>
-            <div class="sec-card-body">
-              <div>Dead / Uninstantiated Roles (${escapeHtml(String(sf.dead_roles_count ?? 0))}): <span style="color:var(--text-main);">${escapeHtml(deadRoles)}</span></div>
-            </div>
-          </div>
-
-          <div class="sec-card">
-            <div class="sec-card-head">
-              <span>2. Authentication Profile</span>
-              <span class="sec-pill ${verdictPillClass(sf.authentication_profile)}" data-tooltip-key="${escapeHtml(sf.authentication_profile || '')}">${escapeHtml(sf.authentication_profile || 'N/A')}</span>
-            </div>
-            <div class="sec-card-body">
-              <div>Multi-Strand POVs: <span style="color:var(--color-green);">${escapeHtml(multiPovs)}</span></div>
-              <div>Single-Strand POVs: <span style="color:var(--color-yellow);">${escapeHtml(singlePovs)}</span></div>
-              <div>Unrealized POVs: <span style="color:var(--text-muted);">${escapeHtml(zeroPovs)}</span></div>
-            </div>
-          </div>
-
-          <div class="sec-card">
-            <div class="sec-card-head">
-              <span>3. Parameter Agreement</span>
-              <span class="sec-pill ${verdictPillClass(sf.parameter_agreement_status)}" data-tooltip-key="${escapeHtml(sf.parameter_agreement_status || '')}">${escapeHtml(sf.parameter_agreement_status || 'N/A')}</span>
-            </div>
-            <div class="sec-card-body">
-              <div>Disagreed Parameters: <span style="color:${disagreements.length ? 'var(--color-red)' : 'var(--color-green)'};">${disagreements.length}</span></div>
-              <div style="font-size:10px; color:var(--text-muted);">Hover badge for CPSA maplet agreement definition.</div>
-            </div>
-          </div>
-
-          <div class="sec-card">
-            <div class="sec-card-head">
-              <span>4. Role Reflection Check</span>
-              <span class="sec-pill ${verdictPillClass(sf.role_reflection_status)}" data-tooltip-key="${escapeHtml(sf.role_reflection_status || '')}">${escapeHtml(sf.role_reflection_status || 'N/A')}</span>
-            </div>
-            <div class="sec-card-body">
-              <div>Self-Communication Instances: <span style="color:${reflections.length ? 'var(--color-yellow)' : 'var(--color-green)'};">${reflections.length}</span></div>
-            </div>
-          </div>
-
-          <div class="sec-card">
-            <div class="sec-card-head">
-              <span>5. Secrecy &amp; Listeners</span>
-              <span class="sec-pill ${verdictPillClass(sf.secrecy_status)}" data-tooltip-key="${escapeHtml(sf.secrecy_status || '')}">${escapeHtml(sf.secrecy_status || 'N/A')}</span>
-            </div>
-            <div class="sec-card-body">
-              <div>Protected Secrets: <span style="color:var(--color-green);">${escapeHtml(protSecrets)}</span></div>
-              <div>Leaked Secrets: <span style="color:${(sf.leaked_secrets || []).length ? 'var(--color-red)' : 'var(--text-muted)'};">${escapeHtml(leakSecrets)}</span></div>
-            </div>
-          </div>
-
-          <div class="sec-card">
-            <div class="sec-card-head">
-              <span>6. Security Goals &amp; SAS</span>
-              <span class="sec-pill ${verdictPillClass(sf.defgoal_satisfaction_status)}" data-tooltip-key="${escapeHtml(sf.defgoal_satisfaction_status || '')}">${escapeHtml(sf.defgoal_satisfaction_status || 'N/A')}</span>
-            </div>
-            <div class="sec-card-body">
-              <div>Extracted cpsa4sas defgoals: <span style="color:var(--color-blue); font-weight:700;">${escapeHtml(String(sf.shape_analysis_sentences_count ?? sasList.length))}</span></div>
-              <div>Cohort Tests: enc=${escapeHtml(String(authTests.encryption_tests ?? 0))} | nonce=${escapeHtml(String(authTests.nonce_tests ?? 0))} | chan=${escapeHtml(String(authTests.channel_tests ?? 0))}</div>
-            </div>
-          </div>
-        </div>
-
-        <div style="font-family:var(--mono); font-size:11px; font-weight:700; color:var(--text-main); margin-top:6px;">
-          PER-PRESKELETON SHAPE &amp; AGREEMENT BREAKDOWN (FROM *_shapes.txt)
-        </div>
-        <table class="sec-table">
-          <thead>
-            <tr>
-              <th>Skeleton</th>
-              <th>POV Role</th>
-              <th>Query Type</th>
-              <th>Realized Shapes</th>
-              <th>Peer Interaction</th>
-              <th>Parameter Agreement</th>
-              <th>Role Reflection</th>
-            </tr>
-          </thead>
-          <tbody>${skelRowsHtml}</tbody>
-        </table>
-        ${sasBlockHtml}
-      `;
-    }
-
-    // =========================================================================
-    // Part D: Off-Main-Thread CSV Analytics (Live) via Inline Web Worker
+    // TOP VIEW 3: Global Statistics (Off-Main-Thread Worker + 6 Monochrome Graphs)
     // =========================================================================
     let analyticsWorker = null;
     let latestCsvRows = [];
     let latestCsvHeaders = [];
     let latestCsvPath = '';
+    let latestAnalyticsData = null;
     let csvRefreshTimer = null;
 
     const WORKER_SOURCE = `
@@ -23347,11 +23892,8 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
         const eligibleRows = rows.filter(r => isTrue(r.is_eligible));
         const ineligibleRows = rows.filter(r => !isTrue(r.is_eligible));
         const verifiedRows = eligibleRows.filter(r => (r.status || '').toUpperCase() === 'VERIFIED');
-        const partialRows = eligibleRows.filter(r => (r.status || '').toUpperCase() === 'PARTIAL');
-        const failedRows = eligibleRows.filter(r => (r.status || '').toUpperCase() === 'FAILED');
         const zeroShotRows = verifiedRows.filter(r => isTrue(r.zero_shot_passed));
 
-        // Tier counts
         const tierCounts = { GOLD: 0, SILVER: 0, BRONZE: 0, REJECTED: 0 };
         eligibleRows.forEach(r => {
           const t = (r.quality_tier || 'REJECTED').toUpperCase();
@@ -23359,163 +23901,123 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           else tierCounts.REJECTED++;
         });
 
-        // Intake Funnel
-        const gateCounts = {
-          'Tier 0 Header Filter': 0,
-          'Stage 1c Applicability Gate': 0,
-          'Stage 2 Verbatim Slice Gate': 0,
-          'Eligible -> FAILED': failedRows.length,
-          'Eligible -> PARTIAL': partialRows.length,
-          'Eligible -> VERIFIED': verifiedRows.length
-        };
+        let tier0Filtered = 0;
+        let stage1cFiltered = 0;
+        let stage2Filtered = 0;
         ineligibleRows.forEach(r => {
-          const g = r.rejection_gate || 'Stage 1c Applicability Gate';
-          if (gateCounts[g] !== undefined) gateCounts[g]++;
-          else gateCounts['Stage 1c Applicability Gate']++;
+          const g = String(r.rejection_gate || '').toLowerCase();
+          if (g.includes('tier 0') || g.includes('header')) tier0Filtered++;
+          else if (g.includes('stage 2') || g.includes('slice')) stage2Filtered++;
+          else stage1cFiltered++;
+        });
+        const passedTier0 = totalRows - tier0Filtered;
+        const passedStage1c = passedTier0 - stage1cFiltered;
+
+        const funnel = [
+          { label: 'Total Scanned', count: totalRows, filter: 'ALL' },
+          { label: 'Passed Tier 0', count: passedTier0, filter: 'ALL' },
+          { label: 'Passed Stage 1c', count: passedStage1c, filter: 'ALL' },
+          { label: 'Stage 2 Eligible', count: eligibleRows.length, filter: 'ALL' },
+          { label: 'Verified (CPSA4)', count: verifiedRows.length, filter: 'VERIFIED' },
+          { label: 'GOLD Quality', count: tierCounts.GOLD, filter: 'GOLD' }
+        ];
+
+        const repairBins = { 'Zero-Shot (0)': 0, '1-2 Repairs': 0, '3-5 Repairs': 0, '6+ Repairs': 0, 'Failed': 0 };
+        eligibleRows.forEach(r => {
+          if ((r.status || '').toUpperCase() !== 'VERIFIED') { repairBins['Failed']++; return; }
+          const rep = toNum(r.total_repairs);
+          if (rep === 0) repairBins['Zero-Shot (0)']++;
+          else if (rep <= 2) repairBins['1-2 Repairs']++;
+          else if (rep <= 5) repairBins['3-5 Repairs']++;
+          else repairBins['6+ Repairs']++;
         });
 
-        // Security Findings counts on Verified/Eligible
-        const authCounts = { MUTUAL_PEER_INTERACTION: 0, UNILATERAL_PARTIAL: 0, LOCAL_ONLY: 0, NO_REALIZED_SHAPES: 0 };
-        const agreeCounts = { FULL_AGREEMENT: 0, DISAGREEMENT_DETECTED: 0, NO_PEER_STRANDS: 0 };
-        const secCounts = { ALL_SECRETS_PROTECTED: 0, SECRECY_LEAK_DETECTED: 0, NO_SECRECY_CLAIMS_TESTED: 0 };
-        const reflCounts = { DISTINCT_PEERS: 0, ROLE_REFLECTION_POSSIBLE: 0 };
-        let anomalyProtocols = 0;
-
+        const secSummary = {
+          mutualAuth: 0, unilateralOrLocal: 0, fullAgree: 0,
+          disagreement: 0, secrecyOk: 0, secrecyLeak: 0,
+          reflection: 0, zeroAnomalies: 0
+        };
         eligibleRows.forEach(r => {
           const ap = (r.authentication_profile || '').toUpperCase();
-          if (ap === 'MUTUAL_MULTI_STRAND' || ap === 'MUTUAL_PEER_INTERACTION') authCounts.MUTUAL_PEER_INTERACTION++;
-          else if (ap === 'UNILATERAL_AUTHENTICATED' || ap === 'UNILATERAL_PARTIAL' || ap === 'CONDITIONAL_BRANCHED_AUTHENTICATION') authCounts.UNILATERAL_PARTIAL++;
-          else if (ap === 'UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE' || ap === 'LOCAL_ONLY') authCounts.LOCAL_ONLY++;
-          else if (ap === 'NON_EXECUTABLE' || ap === 'NO_REALIZED_SHAPES') authCounts.NO_REALIZED_SHAPES++;
-
+          if (ap === 'MUTUAL_MULTI_STRAND' || ap === 'MUTUAL_PEER_INTERACTION') secSummary.mutualAuth++;
+          else if (ap && ap !== 'NON_EXECUTABLE' && ap !== 'NO_REALIZED_SHAPES') secSummary.unilateralOrLocal++;
           const ag = (r.parameter_agreement_status || '').toUpperCase();
-          if (ag === 'FULL_PARAMETER_AGREEMENT' || ag === 'FULL_AGREEMENT') agreeCounts.FULL_AGREEMENT++;
-          else if (ag === 'PRINCIPAL_DISAGREEMENT_MITM_OR_UKS' || ag === 'PARAMETER_DISAGREEMENT_DETECTED' || ag === 'DISAGREEMENT_DETECTED') agreeCounts.DISAGREEMENT_DETECTED++;
-          else if (ag === 'NOT_APPLICABLE_SINGLE_STRAND' || ag === 'NO_PEER_STRANDS') agreeCounts.NO_PEER_STRANDS++;
-
+          if (ag === 'FULL_PARAMETER_AGREEMENT' || ag === 'FULL_AGREEMENT') secSummary.fullAgree++;
+          else if (ag.includes('DISAGREEMENT')) secSummary.disagreement++;
           const sc = (r.secrecy_status || '').toUpperCase();
-          if (sc === 'SECRECY_PROVED' || sc === 'ALL_SECRETS_PROTECTED') secCounts.ALL_SECRETS_PROTECTED++;
-          else if (sc === 'SECRECY_LEAK_DETECTED' || sc === 'PARTIAL_SECRECY') secCounts.SECRECY_LEAK_DETECTED++;
-          else if (sc === 'NOT_APPLICABLE_NO_LISTENER' || sc === 'NO_SECRECY_CLAIMS_TESTED') secCounts.NO_SECRECY_CLAIMS_TESTED++;
-
+          if (sc === 'SECRECY_PROVED' || sc === 'ALL_SECRETS_PROTECTED') secSummary.secrecyOk++;
+          else if (sc.includes('LEAK') || sc === 'PARTIAL_SECRECY') secSummary.secrecyLeak++;
           const rf = (r.role_reflection_status || '').toUpperCase();
-          if (rf === 'NO_REFLECTION' || rf === 'DISTINCT_PEERS') reflCounts.DISTINCT_PEERS++;
-          else if (rf === 'SAME_ROLE_REFLECTION_DETECTED' || rf === 'ROLE_REFLECTION_POSSIBLE') reflCounts.ROLE_REFLECTION_POSSIBLE++;
-
-          if (toNum(r.anomalies_count) > 0) anomalyProtocols++;
+          if (rf.includes('REFLECTION')) secSummary.reflection++;
+          if ((r.status || '').toUpperCase() === 'VERIFIED' && toNum(r.anomalies_count) === 0) secSummary.zeroAnomalies++;
         });
 
-        // Completion steps histogram
-        const stepBins = { '1 (Zero-Shot)': 0, '2-3 Steps': 0, '4-6 Steps': 0, '7-10 Steps': 0, '11+ Steps': 0, 'Unverified': 0 };
-        eligibleRows.forEach(r => {
-          if ((r.status || '').toUpperCase() !== 'VERIFIED') {
-            stepBins['Unverified']++;
-            return;
-          }
-          const st = toNum(r.total_completion_steps);
-          if (st <= 1) stepBins['1 (Zero-Shot)']++;
-          else if (st <= 3) stepBins['2-3 Steps']++;
-          else if (st <= 6) stepBins['4-6 Steps']++;
-          else if (st <= 10) stepBins['7-10 Steps']++;
-          else stepBins['11+ Steps']++;
-        });
-
-        // Per-eligible protocol repair breakdown & cohort tests & scale
-        const repairSeries = eligibleRows.slice(-25).map(r => ({
-          label: r.rfc_id,
-          protocol: r.protocol_name || r.rfc_id,
-          schema: toNum(r.schema_repairs),
-          roletran: toNum(r.roletran_repairs),
-          solver: toNum(r.solver_repairs),
-          searcher: toNum(r.searcher_invocations)
-        }));
-
-        const cohortSeries = eligibleRows.slice(-25).map(r => ({
-          label: r.rfc_id,
-          protocol: r.protocol_name || r.rfc_id,
-          enc: toNum(r.encryption_tests_count),
-          nonce: toNum(r.nonce_tests_count),
-          chan: toNum(r.channel_tests_count)
-        }));
-
-        const scaleSeries = eligibleRows.slice(-25).map(r => ({
-          label: r.rfc_id,
-          protocol: r.protocol_name || r.rfc_id,
-          roles: toNum(r.role_count),
-          skeletons: toNum(r.preskeleton_count),
-          anomalies: toNum(r.anomalies_count),
-          sas: toNum(r.shape_analysis_sentences_count)
-        }));
-
-        // State-space scatter
-        const stateScatter = eligibleRows.map(r => ({
-          rfc_id: r.rfc_id,
-          protocol: r.protocol_name || r.rfc_id,
-          x: toNum(r.explored_skeletons_count),
-          y: toNum(r.shapes_count),
-          size: Math.max(4, Math.min(11, 3 + toNum(r.preskeleton_count) * 1.5)),
-          tier: (r.quality_tier || 'REJECTED').toUpperCase()
-        }));
-
-        // Duration vs Slice Lines scatter
-        const durationScatter = eligibleRows.map(r => ({
-          rfc_id: r.rfc_id,
-          protocol: r.protocol_name || r.rfc_id,
-          x: toNum(r.sliced_lines_count),
-          y: toNum(r.duration_seconds),
-          tier: (r.quality_tier || 'REJECTED').toUpperCase()
-        }));
-
-        // Cost & Token breakdown by role
-        const roleTotals = {
-          Router: { cost: 0, tokens: 0 },
-          Extraction: { cost: 0, tokens: 0 },
-          Searcher: { cost: 0, tokens: 0 },
-          Repair: { cost: 0, tokens: 0 }
+        const roles = {
+          Router: { cost: 0, tokens: 0, calls: 0 },
+          Extraction: { cost: 0, tokens: 0, calls: 0 },
+          Searcher: { cost: 0, tokens: 0, calls: 0 },
+          Repair: { cost: 0, tokens: 0, calls: 0 }
         };
-        let totalCostUsd = 0;
+        let totalCost = 0;
         let totalTokens = 0;
+        let totalCalls = 0;
+
         rows.forEach(r => {
-          roleTotals.Router.cost += toNum(r.router_cost_usd);
-          roleTotals.Router.tokens += toNum(r.router_total_tokens);
-          roleTotals.Extraction.cost += toNum(r.extraction_cost_usd);
-          roleTotals.Extraction.tokens += toNum(r.extraction_total_tokens);
-          roleTotals.Searcher.cost += toNum(r.query_cost_usd);
-          roleTotals.Searcher.tokens += toNum(r.query_total_tokens);
-          roleTotals.Repair.cost += toNum(r.repair_cost_usd);
-          roleTotals.Repair.tokens += toNum(r.repair_total_tokens);
-          totalCostUsd += toNum(r.total_cost_usd);
+          roles.Router.cost += toNum(r.router_cost_usd);
+          roles.Router.tokens += toNum(r.router_tokens || r.router_total_tokens);
+          roles.Router.calls += toNum(r.router_calls);
+
+          roles.Extraction.cost += toNum(r.extraction_cost_usd);
+          roles.Extraction.tokens += toNum(r.extraction_tokens || r.extraction_total_tokens);
+          roles.Extraction.calls += toNum(r.extraction_calls);
+
+          roles.Searcher.cost += toNum(r.query_cost_usd);
+          roles.Searcher.tokens += toNum(r.query_tokens || r.query_total_tokens);
+          roles.Searcher.calls += toNum(r.query_calls);
+
+          roles.Repair.cost += toNum(r.repair_cost_usd);
+          roles.Repair.tokens += toNum(r.repair_tokens || r.repair_total_tokens);
+          roles.Repair.calls += toNum(r.repair_calls);
+
+          totalCost += toNum(r.total_cost_usd);
           totalTokens += toNum(r.total_tokens);
+          totalCalls += toNum(r.total_calls);
         });
 
-        // Cumulative timeline over rows
+        // Any residual cost/tokens not in the 4 legacy CSV role columns belongs to Distiller
+        const accountedCost = roles.Router.cost + roles.Extraction.cost + roles.Searcher.cost + roles.Repair.cost;
+        const accountedTok = roles.Router.tokens + roles.Extraction.tokens + roles.Searcher.tokens + roles.Repair.tokens;
+        const accountedCalls = roles.Router.calls + roles.Extraction.calls + roles.Searcher.calls + roles.Repair.calls;
+        const residCost = Math.max(0, totalCost - accountedCost);
+        const residTok = Math.max(0, totalTokens - accountedTok);
+        const residCalls = Math.max(0, totalCalls - accountedCalls);
+        if (residCost > 0.00001 || residTok > 0) {
+          roles.Distiller = { cost: residCost, tokens: residTok, calls: residCalls };
+        }
+
+        const topCostly = eligibleRows.slice().sort((a, b) => toNum(b.total_cost_usd) - toNum(a.total_cost_usd)).slice(0, 8).map(r => ({
+          rfc_id: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          cost: toNum(r.total_cost_usd),
+          repairs: toNum(r.total_repairs),
+          tier: (r.quality_tier || 'REJECTED').toUpperCase()
+        }));
+
         let cumVerified = 0;
         let cumGold = 0;
         let cumCost = 0;
-        const timeline = rows.map((r, idx) => {
+        const timeline = rows.map((r, i) => {
           if ((r.status || '').toUpperCase() === 'VERIFIED') cumVerified++;
           if ((r.quality_tier || '').toUpperCase() === 'GOLD') cumGold++;
           cumCost += toNum(r.total_cost_usd);
-          return {
-            index: idx + 1,
-            rfc_id: r.rfc_id,
-            verified: cumVerified,
-            gold: cumGold,
-            cost: cumCost
-          };
+          return { index: i + 1, rfc_id: r.rfc_id, verified: cumVerified, gold: cumGold, cost: cumCost };
         });
 
-        const avgSteps = eligibleRows.length
-          ? (eligibleRows.reduce((a, r) => a + toNum(r.total_completion_steps), 0) / eligibleRows.length)
+        const avgDur = eligibleRows.length
+          ? (eligibleRows.reduce((s, r) => s + toNum(r.duration_seconds), 0) / eligibleRows.length)
           : 0;
         const avgRepairs = eligibleRows.length
-          ? (eligibleRows.reduce((a, r) => a + toNum(r.total_repairs), 0) / eligibleRows.length)
-          : 0;
-        const avgEligDur = eligibleRows.length
-          ? (eligibleRows.reduce((a, r) => a + toNum(r.duration_seconds), 0) / eligibleRows.length)
-          : 0;
-        const avgIneligDur = ineligibleRows.length
-          ? (ineligibleRows.reduce((a, r) => a + toNum(r.duration_seconds), 0) / ineligibleRows.length)
+          ? (eligibleRows.reduce((s, r) => s + toNum(r.total_repairs), 0) / eligibleRows.length)
           : 0;
 
         self.postMessage({
@@ -23528,27 +24030,20 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
             passRate: eligibleRows.length ? ((verifiedRows.length / eligibleRows.length) * 100).toFixed(1) : '0.0',
             zeroShotRate: eligibleRows.length ? ((zeroShotRows.length / eligibleRows.length) * 100).toFixed(1) : '0.0',
             tierCounts,
-            fullAgreeCount: agreeCounts.FULL_AGREEMENT,
-            secretsProtectedCount: secCounts.ALL_SECRETS_PROTECTED,
-            anomalyProtocols,
-            avgSteps: avgSteps.toFixed(2),
-            avgRepairs: avgRepairs.toFixed(2),
-            totalCostUsd: totalCostUsd.toFixed(4),
-            avgVerifiedCost: verifiedRows.length ? (totalCostUsd / verifiedRows.length).toFixed(4) : '0.0000',
+            secSummary,
+            totalCost,
             totalTokens,
-            avgEligDur: avgEligDur.toFixed(1),
-            avgIneligDur: avgIneligDur.toFixed(2)
+            totalCalls,
+            avgVerifiedCost: verifiedRows.length ? (totalCost / verifiedRows.length) : 0,
+            avgDur: avgDur.toFixed(1),
+            avgRepairs: avgRepairs.toFixed(2)
           },
-          gateCounts,
+          funnel,
           tierCounts,
-          securityMatrix: { authCounts, agreeCounts, secCounts, reflCounts },
-          stepBins,
-          repairSeries,
-          cohortSeries,
-          scaleSeries,
-          stateScatter,
-          durationScatter,
-          roleTotals,
+          repairBins,
+          secSummary,
+          roles,
+          topCostly,
           timeline
         });
       };
@@ -23559,8 +24054,9 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
       try {
         const blob = new Blob([WORKER_SOURCE], { type: 'application/javascript' });
         analyticsWorker = new Worker(URL.createObjectURL(blob));
-        analyticsWorker.onmessage = (e) => {
-          renderCsvAnalyticsResult(e.data);
+        analyticsWorker.onmessage = e => {
+          latestAnalyticsData = e.data;
+          renderGlobalStatistics(e.data);
         };
       } catch (err) {
         analyticsWorker = null;
@@ -23568,17 +24064,186 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
     }
     initAnalyticsWorker();
 
+    function aggregateCsvRowsSync(rows) {
+      function toNum(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+      function isTrue(v) { return String(v || '').trim().toLowerCase() === 'true'; }
+      const totalRows = rows.length;
+      const eligibleRows = rows.filter(r => isTrue(r.is_eligible));
+      const ineligibleRows = rows.filter(r => !isTrue(r.is_eligible));
+      const verifiedRows = eligibleRows.filter(r => (r.status || '').toUpperCase() === 'VERIFIED');
+      const zeroShotRows = verifiedRows.filter(r => isTrue(r.zero_shot_passed));
+
+      const tierCounts = { GOLD: 0, SILVER: 0, BRONZE: 0, REJECTED: 0 };
+      eligibleRows.forEach(r => {
+        const t = (r.quality_tier || 'REJECTED').toUpperCase();
+        if (tierCounts[t] !== undefined) tierCounts[t]++;
+        else tierCounts.REJECTED++;
+      });
+
+      let tier0Filtered = 0, stage1cFiltered = 0, stage2Filtered = 0;
+      ineligibleRows.forEach(r => {
+        const g = String(r.rejection_gate || '').toLowerCase();
+        if (g.includes('tier 0') || g.includes('header')) tier0Filtered++;
+        else if (g.includes('stage 2') || g.includes('slice')) stage2Filtered++;
+        else stage1cFiltered++;
+      });
+      const passedTier0 = totalRows - tier0Filtered;
+      const passedStage1c = passedTier0 - stage1cFiltered;
+
+      const funnel = [
+        { label: 'Total Scanned', count: totalRows, filter: 'ALL' },
+        { label: 'Passed Tier 0', count: passedTier0, filter: 'ALL' },
+        { label: 'Passed Stage 1c', count: passedStage1c, filter: 'ALL' },
+        { label: 'Stage 2 Eligible', count: eligibleRows.length, filter: 'ALL' },
+        { label: 'Verified (CPSA4)', count: verifiedRows.length, filter: 'VERIFIED' },
+        { label: 'GOLD Quality', count: tierCounts.GOLD, filter: 'GOLD' }
+      ];
+
+      const repairBins = { 'Zero-Shot (0)': 0, '1-2 Repairs': 0, '3-5 Repairs': 0, '6+ Repairs': 0, 'Failed': 0 };
+      eligibleRows.forEach(r => {
+        if ((r.status || '').toUpperCase() !== 'VERIFIED') { repairBins['Failed']++; return; }
+        const rep = toNum(r.total_repairs);
+        if (rep === 0) repairBins['Zero-Shot (0)']++;
+        else if (rep <= 2) repairBins['1-2 Repairs']++;
+        else if (rep <= 5) repairBins['3-5 Repairs']++;
+        else repairBins['6+ Repairs']++;
+      });
+
+      const secSummary = {
+        mutualAuth: 0, unilateralOrLocal: 0, fullAgree: 0,
+        disagreement: 0, secrecyOk: 0, secrecyLeak: 0,
+        reflection: 0, zeroAnomalies: 0
+      };
+      eligibleRows.forEach(r => {
+        const ap = (r.authentication_profile || '').toUpperCase();
+        if (ap === 'MUTUAL_MULTI_STRAND' || ap === 'MUTUAL_PEER_INTERACTION') secSummary.mutualAuth++;
+        else if (ap && ap !== 'NON_EXECUTABLE' && ap !== 'NO_REALIZED_SHAPES') secSummary.unilateralOrLocal++;
+        const ag = (r.parameter_agreement_status || '').toUpperCase();
+        if (ag === 'FULL_PARAMETER_AGREEMENT' || ag === 'FULL_AGREEMENT') secSummary.fullAgree++;
+        else if (ag.includes('DISAGREEMENT')) secSummary.disagreement++;
+        const sc = (r.secrecy_status || '').toUpperCase();
+        if (sc === 'SECRECY_PROVED' || sc === 'ALL_SECRETS_PROTECTED') secSummary.secrecyOk++;
+        else if (sc.includes('LEAK') || sc === 'PARTIAL_SECRECY') secSummary.secrecyLeak++;
+        const rf = (r.role_reflection_status || '').toUpperCase();
+        if (rf.includes('REFLECTION')) secSummary.reflection++;
+        if ((r.status || '').toUpperCase() === 'VERIFIED' && toNum(r.anomalies_count) === 0) secSummary.zeroAnomalies++;
+      });
+
+      const roles = {
+        Router: { cost: 0, tokens: 0, calls: 0 },
+        Extraction: { cost: 0, tokens: 0, calls: 0 },
+        Searcher: { cost: 0, tokens: 0, calls: 0 },
+        Repair: { cost: 0, tokens: 0, calls: 0 }
+      };
+      let totalCost = 0, totalTokens = 0, totalCalls = 0;
+
+      rows.forEach(r => {
+        roles.Router.cost += toNum(r.router_cost_usd);
+        roles.Router.tokens += toNum(r.router_tokens || r.router_total_tokens);
+        roles.Router.calls += toNum(r.router_calls);
+        roles.Extraction.cost += toNum(r.extraction_cost_usd);
+        roles.Extraction.tokens += toNum(r.extraction_tokens || r.extraction_total_tokens);
+        roles.Extraction.calls += toNum(r.extraction_calls);
+        roles.Searcher.cost += toNum(r.query_cost_usd);
+        roles.Searcher.tokens += toNum(r.query_tokens || r.query_total_tokens);
+        roles.Searcher.calls += toNum(r.query_calls);
+        roles.Repair.cost += toNum(r.repair_cost_usd);
+        roles.Repair.tokens += toNum(r.repair_tokens || r.repair_total_tokens);
+        roles.Repair.calls += toNum(r.repair_calls);
+        totalCost += toNum(r.total_cost_usd);
+        totalTokens += toNum(r.total_tokens);
+        totalCalls += toNum(r.total_calls);
+      });
+
+      const accountedCost = roles.Router.cost + roles.Extraction.cost + roles.Searcher.cost + roles.Repair.cost;
+      const accountedTok = roles.Router.tokens + roles.Extraction.tokens + roles.Searcher.tokens + roles.Repair.tokens;
+      const accountedCalls = roles.Router.calls + roles.Extraction.calls + roles.Searcher.calls + roles.Repair.calls;
+      const residCost = Math.max(0, totalCost - accountedCost);
+      const residTok = Math.max(0, totalTokens - accountedTok);
+      const residCalls = Math.max(0, totalCalls - accountedCalls);
+      if (residCost > 0.00001 || residTok > 0) {
+        roles.Distiller = { cost: residCost, tokens: residTok, calls: residCalls };
+      }
+
+      const topCostly = eligibleRows.slice().sort((a, b) => toNum(b.total_cost_usd) - toNum(a.total_cost_usd)).slice(0, 8).map(r => ({
+        rfc_id: r.rfc_id,
+        protocol: r.protocol_name || r.rfc_id,
+        cost: toNum(r.total_cost_usd),
+        repairs: toNum(r.total_repairs),
+        tier: (r.quality_tier || 'REJECTED').toUpperCase()
+      }));
+
+      let cumVerified = 0, cumGold = 0, cumCost = 0;
+      const timeline = rows.map((r, i) => {
+        if ((r.status || '').toUpperCase() === 'VERIFIED') cumVerified++;
+        if ((r.quality_tier || '').toUpperCase() === 'GOLD') cumGold++;
+        cumCost += toNum(r.total_cost_usd);
+        return { index: i + 1, rfc_id: r.rfc_id, verified: cumVerified, gold: cumGold, cost: cumCost };
+      });
+
+      const avgDur = eligibleRows.length
+        ? (eligibleRows.reduce((s, r) => s + toNum(r.duration_seconds), 0) / eligibleRows.length)
+        : 0;
+      const avgRepairs = eligibleRows.length
+        ? (eligibleRows.reduce((s, r) => s + toNum(r.total_repairs), 0) / eligibleRows.length)
+        : 0;
+
+      return {
+        kpis: {
+          totalRows,
+          eligibleCount: eligibleRows.length,
+          ineligibleCount: ineligibleRows.length,
+          verifiedCount: verifiedRows.length,
+          zeroShotCount: zeroShotRows.length,
+          passRate: eligibleRows.length ? ((verifiedRows.length / eligibleRows.length) * 100).toFixed(1) : '0.0',
+          zeroShotRate: eligibleRows.length ? ((zeroShotRows.length / eligibleRows.length) * 100).toFixed(1) : '0.0',
+          tierCounts,
+          secSummary,
+          totalCost,
+          totalTokens,
+          totalCalls,
+          avgVerifiedCost: verifiedRows.length ? (totalCost / verifiedRows.length) : 0,
+          avgDur: avgDur.toFixed(1),
+          avgRepairs: avgRepairs.toFixed(2)
+        },
+        funnel,
+        tierCounts,
+        repairBins,
+        secSummary,
+        roles,
+        topCostly,
+        timeline
+      };
+    }
+
+    function dispatchAnalyticsRows(rows) {
+      if (analyticsWorker) {
+        try {
+          analyticsWorker.postMessage({ rows });
+          return;
+        } catch (err) {}
+      }
+      latestAnalyticsData = aggregateCsvRowsSync(rows || []);
+      renderGlobalStatistics(latestAnalyticsData);
+    }
+
     function scheduleCsvAnalyticsRefresh() {
       clearTimeout(csvRefreshTimer);
       csvRefreshTimer = setTimeout(() => {
-        const analyticsTab = document.getElementById('tab-analytics');
-        if (analyticsTab && analyticsTab.style.display !== 'none') {
-          refreshCsvAnalytics(false);
-        }
-      }, 280);
+        if (topMode === 'global') refreshCsvAnalytics(false);
+      }, 300);
     }
 
     function refreshCsvAnalytics(force) {
+      if (isClientFolderLoaded || isStandaloneClientMode) {
+        const lbl = document.getElementById('analytics-csv-label');
+        if (lbl) {
+          lbl.innerText = `${latestCsvPath || 'client_folder/pipeline_runs.csv'} · ${latestCsvRows.length} rows · ${latestCsvHeaders.length} columns`;
+        }
+        dispatchAnalyticsRows(latestCsvRows);
+        renderCsvTableUI();
+        return;
+      }
       fetch('api/csv')
         .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
         .then(data => {
@@ -23588,482 +24253,1417 @@ def run_visualizer_in_background(host: str = "127.0.0.1", port: int = 8080):
           const lbl = document.getElementById('analytics-csv-label');
           if (lbl) {
             const shortPath = latestCsvPath ? latestCsvPath.split('/').slice(-2).join('/') : 'pipeline_runs.csv';
-            lbl.innerText = `${shortPath} (${latestCsvRows.length} rows, ${latestCsvHeaders.length} columns)`;
+            lbl.innerText = `${shortPath} · ${latestCsvRows.length} rows · ${latestCsvHeaders.length} columns`;
             lbl.title = latestCsvPath;
           }
-          if (analyticsWorker) {
-            analyticsWorker.postMessage({ rows: latestCsvRows });
-          }
-          renderCustomExplorerUI();
+          dispatchAnalyticsRows(latestCsvRows);
           renderCsvTableUI();
         })
         .catch(() => {});
     }
 
-    function svgHorizontalBars(entries, colors) {
-      const vals = entries.map(e => e[1]);
-      const maxVal = Math.max(1, ...vals);
-      const w = 360;
-      const rowH = 24;
-      const h = Math.max(150, entries.length * rowH + 16);
-      let rowsSvg = '';
-      entries.forEach(([label, count], i) => {
-        const y = 10 + i * rowH;
-        const barW = Math.round((count / maxVal) * 165);
-        const col = (colors && colors[i % colors.length]) || '#58a6ff';
-        rowsSvg += `
-          <text x="4" y="${y + 13}" fill="#c9d1d9" font-family="monospace" font-size="10">${escapeHtml(String(label).slice(0, 24))}</text>
-          <rect x="158" y="${y + 3}" width="${Math.max(2, barW)}" height="13" fill="${col}" rx="2" />
-          <text x="${164 + Math.max(2, barW)}" y="${y + 13}" fill="#8b949e" font-family="monospace" font-size="10">${count}</text>
+    function svgBarChart(items, fallbackColors, clickHandlerName) {
+      const maxVal = Math.max(1, ...items.map(it => Number(it.value || 0)));
+      const w = 520;
+      const rowH = 26;
+      const h = Math.max(165, items.length * rowH + 14);
+      const labelW = 165;
+      const barMaxW = 240;
+
+      let svg = '';
+      items.forEach((it, i) => {
+        const y = 8 + i * rowH;
+        const val = Number(it.value || 0);
+        const bw = val > 0 ? Math.max(3, Math.round((val / maxVal) * barMaxW)) : 0;
+        const fill = it.color || fallbackColors[i % fallbackColors.length];
+        const clickAttr = it.clickArg && clickHandlerName ? `style="cursor:pointer" onclick="${clickHandlerName}('${escapeHtml(it.clickArg).replace(/'/g, "\\'")}')"` : '';
+        svg += `
+          <g ${clickAttr}>
+            <rect x="0" y="${y}" width="${w}" height="${rowH - 2}" fill="transparent"></rect>
+            <text x="4" y="${y + 15}" fill="#d4d4d8" font-family="-apple-system,sans-serif" font-size="11">${escapeHtml(String(it.label).slice(0, 26))}</text>
+            <rect x="${labelW}" y="${y + 5}" width="${barMaxW}" height="12" fill="#1c1c1e" rx="3"></rect>
+            ${bw > 0 ? `<rect x="${labelW}" y="${y + 5}" width="${bw}" height="12" fill="${fill}" fill-opacity="0.92" rx="3"></rect>` : ''}
+            <text x="${labelW + barMaxW + 10}" y="${y + 15}" fill="#a1a1aa" font-family="monospace" font-size="11">${escapeHtml(it.rightText || String(val))}</text>
+            <title>${escapeHtml(it.tooltip || `${it.label}: ${it.rightText || val}`)}</title>
+          </g>
         `;
       });
-      return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${rowsSvg}</svg>`;
+      return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${svg}</svg>`;
     }
 
-    function svgStackedVerticalBars(items, keys, colors, legendLabels) {
-      if (!items || !items.length) {
-        return `<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">Waiting for eligible RFC runs...</div>`;
+    function filterProtocolListByTier(tierOrStatus) {
+      const sel = document.getElementById('tab-status-filter');
+      if (sel) {
+        const val = ['ALL', 'GOLD', 'SILVER', 'BRONZE', 'VERIFIED', 'PARTIAL', 'FAILED'].includes(tierOrStatus) ? tierOrStatus : 'ALL';
+        sel.value = val;
       }
-      const w = 380;
-      const h = 185;
-      const plotH = 130;
-      const baseY = 145;
-      const totals = items.map(it => keys.reduce((s, k) => s + (Number(it[k]) || 0), 0));
-      const maxTot = Math.max(1, ...totals);
-      const slotW = Math.max(10, Math.min(34, Math.floor((w - 40) / items.length)));
-
-      let barsSvg = `<line x1="28" y1="${baseY}" x2="${w - 8}" y2="${baseY}" stroke="#30363d" />`;
-      items.forEach((it, idx) => {
-        const x = 32 + idx * slotW;
-        let curY = baseY;
-        keys.forEach((k, kIdx) => {
-          const v = Number(it[k]) || 0;
-          if (v <= 0) return;
-          const bh = Math.max(2, Math.round((v / maxTot) * plotH));
-          curY -= bh;
-          barsSvg += `<rect x="${x}" y="${curY}" width="${Math.max(6, slotW - 4)}" height="${bh}" fill="${colors[kIdx]}"><title>${escapeHtml(it.label)} (${escapeHtml(it.protocol || '')}) - ${legendLabels[kIdx]}: ${v}</title></rect>`;
-        });
-        barsSvg += `<text x="${x + 3}" y="${baseY + 11}" fill="#8b949e" font-family="monospace" font-size="8.5" transform="rotate(28 ${x + 3} ${baseY + 11})">${escapeHtml(String(it.label).replace('RFC', ''))}</text>`;
-      });
-
-      let legSvg = '';
-      legendLabels.forEach((lbl, i) => {
-        const lx = 8 + i * 92;
-        legSvg += `<rect x="${lx}" y="4" width="8" height="8" fill="${colors[i]}" /><text x="${lx + 11}" y="11" fill="#8b949e" font-family="monospace" font-size="9">${escapeHtml(lbl)}</text>`;
-      });
-      return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${legSvg}${barsSvg}</svg>`;
+      setTopMode('protocol');
+      recomputeVisibleTabs();
     }
 
-    function svgScatterPlot(points, xLabel, yLabel) {
-      if (!points || !points.length) {
-        return `<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">Waiting for eligible RFC runs...</div>`;
-      }
-      const w = 380;
-      const h = 185;
-      const padL = 38, padR = 14, padT = 14, padB = 28;
-      const plotW = w - padL - padR;
-      const plotH = h - padT - padB;
-      const maxX = Math.max(1, ...points.map(p => Number(p.x) || 0));
-      const maxY = Math.max(1, ...points.map(p => Number(p.y) || 0));
-      const tierCol = { GOLD: '#3fb950', SILVER: '#58a6ff', BRONZE: '#d29922', REJECTED: '#f85149', VERIFIED: '#3fb950', PARTIAL: '#d29922', FAILED: '#f85149' };
+    const NUMERIC_CSV_COLS = [
+      'run_index', 'sliced_lines_count', 'role_count', 'preskeleton_count', 'scm_lines_count',
+      'shapes_count', 'explored_skeletons_count', 'total_completion_steps', 'total_repairs',
+      'roletran_repairs', 'solver_repairs', 'searcher_invocations', 'encryption_tests_count',
+      'nonce_tests_count', 'channel_tests_count', 'anomalies_count', 'duration_seconds',
+      'total_cost_usd', 'total_tokens', 'extraction_cost_usd', 'repair_cost_usd'
+    ];
 
-      let dots = `
-        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#30363d" />
-        <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#30363d" />
-        <text x="${padL + plotW / 2}" y="${h - 4}" fill="#8b949e" font-family="monospace" font-size="9.5" text-anchor="middle">${escapeHtml(xLabel)} (max ${maxX.toFixed(0)})</text>
-        <text x="10" y="${padT + plotH / 2}" fill="#8b949e" font-family="monospace" font-size="9.5" text-anchor="middle" transform="rotate(-90 10 ${padT + plotH / 2})">${escapeHtml(yLabel)}</text>
+    function fmtExplorerTick(val, col) {
+      const n = Number(val || 0);
+      const c = String(col || '').toLowerCase();
+      if (c.includes('usd') || c.includes('cost')) {
+        if (n === 0) return '$0';
+        if (Math.abs(n) < 0.01) return `$${n.toFixed(4)}`;
+        if (Math.abs(n) < 1) return `$${n.toFixed(3)}`;
+        return `$${n.toFixed(2)}`;
+      }
+      if (c.includes('duration')) {
+        return n >= 100 ? `${Math.round(n)}s` : `${n.toFixed(1)}s`;
+      }
+      if (Math.abs(n) >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+      if (Math.abs(n) >= 1000) return `${(n / 1000).toFixed(1)}k`;
+      if (Math.abs(n - Math.round(n)) < 0.01) return String(Math.round(n));
+      return n.toFixed(1);
+    }
+
+    function shortExplorerLabel(p) {
+      const s = String(p.protocol || p.rfc_id || '').trim();
+      if (!s) return '';
+      return s.length > 9 ? s.slice(0, 9) : s;
+    }
+
+    function updateExplorerReadout(el) {
+      const box = document.getElementById('explorer-readout');
+      if (!box || !el) return;
+      const msg = el.getAttribute('data-readout');
+      if (msg) box.innerText = msg;
+    }
+
+    function sortExplorerPoints(pts, sortBy) {
+      const arr = pts.slice();
+      if (sortBy === 'x_desc') return arr.sort((a, b) => (b.rawX - a.rawX) || (a.seqIdx - b.seqIdx));
+      if (sortBy === 'y_desc') return arr.sort((a, b) => (b.rawY - a.rawY) || (a.seqIdx - b.seqIdx));
+      if (sortBy === 'y_asc') return arr.sort((a, b) => (a.rawY - b.rawY) || (a.seqIdx - b.seqIdx));
+      if (sortBy === 'seq') return arr.sort((a, b) => a.seqIdx - b.seqIdx);
+      return arr.sort((a, b) => (a.rawX - b.rawX) || (a.seqIdx - b.seqIdx));
+    }
+
+    function buildScatterSvg(xCol, yCol, eligOnly, logX, logY, chartType = 'scatter', sortBy = 'x_asc') {
+      const src = eligOnly
+        ? latestCsvRows.filter(r => String(r.is_eligible || '').toLowerCase() === 'true')
+        : latestCsvRows;
+      if (!src.length) return '<div class="empty-placeholder">No matching CSV rows.</div>';
+
+      const w = 560, h = 256, padL = 58, padR = 18, padT = 24, padB = 48;
+      const pw = w - padL - padR, ph = h - padT - padB;
+      const mapX = v => logX ? Math.log10(1 + Math.max(0, v)) : Math.max(0, v);
+      const mapY = v => logY ? Math.log10(1 + Math.max(0, v)) : Math.max(0, v);
+      const invX = mv => logX ? Math.max(0, Math.pow(10, mv) - 1) : mv;
+      const invY = mv => logY ? Math.max(0, Math.pow(10, mv) - 1) : mv;
+
+      const valFor = (r, idx, col) => col === 'run_index' ? (idx + 1) : (parseFloat(r[col] || 0) || 0);
+      const pts = src.map((r, idx) => {
+        const rx = valFor(r, idx, xCol);
+        const ry = valFor(r, idx, yCol);
+        return {
+          seqIdx: idx,
+          rfc_id: r.rfc_id,
+          protocol: r.protocol_name || r.rfc_id,
+          rawX: rx,
+          rawY: ry,
+          mx: mapX(rx),
+          my: mapY(ry),
+          tier: (r.quality_tier || 'REJECTED').toUpperCase()
+        };
+      });
+      const maxX = Math.max(0.0001, ...pts.map(p => p.mx));
+      const maxY = Math.max(0.0001, ...pts.map(p => p.my));
+
+      const useRankX = (chartType === 'bar') || (chartType === 'line' && sortBy !== 'x_asc');
+      const sorted = sortExplorerPoints(pts, sortBy);
+      const sortNames = {
+        x_asc: `${xCol} (asc)`,
+        x_desc: `${xCol} (desc)`,
+        y_desc: `${yCol} (desc)`,
+        y_asc: `${yCol} (asc)`,
+        seq: 'Run Order'
+      };
+      const xAxisText = useRankX
+        ? `Protocols sorted by ${sortNames[sortBy] || xCol} (n=${sorted.length})`
+        : `${xCol}${logX ? ' (log scale)' : ''}`;
+
+      let grid = `
+        <circle cx="${w - 220}" cy="10" r="4" fill="#eab308"></circle><text x="${w - 212}" y="13" fill="#a1a1aa" font-family="monospace" font-size="9.5">GOLD</text>
+        <circle cx="${w - 170}" cy="10" r="4" fill="#cbd5e1"></circle><text x="${w - 162}" y="13" fill="#a1a1aa" font-family="monospace" font-size="9.5">SILVER</text>
+        <circle cx="${w - 112}" cy="10" r="4" fill="#d97706"></circle><text x="${w - 104}" y="13" fill="#a1a1aa" font-family="monospace" font-size="9.5">BRONZE</text>
+        <circle cx="${w - 56}" cy="10" r="4" fill="#ff453a"></circle><text x="${w - 48}" y="13" fill="#a1a1aa" font-family="monospace" font-size="9.5">FAIL</text>
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + ph}" stroke="rgba(255,255,255,0.22)" />
+        <line x1="${padL}" y1="${padT + ph}" x2="${padL + pw}" y2="${padT + ph}" stroke="rgba(255,255,255,0.22)" />
       `;
-      points.forEach(p => {
-        const cx = padL + ((Number(p.x) || 0) / maxX) * plotW;
-        const cy = padT + plotH - ((Number(p.y) || 0) / maxY) * plotH;
-        const r = p.size || 5;
-        const c = tierCol[p.tier] || '#58a6ff';
-        dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${c}" fill-opacity="0.82" stroke="#0d1117" stroke-width="1"><title>${escapeHtml(p.rfc_id)} (${escapeHtml(p.protocol || '')})\n${xLabel}: ${p.x} | ${yLabel}: ${p.y} | Tier: ${p.tier}</title></circle>`;
-      });
-      return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${dots}</svg>`;
+
+      // 5 Horizontal gridlines + numeric Y-axis ticks
+      for (let t = 0; t <= 4; t++) {
+        const frac = t / 4;
+        const gy = padT + ph - frac * ph;
+        const tickRaw = invY(frac * maxY);
+        if (t > 0) {
+          grid += `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${padL + pw}" y2="${gy.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3" />`;
+        }
+        grid += `<line x1="${padL - 3}" y1="${gy.toFixed(1)}" x2="${padL}" y2="${gy.toFixed(1)}" stroke="rgba(255,255,255,0.25)" />`;
+        grid += `<text x="${padL - 6}" y="${(gy + 3).toFixed(1)}" fill="#a1a1aa" font-family="monospace" font-size="9.5" text-anchor="end">${escapeHtml(fmtExplorerTick(tickRaw, yCol))}</text>`;
+      }
+
+      // X-axis ticks: coordinate numeric scale vs ranked protocol labels
+      if (!useRankX) {
+        for (let t = 0; t <= 4; t++) {
+          const frac = t / 4;
+          const gx = padL + frac * pw;
+          const tickRaw = invX(frac * maxX);
+          if (t > 0) {
+            grid += `<line x1="${gx.toFixed(1)}" y1="${padT}" x2="${gx.toFixed(1)}" y2="${padT + ph}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3" />`;
+          }
+          grid += `<line x1="${gx.toFixed(1)}" y1="${(padT + ph).toFixed(1)}" x2="${gx.toFixed(1)}" y2="${(padT + ph + 4).toFixed(1)}" stroke="rgba(255,255,255,0.25)" />`;
+          grid += `<text x="${gx.toFixed(1)}" y="${(padT + ph + 15).toFixed(1)}" fill="#a1a1aa" font-family="monospace" font-size="9.5" text-anchor="${t === 0 ? 'start' : (t === 4 ? 'end' : 'middle')}">${escapeHtml(fmtExplorerTick(tickRaw, xCol))}</text>`;
+        }
+      } else {
+        const slotW = pw / Math.max(1, sorted.length);
+        const step = Math.max(1, Math.ceil(sorted.length / 8));
+        sorted.forEach((p, idx) => {
+          if (idx % step !== 0 && idx !== sorted.length - 1) return;
+          const gx = padL + (idx + 0.5) * slotW;
+          grid += `<line x1="${gx.toFixed(1)}" y1="${(padT + ph).toFixed(1)}" x2="${gx.toFixed(1)}" y2="${(padT + ph + 4).toFixed(1)}" stroke="rgba(255,255,255,0.25)" />`;
+          grid += `<text x="${gx.toFixed(1)}" y="${(padT + ph + 15).toFixed(1)}" fill="#a1a1aa" font-family="monospace" font-size="9" text-anchor="middle">${escapeHtml(shortExplorerLabel(p))}</text>`;
+        });
+      }
+
+      grid += `
+        <text x="${padL + pw / 2}" y="${h - 7}" fill="#d4d4d8" font-family="monospace" font-size="10" text-anchor="middle">${escapeHtml(xAxisText)}</text>
+        <text x="12" y="${padT + ph / 2}" fill="#d4d4d8" font-family="monospace" font-size="10" text-anchor="middle" transform="rotate(-90 12 ${padT + ph / 2})">${escapeHtml(yCol)}${logY ? ' (log)' : ''}</text>
+      `;
+
+      const fillMap = { GOLD: '#eab308', SILVER: '#cbd5e1', BRONZE: '#d97706', VERIFIED: '#30d158', PARTIAL: '#ff9f0a', REJECTED: '#ff453a', FAILED: '#ff453a' };
+      const mkReadout = p => `${p.rfc_id} (${p.protocol}) · ${p.tier} · ${xCol}: ${fmtExplorerTick(p.rawX, xCol)} · ${yCol}: ${fmtExplorerTick(p.rawY, yCol)} · Click to open`;
+      let bodySvg = '';
+
+      if (chartType === 'bar') {
+        const slotW = pw / Math.max(1, sorted.length);
+        const barW = Math.max(3, Math.min(28, slotW * 0.72));
+        bodySvg = sorted.map((p, i) => {
+          const cx = padL + (i + 0.5) * slotW;
+          const bx = cx - barW / 2;
+          const rawBh = (p.my / maxY) * ph;
+          const bh = p.rawY > 0 ? Math.max(2, rawBh) : 0;
+          const by = padT + ph - bh;
+          const fill = fillMap[p.tier] || '#38bdf8';
+          const safeId = escapeHtml(p.rfc_id).replace(/'/g, "\\'");
+          const ro = escapeHtml(mkReadout(p));
+          const hitH = Math.max(bh, 14);
+          const hitY = Math.min(by, padT + ph - hitH);
+          return `<g style="cursor:pointer" data-readout="${ro}" onmouseenter="updateExplorerReadout(this)" onclick="openProtocolByIdentifier('${safeId}')">` +
+            `<rect x="${bx.toFixed(1)}" y="${hitY.toFixed(1)}" width="${barW.toFixed(1)}" height="${hitH.toFixed(1)}" fill="transparent"></rect>` +
+            (bh > 0 ? `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" fill="${fill}" fill-opacity="0.92" rx="2"></rect>` : '') +
+            `<title>${escapeHtml(p.rfc_id)} (${escapeHtml(p.protocol)})\n${xCol}: ${p.rawX} | ${yCol}: ${p.rawY} | Tier: ${p.tier}\nClick to open protocol</title></g>`;
+        }).join('');
+      } else if (chartType === 'line') {
+        const slotW = pw / Math.max(1, sorted.length);
+        const coords = sorted.map((p, i) => ({
+          p,
+          cx: useRankX ? (padL + (i + 0.5) * slotW) : (padL + (p.mx / maxX) * pw),
+          cy: padT + ph - (p.my / maxY) * ph
+        }));
+        const polyPts = coords.map(c => `${c.cx.toFixed(1)},${c.cy.toFixed(1)}`).join(' ');
+        const areaSvg = coords.length >= 2
+          ? `<polygon points="${coords[0].cx.toFixed(1)},${(padT + ph).toFixed(1)} ${polyPts} ${coords[coords.length - 1].cx.toFixed(1)},${(padT + ph).toFixed(1)}" fill="rgba(56,189,248,0.08)"></polygon>` +
+            `<polyline fill="none" stroke="#38bdf8" stroke-width="1.8" points="${polyPts}"></polyline>`
+          : '';
+        const markersSvg = coords.map(({ p, cx, cy }) => {
+          const fill = fillMap[p.tier] || '#38bdf8';
+          const safeId = escapeHtml(p.rfc_id).replace(/'/g, "\\'");
+          const ro = escapeHtml(mkReadout(p));
+          return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4.5" fill="${fill}" fill-opacity="0.95" stroke="#000000" stroke-width="1" style="cursor:pointer" data-readout="${ro}" onmouseenter="updateExplorerReadout(this)" onclick="openProtocolByIdentifier('${safeId}')"><title>${escapeHtml(p.rfc_id)} (${escapeHtml(p.protocol)})\n${xCol}: ${p.rawX} | ${yCol}: ${p.rawY} | Tier: ${p.tier}\nClick to open protocol</title></circle>`;
+        }).join('');
+        bodySvg = areaSvg + markersSvg;
+      } else {
+        bodySvg = sorted.map(p => {
+          const cx = padL + (p.mx / maxX) * pw;
+          const cy = padT + ph - (p.my / maxY) * ph;
+          const fill = fillMap[p.tier] || '#38bdf8';
+          const safeId = escapeHtml(p.rfc_id).replace(/'/g, "\\'");
+          const ro = escapeHtml(mkReadout(p));
+          return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${fill}" fill-opacity="0.92" stroke="#000000" stroke-width="1" style="cursor:pointer" data-readout="${ro}" onmouseenter="updateExplorerReadout(this)" onclick="openProtocolByIdentifier('${safeId}')"><title>${escapeHtml(p.rfc_id)} (${escapeHtml(p.protocol)})\n${xCol}: ${p.rawX} | ${yCol}: ${p.rawY} | Tier: ${p.tier}\nClick to open protocol</title></circle>`;
+        }).join('');
+      }
+
+      return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${grid}${bodySvg}</svg>`;
+    }
+
+    function refreshScatterChart() {
+      const wrap = document.getElementById('global-scatter-wrap');
+      if (!wrap) return;
+      const chartType = document.getElementById('custom-chart-type')?.value || 'scatter';
+      const sortEl = document.getElementById('custom-sort-by');
+      if (sortEl) {
+        sortEl.disabled = (chartType === 'scatter');
+        sortEl.title = (chartType === 'scatter') ? 'Scatter plots use fixed (X, Y) coordinates' : '';
+      }
+      const sortBy = sortEl?.value || 'x_asc';
+      const xCol = document.getElementById('custom-x-col')?.value || 'explored_skeletons_count';
+      const yCol = document.getElementById('custom-y-col')?.value || 'total_cost_usd';
+      const eligOnly = document.getElementById('custom-elig-only')?.checked ?? true;
+      const logX = document.getElementById('custom-log-x')?.checked ?? true;
+      const logY = document.getElementById('custom-log-y')?.checked ?? false;
+      wrap.innerHTML = buildScatterSvg(xCol, yCol, eligOnly, logX, logY, chartType, sortBy);
     }
 
     function svgTimelineChart(timeline) {
-      if (!timeline || !timeline.length) {
-        return `<div style="color:var(--text-muted); font-family:var(--mono); font-size:11px;">No CSV rows recorded yet.</div>`;
-      }
-      const w = 380, h = 185, padL = 34, padR = 14, padT = 18, padB = 24;
-      const plotW = w - padL - padR;
-      const plotH = h - padT - padB;
+      if (!timeline || !timeline.length) return '<div class="empty-placeholder">No CSV rows yet.</div>';
+      const w = 520, h = 230, padL = 38, padR = 48, padT = 26, padB = 32;
+      const pw = w - padL - padR, ph = h - padT - padB;
       const n = Math.max(1, timeline.length - 1);
-      const maxV = Math.max(1, timeline[timeline.length - 1].verified, timeline[timeline.length - 1].gold);
+      const last = timeline[timeline.length - 1];
+      const maxCount = Math.max(1, last.verified, last.gold);
+      const maxCost = Math.max(0.0001, last.cost);
 
-      const verPts = timeline.map((pt, i) => {
-        const x = padL + (i / n) * plotW;
-        const y = padT + plotH - (pt.verified / maxV) * plotH;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      }).join(' ');
-      const goldPts = timeline.map((pt, i) => {
-        const x = padL + (i / n) * plotW;
-        const y = padT + plotH - (pt.gold / maxV) * plotH;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      }).join(' ');
+      const verPts = timeline.map((p, i) => `${(padL + (i / n) * pw).toFixed(1)},${(padT + ph - (p.verified / maxCount) * ph).toFixed(1)}`).join(' ');
+      const goldPts = timeline.map((p, i) => `${(padL + (i / n) * pw).toFixed(1)},${(padT + ph - (p.gold / maxCount) * ph).toFixed(1)}`).join(' ');
+      const costPts = timeline.map((p, i) => `${(padL + (i / n) * pw).toFixed(1)},${(padT + ph - (p.cost / maxCost) * ph).toFixed(1)}`).join(' ');
 
       return `
         <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">
-          <rect x="8" y="3" width="8" height="8" fill="#58a6ff" /><text x="20" y="10" fill="#8b949e" font-family="monospace" font-size="9">Cumulative Verified (${timeline[timeline.length - 1].verified})</text>
-          <rect x="180" y="3" width="8" height="8" fill="#3fb950" /><text x="192" y="10" fill="#8b949e" font-family="monospace" font-size="9">Cumulative GOLD (${timeline[timeline.length - 1].gold})</text>
-          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#30363d" />
-          <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#30363d" />
-          <polyline fill="none" stroke="#58a6ff" stroke-width="2" points="${verPts}" />
-          <polyline fill="none" stroke="#3fb950" stroke-width="2" points="${goldPts}" />
-          <text x="${padL + plotW / 2}" y="${h - 4}" fill="#8b949e" font-family="monospace" font-size="9.5" text-anchor="middle">RFC Run Sequence (1 .. ${timeline.length})</text>
+          <line x1="12" y1="10" x2="26" y2="10" stroke="#30d158" stroke-width="2.2" />
+          <text x="32" y="13" fill="#d4d4d8" font-family="monospace" font-size="10">Verified (${last.verified})</text>
+          <line x1="130" y1="10" x2="144" y2="10" stroke="#eab308" stroke-width="2.2" />
+          <text x="150" y="13" fill="#d4d4d8" font-family="monospace" font-size="10">GOLD (${last.gold})</text>
+          <line x1="230" y1="10" x2="244" y2="10" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4,3" />
+          <text x="250" y="13" fill="#a1a1aa" font-family="monospace" font-size="10">Spend (${fmtUsd(last.cost)})</text>
+
+          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + ph}" stroke="rgba(255,255,255,0.2)" />
+          <line x1="${padL}" y1="${padT + ph}" x2="${padL + pw}" y2="${padT + ph}" stroke="rgba(255,255,255,0.2)" />
+          <polyline fill="none" stroke="#30d158" stroke-width="2.2" points="${verPts}" />
+          <polyline fill="none" stroke="#eab308" stroke-width="2" points="${goldPts}" />
+          <polyline fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="4,3" points="${costPts}" />
+
+          <text x="${padL + pw / 2}" y="${h - 6}" fill="#a1a1aa" font-family="monospace" font-size="10" text-anchor="middle">Run Sequence (1 .. ${timeline.length})</text>
         </svg>
       `;
     }
 
-    function renderCsvAnalyticsResult(d) {
+    function renderGlobalModelsCard() {
+      const el = document.getElementById('global-models-grid');
+      const sub = document.getElementById('global-timeout-sub');
+      if (sub) sub.innerText = `CPSA Cap: ${defaultModelCfg.cpsa_timeout_seconds || 15}s`;
+      if (!el) return;
+
+      const observed = { router: new Set(), distiller: new Set(), extraction: new Set(), query: new Set(), repair: new Set() };
+      const scanRoles = roles => {
+        if (!roles || typeof roles !== 'object') return;
+        ['router', 'distiller', 'extraction', 'query', 'repair'].forEach(k => {
+          const r = roles[k];
+          if (r && r.model && (Number(r.calls || 0) > 0 || Number(r.total_tokens || 0) > 0 || !isStandaloneClientMode)) {
+            if (r.model) observed[k].add(r.model);
+          }
+        });
+      };
+      if (latestBatchCostTelemetry && latestBatchCostTelemetry.roles) scanRoles(latestBatchCostTelemetry.roles);
+      acceptedTabs.forEach(t => scanRoles(t.cost_telemetry && t.cost_telemetry.roles));
+
+      const resolveModel = (roleKey, fallbackVal) => {
+        const list = Array.from(observed[roleKey] || []);
+        if (list.length > 0) return { val: list.join(', '), src: 'Observed in run telemetry' };
+        return { val: fallbackVal || '--', src: 'Configured YAML default' };
+      };
+
+      const items = [
+        ['Router / Gatekeeper', resolveModel('router', defaultModelCfg.router_model)],
+        ['Book Splitter', { val: defaultModelCfg.splitter_model || '--', src: 'Configured YAML default' }],
+        ['RFC-Style Distiller', resolveModel('distiller', defaultModelCfg.distill_model)],
+        ['CPSA Extraction', resolveModel('extraction', defaultModelCfg.extraction_model)],
+        ['KB Searcher / RAG', resolveModel('query', defaultModelCfg.query_model)],
+        ['Compiler Repair', resolveModel('repair', defaultModelCfg.repair_model)],
+        ['Think Synthesizer', { val: defaultModelCfg.think_model || '--', src: 'Configured YAML default' }]
+      ];
+      el.innerHTML = items.map(([k, info]) => `
+        <div class="kv-box" title="${escapeHtml(`${info.src}: ${info.val}`)}">
+          <div class="kv-k">${escapeHtml(k)}</div>
+          <div class="kv-v">${escapeHtml(info.val)}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderGlobalStatistics(d) {
       if (!d || !d.kpis) return;
       const k = d.kpis;
+      renderGlobalModelsCard();
+
       const kpiEl = document.getElementById('analytics-kpis');
       if (kpiEl) {
         kpiEl.innerHTML = `
           <div class="kpi-card">
-            <div class="kpi-label">Total RFCs in CSV</div>
+            <div class="kpi-label">Protocols Processed</div>
             <div class="kpi-val">${k.totalRows}</div>
-            <div class="kpi-sub"><span style="color:var(--color-green);">${k.eligibleCount} Eligible</span> | ${k.ineligibleCount} Filtered</div>
+            <div class="kpi-sub">${k.eligibleCount} Eligible · ${k.ineligibleCount} Filtered</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Verification Pass Rate</div>
-            <div class="kpi-val" style="color:var(--color-green);">${k.passRate}%</div>
-            <div class="kpi-sub">${k.verifiedCount}/${k.eligibleCount} Verified | ${k.zeroShotRate}% Zero-Shot</div>
+            <div class="kpi-label">Verified &amp; Zero-Shot</div>
+            <div class="kpi-val">${k.passRate}%</div>
+            <div class="kpi-sub">${k.verifiedCount}/${k.eligibleCount} Verified · ${k.zeroShotRate}% Zero-Shot</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Quality Tiers (Structural)</div>
-            <div class="kpi-val"><span style="color:#3fb950;" data-tooltip-key="GOLD">${k.tierCounts.GOLD}G</span> / <span style="color:#58a6ff;" data-tooltip-key="SILVER">${k.tierCounts.SILVER}S</span> / <span style="color:#d29922;" data-tooltip-key="BRONZE">${k.tierCounts.BRONZE}B</span></div>
+            <div class="kpi-label">Quality Tiers</div>
+            <div class="kpi-val">${k.tierCounts.GOLD}G · ${k.tierCounts.SILVER}S · ${k.tierCounts.BRONZE}B</div>
             <div class="kpi-sub">${k.tierCounts.REJECTED} Rejected</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">CPSA Security Verdicts</div>
-            <div class="kpi-val" style="color:var(--color-blue);">${k.fullAgreeCount} Agree</div>
-            <div class="kpi-sub">${k.secretsProtectedCount} Secrecy OK | ${k.anomalyProtocols} w/ Anomalies</div>
+            <div class="kpi-label">Security Verdicts</div>
+            <div class="kpi-val">${k.secSummary.secrecyOk} Secrecy OK</div>
+            <div class="kpi-sub">${k.secSummary.fullAgree} Full Agree · ${k.secSummary.secrecyLeak} Leaks</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Avg Steps / Repairs</div>
-            <div class="kpi-val">${k.avgSteps} steps</div>
-            <div class="kpi-sub">Avg ${k.avgRepairs} repairs per eligible RFC</div>
+            <div class="kpi-label">Total Batch Cost</div>
+            <div class="kpi-val">${fmtUsd(k.totalCost)}</div>
+            <div class="kpi-sub">${fmtUsd(k.avgVerifiedCost)}/verified · ${Number(k.totalTokens || 0).toLocaleString()} tok</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Cumulative CSV Cost</div>
-            <div class="kpi-val" style="color:var(--color-green);">$${k.totalCostUsd}</div>
-            <div class="kpi-sub">$${k.avgVerifiedCost} / verified protocol</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Total Tokens Consumed</div>
-            <div class="kpi-val">${Number(k.totalTokens || 0).toLocaleString()}</div>
-            <div class="kpi-sub">Across Router, Extraction, Searcher, Repair</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Avg Synthesis Time</div>
-            <div class="kpi-val">${k.avgEligDur}s</div>
-            <div class="kpi-sub">Eligible avg (${k.avgIneligDur}s Ineligible avg)</div>
+            <div class="kpi-label">Avg Runtime &amp; Repairs</div>
+            <div class="kpi-val">${k.avgDur}s</div>
+            <div class="kpi-sub">${k.avgRepairs} avg repairs per eligible spec</div>
           </div>
         `;
+      }
+
+      // Role cost grid (uses authoritative CSV roles + optional batchDistiller telemetry)
+      const rcGrid = document.getElementById('global-role-cost-grid');
+      const rcSub = document.getElementById('global-cost-sub');
+      if (rcSub) rcSub.innerText = `${k.totalCalls} calls · ${Number(k.totalTokens || 0).toLocaleString()} tok · ${fmtUsd(k.totalCost)}`;
+      if (rcGrid) {
+        const rEntries = Object.entries(d.roles || {});
+        rcGrid.innerHTML = rEntries.map(([rName, obj]) => `
+          <div class="kv-box">
+            <div class="kv-k">${escapeHtml(rName)}</div>
+            <div class="kv-v">${fmtUsd(obj.cost)} · ${(obj.tokens / 1000).toFixed(1)}k tok</div>
+          </div>
+        `).join('');
       }
 
       const chartsEl = document.getElementById('analytics-charts');
       if (!chartsEl) return;
 
-      const sm = d.securityMatrix;
-      const secEntries = [
-        ['Auth: Mutual Peer', sm.authCounts.MUTUAL_PEER_INTERACTION],
-        ['Auth: Unilateral/Local', sm.authCounts.UNILATERAL_PARTIAL + sm.authCounts.LOCAL_ONLY],
-        ['Agree: Full Agreement', sm.agreeCounts.FULL_AGREEMENT],
-        ['Agree: Disagreement', sm.agreeCounts.DISAGREEMENT_DETECTED],
-        ['Secrecy: Protected', sm.secCounts.ALL_SECRETS_PROTECTED],
-        ['Secrecy: Leak Found', sm.secCounts.SECRECY_LEAK_DETECTED],
-        ['Peers: Distinct', sm.reflCounts.DISTINCT_PEERS],
-        ['Peers: Reflection', sm.reflCounts.ROLE_REFLECTION_POSSIBLE]
+      const totDenom = Math.max(1, k.totalRows);
+      const funnelColors = ['#64748b', '#38bdf8', '#0a84ff', '#6366f1', '#30d158', '#eab308'];
+      const funnelItems = d.funnel.map((f, idx) => ({
+        label: f.label,
+        value: f.count,
+        color: funnelColors[idx % funnelColors.length],
+        rightText: `${f.count} (${((f.count / totDenom) * 100).toFixed(0)}%)`,
+        clickArg: f.filter
+      }));
+
+      const convBinColor = {
+        'Zero-Shot (0)': '#30d158',
+        '1-2 Repairs': '#38bdf8',
+        '3-5 Repairs': '#0a84ff',
+        '6+ Repairs': '#ff9f0a',
+        'Failed': '#ff453a'
+      };
+      const convItems = [
+        { label: 'Tier: GOLD', value: d.tierCounts.GOLD, color: '#eab308', rightText: String(d.tierCounts.GOLD), clickArg: 'GOLD' },
+        { label: 'Tier: SILVER', value: d.tierCounts.SILVER, color: '#cbd5e1', rightText: String(d.tierCounts.SILVER), clickArg: 'SILVER' },
+        { label: 'Tier: BRONZE', value: d.tierCounts.BRONZE, color: '#d97706', rightText: String(d.tierCounts.BRONZE), clickArg: 'BRONZE' },
+        { label: 'Tier: REJECTED', value: d.tierCounts.REJECTED, color: '#ff453a', rightText: String(d.tierCounts.REJECTED), clickArg: 'FAILED' },
+        ...Object.entries(d.repairBins).map(([lbl, cnt]) => ({
+          label: `Conv: ${lbl}`,
+          value: cnt,
+          color: convBinColor[lbl] || '#71717a',
+          rightText: String(cnt)
+        }))
       ];
 
-      const roleCostEntries = Object.entries(d.roleTotals || {}).map(([role, obj]) => [
-        `${role} ($${obj.cost.toFixed(4)})`,
-        Math.round(obj.tokens / 1000)
-      ]);
+      const s = d.secSummary;
+      const secItems = [
+        { label: 'Mutual Peer Auth', value: s.mutualAuth, color: '#30d158', rightText: String(s.mutualAuth), clickArg: 'GOLD' },
+        { label: 'Unilateral / Local', value: s.unilateralOrLocal, color: '#38bdf8', rightText: String(s.unilateralOrLocal), clickArg: 'SILVER' },
+        { label: 'Full Agreement', value: s.fullAgree, color: '#30d158', rightText: String(s.fullAgree) },
+        { label: 'Param Disagreement', value: s.disagreement, color: '#ff9f0a', rightText: String(s.disagreement) },
+        { label: 'Secrecy Proved', value: s.secrecyOk, color: '#30d158', rightText: String(s.secrecyOk) },
+        { label: 'Secrecy Leak', value: s.secrecyLeak, color: '#ff453a', rightText: String(s.secrecyLeak) },
+        { label: 'Role Reflection', value: s.reflection, color: '#ff9f0a', rightText: String(s.reflection) },
+        { label: 'Zero Anomalies', value: s.zeroAnomalies, color: '#64d2ff', rightText: String(s.zeroAnomalies) }
+      ];
+
+      const tierBarColor = { GOLD: '#eab308', SILVER: '#cbd5e1', BRONZE: '#d97706', REJECTED: '#ff453a', VERIFIED: '#30d158', FAILED: '#ff453a' };
+      const topCostItems = (d.topCostly || []).map(item => ({
+        label: item.rfc_id,
+        value: item.cost,
+        color: tierBarColor[item.tier] || '#38bdf8',
+        rightText: `${fmtUsd(item.cost)} · ${item.repairs}r`,
+        clickArg: item.rfc_id,
+        tooltip: `${item.rfc_id} (${item.protocol})\nCost: ${fmtUsd(item.cost)} · Repairs: ${item.repairs} · Tier: ${item.tier}`
+      }));
+
+      const prevType = document.getElementById('custom-chart-type')?.value || 'scatter';
+      const prevSort = document.getElementById('custom-sort-by')?.value || 'x_asc';
+      const prevX = document.getElementById('custom-x-col')?.value || 'explored_skeletons_count';
+      const prevY = document.getElementById('custom-y-col')?.value || 'total_cost_usd';
+      const prevElig = document.getElementById('custom-elig-only')?.checked ?? true;
+      const prevLogX = document.getElementById('custom-log-x')?.checked ?? true;
+      const prevLogY = document.getElementById('custom-log-y')?.checked ?? false;
 
       chartsEl.innerHTML = `
         <div class="chart-card">
-          <div class="chart-title"><span>1. Intake Funnel &amp; Gate Breakdown</span><span class="chart-sub">All CSV Rows</span></div>
-          <div class="chart-svg-wrap">${svgHorizontalBars(Object.entries(d.gateCounts), ['#8b949e', '#d29922', '#bc8cff', '#f85149', '#d29922', '#3fb950'])}</div>
+          <div class="panel-card-head">
+            <span class="panel-card-title">1. Intake &amp; Verification Funnel</span>
+            <span class="panel-card-sub">Counts &amp; % of total · click to filter</span>
+          </div>
+          <div class="chart-svg-wrap">${svgBarChart(funnelItems, funnelColors, 'filterProtocolListByTier')}</div>
         </div>
 
         <div class="chart-card">
-          <div class="chart-title"><span>2. Structural Quality Tier Distribution</span><span class="chart-sub">Decoupled from Flaws</span></div>
-          <div class="chart-svg-wrap">${svgHorizontalBars(Object.entries(d.tierCounts), ['#3fb950', '#58a6ff', '#d29922', '#f85149'])}</div>
+          <div class="panel-card-head">
+            <span class="panel-card-title">2. Quality Tiers &amp; Repair Convergence</span>
+            <span class="panel-card-sub">Structural proof vs loop depth</span>
+          </div>
+          <div class="chart-svg-wrap">${svgBarChart(convItems, ['#eab308', '#cbd5e1', '#d97706', '#ff453a'], 'filterProtocolListByTier')}</div>
         </div>
 
         <div class="chart-card">
-          <div class="chart-title"><span>3. CPSA 4.4.9 Formal Security Verdicts</span><span class="chart-sub">Agreement / Secrecy / Reflection</span></div>
-          <div class="chart-svg-wrap">${svgHorizontalBars(secEntries, ['#3fb950', '#d29922', '#3fb950', '#f85149', '#3fb950', '#f85149', '#58a6ff', '#d29922'])}</div>
+          <div class="panel-card-head">
+            <span class="panel-card-title">3. Formal Security Verdicts</span>
+            <span class="panel-card-sub">CPSA auth, agreement, secrecy &amp; reflection</span>
+          </div>
+          <div class="chart-svg-wrap">${svgBarChart(secItems, ['#30d158', '#38bdf8', '#ff9f0a', '#ff453a'], 'filterProtocolListByTier')}</div>
         </div>
 
         <div class="chart-card">
-          <div class="chart-title"><span>4. Self-Healing Convergence Steps</span><span class="chart-sub">total_completion_steps</span></div>
-          <div class="chart-svg-wrap">${svgHorizontalBars(Object.entries(d.stepBins), ['#3fb950', '#58a6ff', '#bc8cff', '#d29922', '#f0883e', '#f85149'])}</div>
+          <div class="panel-card-head">
+            <span class="panel-card-title">4. Costliest Protocols ($ USD &amp; Repairs)</span>
+            <span class="panel-card-sub">Click bar to inspect protocol</span>
+          </div>
+          <div class="chart-svg-wrap">${topCostItems.length ? svgBarChart(topCostItems, ['#38bdf8'], 'openProtocolByIdentifier') : '<div class="empty-placeholder">No eligible cost data yet.</div>'}</div>
         </div>
 
         <div class="chart-card">
-          <div class="chart-title"><span>5. Repair Effort by Stage (Per Protocol)</span><span class="chart-sub">Schema / Roletran / Solver / RAG</span></div>
-          <div class="chart-svg-wrap">${svgStackedVerticalBars(d.repairSeries, ['schema', 'roletran', 'solver', 'searcher'], ['#bc8cff', '#d29922', '#f85149', '#58a6ff'], ['Schema', 'Roletran', 'Solver', 'RAG'])}</div>
-        </div>
-
-        <div class="chart-card">
-          <div class="chart-title"><span>6. State-Space Complexity Scatter</span><span class="chart-sub">Explored Skeletons vs Shapes</span></div>
-          <div class="chart-svg-wrap">${svgScatterPlot(d.stateScatter, 'Explored Skeletons', 'Realized Shapes')}</div>
-        </div>
-
-        <div class="chart-card">
-          <div class="chart-title"><span>7. CPSA Cohort Authentication Tests</span><span class="chart-sub">enc-test / nonce-test / chan-test</span></div>
-          <div class="chart-svg-wrap">${svgStackedVerticalBars(d.cohortSeries, ['enc', 'nonce', 'chan'], ['#58a6ff', '#3fb950', '#bc8cff'], ['enc-test', 'nonce-test', 'chan-test'])}</div>
-        </div>
-
-        <div class="chart-card">
-          <div class="chart-title"><span>8. LLM Role Cost &amp; Token Share (kTok)</span><span class="chart-sub">Router / Extract / Search / Repair</span></div>
-          <div class="chart-svg-wrap">${svgHorizontalBars(roleCostEntries, ['#bc8cff', '#58a6ff', '#d29922', '#3fb950'])}</div>
-        </div>
-
-        <div class="chart-card">
-          <div class="chart-title"><span>9. Synthesis Duration vs RFC Slice Lines</span><span class="chart-sub">Sliced Lines vs Seconds</span></div>
-          <div class="chart-svg-wrap">${svgScatterPlot(d.durationScatter, 'Sliced Lines', 'Duration (s)')}</div>
-        </div>
-
-        <div class="chart-card">
-          <div class="chart-title"><span>10. Live Cumulative Verification Timeline</span><span class="chart-sub">Verified &amp; GOLD Growth</span></div>
-          <div class="chart-svg-wrap">${svgTimelineChart(d.timeline)}</div>
-        </div>
-
-        <div class="chart-card">
-          <div class="chart-title"><span>11. Protocol Scale &amp; Extracted SAS Goals</span><span class="chart-sub">Roles / Skeletons / SAS / Anomalies</span></div>
-          <div class="chart-svg-wrap">${svgStackedVerticalBars(d.scaleSeries, ['roles', 'skeletons', 'sas', 'anomalies'], ['#58a6ff', '#3fb950', '#bc8cff', '#f85149'], ['Roles', 'Skeletons', 'SAS Goals', 'Anomalies'])}</div>
-        </div>
-      `;
-    }
-
-    const NUMERIC_CSV_COLS = [
-      'sliced_lines_count', 'role_count', 'preskeleton_count', 'scm_lines_count',
-      'shapes_count', 'explored_skeletons_count', 'total_completion_steps', 'total_repairs',
-      'roletran_repairs', 'solver_repairs', 'searcher_invocations', 'encryption_tests_count',
-      'nonce_tests_count', 'channel_tests_count', 'shape_analysis_sentences_count',
-      'anomalies_count', 'disagreed_parameters_count', 'duration_seconds', 'total_cost_usd', 'total_tokens'
-    ];
-
-    function renderCustomExplorerUI() {
-      const wrap = document.getElementById('analytics-custom-explorer');
-      if (!wrap) return;
-      const xSel = document.getElementById('custom-x-col')?.value || 'scm_lines_count';
-      const ySel = document.getElementById('custom-y-col')?.value || 'duration_seconds';
-      const eligOnly = document.getElementById('custom-elig-only') ? document.getElementById('custom-elig-only').checked : true;
-
-      const sourceRows = eligOnly
-        ? latestCsvRows.filter(r => String(r.is_eligible || '').toLowerCase() === 'true')
-        : latestCsvRows;
-
-      const pts = sourceRows.map(r => ({
-        rfc_id: r.rfc_id,
-        protocol: r.protocol_name || r.rfc_id,
-        x: parseFloat(r[xSel] || 0) || 0,
-        y: parseFloat(r[ySel] || 0) || 0,
-        tier: (r.quality_tier || r.status || 'REJECTED').toUpperCase()
-      }));
-
-      wrap.innerHTML = `
-        <div class="chart-card">
-          <div class="chart-title">
-            <span>12. Custom 67-Column X/Y Scatter Explorer</span>
-            <div style="display:flex; gap:6px; align-items:center;">
-              <span class="chart-sub">X:</span>
-              <select id="custom-x-col" class="ctrl-select" onchange="renderCustomExplorerUI()">
-                ${NUMERIC_CSV_COLS.map(c => `<option value="${c}" ${c === xSel ? 'selected' : ''}>${c}</option>`).join('')}
+          <div class="panel-card-head">
+            <span class="panel-card-title">5. X/Y Explorer (Log-Scale Capable)</span>
+            <div class="chart-controls">
+              <select id="custom-chart-type" class="select" style="width:82px; font-size:10.5px;" onchange="refreshScatterChart()">
+                <option value="scatter" ${prevType === 'scatter' ? 'selected' : ''}>Scatter</option>
+                <option value="line" ${prevType === 'line' ? 'selected' : ''}>Line</option>
+                <option value="bar" ${prevType === 'bar' ? 'selected' : ''}>Bar</option>
               </select>
-              <span class="chart-sub">Y:</span>
-              <select id="custom-y-col" class="ctrl-select" onchange="renderCustomExplorerUI()">
-                ${NUMERIC_CSV_COLS.map(c => `<option value="${c}" ${c === ySel ? 'selected' : ''}>${c}</option>`).join('')}
+              <select id="custom-sort-by" class="select" style="width:94px; font-size:10.5px;" onchange="refreshScatterChart()" ${prevType === 'scatter' ? 'disabled title="Scatter plots use fixed (X, Y) coordinates"' : ''}>
+                <option value="x_asc" ${prevSort === 'x_asc' ? 'selected' : ''}>Sort: X ↑</option>
+                <option value="x_desc" ${prevSort === 'x_desc' ? 'selected' : ''}>Sort: X ↓</option>
+                <option value="y_desc" ${prevSort === 'y_desc' ? 'selected' : ''}>Sort: Y ↓</option>
+                <option value="y_asc" ${prevSort === 'y_asc' ? 'selected' : ''}>Sort: Y ↑</option>
+                <option value="seq" ${prevSort === 'seq' ? 'selected' : ''}>Sort: Run #</option>
               </select>
-              <label style="font-size:10px; color:var(--text-muted); display:inline-flex; align-items:center; gap:3px;">
-                <input type="checkbox" id="custom-elig-only" ${eligOnly ? 'checked' : ''} onchange="renderCustomExplorerUI()" /> Eligible Only
-              </label>
+              <select id="custom-x-col" class="select" style="width:124px; font-size:10.5px;" onchange="refreshScatterChart()">
+                ${NUMERIC_CSV_COLS.map(c => `<option value="${c}" ${c === prevX ? 'selected' : ''}>X: ${c}</option>`).join('')}
+              </select>
+              <select id="custom-y-col" class="select" style="width:124px; font-size:10.5px;" onchange="refreshScatterChart()">
+                ${NUMERIC_CSV_COLS.map(c => `<option value="${c}" ${c === prevY ? 'selected' : ''}>Y: ${c}</option>`).join('')}
+              </select>
+              <label style="font-size:10.5px; color:var(--text-secondary); display:inline-flex; gap:3px; align-items:center;"><input type="checkbox" id="custom-log-x" ${prevLogX ? 'checked' : ''} onchange="refreshScatterChart()" />Log X</label>
+              <label style="font-size:10.5px; color:var(--text-secondary); display:inline-flex; gap:3px; align-items:center;"><input type="checkbox" id="custom-log-y" ${prevLogY ? 'checked' : ''} onchange="refreshScatterChart()" />Log Y</label>
+              <label style="font-size:10.5px; color:var(--text-secondary); display:inline-flex; gap:3px; align-items:center;"><input type="checkbox" id="custom-elig-only" ${prevElig ? 'checked' : ''} onchange="refreshScatterChart()" />Eligible</label>
             </div>
           </div>
-          <div class="chart-svg-wrap">${svgScatterPlot(pts, xSel, ySel)}</div>
+          <div class="chart-svg-wrap" id="global-scatter-wrap">${buildScatterSvg(prevX, prevY, prevElig, prevLogX, prevLogY, prevType, prevSort)}</div>
+          <div id="explorer-readout" class="mono" style="font-size:10.5px; color:var(--text-muted); border-top:1px solid var(--border-subtle); padding-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Hover a point or bar to inspect exact values; click to open protocol.</div>
+        </div>
+
+        <div class="chart-card">
+          <div class="panel-card-head">
+            <span class="panel-card-title">6. Cumulative Verification &amp; Spend Timeline</span>
+            <span class="panel-card-sub">Across run sequence</span>
+          </div>
+          <div class="chart-svg-wrap">${svgTimelineChart(d.timeline)}</div>
         </div>
       `;
     }
 
     function renderCsvTableUI() {
-      const sec = document.getElementById('analytics-table-section');
-      if (!sec) return;
+      const tbl = document.getElementById('csv-ledger-table');
+      const hd = document.getElementById('csv-table-heading');
+      if (!tbl) return;
       const q = (document.getElementById('csv-table-search')?.value || '').trim().toLowerCase();
       const filtered = latestCsvRows.filter(r => {
         if (!q) return true;
-        return (
-          (r.rfc_id || '').toLowerCase().includes(q) ||
-          (r.protocol_name || '').toLowerCase().includes(q) ||
-          (r.quality_tier || '').toLowerCase().includes(q) ||
-          (r.status || '').toLowerCase().includes(q) ||
-          (r.authentication_profile || '').toLowerCase().includes(q) ||
-          (r.parameter_agreement_status || '').toLowerCase().includes(q) ||
-          (r.secrecy_status || '').toLowerCase().includes(q) ||
-          (r.error_message || '').toLowerCase().includes(q)
-        );
+        return ['rfc_id', 'protocol_name', 'quality_tier', 'status', 'authentication_profile', 'parameter_agreement_status', 'secrecy_status', 'error_message']
+          .some(k => String(r[k] || '').toLowerCase().includes(q));
       });
+      if (hd) hd.innerText = `CSV Ledger (${filtered.length} / ${latestCsvRows.length} rows)`;
 
-      const keyCols = [
+      const cols = [
         'rfc_id', 'is_eligible', 'status', 'quality_tier', 'protocol_name',
-        'total_completion_steps', 'shapes_count', 'authentication_profile',
-        'parameter_agreement_status', 'secrecy_status', 'anomalies_count',
+        'total_repairs', 'shapes_count', 'explored_skeletons_count',
+        'authentication_profile', 'parameter_agreement_status', 'secrecy_status',
         'duration_seconds', 'total_cost_usd', 'error_message'
       ];
-
-      const bodyHtml = filtered.slice(0, 200).map(r => `
-        <tr>
-          <td style="font-weight:700; color:var(--color-blue);">${escapeHtml(r.rfc_id || '')}</td>
-          <td>${escapeHtml(r.is_eligible || '')}</td>
-          <td>${escapeHtml(r.status || '')}</td>
-          <td><span class="sec-pill ${verdictPillClass(r.quality_tier)}" data-tooltip-key="${escapeHtml(r.quality_tier || '')}">${escapeHtml(r.quality_tier || '')}</span></td>
-          <td>${escapeHtml(r.protocol_name || '')}</td>
-          <td>${escapeHtml(r.total_completion_steps || '')}</td>
-          <td>${escapeHtml(r.shapes_count || '')}</td>
-          <td><span class="sec-pill ${verdictPillClass(r.authentication_profile)}" data-tooltip-key="${escapeHtml(r.authentication_profile || '')}">${escapeHtml(r.authentication_profile || '-')}</span></td>
-          <td><span class="sec-pill ${verdictPillClass(r.parameter_agreement_status)}" data-tooltip-key="${escapeHtml(r.parameter_agreement_status || '')}">${escapeHtml(r.parameter_agreement_status || '-')}</span></td>
-          <td><span class="sec-pill ${verdictPillClass(r.secrecy_status)}" data-tooltip-key="${escapeHtml(r.secrecy_status || '')}">${escapeHtml(r.secrecy_status || '-')}</span></td>
-          <td>${escapeHtml(r.anomalies_count || '0')}</td>
-          <td>${escapeHtml(r.duration_seconds || '')}s</td>
-          <td>$${escapeHtml(r.total_cost_usd || '0')}</td>
-          <td style="max-width:340px; white-space:normal; word-break:break-word; color:var(--text-muted);">${escapeHtml(r.error_message || '')}</td>
-        </tr>
-      `).join('');
-
-      sec.innerHTML = `
-        <div class="chart-card">
-          <div class="chart-title">
-            <span>LIVE CSV LEDGER EXPLORER (${filtered.length} matching / ${latestCsvRows.length} total rows)</span>
-            <input type="text" id="csv-table-search" class="ctrl-input" style="width:240px;" placeholder="Filter CSV rows (RFC, tier, verdict, rationale)..." value="${escapeHtml(q)}" oninput="renderCsvTableUI()" />
-          </div>
-          <div style="overflow-x:auto; max-height:340px;">
-            <table class="sec-table">
-              <thead>
-                <tr>${keyCols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr>
-              </thead>
-              <tbody>${bodyHtml || '<tr><td colspan="14" style="color:var(--text-muted);">No matching CSV rows.</td></tr>'}</tbody>
-            </table>
-          </div>
-        </div>
-      `;
+      tbl.querySelector('thead').innerHTML = `<tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr>`;
+      tbl.querySelector('tbody').innerHTML = filtered.slice(0, 250).map(r => {
+        const isElig = String(r.is_eligible || '').toLowerCase() === 'true';
+        const safeId = escapeHtml(r.rfc_id || '').replace(/'/g, "\\'");
+        const clickAttr = isElig ? `class="clickable" onclick="openProtocolByIdentifier('${safeId}')"` : '';
+        return `
+          <tr ${clickAttr}>
+            <td style="color:var(--text); font-weight:600;">${escapeHtml(r.rfc_id || '')}</td>
+            <td>${escapeHtml(r.is_eligible || '')}</td>
+            <td>${escapeHtml(r.status || '')}</td>
+            <td><span class="tier-pill ${escapeHtml(r.quality_tier || '')}" data-tooltip-key="${escapeHtml(r.quality_tier || '')}">${escapeHtml(r.quality_tier || '')}</span></td>
+            <td>${escapeHtml(r.protocol_name || '')}</td>
+            <td>${escapeHtml(r.total_repairs || '0')}</td>
+            <td>${escapeHtml(r.shapes_count || '0')}</td>
+            <td>${escapeHtml(r.explored_skeletons_count || '0')}</td>
+            <td>${escapeHtml(r.authentication_profile || '-')}</td>
+            <td>${escapeHtml(r.parameter_agreement_status || '-')}</td>
+            <td>${escapeHtml(r.secrecy_status || '-')}</td>
+            <td>${escapeHtml(r.duration_seconds || '0')}s</td>
+            <td>$${escapeHtml(r.total_cost_usd || '0')}</td>
+            <td style="max-width:300px; white-space:normal; word-break:break-word; color:var(--text-muted);">${escapeHtml(r.error_message || '')}</td>
+          </tr>
+        `;
+      }).join('') || '<tr><td colspan="14" style="color:var(--text-muted);">No matching CSV rows.</td></tr>';
     }
 
     // =========================================================================
-    // Initial Bootstrap & Named-Event SSE Subscription (Zero Polling Spam!)
+    // Hover Tooltips for Formal CPSA Verdicts & Quality Tiers
     // =========================================================================
-    fetch('api/models')
-      .then(r => r.ok ? r.json() : null)
-      .then(cfg => {
-        if (!cfg) return;
-        defaultModelCfg = Object.assign(defaultModelCfg, cfg);
-        if (cfg.router_model) document.getElementById('step-1-model').innerText = cfg.router_model;
-        if (cfg.extraction_model) document.getElementById('step-2-model').innerText = cfg.extraction_model;
-        if (cfg.repair_model) {
-          const qm = cfg.query_model ? ` + ${cfg.query_model.split('/').pop()}` : '';
-          document.getElementById('step-5-model').innerText = `${cfg.repair_model}${qm}`;
-          document.getElementById('step-6-model').innerText = `cpsa4 + ${cfg.repair_model}`;
-        }
-      })
-      .catch(() => {});
+    const RATING_TOOLTIPS = {
+      GOLD: { title: 'GOLD — Full Multi-Party Interaction', desc: 'Every participant role compiled in CPSA, realized >=1 shape, and interacted with peer strands (>=2 strands per participant POV shape).' },
+      SILVER: { title: 'SILVER — Local / Partial Interaction', desc: 'CPSA compiled and realized shapes across all roles, with at least one POV completing on a single strand without peer proof.' },
+      BRONZE: { title: 'BRONZE — Dead POV Skeleton', desc: 'CPSA exited 0, but one or more participant POV skeletons realized 0 shapes.' },
+      REJECTED: { title: 'REJECTED — Uncompilable Model', desc: 'Failed roletran or cpsa4 compilation within timeout/repair budget.' },
+      PARTIAL: { title: 'PARTIAL — Pre-Flight Passed Only', desc: 'Roletran passed, but CPSA4 solver failed or timed out.' },
+      VERIFIED: { title: 'VERIFIED — Formally Analyzed by CPSA4', desc: 'MITRE CPSA4 completed shape analysis and generated realized shapes.' },
+      MUTUAL_MULTI_STRAND: { title: 'MUTUAL_MULTI_STRAND', desc: 'Every participant POV required >=2 interacting strands.' },
+      UNILATERAL_AUTHENTICATED: { title: 'UNILATERAL_AUTHENTICATED', desc: 'At least one POV required a peer strand while another completed locally.' },
+      UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE: { title: 'UNAUTHENTICATED_OR_CLEARTEXT_EXECUTABLE', desc: 'All realized shapes had only 1 strand (no peer authentication proved).' },
+      FULL_PARAMETER_AGREEMENT: { title: 'FULL_PARAMETER_AGREEMENT', desc: 'Peer strands agreed on all shared parameter bindings in every realized shape.' },
+      SECRECY_PROVED: { title: 'SECRECY_PROVED', desc: 'Every (deflistener ...) secrecy query realized 0 shapes against Dolev-Yao adversary.' },
+      SECRECY_LEAK_DETECTED: { title: 'SECRECY_LEAK_DETECTED', desc: 'At least one (deflistener ...) query realized a shape — secret compromised.' },
+      NOT_APPLICABLE_NO_LISTENER: { title: 'NOT_APPLICABLE_NO_LISTENER', desc: 'Model declared no secrecy (deflistener ...) skeleton.' },
+      NO_REFLECTION: { title: 'NO_REFLECTION', desc: 'Distinct roles and principals maintained; no symmetric self-reflection detected.' }
+    };
 
+    function initHoverTooltips() {
+      const tipEl = document.getElementById('rating-tooltip');
+      const tTitle = document.getElementById('rating-tooltip-title');
+      const tDesc = document.getElementById('rating-tooltip-desc');
+      let timer = null;
+      let activeTarget = null;
+
+      function posTip(x, y) {
+        const pad = 12;
+        const rect = tipEl.getBoundingClientRect();
+        let left = x + pad, top = y + pad;
+        if (left + rect.width > window.innerWidth - 10) left = Math.max(8, x - rect.width - pad);
+        if (top + rect.height > window.innerHeight - 10) top = Math.max(8, y - rect.height - pad);
+        tipEl.style.left = `${left}px`;
+        tipEl.style.top = `${top}px`;
+      }
+
+      document.addEventListener('mouseover', e => {
+        const tgt = e.target.closest('[data-tooltip-key]');
+        if (!tgt) return;
+        const info = RATING_TOOLTIPS[tgt.getAttribute('data-tooltip-key')];
+        if (!info) return;
+        activeTarget = tgt;
+        const sx = e.clientX, sy = e.clientY;
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          if (activeTarget !== tgt) return;
+          tTitle.innerText = info.title;
+          tDesc.innerText = info.desc;
+          tipEl.style.display = 'block';
+          posTip(sx, sy);
+        }, 280);
+      });
+      document.addEventListener('mousemove', e => {
+        if (tipEl.style.display === 'block') posTip(e.clientX, e.clientY);
+      });
+      document.addEventListener('mouseout', e => {
+        const tgt = e.target.closest('[data-tooltip-key]');
+        if (tgt && tgt === activeTarget) {
+          clearTimeout(timer);
+          activeTarget = null;
+          tipEl.style.display = 'none';
+        }
+      });
+    }
+    initHoverTooltips();
+
+    // =========================================================================
+    // Standalone Client-Side Run Directory Loader (Zero Server Needed)
+    // =========================================================================
+    function showStandaloneLanding(show, statusMsg) {
+      const el = document.getElementById('standalone-landing');
+      if (el) el.style.display = show ? 'flex' : 'none';
+      if (statusMsg) setStandaloneStatus(statusMsg);
+    }
+
+    function setStandaloneStatus(msg) {
+      const el = document.getElementById('standalone-status-line');
+      if (el) el.innerText = msg || '';
+    }
+
+    function onOpenFolderClick() {
+      // Never interrupt an active live run tab: launch isolated ?standalone=1 tab
+      if (!isStandaloneClientMode && isServerLive) {
+        window.open(`${window.location.pathname}?standalone=1`, '_blank', 'noopener');
+        return;
+      }
+      const inp = document.getElementById('folder-picker-input');
+      if (inp) {
+        inp.value = '';
+        inp.click();
+      }
+    }
+
+    function onDropzoneDragOver(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const dz = document.getElementById('standalone-dropzone');
+      if (dz) dz.classList.add('dragover');
+    }
+
+    function onDropzoneDragLeave(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const dz = document.getElementById('standalone-dropzone');
+      if (dz) dz.classList.remove('dragover');
+    }
+
+    async function readDirectoryEntryRecursive(entry, prefixPath, outFiles) {
+      if (!entry) return;
+      if (entry.isFile) {
+        await new Promise(resolve => {
+          entry.file(f => {
+            f._relPath = prefixPath ? `${prefixPath}/${f.name}` : f.name;
+            outFiles.push(f);
+            resolve();
+          }, () => resolve());
+        });
+      } else if (entry.isDirectory) {
+        const reader = entry.createReader();
+        const readAll = () => new Promise(resolve => {
+          const all = [];
+          const step = () => {
+            reader.readEntries(entries => {
+              if (!entries || !entries.length) { resolve(all); return; }
+              all.push(...entries);
+              step();
+            }, () => resolve(all));
+          };
+          step();
+        });
+        const entries = await readAll();
+        const nextPrefix = prefixPath ? `${prefixPath}/${entry.name}` : entry.name;
+        for (const child of entries) {
+          await readDirectoryEntryRecursive(child, nextPrefix, outFiles);
+        }
+      }
+    }
+
+    async function onDropzoneDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const dz = document.getElementById('standalone-dropzone');
+      if (dz) dz.classList.remove('dragover');
+      setStandaloneStatus('Scanning dropped directory...');
+
+      const dt = e.dataTransfer;
+      const items = dt && dt.items ? Array.from(dt.items) : [];
+      const collected = [];
+      for (const item of items) {
+        if (typeof item.webkitGetAsEntry === 'function') {
+          const entry = item.webkitGetAsEntry();
+          if (entry) {
+            await readDirectoryEntryRecursive(entry, '', collected);
+            continue;
+          }
+        }
+        if (item.kind === 'file') {
+          const f = item.getAsFile();
+          if (f) collected.push(f);
+        }
+      }
+      if (!collected.length && dt && dt.files && dt.files.length) {
+        await loadClientDirectoryFiles(Array.from(dt.files));
+      } else {
+        await loadClientDirectoryFiles(collected);
+      }
+    }
+
+    function handleFolderInputFiles(fileList) {
+      if (!fileList || !fileList.length) return;
+      loadClientDirectoryFiles(Array.from(fileList));
+    }
+
+    function parseCsvRfc4180(text) {
+      const records = [];
+      let row = [];
+      let field = '';
+      let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (inQuotes) {
+          if (ch === '"') {
+            if (text[i + 1] === '"') { field += '"'; i++; }
+            else { inQuotes = false; }
+          } else {
+            field += ch;
+          }
+        } else {
+          if (ch === '"') {
+            inQuotes = true;
+          } else if (ch === ',') {
+            row.push(field);
+            field = '';
+          } else if (ch === '\n' || ch === '\r') {
+            if (ch === '\r' && text[i + 1] === '\n') i++;
+            row.push(field);
+            if (row.some(cell => cell !== '')) records.push(row);
+            row = [];
+            field = '';
+          } else {
+            field += ch;
+          }
+        }
+      }
+      if (field !== '' || row.length > 0) {
+        row.push(field);
+        if (row.some(cell => cell !== '')) records.push(row);
+      }
+      if (!records.length) return { headers: [], rows: [] };
+      const headers = records[0].map(h => String(h || '').trim());
+      const rows = records.slice(1).map(cols => {
+        const obj = {};
+        headers.forEach((h, idx) => { obj[h] = cols[idx] !== undefined ? String(cols[idx]) : ''; });
+        return obj;
+      });
+      return { headers, rows };
+    }
+
+    function synthesizeClientEventsFromTrajectory(tabSummary, traj, attempts) {
+      const baseTs = Number(traj.timestamp_utc_epoch || Date.now() / 1000);
+      const evts = [];
+      const meta = traj.rfc_metadata || {};
+      const s2 = traj.stage2_initial_extraction || {};
+      const s5 = traj.stage5_preflight_gate || {};
+      const s6 = traj.stage6_cpsa4_solver || {};
+      const push = (offset, etype, stage, data) => {
+        evts.push({
+          timestamp: baseTs + offset,
+          event_type: etype,
+          stage,
+          stage_name: null,
+          rfc_id: tabSummary.rfc_id,
+          tab_index: tabSummary.tab_index,
+          data: data || {}
+        });
+      };
+      push(0.0, 'pipeline_started', 1, { rfc_id: tabSummary.rfc_id, rfc_file: tabSummary.rfc_id });
+      push(0.1, 'stage_completed', 1, { protocol_name: tabSummary.protocol_name });
+      if (meta.selected_sections) {
+        push(0.2, 'slice_ready', 1, { sections: meta.selected_sections, line_count: meta.sliced_lines_count || 0 });
+      }
+      if (s2.initial_ast) {
+        push(0.3, 'stage_completed', 2, { roles_count: (s2.initial_ast.roles || []).length, skeletons_count: (s2.initial_ast.skeletons || []).length });
+        push(0.4, 'stage_completed', 3, { scm_path: tabSummary.scm_path || 'protocol.scm' });
+      } else {
+        const err = s2.schema_validation_error || tabSummary.error_message || 'Extraction failed';
+        push(0.3, 'stage_failed', 2, { error_message: err });
+        push(0.4, 'pipeline_failed', 2, { error_message: err });
+        return evts;
+      }
+      let tOff = 0.5;
+      attempts.forEach(att => {
+        if (att.attempt_id === 'attempt_0' || att.attempt_id === 'final') return;
+        const stNum = String(att.attempt_id || '').startsWith('roletran_') ? 5 : 6;
+        if (att.rag_query || (att.searcher_turns && att.searcher_turns.length)) {
+          push(tOff, 'rag_retrieval', stNum, {
+            purpose: att.stage,
+            query: att.rag_query || '',
+            searcher_diagnosis: att.searcher_diagnosis,
+            searcher_turns: att.searcher_turns || [],
+            chunks: att.retrieved_chunks || []
+          });
+          tOff += 0.05;
+        }
+        push(tOff, 'repair_attempt', stNum, {
+          attempt: att.attempt_number,
+          max_attempts: 10,
+          diagnostic: att.diagnostic || '',
+          cycle_detected: Boolean(att.cycle_detected)
+        });
+        tOff += 0.05;
+      });
+      if (s5.final_passed) {
+        push(tOff, 'stage_completed', 4, { status: 'passed' });
+        push(tOff + 0.02, 'stage_completed', 5, { status: 'passed', attempts: s5.total_attempts || 0 });
+      } else {
+        push(tOff, 'stage_failed', 5, { reason: 'Roletran executability unfulfilled' });
+      }
+      if (s6.final_passed || tabSummary.status === 'VERIFIED') {
+        push(tOff + 0.1, 'pipeline_completed', 6, {
+          success: true,
+          protocol_name: tabSummary.protocol_name,
+          shapes_count: tabSummary.shapes_count || 0,
+          quality_tier: tabSummary.quality_tier
+        });
+      } else {
+        push(tOff + 0.1, 'stage_failed', 6, { error_message: tabSummary.error_message || 'Solver failed' });
+        push(tOff + 0.12, 'pipeline_failed', 6, { error_message: tabSummary.error_message || 'Solver failed' });
+      }
+      return evts;
+    }
+
+    function buildClientAttempts(traj, tabSummary, primaryScmText) {
+      const s2 = traj.stage2_initial_extraction || {};
+      const s5 = traj.stage5_preflight_gate || {};
+      const s6 = traj.stage6_cpsa4_solver || {};
+      const qa = traj.quality_assessment || {};
+      const finalOut = traj.final_verified_output || {};
+      const s5Rep = s5.repair_attempts || [];
+      const s6Rep = s6.repair_attempts || [];
+
+      let initScm = s2.initial_scm;
+      if (!initScm && s5Rep.length) initScm = s5Rep[0].rejected_scm;
+      if (!initScm && s6Rep.length) initScm = s6Rep[0].rejected_scm;
+      if (!initScm && primaryScmText) initScm = primaryScmText;
+
+      let att0Diag = null;
+      let att0Status = 'FAILED';
+      if (s5Rep.length) {
+        att0Diag = s5Rep[0].parsed_diagnostic || s5Rep[0].raw_stderr;
+        att0Status = 'REJECTED';
+      } else if (s6Rep.length) {
+        att0Diag = s6Rep[0].parsed_diagnostic || s6Rep[0].raw_stderr;
+        att0Status = 'REJECTED';
+      } else if (s2.schema_validation_error && !s2.initial_ast) {
+        att0Diag = s2.schema_validation_error;
+        att0Status = 'FAILED';
+      } else if (s6.final_passed) {
+        att0Status = 'PASSED';
+      } else if (s2.initial_ast || initScm) {
+        att0Diag = tabSummary.error_message || null;
+        att0Status = 'GENERATED';
+      }
+
+      const attempts = [{
+        attempt_number: 0,
+        attempt_id: 'attempt_0',
+        label: 'Attempt 0 | Initial',
+        stage: 'Stage 2/3: Initial JSON & .scm Synthesis',
+        status: att0Status,
+        cycle_detected: false,
+        scm: initScm || '; Initial .scm not recorded.',
+        ast: s2.initial_ast || null,
+        diagnostic: att0Diag,
+        rag_query: null,
+        retrieved_chunks: []
+      }];
+
+      let seq = 0;
+      const pushRepairs = (list, prefix, titlePrefix) => {
+        list.forEach((rep, idx) => {
+          seq++;
+          attempts.push({
+            attempt_number: seq,
+            attempt_id: `${prefix}_${rep.attempt_number || idx + 1}`,
+            label: `Attempt ${seq} | ${titlePrefix}`,
+            stage: `${prefix === 'roletran' ? 'Stage 5: Roletran' : 'Stage 6: CPSA Compilation'} Self-Healing (#${rep.attempt_number || idx + 1})`,
+            status: rep.passed_after_repair ? 'PASSED' : 'REJECTED',
+            cycle_detected: Boolean(rep.cycle_detected),
+            scm: rep.repaired_scm || rep.rejected_scm || '; Repair failed to emit .scm',
+            rejected_scm: rep.rejected_scm || null,
+            ast: rep.repaired_ast || rep.rejected_ast || null,
+            diagnostic: rep.parsed_diagnostic || rep.repair_exception || rep.raw_stderr || null,
+            rag_query: rep.rag_query || null,
+            searcher_diagnosis: rep.searcher_diagnosis || null,
+            searcher_turns: rep.searcher_turns || [],
+            retrieved_chunks: (rep.retrieved_chunk_ids || []).map(cid => ({
+              chunk_id: String(cid),
+              title: `MITRE CPSA Manual Chunk #${cid}`,
+              source_file: 'manual_chunks.jsonl',
+              snippet: ''
+            }))
+          });
+        });
+      };
+      pushRepairs(s5Rep, 'roletran', 'Roletran Repair');
+      pushRepairs(s6Rep, 'solver', 'CPSA Repair');
+
+      const finalScm = finalOut.final_scm_with_header || primaryScmText;
+      const finalAst = finalOut.final_ast || null;
+      if (finalScm || finalAst) {
+        const tier = qa.quality_tier || tabSummary.quality_tier || 'REJECTED';
+        const shapesN = tabSummary.shapes_count || 0;
+        const solverOk = Boolean(s6.final_passed || tabSummary.status === 'VERIFIED');
+        attempts.push({
+          attempt_number: seq + 1,
+          attempt_id: 'final',
+          label: solverOk ? `Final | ${tier} (${shapesN} Shapes)` : `Final | ${tier}`,
+          stage: 'Final Synthesized Artifact',
+          status: solverOk ? 'VERIFIED' : 'FAILED',
+          cycle_detected: false,
+          scm: finalScm || '; No final .scm file.',
+          ast: finalAst,
+          diagnostic: solverOk ? null : tabSummary.error_message,
+          rag_query: null,
+          retrieved_chunks: []
+        });
+      }
+      return attempts;
+    }
+
+    async function loadClientDirectoryFiles(files) {
+      if (!files || !files.length) {
+        setStandaloneStatus('No files detected in selected folder.');
+        return;
+      }
+      setStandaloneStatus(`Indexing ${files.length} files from local folder...`);
+
+      clientBlobUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} });
+      clientBlobUrls = [];
+      clientHydratedTabs.clear();
+      clientFilteredItems = [];
+
+      const entries = files.map(f => {
+        const rel = String(f._relPath || f.webkitRelativePath || f.name).replace(/^\/+/, '');
+        const parts = rel.split('/').filter(Boolean);
+        return { file: f, rel, parts, name: f.name };
+      });
+
+      const rootName = (entries[0] && entries[0].parts.length > 1) ? entries[0].parts[0] : 'Local Run';
+
+      const csvEntry = entries.find(e => e.name === 'pipeline_runs.csv' && e.parts.length <= 2)
+        || entries.find(e => e.name === 'pipeline_runs.csv');
+      const metaEntry = entries.find(e => e.name === 'metadata_index.json' && e.parts.length <= 2)
+        || entries.find(e => e.name === 'metadata_index.json');
+
+      const trajAtDepth2 = entries.some(e => e.name.endsWith('_trajectory.json') && e.parts.length === 2);
+      const isSingleProtoDir = !csvEntry && !metaEntry && trajAtDepth2;
+
+      // Index paired slices anywhere in paired_slices/ or *_slices/
+      const pairedDebFiles = new Map();
+      const pairedStyleFiles = new Map();
+      entries.forEach(e => {
+        if (e.name.endsWith('__debloated.txt')) {
+          const stem = e.name.slice(0, -'__debloated.txt'.length);
+          pairedDebFiles.set(stem, e.file);
+        } else if (e.name.endsWith('__rfc_style.txt')) {
+          const stem = e.name.slice(0, -'__rfc_style.txt'.length);
+          pairedStyleFiles.set(stem, e.file);
+        }
+      });
+
+      // Group files per protocol directory
+      const protoBuckets = new Map();
+      entries.forEach(e => {
+        if (e === csvEntry || e === metaEntry) return;
+        let bucketKey = '';
+        if (isSingleProtoDir) {
+          bucketKey = e.parts[0] || rootName;
+        } else {
+          if (e.parts.length < 3) return;
+          if (e.parts[1] === 'paired_slices') return;
+          bucketKey = e.parts[1];
+        }
+        if (!protoBuckets.has(bucketKey)) protoBuckets.set(bucketKey, []);
+        protoBuckets.get(bucketKey).push(e);
+      });
+
+      let metaJson = null;
+      if (metaEntry) {
+        try { metaJson = JSON.parse(await metaEntry.file.text()); } catch (err) { metaJson = null; }
+      }
+
+      const metaRunsByDir = new Map();
+      const metaRunsById = new Map();
+      if (metaJson && Array.isArray(metaJson.runs)) {
+        metaJson.runs.forEach(r => {
+          const dirBase = String(r.rfc_directory || '').split('/').filter(Boolean).pop();
+          if (dirBase) metaRunsByDir.set(dirBase, r);
+          if (r.rfc_id) metaRunsById.set(normId(r.rfc_id), r);
+        });
+      }
+
+      let csvHeaders = [];
+      let csvRows = [];
+      const csvRowByNormId = new Map();
+      if (csvEntry) {
+        try {
+          const parsed = parseCsvRfc4180(await csvEntry.file.text());
+          csvHeaders = parsed.headers;
+          csvRows = parsed.rows;
+          csvRows.forEach(r => { if (r.rfc_id) csvRowByNormId.set(normId(r.rfc_id), r); });
+        } catch (err) {}
+      }
+
+      // Collect filtered entries from metadata_index.json, intake checkpoints, and CSV
+      const seenFilteredIds = new Set();
+      if (metaJson && Array.isArray(metaJson.filtered_rfcs)) {
+        metaJson.filtered_rfcs.forEach((f, idx) => {
+          const fid = f.rfc_id || `filtered_${idx + 1}`;
+          seenFilteredIds.add(normId(fid));
+          clientFilteredItems.push({
+            index: idx + 1,
+            rfc_id: fid,
+            title: f.title || '',
+            gate: f.gate || 'Stage 1 Intake',
+            reason: f.reason || ''
+          });
+        });
+      }
+
+      const hydratedList = [];
+      let autoTabIdx = 1;
+
+      const sortedBucketKeys = Array.from(protoBuckets.keys()).sort((a, b) => {
+        const ra = metaRunsByDir.get(a);
+        const rb = metaRunsByDir.get(b);
+        if (ra && rb && ra.tab_index && rb.tab_index) return Number(ra.tab_index) - Number(rb.tab_index);
+        return a.localeCompare(b);
+      });
+
+      for (const dirName of sortedBucketKeys) {
+        const list = protoBuckets.get(dirName);
+        const trajEntry = list.find(e => e.name.endsWith('_trajectory.json'));
+        const chkEntry = list.find(e => e.name === 'intake_checkpoint.json');
+
+        if (!trajEntry) {
+          if (chkEntry) {
+            try {
+              const chk = JSON.parse(await chkEntry.file.text());
+              if (chk && chk.is_eligible === false) {
+                const fid = chk.rfc_id || dirName;
+                if (!seenFilteredIds.has(normId(fid))) {
+                  seenFilteredIds.add(normId(fid));
+                  clientFilteredItems.push({
+                    index: clientFilteredItems.length + 1,
+                    rfc_id: fid,
+                    title: chk.rfc_title || '',
+                    gate: chk.rejection_gate || 'Stage 1/2 Intake Gate',
+                    reason: chk.reason || chk.error_message || ''
+                  });
+                }
+              }
+            } catch (err) {}
+          }
+          continue;
+        }
+
+        let traj = {};
+        try { traj = JSON.parse(await trajEntry.file.text()); } catch (err) { traj = {}; }
+        const meta = traj.rfc_metadata || {};
+        const qa = traj.quality_assessment || {};
+        const s6 = traj.stage6_cpsa4_solver || {};
+        const ct = traj.cost_telemetry || {};
+        const metaRun = metaRunsByDir.get(dirName) || (meta.rfc_id ? metaRunsById.get(normId(meta.rfc_id)) : null) || {};
+        const rfcId = metaRun.rfc_id || meta.rfc_id || dirName;
+        const csvRow = csvRowByNormId.get(normId(rfcId)) || {};
+
+        const tabIdx = Number(metaRun.tab_index || 0) || autoTabIdx;
+        autoTabIdx = Math.max(autoTabIdx + 1, tabIdx + 1);
+
+        const solverPassed = Boolean(s6.final_passed || metaRun.build_successful || String(csvRow.status || '').toUpperCase() === 'VERIFIED');
+        const qTier = qa.quality_tier || metaRun.quality_tier || csvRow.quality_tier || (solverPassed ? 'VERIFIED' : 'REJECTED');
+        const shapesAnal = s6.shapes_analysis_from_shapes_txt || {};
+        const shapesCount = Number(shapesAnal.total_realized_shapes ?? metaRun.shapes_count ?? csvRow.shapes_count ?? 0);
+        const totRepairs = Number(csvRow.total_repairs ?? ((traj.stage5_preflight_gate?.total_attempts || 0) + (s6.total_attempts || 0)));
+
+        const tabSummary = {
+          tab_index: tabIdx,
+          rfc_id: rfcId,
+          protocol_name: meta.protocol_name || metaRun.protocol_name || csvRow.protocol_name || rfcId,
+          rfc_title: meta.rfc_title || metaRun.rfc_title || '',
+          status: solverPassed ? 'VERIFIED' : (traj.stage5_preflight_gate?.final_passed ? 'PARTIAL' : 'FAILED'),
+          quality_tier: qTier,
+          total_attempts: totRepairs,
+          shapes_count: shapesCount,
+          duration_seconds: Number(traj.duration_seconds ?? metaRun.duration_seconds ?? csvRow.duration_seconds ?? 0),
+          cost_usd: Number(ct.total_cost_usd ?? csvRow.total_cost_usd ?? 0),
+          cost_telemetry: ct,
+          error_message: metaRun.error_message || csvRow.error_message || '',
+          intake_rationale: meta.intake_rationale || ''
+        };
+
+        // Load text artifacts inside folder
+        const scmEntry = list.find(e => e.name.endsWith('.scm'));
+        const scmText = scmEntry ? await scmEntry.file.text() : '';
+        const verbEntry = list.find(e => e.name === 'verbatim_slice.txt');
+        const verbatimSlice = meta.verbatim_rfc_slice || (verbEntry ? await verbEntry.file.text() : '');
+
+        const debEntry = list.find(e => e.name.endsWith('__debloated.txt'))
+          || (meta.paired_stem && pairedDebFiles.has(meta.paired_stem) ? { file: pairedDebFiles.get(meta.paired_stem) } : null);
+        const debloatedSlice = meta.debloated_rfc_slice || (debEntry ? await debEntry.file.text() : '');
+
+        const styleEntry = list.find(e => e.name.endsWith('__rfc_style.txt'))
+          || (meta.paired_stem && pairedStyleFiles.has(meta.paired_stem) ? { file: pairedStyleFiles.get(meta.paired_stem) } : null);
+        const rfcStyleSlice = meta.rfc_style_slice || (styleEntry ? await styleEntry.file.text() : '');
+
+        let events = [];
+        const eventsEntry = list.find(e => e.name === 'events.jsonl');
+        if (eventsEntry) {
+          try {
+            const evTxt = await eventsEntry.file.text();
+            events = evTxt.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+          } catch (err) { events = []; }
+        }
+
+        const attempts = buildClientAttempts(traj, tabSummary, scmText);
+        if (!events.length) {
+          events = synthesizeClientEventsFromTrajectory(tabSummary, traj, attempts);
+        }
+
+        let xhtmlBlobUrl = '';
+        const xhtmlEntry = list.find(e => e.name.endsWith('_shapes.xhtml'));
+        if (xhtmlEntry) {
+          const rawXhtml = await xhtmlEntry.file.text();
+          const patchedXhtml = injectCpsaJumpScript(rawXhtml);
+          xhtmlBlobUrl = URL.createObjectURL(new Blob([patchedXhtml], { type: 'application/xhtml+xml; charset=utf-8' }));
+          clientBlobUrls.push(xhtmlBlobUrl);
+        }
+
+        const secFindings = traj.security_findings || qa.security_findings || {};
+        const payload = {
+          tab: { ...tabSummary, security_findings: secFindings },
+          rfc_metadata: meta,
+          intake_rationale: meta.intake_rationale || '',
+          quality_assessment: qa,
+          security_findings: secFindings,
+          shapes_analysis: shapesAnal,
+          exploration_telemetry: s6.exploration_telemetry_from_txt || {},
+          cost_telemetry: ct,
+          verbatim_slice: verbatimSlice,
+          debloated_slice: debloatedSlice,
+          rfc_style_slice: rfcStyleSlice,
+          paired_stem: meta.paired_stem || '',
+          shapes_xhtml: xhtmlEntry ? xhtmlEntry.rel : '',
+          shapes_xhtml_blob_url: xhtmlBlobUrl,
+          attempts,
+          events
+        };
+        hydratedList.push(payload);
+      }
+
+      hydratedList.sort((a, b) => a.tab.tab_index - b.tab.tab_index);
+      if (!hydratedList.length && !csvRows.length && !clientFilteredItems.length) {
+        setStandaloneStatus('No *_trajectory.json or pipeline_runs.csv found in selected folder.');
+        return;
+      }
+
+      // Add any CSV ineligible rows that weren't in metadata_index or checkpoints
+      csvRows.forEach(r => {
+        const isElig = String(r.is_eligible || '').toLowerCase() === 'true';
+        if (!isElig && r.rfc_id && !seenFilteredIds.has(normId(r.rfc_id))) {
+          seenFilteredIds.add(normId(r.rfc_id));
+          clientFilteredItems.push({
+            index: clientFilteredItems.length + 1,
+            rfc_id: r.rfc_id,
+            title: r.protocol_name || '',
+            gate: r.rejection_gate || 'Stage 1/2 Intake Gate',
+            reason: r.error_message || ''
+          });
+        }
+      });
+
+      // Synthesize minimal CSV rows if directory lacked pipeline_runs.csv
+      if (!csvRows.length) {
+        csvRows = hydratedList.map(p => {
+          const t = p.tab;
+          const sf = p.security_findings || {};
+          const roles = (p.cost_telemetry && p.cost_telemetry.roles) || {};
+          return {
+            rfc_id: t.rfc_id,
+            is_eligible: 'True',
+            status: t.status,
+            quality_tier: t.quality_tier,
+            zero_shot_passed: t.total_attempts === 0 && t.status === 'VERIFIED' ? 'True' : 'False',
+            total_repairs: String(t.total_attempts || 0),
+            protocol_name: t.protocol_name,
+            shapes_count: String(t.shapes_count || 0),
+            explored_skeletons_count: String((p.exploration_telemetry && p.exploration_telemetry.explored_skeletons_count) || t.shapes_count || 0),
+            authentication_profile: sf.authentication_profile || '',
+            parameter_agreement_status: sf.parameter_agreement_status || '',
+            secrecy_status: sf.secrecy_status || '',
+            role_reflection_status: sf.role_reflection_status || '',
+            anomalies_count: String(sf.anomalies_count || 0),
+            duration_seconds: String(t.duration_seconds || 0),
+            total_cost_usd: String((p.cost_telemetry && p.cost_telemetry.total_cost_usd) || t.cost_usd || 0),
+            total_tokens: String((p.cost_telemetry && p.cost_telemetry.total_tokens) || 0),
+            total_calls: String((p.cost_telemetry && p.cost_telemetry.total_calls) || 0),
+            router_cost_usd: String(roles.router?.cost_usd || 0),
+            router_tokens: String(roles.router?.total_tokens || 0),
+            router_calls: String(roles.router?.calls || 0),
+            extraction_cost_usd: String(roles.extraction?.cost_usd || 0),
+            extraction_tokens: String(roles.extraction?.total_tokens || 0),
+            extraction_calls: String(roles.extraction?.calls || 0),
+            query_cost_usd: String(roles.query?.cost_usd || 0),
+            query_tokens: String(roles.query?.total_tokens || 0),
+            query_calls: String(roles.query?.calls || 0),
+            repair_cost_usd: String(roles.repair?.cost_usd || 0),
+            repair_tokens: String(roles.repair?.total_tokens || 0),
+            repair_calls: String(roles.repair?.calls || 0),
+            error_message: t.error_message || ''
+          };
+        }).concat(clientFilteredItems.map(f => ({
+          rfc_id: f.rfc_id,
+          is_eligible: 'False',
+          status: 'FILTERED',
+          quality_tier: '',
+          rejection_gate: f.gate,
+          protocol_name: f.title,
+          error_message: f.reason
+        })));
+        csvHeaders = Object.keys(csvRows[0] || {});
+      }
+
+      isStandaloneClientMode = true;
+      isClientFolderLoaded = true;
+      isServerLive = false;
+      pipelineRunning = false;
+
+      acceptedTabs = [];
+      acceptedTabsByIndex.clear();
+      acceptedTabsByNormId.clear();
+      tabLruCache.clear();
+      selectedTabIndex = null;
+
+      let batchTotalCost = 0;
+      hydratedList.forEach(p => {
+        clientHydratedTabs.set(p.tab.tab_index, p);
+        acceptedTabs.push(p.tab);
+        acceptedTabsByIndex.set(p.tab.tab_index, p.tab);
+        acceptedTabsByNormId.set(normId(p.tab.rfc_id), p.tab);
+        batchTotalCost += Number(p.tab.cost_usd || 0);
+      });
+
+      if (metaJson && metaJson.batch_cost_telemetry && Object.keys(metaJson.batch_cost_telemetry).length) {
+        latestBatchCostTelemetry = metaJson.batch_cost_telemetry;
+      } else {
+        latestBatchCostTelemetry = { total_cost_usd: batchTotalCost };
+      }
+
+      latestCsvRows = csvRows;
+      latestCsvHeaders = csvHeaders;
+      latestCsvPath = `${rootName}/pipeline_runs.csv`;
+
+      const runEl = document.getElementById('run-dir-badge');
+      if (runEl) {
+        runEl.innerText = rootName;
+        runEl.title = `Local Client Folder: ${rootName}`;
+      }
+
+      showStandaloneLanding(false);
+      updateFilteredButtonCount(clientFilteredItems.length);
+      recomputeVisibleTabs();
+      updateTopCountsAndStatus();
+      syncLiveOfflineNotice();
+      refreshCsvAnalytics(true);
+      setTopMode('protocol');
+      if (acceptedTabs.length > 0) {
+        selectNumberedTab(acceptedTabs[0].tab_index);
+      }
+      setStandaloneStatus('');
+    }
+
+    // =========================================================================
+    // Bootstrap & Real-Time SSE Subscription (Relative API paths only)
+    // =========================================================================
     function syncInitialState() {
       fetch('api/tabs')
-        .then(r => {
-          if (!r.ok) throw new Error('legacy server');
-          return r.json();
-        })
+        .then(r => r.ok ? r.json() : Promise.reject(new Error('no tabs')))
         .then(overview => {
           isServerLive = Boolean(overview.is_live);
           liveActiveRfcId = overview.active_rfc_id;
           liveActiveTabIndex = overview.active_tab_index;
 
-          const runDirEl = document.getElementById('run-dir-badge');
-          if (runDirEl) {
-            const rd = overview.run_directory || (isServerLive ? 'Live Session' : 'Offline Replay');
-            runDirEl.innerText = rd.split('/').slice(-2).join('/');
-            runDirEl.title = rd;
+          const runEl = document.getElementById('run-dir-badge');
+          if (runEl) {
+            const rd = overview.run_directory || (isServerLive ? 'Live' : 'Replay');
+            runEl.innerText = rd.split('/').slice(-2).join('/');
+            runEl.title = rd;
           }
 
           acceptedTabs = [];
           acceptedTabsByIndex.clear();
+          acceptedTabsByNormId.clear();
           (overview.accepted_tabs || []).forEach(t => {
             acceptedTabs.push(t);
             acceptedTabsByIndex.set(t.tab_index, t);
+            acceptedTabsByNormId.set(normId(t.rfc_id), t);
           });
           acceptedTabs.sort((a, b) => a.tab_index - b.tab_index);
+
           if (overview.batch_cost_telemetry && Object.keys(overview.batch_cost_telemetry).length > 0) {
-            renderCostTelemetry(null, overview.batch_cost_telemetry);
+            latestBatchCostTelemetry = overview.batch_cost_telemetry;
           }
           updateFilteredButtonCount(overview.filtered_total || 0);
           recomputeVisibleTabs();
-          updateLivePinButton();
-
+          updateTopCountsAndStatus();
           refreshCsvAnalytics(false);
+
           if (!isServerLive) {
-            if (acceptedTabs.length > 0) {
-              selectNumberedTab(acceptedTabs[0].tab_index);
-            } else {
-              setDiagnosisBadge('Replay Loaded (0 Accepted Tabs)', 'normal');
-            }
-          } else if (viewMode === 'live') {
-            return fetch('api/active')
+            syncLiveOfflineNotice();
+            setTopMode('protocol');
+            if (acceptedTabs.length > 0) selectNumberedTab(acceptedTabs[0].tab_index);
+          } else {
+            setTopMode('live');
+            fetch('api/active')
               .then(r => r.json())
               .then(state => {
                 if (state && Array.isArray(state.events)) {
-                  state.events.forEach(evt => renderEventIntoViewport(evt, true));
+                  state.events.forEach(evt => renderEventIntoLiveView(evt));
                 }
-              });
+              })
+              .catch(() => {});
           }
         })
         .catch(() => {
-          // Graceful fallback if connected to an older in-memory server without /api/tabs
-          fetch('api/history')
-            .then(r => r.json())
-            .then(events => {
-              if (Array.isArray(events)) events.forEach(e => renderEventIntoViewport(e, true));
-            })
-            .catch(() => {});
+          if (!isClientFolderLoaded && acceptedTabs.length === 0) {
+            isStandaloneClientMode = true;
+            isServerLive = false;
+            showStandaloneLanding(true, 'No backend server detected — select or drop an RFC-LLM output folder.');
+          }
         });
     }
 
-    syncInitialState();
+    if (isStandaloneClientMode) {
+      isServerLive = false;
+      const runEl = document.getElementById('run-dir-badge');
+      if (runEl) runEl.innerText = 'Standalone Folder Mode';
+      updateTopCountsAndStatus();
+      showStandaloneLanding(true, 'Ready. Choose a run directory or drop one here.');
+    } else {
+      fetch('api/models')
+        .then(r => r.ok ? r.json() : null)
+        .then(cfg => {
+          if (!cfg) return;
+          defaultModelCfg = Object.assign(defaultModelCfg, cfg);
+          renderGlobalModelsCard();
+        })
+        .catch(() => {});
 
-    // Real-time Server-Sent Events: listen on all named event types so frames fire in <1ms
-    const sse = new EventSource('api/events');
-    const SSE_EVENT_TYPES = [
-      'pipeline_started',
-      'stage_started',
-      'compiler_check_started',
-      'stage_completed',
-      'slice_ready',
-      'rag_retrieval',
-      'repair_attempt',
-      'stage_failed',
-      'pipeline_completed',
-      'pipeline_failed',
-      'tab_accepted',
-      'tab_updated',
-      'rfc_filtered',
-      'cost_updated',
-      'csv_updated',
-      'message'
-    ];
-    SSE_EVENT_TYPES.forEach(evtName => {
-      sse.addEventListener(evtName, function(e) {
-        try {
-          const evt = JSON.parse(e.data);
-          handleIncomingBusEvent(evt);
-        } catch (err) {}
+      syncInitialState();
+
+      const sse = new EventSource('api/events');
+      [
+        'pipeline_started', 'stage_started', 'compiler_check_started', 'stage_completed',
+        'slice_ready', 'rag_retrieval', 'repair_attempt', 'stage_failed',
+        'pipeline_completed', 'pipeline_failed', 'tab_accepted', 'tab_updated',
+        'rfc_filtered', 'cost_updated', 'csv_updated', 'message'
+      ].forEach(evtName => {
+        sse.addEventListener(evtName, e => {
+          try {
+            handleIncomingBusEvent(JSON.parse(e.data));
+          } catch (err) {}
+        });
       });
-    });
+    }
   </script>
 </body>
 </html>

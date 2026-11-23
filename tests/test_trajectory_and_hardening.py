@@ -491,7 +491,7 @@ def test_quality_assessment_catches_self_reflection_and_preseeded_strands(tmp_pa
     - Flag 1-strand/2-strand branched authentication (`RFC 5216` / `RFC 6786`) as `CONDITIONAL_BRANCHED_AUTHENTICATION` in `security_findings` while keeping `quality_tier == "GOLD"`
     - Downgrade pre-seeded multi-strand root skeletons (`max_strands == initial_strand_count` as in `RFC 7469`) to `BRONZE`
     - Grade unilateral server-authenticated KEX (`RFC 5656`) as `GOLD` with `UNILATERAL_AUTHENTICATED` and `SECRECY_PROVED`
-    - Detect Lowe MITM principal disagreement (`b` vs `b-0`), same-role reflection, and secrecy leaks in `security_findings` without punishing `quality_tier`.
+    - Detect Lowe MITM principal disagreement (`b` vs `b-0`), same-role reflection, and secrecy leaks in `security_findings`, capping leaked listeners below GOLD (to `SILVER` while keeping SFT positive routing enabled).
     """
     from src.verification_engine.trajectory_metadata_exporter import (
         analyze_shapes_txt,
@@ -549,7 +549,7 @@ def test_quality_assessment_catches_self_reflection_and_preseeded_strands(tmp_pa
     assert unilateral_qa["quality_tier"] == "GOLD"
 
     # 4. Vulnerable protocol (Needham-Schroeder Lowe MITM `b` vs `b-0` + same-role reflection + leaked secret `k`):
-    # Model is executable and faithful (`quality_tier == "GOLD"`), while `security_findings` captures all 3 vulnerabilities
+    # `security_findings` captures all 3 vulnerabilities; leaked listener caps `quality_tier` at `SILVER` (while remaining SFT positive).
     vuln_txt = tmp_path / "vuln_shapes.txt"
     vuln_txt.write_text(
         "(defskeleton ns (vars (a b name) (k skey)) (defstrand init 2 (a a) (b b)) (label 0))\n"
@@ -568,7 +568,8 @@ def test_quality_assessment_catches_self_reflection_and_preseeded_strands(tmp_pa
     assert vuln_sec["leaked_secrets"] == ["k"]
     assert len(vuln_sec["vulnerabilities_and_anomalies"]) >= 3
     vuln_qa = compute_quality_assessment(True, vuln_analysis, 0, 0, security_findings=vuln_sec)
-    assert vuln_qa["quality_tier"] == "GOLD"
+    assert vuln_qa["quality_tier"] == "SILVER"
+    assert vuln_qa["post_training_routing"]["eligible_for_sft_positive"] is True
 
 
 def test_prune_keep_ineligible_only(tmp_path: Path):
@@ -1064,6 +1065,65 @@ def test_multi_deflistener_telemetry_and_dangling_response_quality_cap(tmp_path:
     )
     assert qa["quality_tier"] == "SILVER"
     assert any("INCOMPLETE_INITIATOR_TRACE" in a for a in qa["security_findings"]["vulnerabilities_and_anomalies"])
+
+
+def test_secrecy_proof_triage_and_auth_only_rationale(tmp_path: Path):
+    """Verify High/Low-Confidence leak triage, `assumptions` extraction, `AUTH_ONLY_NO_SECRET`, and GOLD cap."""
+    from src.verification_engine.trajectory_metadata_exporter import (
+        analyze_shapes_txt,
+        compute_quality_assessment,
+        compute_security_findings,
+    )
+
+    # Case 1: High-confidence flaw (non-orig declared + multi-strand leak) -> HIGH_CONFIDENCE_FLAW & capped SILVER
+    hi_txt = tmp_path / "hi_leak_shapes.txt"
+    hi_txt.write_text(
+        "(defskeleton proto (vars (a b name)) (defstrand init 2 (a a) (b b)) (label 0))\n"
+        "(defskeleton proto (vars (a b name)) (defstrand init 2 (a a) (b b)) (defstrand resp 2 (a a) (b b)) (label 1) (parent 0) (shape))\n"
+        "(defskeleton proto (vars (a b name) (k skey)) (defstrand init 2) (deflistener k) (non-orig (ltk a b)) (label 2))\n"
+        "(defskeleton proto (vars (a b name) (k skey)) (defstrand init 2) (defstrand resp 2) (deflistener k) (label 3) (parent 2) (shape))\n",
+        encoding="utf-8",
+    )
+    hi_sa = analyze_shapes_txt(hi_txt)
+    hi_sec = compute_security_findings(hi_sa)
+    assert hi_sec["secrecy_status"] == "SECRECY_LEAK_DETECTED"
+    assert len(hi_sec["secrecy_proof_details"]) == 1
+    d0 = hi_sec["secrecy_proof_details"][0]
+    assert d0["confidence"] == "HIGH_CONFIDENCE_FLAW"
+    assert d0["pov_role"] == "init"
+    assert "(ltk a b)" in d0["assumptions"]["non_orig"]
+    assert d0["leak_shape_labels"] == [3]
+    assert any("High Confidence" in s for s in hi_sec["plain_english_summary"])
+    hi_qa = compute_quality_assessment(True, hi_sa, 0, 0, security_findings=hi_sec)
+    assert hi_qa["quality_tier"] == "SILVER"
+
+    # Case 2: Low-confidence leak (no non-orig / no conf declared) -> LOW_CONFIDENCE_MODEL_OMISSION
+    lo_txt = tmp_path / "lo_leak_shapes.txt"
+    lo_txt.write_text(
+        "(defskeleton proto (vars (a b name)) (defstrand init 1) (label 0))\n"
+        "(defskeleton proto (vars (k skey)) (defstrand init 1) (deflistener k) (label 1))\n"
+        "(defskeleton proto (vars (k skey)) (defstrand init 1) (deflistener k) (label 2) (parent 1) (shape))\n",
+        encoding="utf-8",
+    )
+    lo_sa = analyze_shapes_txt(lo_txt)
+    lo_sec = compute_security_findings(lo_sa)
+    assert lo_sec["secrecy_proof_details"][0]["confidence"] == "LOW_CONFIDENCE_MODEL_OMISSION"
+    assert any("Low Confidence" in s for s in lo_sec["plain_english_summary"])
+
+    # Case 3: Authentication-only rationale without listener -> AUTH_ONLY_NO_SECRET
+    auth_txt = tmp_path / "auth_only_shapes.txt"
+    auth_txt.write_text(
+        "(defskeleton proto (vars (a b name)) (defstrand init 2) (label 0))\n"
+        "(defskeleton proto (vars (a b name)) (defstrand init 2) (defstrand resp 2) (label 1) (parent 0) (shape))\n",
+        encoding="utf-8",
+    )
+    auth_sa = analyze_shapes_txt(auth_txt)
+    auth_sec = compute_security_findings(
+        auth_sa,
+        auth_only_rationale="Challenge-response MAC authentication with no session key derived.",
+    )
+    assert auth_sec["secrecy_status"] == "AUTH_ONLY_NO_SECRET"
+    assert "Challenge-response MAC" in auth_sec["auth_only_rationale"]
 
 
 
